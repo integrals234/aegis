@@ -1,0 +1,209 @@
+scope_version: 1
+
+# AEGIS-007 — one active milestone. docs/BUILD_STATE.md names the active
+# milestone; this file says which paths that milestone is allowed to touch, and
+# tools/check_scope.py compares both against the branch diff.
+#
+# The failure being prevented: M1 exchange code, or an M9 dashboard, quietly
+# appearing inside an M0 branch and being counted as done. `denied` exists so a
+# path that a later milestone owns fails loudly rather than falling through a
+# permissive `allowed` glob.
+#
+# Owner-approved exceptions are recorded on the "Owner-approved scope changes:"
+# line of docs/BUILD_STATE.md and are honoured by the checker.
+
+always_allowed:
+  # Removing NTFS interop artifacts is repository hygiene under AEGIS-236, and
+  # the pattern can never name a source file of any milestone.
+  - "*:Zone.Identifier"
+  - docs/BUILD_STATE.md
+  - requirements/implementation_status.json
+  - docs/TRACEABILITY_MATRIX.md
+  - docs/DEFERRED_VERIFICATION.md
+  - experiments/plans/**
+  - experiments/milestone-reports/**
+  - experiments/evidence/**
+  - adr/**
+  - .gitignore
+
+milestones:
+  M0:
+    description: Governance and engineering foundation
+    allowed:
+      - tools/**
+      - scripts/**
+      - configs/**
+      - docs/**
+      - .github/**
+      - .claude/**
+      - tests/**
+      - cpp/common/**
+      - cpp/events/**
+      - cpp/bindings/**
+      - cpp/CMakeLists.txt
+      - python/common/**
+      - python/data/**
+      - docker/**
+      - data_samples/**
+      - requirements/**
+      - CMakeLists.txt
+      - CMakePresets.json
+      - pyproject.toml
+      - Makefile
+      - README_FIRST.md
+      - .clang-format
+      - .clang-tidy
+    denied:
+      - cpp/exchange/**
+      - cpp/participant/**
+      - cpp/statistics/**
+      - cpp/replay/**
+      - cpp/memory/**
+      - cpp/queues/**
+      - python/futures/**
+      - python/research/**
+      - python/validation/**
+      - python/attribution/**
+      - python/reports/**
+      - decision_arena/**
+      - dashboard/**
+
+  M1:
+    description: Deterministic exchange core
+    allowed:
+      - cpp/**
+      - tests/**
+      - tools/**
+      - configs/**
+      - docs/**
+      - python/common/**
+    denied:
+      - cpp/participant/**
+      - cpp/memory/**
+      - cpp/queues/**
+      - python/research/**
+      - decision_arena/**
+      - dashboard/**
+
+  M2:
+    description: Futures and replay foundation
+    allowed:
+      - cpp/common/**
+      - cpp/events/**
+      - cpp/replay/**
+      - cpp/bindings/**
+      - python/common/**
+      - python/data/**
+      - python/futures/**
+      - data_samples/**
+      - tests/**
+      - tools/**
+      - configs/**
+      - docs/**
+    denied:
+      - cpp/exchange/matching/**
+      - cpp/participant/**
+      - python/research/**
+      - decision_arena/**
+      - dashboard/**
+
+  M3:
+    description: Participant, reconstruction, online statistics and execution
+    allowed:
+      - cpp/**
+      - python/common/**
+      - python/data/**
+      - tests/**
+      - tools/**
+      - configs/**
+      - docs/**
+    denied:
+      - cpp/memory/**
+      - cpp/queues/**
+      - python/research/**
+      - decision_arena/**
+      - dashboard/**
+
+  M4:
+    description: First rigorous calendar-spread strategy
+    allowed:
+      - cpp/participant/strategy/**
+      - python/**
+      - tests/**
+      - tools/**
+      - configs/**
+      - docs/**
+    denied:
+      - cpp/exchange/**
+      - decision_arena/**
+      - dashboard/**
+
+  M5:
+    description: Independent risk and validation
+    allowed:
+      - cpp/participant/risk/**
+      - cpp/participant/portfolio/**
+      - python/validation/**
+      - python/research/**
+      - python/reports/**
+      - tests/**
+      - tools/**
+      - configs/**
+      - docs/**
+    denied:
+      - cpp/exchange/**
+      - decision_arena/**
+      - dashboard/**
+
+  M6:
+    description: Multi-strategy research and attribution
+    allowed:
+      - python/**
+      - cpp/participant/strategy/**
+      - tests/**
+      - tools/**
+      - configs/**
+      - docs/**
+    denied:
+      - cpp/exchange/**
+      - decision_arena/**
+      - dashboard/**
+
+  M7:
+    description: Decision intelligence
+    allowed:
+      - decision_arena/**
+      - python/**
+      - tests/**
+      - tools/**
+      - configs/**
+      - docs/**
+    denied:
+      - cpp/exchange/**
+      - dashboard/**
+
+  M8:
+    description: Performance engineering
+    allowed:
+      - cpp/**
+      - benchmarks/**
+      - tests/**
+      - tools/**
+      - configs/**
+      - docs/**
+    denied:
+      - decision_arena/**
+      - dashboard/**
+
+  M9:
+    description: Product surface and paper-trading path
+    allowed:
+      - dashboard/**
+      - decision_arena/**
+      - python/**
+      - cpp/**
+      - tests/**
+      - tools/**
+      - configs/**
+      - docs/**
+    denied: []

@@ -1,0 +1,46 @@
+# Generated fixture policy: the production rules with no exclusions.
+policy_version: 1
+scanned_globs:
+- '*.md'
+excluded_paths: []
+forbidden_phrases:
+- guaranteed profit
+- guarantees profit
+- guarantees an interview
+- guaranteed interview
+- risk-free
+- never loses
+- exact infrastructure used by every
+- used by every exchange
+- used by every prop firm
+- all operations strict O(1)
+- production-ready trading
+- production trading system
+- institutional-grade
+- beats the market
+claim_units:
+- ns
+- nanosecond
+- nanoseconds
+- us
+- microsecond
+- microseconds
+- ms
+- millisecond
+- milliseconds
+- messages/second
+- messages per second
+- msg/s
+- ops/s
+- events/second
+- throughput
+- Sharpe
+- Sortino
+- Calmar
+- bps
+- annualized return
+- drawdown
+- win rate
+- profit factor
+- speedup
+evidence_marker: 'evidence:'

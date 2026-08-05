@@ -1,0 +1,92 @@
+policy_version: 1
+
+# AEGIS-006 — no fabricated claims. This file drives tools/check_claims.py.
+#
+# Two classes of failure are policed:
+#   * forbidden phrasing quoted from docs/CV_CLAIMS_POLICY.md;
+#   * a performance or trading number stated without a resolvable evidence path.
+#
+# The exclusion list is deliberately narrow and every entry carries a reason.
+# The three frozen policy documents quote the forbidden phrases verbatim in
+# order to forbid them, and README_FIRST.md says the pack "cannot mathematically
+# guarantee" correctness — which is the opposite of a guarantee claim. Widening
+# the patterns to accommodate those files would silently destroy the control;
+# naming the files keeps the control intact and the exception visible.
+
+scanned_globs:
+  - "*.md"
+  - docs/**/*.md
+  - adr/**/*.md
+  - experiments/**/*.md
+  - benchmarks/**/*.md
+  - prompts/**/*.md
+
+excluded_paths:
+  - path: docs/CV_CLAIMS_POLICY.md
+    reason: Frozen policy that quotes the forbidden phrasing in order to forbid it.
+  - path: docs/BENCHMARK_POLICY.md
+    reason: Frozen policy that quotes forbidden latency phrasing and states the required workload mix.
+  - path: docs/DATA_AND_RESEARCH_POLICY.md
+    reason: Frozen policy that quotes forbidden research phrasing in order to forbid it.
+  - path: README_FIRST.md
+    reason: States the pack "cannot mathematically guarantee" correctness — a disclaimer, not a claim.
+  - path: configs/claims_policy.yaml
+    reason: This file lists the forbidden phrases so the checker can detect them.
+  - path: docs/LIMITATIONS.md
+    reason: Records what AEGIS cannot do; negative statements quote the phrasing they deny.
+  # A `phrases:` entry is a narrow exemption: only the listed phrases are
+  # allowed in that file, and its numeric claims are still checked.
+  - path: experiments/plans/M0.md
+    reason: The M0 plan enumerates the banned vocabulary in order to ban it from M0 prose.
+    phrases:
+      - institutional-grade
+      - production trading system
+
+# Phrases that may never appear as an AEGIS claim, quoted from the frozen
+# CV claims policy.
+forbidden_phrases:
+  - guaranteed profit
+  - guarantees profit
+  - guarantees an interview
+  - guaranteed interview
+  - risk-free
+  - never loses
+  - exact infrastructure used by every
+  - used by every exchange
+  - used by every prop firm
+  - all operations strict O(1)
+  - production-ready trading
+  - production trading system
+  - institutional-grade
+  - beats the market
+
+# Words that turn an adjacent number into a performance or trading claim.
+claim_units:
+  - ns
+  - nanosecond
+  - nanoseconds
+  - us
+  - microsecond
+  - microseconds
+  - ms
+  - millisecond
+  - milliseconds
+  - messages/second
+  - messages per second
+  - msg/s
+  - ops/s
+  - events/second
+  - throughput
+  - Sharpe
+  - Sortino
+  - Calmar
+  - bps
+  - annualized return
+  - drawdown
+  - win rate
+  - profit factor
+  - speedup
+
+# A claim sentence is exempt when it carries an `evidence:` marker naming a path
+# that exists. Anything else is an unsupported number.
+evidence_marker: "evidence:"
