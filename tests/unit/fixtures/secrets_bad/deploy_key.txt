@@ -1,0 +1,5 @@
+# Deliberately failing fixture for tools/scan_secrets.py (AEGIS-010).
+# The block below is a syntactically shaped, non-live example.
+-----BEGIN RSA PRIVATE KEY-----
+RVhBTVBMRW5vdGFyZWFsa2V5RVhBTVBMRW5vdGFyZWFsa2V5
+-----END RSA PRIVATE KEY-----

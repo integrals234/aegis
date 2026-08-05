@@ -1,0 +1,4 @@
+# Clean fixture: secret-adjacent vocabulary with no credential values.
+secrets_backend: vault
+api_key_env_var: AEGIS_API_KEY
+password_policy: rotate-90d

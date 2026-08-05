@@ -1,0 +1,5 @@
+# Deliberately failing fixture for tools/scan_secrets.py (AEGIS-010).
+# Every value below is a documented non-live example, not a credential.
+service: aegis-fixture
+api_key: "EXAMPLE0not0a0real0key0000000"
+client_secret: 'EXAMPLEnotarealclientsecret'

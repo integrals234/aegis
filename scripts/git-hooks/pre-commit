@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# AEGIS pre-commit gate (AEGIS-001, AEGIS-003, AEGIS-010).
+# Install with: bash scripts/install_git_hooks.sh
+#
+# Deliberately stdlib-only and fast: these three checks answer "would this commit
+# corrupt the specification, publish a secret, or record an unsupportable
+# completion claim?" Everything slower belongs in scripts/ci_local.sh.
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+echo "[pre-commit] frozen-file integrity"
+python3 tools/check_frozen.py --no-history
+
+echo "[pre-commit] secret scan (worktree + index)"
+python3 tools/scan_secrets.py --staged
+
+echo "[pre-commit] requirement catalogue"
+python3 tools/audit_requirements.py --quick
+
+echo "[pre-commit] ok"
