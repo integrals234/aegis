@@ -183,21 +183,30 @@ def scan_staged(root: Path, allowlist: list[dict[str, str]]) -> list[Finding]:
     return findings
 
 
-def scan_history(root: Path, limit: int | None) -> list[Finding]:
+def scan_history(root: Path, limit: int | None, allowlist: list[dict[str, str]]) -> list[Finding]:
     args = ["log", "--all", "-p", "--no-color", "--format=commit %H"]
     if limit:
         args.insert(1, f"-n{limit}")
     findings: list[Finding] = []
     commit = "unknown"
+    path = "unknown"
     for line in git(root, *args).splitlines():
         if line.startswith("commit "):
             commit = line.split(" ", 1)[1][:12]
             continue
-        if not line.startswith("+") or line.startswith("+++"):
+        if line.startswith("+++ "):
+            # Track which file the following added lines belong to, so the same
+            # per-path allowlist applies here as in the worktree scan.
+            target = line[4:].strip()
+            path = target[2:] if target.startswith("b/") else target
+            continue
+        if not line.startswith("+"):
+            continue
+        if is_allowlisted(path, allowlist):
             continue
         for rule, pattern, detail in RULES:
             if pattern.search(line[1:]):
-                findings.append(Finding("history", f"commit {commit}", rule, detail))
+                findings.append(Finding("history", f"{path} (commit {commit})", rule, detail))
     return findings
 
 
@@ -228,7 +237,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.staged:
             findings.extend(scan_staged(root, allowlist))
         if args.history:
-            findings.extend(scan_history(root, args.history_limit))
+            findings.extend(scan_history(root, args.history_limit, allowlist))
 
     if findings:
         for finding in dict.fromkeys(findings):

@@ -1,0 +1,77 @@
+rules_version: 1
+# Miniature rules file used only by tests/unit/test_check_architecture.py.
+# It mirrors the shape of configs/architecture_rules.yaml at a size a test can
+# reason about, so the checker is exercised rather than the real repository.
+include_convention: repository-root-relative
+
+layers:
+  - name: cpp-common
+    paths: [cpp/common]
+    language: cpp
+    namespaces: [aegis::common]
+    may_depend_on: []
+    expect_sources_from_milestone: M0
+
+  - name: cpp-events
+    paths: [cpp/events]
+    language: cpp
+    namespaces: [aegis::events]
+    may_depend_on: [cpp-common]
+    expect_sources_from_milestone: M0
+
+  - name: cpp-bindings
+    paths: [cpp/bindings]
+    language: cpp
+    namespaces: [aegis::bindings]
+    may_depend_on: [cpp-common, cpp-events]
+    expect_sources_from_milestone: M9
+    allows_python_headers: true
+
+  - name: cpp-exchange-order-book
+    paths: [cpp/exchange/order_book]
+    language: cpp
+    namespaces: [aegis::exchange]
+    may_depend_on: [cpp-common, cpp-events]
+    expect_sources_from_milestone: M1
+
+  - name: cpp-participant-book-builder
+    paths: [cpp/participant/book_builder]
+    language: cpp
+    namespaces: [aegis::participant::book]
+    may_depend_on: [cpp-common, cpp-events]
+    expect_sources_from_milestone: M1
+
+  - name: cpp-participant-strategy
+    paths: [cpp/participant/strategy]
+    language: cpp
+    namespaces: [aegis::participant::strategy]
+    may_depend_on: [cpp-common, cpp-events, cpp-participant-book-builder]
+    expect_sources_from_milestone: M1
+
+  - name: cpp-participant-oms
+    paths: [cpp/participant/oms]
+    language: cpp
+    namespaces: [aegis::participant::oms]
+    may_depend_on: [cpp-common, cpp-events]
+    expect_sources_from_milestone: M1
+    allows_gateway_adapters: true
+
+  - name: python-common
+    paths: [python/common]
+    language: python
+    may_depend_on: []
+    expect_sources_from_milestone: M0
+
+  - name: python-data
+    paths: [python/data]
+    language: python
+    may_depend_on: [python-common]
+    expect_sources_from_milestone: M0
+
+covered_roots: [cpp, python]
+
+banned:
+  parent_relative_includes: true
+  python_headers_only_in: [cpp-bindings]
+  gateway_header_markers: [gateway, broker_adapter]
+  mutable_globals_forbidden_in: [cpp-exchange-order-book, cpp-participant-strategy]

@@ -1,0 +1,225 @@
+rules_version: 1
+
+# AEGIS-004 — structural dependency rules, enforced by tools/check_architecture.py.
+#
+# The exchange and the trading participant are separate systems connected only by
+# versioned messages (docs/ARCHITECTURE.md). That separation is worth nothing if
+# it lives only in prose, so it is expressed here as edges a checker can reject.
+#
+# Conventions this file assumes (see adr/0001-platform-architecture.md):
+#   * C++ quoted includes are written relative to the repository root, e.g.
+#     #include "cpp/common/clock.hpp". Angle includes are system/third-party.
+#   * Python modules are imported with `python/` on sys.path, e.g. `common.config`.
+#   * `may_depend_on` is exhaustive: an edge that is not listed is denied.
+#   * `expect_sources_from_milestone` makes emptiness a checked fact. Before that
+#     milestone the layer must contain no sources; from it, the layer must not be
+#     empty, so the rule cannot keep passing vacuously once the work lands.
+
+include_convention: repository-root-relative
+
+layers:
+  # ---------------------------------------------------------------- substrate
+  - name: cpp-common
+    paths: [cpp/common]
+    language: cpp
+    namespaces: [aegis::common]
+    may_depend_on: []
+    expect_sources_from_milestone: M0
+
+  - name: cpp-events
+    paths: [cpp/events]
+    language: cpp
+    namespaces: [aegis::events]
+    may_depend_on: [cpp-common]
+    expect_sources_from_milestone: M0
+
+  - name: cpp-bindings
+    paths: [cpp/bindings]
+    language: cpp
+    namespaces: [aegis::bindings]
+    may_depend_on: [cpp-common, cpp-events]
+    expect_sources_from_milestone: M0
+    allows_python_headers: true
+
+  # ------------------------------------------------------------- exchange side
+  - name: cpp-exchange-sequencer
+    paths: [cpp/exchange/sequencer]
+    language: cpp
+    namespaces: [aegis::exchange]
+    may_depend_on: [cpp-common, cpp-events]
+    expect_sources_from_milestone: M1
+
+  - name: cpp-exchange-order-book
+    paths: [cpp/exchange/order_book]
+    language: cpp
+    namespaces: [aegis::exchange]
+    may_depend_on: [cpp-common, cpp-events]
+    expect_sources_from_milestone: M1
+
+  - name: cpp-exchange-matching
+    paths: [cpp/exchange/matching]
+    language: cpp
+    namespaces: [aegis::exchange]
+    may_depend_on: [cpp-common, cpp-events, cpp-exchange-order-book]
+    expect_sources_from_milestone: M1
+
+  - name: cpp-exchange-market-data
+    paths: [cpp/exchange/market_data]
+    language: cpp
+    namespaces: [aegis::exchange]
+    may_depend_on: [cpp-common, cpp-events, cpp-exchange-order-book]
+    expect_sources_from_milestone: M1
+
+  - name: cpp-replay
+    paths: [cpp/replay]
+    language: cpp
+    namespaces: [aegis::replay]
+    may_depend_on: [cpp-common, cpp-events]
+    expect_sources_from_milestone: M2
+
+  # ---------------------------------------------------------- participant side
+  # The pipeline is forward-only: feed -> book -> statistics -> strategy -> risk
+  # -> oms -> portfolio. Strategy cannot reach the OMS, a gateway, or anything on
+  # the exchange side; the OMS is the only module permitted to touch a gateway or
+  # broker adapter (AEGIS-119, AEGIS-120).
+  - name: cpp-participant-feed-handler
+    paths: [cpp/participant/feed_handler]
+    language: cpp
+    namespaces: [aegis::participant::feed]
+    may_depend_on: [cpp-common, cpp-events]
+    expect_sources_from_milestone: M3
+
+  - name: cpp-participant-book-builder
+    paths: [cpp/participant/book_builder]
+    language: cpp
+    namespaces: [aegis::participant::book]
+    may_depend_on: [cpp-common, cpp-events, cpp-participant-feed-handler]
+    expect_sources_from_milestone: M3
+
+  - name: cpp-statistics
+    paths: [cpp/statistics]
+    language: cpp
+    namespaces: [aegis::participant::stats]
+    may_depend_on: [cpp-common, cpp-participant-book-builder]
+    expect_sources_from_milestone: M3
+
+  - name: cpp-participant-strategy
+    paths: [cpp/participant/strategy]
+    language: cpp
+    namespaces: [aegis::participant::strategy]
+    may_depend_on: [cpp-common, cpp-events, cpp-participant-book-builder, cpp-statistics]
+    expect_sources_from_milestone: M4
+
+  - name: cpp-participant-risk
+    paths: [cpp/participant/risk]
+    language: cpp
+    namespaces: [aegis::participant::risk]
+    may_depend_on: [cpp-common, cpp-events, cpp-participant-strategy, cpp-statistics]
+    expect_sources_from_milestone: M5
+
+  - name: cpp-participant-oms
+    paths: [cpp/participant/oms]
+    language: cpp
+    namespaces: [aegis::participant::oms]
+    may_depend_on: [cpp-common, cpp-events, cpp-participant-risk]
+    expect_sources_from_milestone: M3
+    allows_gateway_adapters: true
+
+  - name: cpp-participant-portfolio
+    paths: [cpp/participant/portfolio]
+    language: cpp
+    namespaces: [aegis::participant::portfolio]
+    may_depend_on: [cpp-common, cpp-events]
+    expect_sources_from_milestone: M3
+
+  # ------------------------------------------------- performance work (M8 only)
+  - name: cpp-memory
+    paths: [cpp/memory]
+    language: cpp
+    namespaces: [aegis::memory]
+    may_depend_on: [cpp-common]
+    expect_sources_from_milestone: M8
+
+  - name: cpp-queues
+    paths: [cpp/queues]
+    language: cpp
+    namespaces: [aegis::queues]
+    may_depend_on: [cpp-common]
+    expect_sources_from_milestone: M8
+
+  # ----------------------------------------------------------- Python research
+  - name: python-common
+    paths: [python/common]
+    language: python
+    may_depend_on: []
+    expect_sources_from_milestone: M0
+
+  - name: python-data
+    paths: [python/data]
+    language: python
+    may_depend_on: [python-common]
+    expect_sources_from_milestone: M0
+
+  - name: python-futures
+    paths: [python/futures]
+    language: python
+    may_depend_on: [python-common, python-data]
+    expect_sources_from_milestone: M2
+
+  - name: python-research
+    paths: [python/research]
+    language: python
+    may_depend_on: [python-common, python-data, python-futures]
+    expect_sources_from_milestone: M4
+
+  - name: python-validation
+    paths: [python/validation]
+    language: python
+    may_depend_on: [python-common, python-data, python-futures, python-research]
+    expect_sources_from_milestone: M5
+
+  - name: python-attribution
+    paths: [python/attribution]
+    language: python
+    may_depend_on: [python-common, python-data, python-futures, python-research]
+    expect_sources_from_milestone: M6
+
+  - name: python-reports
+    paths: [python/reports]
+    language: python
+    may_depend_on: [python-common, python-data, python-futures, python-research, python-attribution, python-validation]
+    expect_sources_from_milestone: M4
+
+  # ------------------------------------------------------------ product surface
+  # These consume versioned APIs, never engine internals (AEGIS-217).
+  - name: decision-arena
+    paths: [decision_arena]
+    language: python
+    may_depend_on: [python-common]
+    expect_sources_from_milestone: M7
+
+  - name: dashboard
+    paths: [dashboard]
+    language: python
+    may_depend_on: [python-common]
+    expect_sources_from_milestone: M9
+
+# Roots under total-coverage enforcement: every source file below them must map
+# to exactly one layer, so a package added in a later milestone fails the check
+# instead of being silently unconstrained.
+covered_roots: [cpp, python, decision_arena, dashboard]
+
+banned:
+  # A relative include climbing out of its own directory routes around the DAG.
+  parent_relative_includes: true
+  # pybind11 and Python.h belong to exactly one layer (AEGIS-229).
+  python_headers_only_in: [cpp-bindings]
+  # Gateway/broker adapter headers belong to the OMS (AEGIS-119, AEGIS-120).
+  gateway_header_markers: [gateway, broker_adapter, exchange_adapter]
+  # Hidden global state defeats deterministic replay and the single-writer rule.
+  mutable_globals_forbidden_in: [cpp-exchange-sequencer, cpp-exchange-order-book,
+                                 cpp-exchange-matching, cpp-exchange-market-data,
+                                 cpp-participant-feed-handler, cpp-participant-book-builder,
+                                 cpp-participant-strategy, cpp-participant-risk,
+                                 cpp-participant-oms, cpp-participant-portfolio,
+                                 cpp-statistics]
