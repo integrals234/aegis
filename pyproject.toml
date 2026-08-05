@@ -1,0 +1,56 @@
+[project]
+name = "aegis"
+version = "0.0.0"
+description = "AEGIS futures research, exchange-simulation, risk and decision-intelligence platform"
+requires-python = ">=3.12"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["aegis_common"]
+package-dir = { aegis_common = "python/common" }
+
+# AEGIS-233. Every test belongs to exactly one layer, and each layer is reported
+# separately. tools/run_test_layers.py fails a layer that collects zero tests:
+# a green empty layer is a stub presented as completion.
+[tool.pytest.ini_options]
+minversion = "9.0"
+testpaths = ["tests"]
+addopts = "--strict-markers --strict-config -ra"
+markers = [
+    "unit: single module or tool in isolation",
+    "integration: two or more components wired together, including C++/Python boundaries",
+    "property: invariants checked over generated inputs (hypothesis)",
+    "replay: deterministic replay and byte-identical canonical output",
+    "research: reproducibility of research artifacts and experiment manifests",
+]
+filterwarnings = ["error"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["tests/unit/fixtures", "build"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "RUF"]
+ignore = [
+    # The audit tooling deliberately shares private predicates across modules so
+    # that writing a status claim and checking one cannot diverge.
+    "SIM108",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B011"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["python", "tools"]
+strict = true
+warn_unreachable = true
+exclude = ["^build/", "^tests/unit/fixtures/"]
+
+[[tool.mypy.overrides]]
+module = ["aegis_bindings", "aegis_bindings.*"]
+ignore_missing_imports = true

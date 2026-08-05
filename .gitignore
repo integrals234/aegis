@@ -1,9 +1,14 @@
-# Secrets
+# Secrets (AEGIS-010). These patterns are unanchored on purpose: they match at
+# every depth, so python/.env and services/credentials/ are ignored too.
 .env
 .env.*
 secrets/
 credentials/
 private/
+*.pem
+*.key
+id_rsa
+id_rsa.*
 
 # Build
 build/
@@ -17,19 +22,30 @@ out/
 
 # Python
 .venv/
+venv/
 __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
 *.pyc
 
-# Data and experiments
-data/
-datasets/
+# Data and experiments (AEGIS-236).
+# Anchored to the repository root: an unanchored `data/` also swallows
+# python/data/, which is a source package, not a dataset.
+/data/
+/datasets/
 experiments/raw/
 benchmarks/raw/
+
+# Bulk columnar data stays external. Redistributable samples under
+# data_samples/ are exempt so the sample-data policy has something to police.
 *.parquet
 *.arrow
+!/data_samples/**/*.parquet
+!/data_samples/**/*.arrow
+
+# Windows/NTFS interop artifacts produced when files are copied through WSL.
+*:Zone.Identifier
 
 # Local Claude settings
 .claude/settings.local.json
@@ -37,3 +53,4 @@ benchmarks/raw/
 # IDE
 .vscode/
 .idea/
+compile_commands.json
