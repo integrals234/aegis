@@ -1,0 +1,77 @@
+{
+  "probe_version": 1,
+  "requirements_file": "requirements/python-requirements.in",
+  "targets": [
+    "3.12",
+    "3.14"
+  ],
+  "packages": [
+    {
+      "name": "hypothesis",
+      "version": "6.165.1",
+      "per_target": {
+        "3.12": "wheel",
+        "3.14": "wheel"
+      },
+      "error": null
+    },
+    {
+      "name": "jsonschema",
+      "version": "4.26.0",
+      "per_target": {
+        "3.12": "wheel",
+        "3.14": "wheel"
+      },
+      "error": null
+    },
+    {
+      "name": "mypy",
+      "version": "2.3.0",
+      "per_target": {
+        "3.12": "wheel",
+        "3.14": "wheel"
+      },
+      "error": null
+    },
+    {
+      "name": "pybind11",
+      "version": "3.0.4",
+      "per_target": {
+        "3.12": "wheel",
+        "3.14": "wheel"
+      },
+      "error": null
+    },
+    {
+      "name": "pytest",
+      "version": "9.1.1",
+      "per_target": {
+        "3.12": "wheel",
+        "3.14": "wheel"
+      },
+      "error": null
+    },
+    {
+      "name": "PyYAML",
+      "version": "6.0.3",
+      "per_target": {
+        "3.12": "wheel",
+        "3.14": "wheel"
+      },
+      "error": null
+    },
+    {
+      "name": "ruff",
+      "version": "0.16.1",
+      "per_target": {
+        "3.12": "wheel",
+        "3.14": "wheel"
+      },
+      "error": null
+    }
+  ],
+  "verdicts": {
+    "3.12": "supported",
+    "3.14": "supported"
+  }
+}

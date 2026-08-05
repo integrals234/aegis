@@ -1,0 +1,14 @@
+# AEGIS direct Python dependencies (AEGIS-228).
+# Pinned exactly. Transitive dependencies are resolved into requirements.lock
+# with hashes; this file lists only what AEGIS asks for directly.
+#
+# Any change here must be followed by:
+#   python3 tools/probe_dependencies.py --write-evidence
+#   bash scripts/lock_python.sh
+hypothesis==6.165.1
+jsonschema==4.26.0
+mypy==2.3.0
+pybind11==3.0.4
+pytest==9.1.1
+PyYAML==6.0.3
+ruff==0.16.1
