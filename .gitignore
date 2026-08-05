@@ -1,0 +1,39 @@
+# Secrets
+.env
+.env.*
+secrets/
+credentials/
+private/
+
+# Build
+build/
+cmake-build-*/
+out/
+*.o
+*.obj
+*.so
+*.dll
+*.exe
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.pyc
+
+# Data and experiments
+data/
+datasets/
+experiments/raw/
+benchmarks/raw/
+*.parquet
+*.arrow
+
+# Local Claude settings
+.claude/settings.local.json
+
+# IDE
+.vscode/
+.idea/

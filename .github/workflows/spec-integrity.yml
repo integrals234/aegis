@@ -1,0 +1,20 @@
+name: AEGIS Spec Integrity
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  spec-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Audit requirement catalogue and evidence
+        run: python3 tools/audit_requirements.py --quick
+      - name: Regenerate traceability
+        run: |
+          python3 tools/generate_traceability.py
+          git diff --exit-code docs/TRACEABILITY_MATRIX.md

@@ -1,0 +1,437 @@
+[
+  {
+    "path": ".claude/agents/architecture-guardian.md",
+    "bytes": 656,
+    "sha256": "ab7351510a5f4ff5156e39cc7fdde364c2ba1ec40f08727ea4a521a1ad25c7b7"
+  },
+  {
+    "path": ".claude/agents/cpp-core-reviewer.md",
+    "bytes": 683,
+    "sha256": "6611c0d1612c810145774295cbcb60791a20146432511feddef4cd2e080c1917"
+  },
+  {
+    "path": ".claude/agents/quant-research-reviewer.md",
+    "bytes": 655,
+    "sha256": "05646bc5ed111174f3f09b0345565aa8303fd776070c23d9fea1ae5c3014e5b2"
+  },
+  {
+    "path": ".claude/agents/risk-safety-reviewer.md",
+    "bytes": 576,
+    "sha256": "26e096e78a9490527936dd8222f0f140d29191a888e4c5c58a4396ce458629c5"
+  },
+  {
+    "path": ".claude/agents/spec-auditor.md",
+    "bytes": 1089,
+    "sha256": "c8de52afadcbbb3490dcbb007b1766ddd0c515068319a402bdc211add2fe026a"
+  },
+  {
+    "path": ".claude/hooks/protect_spec.py",
+    "bytes": 1451,
+    "sha256": "4faff8a0d92cb5724493bdf469809ad5f8fc3ce69a1872d0ad836cb8233f1986"
+  },
+  {
+    "path": ".claude/settings.json",
+    "bytes": 1400,
+    "sha256": "4935817a718c40d19107a98056103ca2aca5572bf43a05d38ee87cc2d3f5f604"
+  },
+  {
+    "path": ".claude/skills/audit-milestone/SKILL.md",
+    "bytes": 436,
+    "sha256": "3e467bfe7603a7ea4cf8196ab75e948eb8efa85794e25125dd475fe002588d31"
+  },
+  {
+    "path": ".claude/skills/close-milestone/SKILL.md",
+    "bytes": 691,
+    "sha256": "6fe040235b44ae01b17eb24ff9ea884ad1333a4e5ade58e114e943cab9bb0ee6"
+  },
+  {
+    "path": ".claude/skills/implement-milestone/SKILL.md",
+    "bytes": 681,
+    "sha256": "7e5f3c51f0edfacd888911ab31200d6e7e0457376b92413d69b430d71b8231e2"
+  },
+  {
+    "path": ".claude/skills/plan-milestone/SKILL.md",
+    "bytes": 627,
+    "sha256": "cf2dc7fec803edee50d75e172b1179af33105af2f86343e71acc3167b56eaaf2"
+  },
+  {
+    "path": ".github/workflows/spec-integrity.yml",
+    "bytes": 511,
+    "sha256": "99c9b0abc5dad0c76cc72aaf2f39ba73a842b8503eb7b4ead1c81eb5f0b7e1a5"
+  },
+  {
+    "path": ".gitignore",
+    "bytes": 360,
+    "sha256": "f1a2275b2ed7a4123031126e9e94319ed75187481c20186877eb1094d84b792e"
+  },
+  {
+    "path": "CLAUDE.md",
+    "bytes": 3021,
+    "sha256": "336a6681034587c860ce70464a5533faddc44eeba5aca05407aed114d09f77da"
+  },
+  {
+    "path": "Makefile",
+    "bytes": 135,
+    "sha256": "2a081a75863f0d15bba13fc2202c9cd16371ea10653aed5ea3b44a47333c3176"
+  },
+  {
+    "path": "README_FIRST.md",
+    "bytes": 2943,
+    "sha256": "932b3c05b460a38772597086e8579ac32cedb49f4dc7ee697d3fc6d87848f718"
+  },
+  {
+    "path": "adr/0000-template.md",
+    "bytes": 184,
+    "sha256": "bc88c6afee53847fe657a1a920685a59c6948e585f9ff7ecea21633e188c4fd6"
+  },
+  {
+    "path": "benchmarks/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "configs/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/bindings/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/common/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/events/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/exchange/market_data/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/exchange/matching/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/exchange/order_book/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/exchange/sequencer/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/memory/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/participant/book_builder/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/participant/feed_handler/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/participant/oms/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/participant/portfolio/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/participant/risk/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/queues/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/replay/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "cpp/statistics/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "dashboard/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "data_samples/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "decision_arena/behavioural_analytics/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "decision_arena/calibration/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "decision_arena/counterfactuals/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "decision_arena/scenarios/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "decision_arena/scoring/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "docker/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "docs/ACCEPTANCE_GATES.md",
+    "bytes": 1628,
+    "sha256": "8d43af738a6de6abaa7605b3edfac02c768b85b04e2a54ba466adcd1a1cf81fd"
+  },
+  {
+    "path": "docs/ARCHITECTURE.md",
+    "bytes": 3078,
+    "sha256": "6470dfa0ef4d51479834bbef52965ffb45cea2a61cf68b7b8a6e15d0614cca88"
+  },
+  {
+    "path": "docs/BENCHMARK_POLICY.md",
+    "bytes": 1106,
+    "sha256": "e50154ab1e905973b95608fcf3c723a31706e4b6be9dd4df2dbbeed750abe034"
+  },
+  {
+    "path": "docs/BUILD_STATE.md",
+    "bytes": 288,
+    "sha256": "7c625460cfe1258ade29ca151cdc7548ff466a850385635787ae8eb7b1e4b5e0"
+  },
+  {
+    "path": "docs/CLAUDE_CODE_REFERENCES.md",
+    "bytes": 766,
+    "sha256": "8657e202b46395654f0c4019eff6032eb257ab82615052d7fa7c209dcd6e3874"
+  },
+  {
+    "path": "docs/CV_CLAIMS_POLICY.md",
+    "bytes": 1019,
+    "sha256": "eee91b192c706f71f00a5f5086549b7e5168d18694350ab2ce4aa3d21945d064"
+  },
+  {
+    "path": "docs/DATA_AND_RESEARCH_POLICY.md",
+    "bytes": 1611,
+    "sha256": "8f004c16223d42da5254c7e4f29e1c001205c3f97c25b3acb0b8731c8c7bb029"
+  },
+  {
+    "path": "docs/LEARNING_AFTER_BUILD.md",
+    "bytes": 947,
+    "sha256": "3d9732ca6f87b471b00d1fec1cc2cf9bfc43c56aebcaafbaa70835ab4a5fe6d1"
+  },
+  {
+    "path": "docs/MASTER_SPEC.md",
+    "bytes": 29745,
+    "sha256": "8bbfd61ca0eb3772b1e00f5e2df95b8324865f04d701a72418870ddb90e86770"
+  },
+  {
+    "path": "docs/ROADMAP.md",
+    "bytes": 3611,
+    "sha256": "6b6993b8f2567c2e31c84de7ce4ebc0ca580f93390148166058a6a7b0986c5ec"
+  },
+  {
+    "path": "docs/TRACEABILITY_MATRIX.md",
+    "bytes": 22149,
+    "sha256": "d6ea2fdf7913c00b64e02f7e6913aba42e3c5b9a9548b1d5700a4de178995468"
+  },
+  {
+    "path": "experiments/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "prompts/00_FIRST_SESSION.md",
+    "bytes": 1132,
+    "sha256": "8c4e69e94955cfbbd3be0ec1fb57cefdb93edaf9dd4bf79113215441585860f0"
+  },
+  {
+    "path": "prompts/M0_FOUNDATION.md",
+    "bytes": 501,
+    "sha256": "c8be4a48e14051d8731a9c0b2ff1969feb083910589966bc66fe159e90765783"
+  },
+  {
+    "path": "prompts/M1_EXCHANGE_CORE.md",
+    "bytes": 430,
+    "sha256": "15c0883bb4acbeb1653dcd4ceb19b3d7c3cfd0b6daafd58d842851cad0d8e475"
+  },
+  {
+    "path": "prompts/M2_FUTURES_REPLAY.md",
+    "bytes": 339,
+    "sha256": "961310d00016c67f0fd01feabb9ba0c6bbb7cb45efe541ae8e243aea3f73ed9a"
+  },
+  {
+    "path": "prompts/M3_PARTICIPANT_EXECUTION.md",
+    "bytes": 376,
+    "sha256": "e089700def7e7cceb5286fa5cbdcd99636d98df2843de3abd1ce297338e088ee"
+  },
+  {
+    "path": "prompts/M4_CALENDAR_SPREAD.md",
+    "bytes": 327,
+    "sha256": "e3246964596fa9f3532c26bf8f097acda187a7fa4e25e7427c2256eedcbb564f"
+  },
+  {
+    "path": "prompts/M5_RISK_VALIDATION.md",
+    "bytes": 380,
+    "sha256": "33643c476463e864452c3ad60750546db2fb3513286bc3422b2fbce2273bb6fe"
+  },
+  {
+    "path": "prompts/M6_MULTI_STRATEGY_ATTRIBUTION.md",
+    "bytes": 375,
+    "sha256": "56ef64d211fd4670c85c257c65f392b689fb81fac7a7c5a1f32c215a4acaf63b"
+  },
+  {
+    "path": "prompts/M7_DECISION_INTELLIGENCE.md",
+    "bytes": 307,
+    "sha256": "a11fe641f9901143ce126607c556eeb2a4d83883f01b8edff330eaf5591c7a7d"
+  },
+  {
+    "path": "prompts/M8_PERFORMANCE.md",
+    "bytes": 346,
+    "sha256": "64d3f46a574cc1759d0bae37b933b906cdf8c711fff4cbd0e8f71e9ab52060dc"
+  },
+  {
+    "path": "prompts/M9_DASHBOARD_PAPER.md",
+    "bytes": 356,
+    "sha256": "d414552f04cbb573474b0def375a1e93f13ed5c066215615769f30b8d49e7e96"
+  },
+  {
+    "path": "python/attribution/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "python/data/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "python/futures/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "python/reports/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "python/research/calendar_spreads/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "python/research/lead_lag/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "python/research/statistical_arbitrage/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "python/research/volatility_regimes/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "python/validation/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "requirements/frozen_hashes.json",
+    "bytes": 502,
+    "sha256": "c3d0d52e35aae72b08894b5513b882d082e1a1095ddc48e4cf3d908d8ae5e00a"
+  },
+  {
+    "path": "requirements/implementation_status.json",
+    "bytes": 34110,
+    "sha256": "6bfbee7a0a8ea18c9fdaf375a07478bf72567db375059165aca494fe12202d40"
+  },
+  {
+    "path": "requirements/requirements.json",
+    "bytes": 80134,
+    "sha256": "aa0a9fab73a04be0d3abb614dd9d04ad588117ba8a6109267b4ccea4c75d8a74"
+  },
+  {
+    "path": "scripts/check_environment.sh",
+    "bytes": 309,
+    "sha256": "44a323f68d2d28bb78a73868a991764e568e60e53b8c16bed349b707baf802d1"
+  },
+  {
+    "path": "tests/integration/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "tests/property/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "tests/replay/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "tests/research/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "tests/unit/.gitkeep",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "tools/audit_requirements.py",
+    "bytes": 4278,
+    "sha256": "a72e5bdfa360a1e73d6cf7d448e7224d2d5fb3b86e326a5dbef3c5ee9051a09d"
+  },
+  {
+    "path": "tools/generate_traceability.py",
+    "bytes": 858,
+    "sha256": "39bd24507e90d70a64be4ed52393d303b4a02642e8b87c0db0a768646a1fe2b6"
+  },
+  {
+    "path": "tools/update_status.py",
+    "bytes": 1187,
+    "sha256": "b16ab4634fe8b39eb07df885b519d98967b988df52b66addc6e7f0d8fb2a45ba"
+  }
+]

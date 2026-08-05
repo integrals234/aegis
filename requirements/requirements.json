@@ -1,0 +1,2160 @@
+{
+  "project": "AEGIS",
+  "version": "1.0.0",
+  "canonical": true,
+  "owner": "Vaibhav Shukla",
+  "generated_on": "2026-08-04",
+  "status_values": [
+    "not_started",
+    "in_progress",
+    "blocked",
+    "implemented",
+    "verified",
+    "deferred"
+  ],
+  "completion_rule": "Only verified requirements count as complete. verified requires evidence paths and passing acceptance checks.",
+  "requirements": [
+    {
+      "id": "AEGIS-001",
+      "module": "Governance",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Frozen canonical specification",
+      "description": "The canonical project specification and requirement catalogue are immutable to Claude Code unless the owner explicitly enables specification editing.",
+      "acceptance": "Automated hook blocks Claude edits to docs/MASTER_SPEC.md and requirements/requirements.json; integrity audit passes."
+    },
+    {
+      "id": "AEGIS-002",
+      "module": "Governance",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Requirement traceability",
+      "description": "Every required feature has a stable requirement ID, milestone, implementation status, and evidence list.",
+      "acceptance": "Audit reports no missing, duplicate, or orphan requirement IDs."
+    },
+    {
+      "id": "AEGIS-003",
+      "module": "Governance",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Evidence-based completion",
+      "description": "No requirement may be marked complete using prose alone, TODOs, mocks, or unexecuted code.",
+      "acceptance": "Every complete requirement lists existing test, benchmark, report, or demo evidence paths."
+    },
+    {
+      "id": "AEGIS-004",
+      "module": "Governance",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Exchange/participant separation",
+      "description": "Exchange-side sequencing and matching remain architecturally separate from participant-side feed handling, strategy, risk, OMS, and portfolio logic.",
+      "acceptance": "Architecture tests and dependency rules prevent participant strategy code from directly mutating the exchange book."
+    },
+    {
+      "id": "AEGIS-005",
+      "module": "Governance",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Determinism before optimization",
+      "description": "Correctness and deterministic replay are mandatory before memory, concurrency, or latency optimizations.",
+      "acceptance": "Identical event input and seed produce byte-identical canonical output before performance milestone begins."
+    },
+    {
+      "id": "AEGIS-006",
+      "module": "Governance",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "No fabricated claims",
+      "description": "All CV, README, performance, and trading-result claims must derive from committed reproducible evidence.",
+      "acceptance": "Claims audit finds no unsupported numeric statements or guaranteed-profit/interview language."
+    },
+    {
+      "id": "AEGIS-007",
+      "module": "Governance",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "One active milestone",
+      "description": "Only one milestone may be active in the primary implementation branch; later milestones cannot silently leak into scope.",
+      "acceptance": "BUILD_STATE.md identifies one active milestone and audit detects edits outside its permitted scope unless documented."
+    },
+    {
+      "id": "AEGIS-008",
+      "module": "Governance",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Decision records",
+      "description": "Material architecture changes require an ADR describing context, decision, alternatives, and consequences.",
+      "acceptance": "Each nontrivial architecture change references an accepted ADR."
+    },
+    {
+      "id": "AEGIS-009",
+      "module": "Governance",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Reproducible environments",
+      "description": "Build, test, data, and benchmark environments are versioned and reproducible.",
+      "acceptance": "Clean environment instructions build and run integrity tests without undocumented steps."
+    },
+    {
+      "id": "AEGIS-010",
+      "module": "Governance",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Secrets isolation",
+      "description": "Claude and source control are denied access to .env, credentials, private keys, and secrets directories.",
+      "acceptance": "Project settings deny sensitive paths and secret-scanning checks pass."
+    },
+    {
+      "id": "AEGIS-011",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Exchange and instrument metadata",
+      "description": "Store exchange, product, instrument, tick-size, multiplier, currency, timezone, and session metadata.",
+      "acceptance": "Schema validation and fixtures cover at least three futures product families."
+    },
+    {
+      "id": "AEGIS-012",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Contract symbols and expiry metadata",
+      "description": "Represent individual futures contracts, expiry dates, first/last trade dates, settlement and delivery metadata.",
+      "acceptance": "Contract lookup and expiry-boundary tests pass."
+    },
+    {
+      "id": "AEGIS-013",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Trading-session calendars",
+      "description": "Represent sessions, holidays, maintenance windows, and overnight boundaries.",
+      "acceptance": "Session classification tests cover normal, holiday, overnight, and DST cases."
+    },
+    {
+      "id": "AEGIS-014",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Volume and open-interest ingestion",
+      "description": "Ingest and validate volume/open-interest fields used by roll policies.",
+      "acceptance": "Data-quality report identifies missing, stale, and contradictory values."
+    },
+    {
+      "id": "AEGIS-015",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Fixed-days roll policy",
+      "description": "Roll a configurable number of sessions before expiry.",
+      "acceptance": "Golden fixtures match expected roll dates."
+    },
+    {
+      "id": "AEGIS-016",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Volume-crossover roll policy",
+      "description": "Roll when deferred-contract volume exceeds front-contract volume under configurable persistence rules.",
+      "acceptance": "Golden fixtures cover crossover, reversal, and missing-volume cases."
+    },
+    {
+      "id": "AEGIS-017",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Open-interest-crossover roll policy",
+      "description": "Roll using configurable open-interest crossover rules.",
+      "acceptance": "Golden fixtures cover crossover and missing-open-interest cases."
+    },
+    {
+      "id": "AEGIS-018",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Liquidity-score roll policy",
+      "description": "Support a documented composite liquidity score for contract selection.",
+      "acceptance": "Score components, weights, and selected contracts are reproducible."
+    },
+    {
+      "id": "AEGIS-019",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Unadjusted continuous series",
+      "description": "Construct unadjusted continuous futures series while preserving raw contract prices.",
+      "acceptance": "Output includes contract provenance for every observation."
+    },
+    {
+      "id": "AEGIS-020",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Difference-adjusted continuous series",
+      "description": "Construct additive back-adjusted series.",
+      "acceptance": "Known roll-gap fixtures preserve returns according to documented convention."
+    },
+    {
+      "id": "AEGIS-021",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Ratio-adjusted continuous series",
+      "description": "Construct multiplicative ratio-adjusted series.",
+      "acceptance": "Known roll-gap fixtures preserve proportional returns."
+    },
+    {
+      "id": "AEGIS-022",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Return-preserving series",
+      "description": "Construct a return stream and optional synthetic index that avoids artificial roll jumps.",
+      "acceptance": "Return reconciliation tests pass across all rolls."
+    },
+    {
+      "id": "AEGIS-023",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Roll audit report",
+      "description": "Produce per-roll audit records with old/new contracts, prices, raw gap, trigger, and adjustment.",
+      "acceptance": "Machine-readable and human-readable reports match fixtures."
+    },
+    {
+      "id": "AEGIS-024",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Roll-method sensitivity",
+      "description": "Research can compare results across roll policies and adjustment methods.",
+      "acceptance": "One experiment report quantifies strategy differences caused by roll choices."
+    },
+    {
+      "id": "AEGIS-025",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Bad-data detection",
+      "description": "Detect duplicates, gaps, invalid prices, impossible timestamps, and contract metadata conflicts.",
+      "acceptance": "Data-quality suite catches seeded corruptions."
+    },
+    {
+      "id": "AEGIS-026",
+      "module": "Futures Data & Contract Lifecycle",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Normalized multi-market schema",
+      "description": "Normalize futures data from multiple products into one versioned schema.",
+      "acceptance": "At least three product fixtures load through one interface."
+    },
+    {
+      "id": "AEGIS-027",
+      "module": "Deterministic LOB & Matching",
+      "milestone": "M1",
+      "priority": "must",
+      "title": "Price-time-priority order book",
+      "description": "Implement a central limit order book with deterministic FIFO priority within each price level.",
+      "acceptance": "Golden sequence tests prove price and time priority."
+    },
+    {
+      "id": "AEGIS-028",
+      "module": "Deterministic LOB & Matching",
+      "milestone": "M1",
+      "priority": "must",
+      "title": "Limit orders",
+      "description": "Accept valid limit orders and rest or match them as appropriate.",
+      "acceptance": "Unit tests cover bid, ask, crossing, noncrossing, and invalid input."
+    },
+    {
+      "id": "AEGIS-029",
+      "module": "Deterministic LOB & Matching",
+      "milestone": "M1",
+      "priority": "must",
+      "title": "Market orders",
+      "description": "Execute market orders against available liquidity with explicit residual handling.",
+      "acceptance": "Tests cover full fill, partial fill, empty book, and residual policy."
+    },
+    {
+      "id": "AEGIS-030",
+      "module": "Deterministic LOB & Matching",
+      "milestone": "M1",
+      "priority": "must",
+      "title": "Cancel requests",
+      "description": "Cancel resting orders by order ID without searching an entire price queue.",
+      "acceptance": "Cancellation tests verify state, quantities, and emitted events."
+    },
+    {
+      "id": "AEGIS-031",
+      "module": "Deterministic LOB & Matching",
+      "milestone": "M1",
+      "priority": "must",
+      "title": "Quantity modifications",
+      "description": "Support documented priority semantics for quantity reductions and increases.",
+      "acceptance": "Tests prove priority is retained or lost exactly as documented."
+    },
+    {
+      "id": "AEGIS-032",
+      "module": "Deterministic LOB & Matching",
+      "milestone": "M1",
+      "priority": "must",
+      "title": "Price modifications",
+      "description": "Treat price change with explicit cancel-replace semantics.",
+      "acceptance": "Tests prove old priority removal and new-level placement."
+    },
+    {
+      "id": "AEGIS-033",
+      "module": "Deterministic LOB & Matching",
+      "milestone": "M1",
+      "priority": "must",
+      "title": "Partial fills",
+      "description": "Correctly update remaining quantity and emit fill events for partial executions.",
+      "acceptance": "Property tests conserve quantity across arbitrary partial-fill sequences."
+    },
+    {
+      "id": "AEGIS-034",
+      "module": "Deterministic LOB & Matching",
+      "milestone": "M1",
+      "priority": "must",
+      "title": "Full fills",
+      "description": "Remove fully filled orders and empty price levels.",
+      "acceptance": "Tests verify no dangling references or incorrect aggregate quantities."
+    },
+    {
+      "id": "AEGIS-035",
+      "module": "Deterministic LOB & Matching",
+      "milestone": "M1",
+      "priority": "must",
+      "title": "Rejected orders",
+      "description": "Reject malformed, duplicate, nonpositive, out-of-range, or otherwise invalid orders.",
+      "acceptance": "Validation matrix covers each rejection reason."
+    },
+    {
+      "id": "AEGIS-036",
+      "module": "Deterministic LOB & Matching",
+      "milestone": "M1",
+      "priority": "must",
+      "title": "Order-ID index",
+      "description": "Maintain expected O(1) order lookup using a pre-sized index.",
+      "acceptance": "Lookup/cancel benchmark and correctness tests exist; documentation avoids strict worst-case claims."
+    },
+    {
+      "id": "AEGIS-037",
+      "module": "Deterministic LOB & Matching",
+      "milestone": "M1",
+      "priority": "must",
+      "title": "Intrusive FIFO price queues",
+      "description": "Store orders at a price using intrusive doubly linked queues or an equivalently allocation-free structure.",
+      "acceptance": "Insertion/removal tests and allocation counters pass on warmed path."
+    },
+    {
+      "id": "AEGIS-038",
+      "module": "Deterministic LOB & Matching",
+      "milestone": "M1",
+      "priority": "must",
+      "title": "Price-level index",
+      "description": "Use an explicitly documented tree, tick-array/bitset, or hybrid level index.",
+      "acceptance": "Complexity and price-domain assumptions are documented and tested."
+    },
+    {
+      "id": "AEGIS-039",
+      "module": "Deterministic LOB & Matching",
+      "milestone": "M1",
+      "priority": "must",
+      "title": "Output-sensitive matching",
+      "description": "Matching complexity is documented as O(k) for k consumed resting orders.",
+      "acceptance": "Benchmark workloads include single- and multi-fill aggressors."
+    },
+    {
+      "id": "AEGIS-040",
+      "module": "Deterministic LOB & Matching",
+      "milestone": "M1",
+      "priority": "must",
+      "title": "Configurable matching rules",
+      "description": "Architecture permits later FIFO/pro-rata variants without contaminating the initial FIFO core.",
+      "acceptance": "Matching-policy interface and FIFO implementation tests exist."
+    },
+    {
+      "id": "AEGIS-041",
+      "module": "Deterministic LOB & Matching",
+      "milestone": "M1",
+      "priority": "must",
+      "title": "Invariant checker",
+      "description": "Provide an expensive debug-only book invariant validator.",
+      "acceptance": "Fuzz/property tests run invariant checks after generated operations."
+    },
+    {
+      "id": "AEGIS-042",
+      "module": "Low-Latency Engineering",
+      "milestone": "M8",
+      "priority": "must",
+      "title": "Preallocated order pool",
+      "description": "Allocate order storage before the critical path.",
+      "acceptance": "Warmed matching benchmark records zero general-heap allocations."
+    },
+    {
+      "id": "AEGIS-043",
+      "module": "Low-Latency Engineering",
+      "milestone": "M8",
+      "priority": "must",
+      "title": "Arena/free-list reuse",
+      "description": "Recycle order nodes safely using an arena or free list.",
+      "acceptance": "Exhaustion, reuse, and generation-safety tests pass."
+    },
+    {
+      "id": "AEGIS-044",
+      "module": "Low-Latency Engineering",
+      "milestone": "M8",
+      "priority": "must",
+      "title": "Cache-aware layout",
+      "description": "Document and benchmark structure layout, alignment, and hot/cold field separation.",
+      "acceptance": "Size/alignment report and comparative benchmark are committed."
+    },
+    {
+      "id": "AEGIS-045",
+      "module": "Low-Latency Engineering",
+      "milestone": "M8",
+      "priority": "must",
+      "title": "Compact event representation",
+      "description": "Use versioned compact event structures without unsafe ABI assumptions.",
+      "acceptance": "Serialization round-trip and schema-version tests pass."
+    },
+    {
+      "id": "AEGIS-046",
+      "module": "Low-Latency Engineering",
+      "milestone": "M8",
+      "priority": "must",
+      "title": "Lock-free MPSC ingress",
+      "description": "Use a bounded lock-free multi-producer/single-consumer queue around the single-writer engine where justified.",
+      "acceptance": "Concurrency stress test proves no loss, duplication, or reordering beyond defined sequencing."
+    },
+    {
+      "id": "AEGIS-047",
+      "module": "Low-Latency Engineering",
+      "milestone": "M8",
+      "priority": "must",
+      "title": "Single-writer matching core",
+      "description": "Exactly one writer mutates each order-book partition.",
+      "acceptance": "Thread-ownership assertions and architecture tests pass."
+    },
+    {
+      "id": "AEGIS-048",
+      "module": "Low-Latency Engineering",
+      "milestone": "M8",
+      "priority": "must",
+      "title": "Lock-free output queues",
+      "description": "Publish fills and market-data events through bounded queues with explicit backpressure policy.",
+      "acceptance": "Stress tests cover saturation and shutdown."
+    },
+    {
+      "id": "AEGIS-049",
+      "module": "Low-Latency Engineering",
+      "milestone": "M8",
+      "priority": "must",
+      "title": "Instrument sharding",
+      "description": "Partition instruments across cores without sharing mutable books.",
+      "acceptance": "Multi-instrument test verifies deterministic per-instrument order and routing."
+    },
+    {
+      "id": "AEGIS-050",
+      "module": "Low-Latency Engineering",
+      "milestone": "M8",
+      "priority": "must",
+      "title": "Core-pinning support",
+      "description": "Provide optional Linux CPU affinity for benchmarks, not as a hidden requirement for correctness.",
+      "acceptance": "Benchmark metadata reports affinity state."
+    },
+    {
+      "id": "AEGIS-051",
+      "module": "Low-Latency Engineering",
+      "milestone": "M8",
+      "priority": "must",
+      "title": "No premature optimization",
+      "description": "Optimized implementations must be compared against a correct baseline.",
+      "acceptance": "Benchmark report includes baseline and optimized versions plus equivalence tests."
+    },
+    {
+      "id": "AEGIS-052",
+      "module": "Low-Latency Engineering",
+      "milestone": "M8",
+      "priority": "must",
+      "title": "Tail-latency measurement",
+      "description": "Record median, p95, p99, p99.9, max, throughput, CPU, and allocations.",
+      "acceptance": "Benchmark report includes all required statistics."
+    },
+    {
+      "id": "AEGIS-053",
+      "module": "Low-Latency Engineering",
+      "milestone": "M8",
+      "priority": "must",
+      "title": "Platform-specific benchmark disclosure",
+      "description": "Low-latency claims disclose hardware, OS, compiler, flags, logging, workload, and virtualization.",
+      "acceptance": "Benchmark audit passes and labels WSL/container results as non-production-comparable."
+    },
+    {
+      "id": "AEGIS-054",
+      "module": "Historical Replay",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Original-speed replay",
+      "description": "Replay timestamped historical events at original relative timing.",
+      "acceptance": "Timing tolerance tests pass on deterministic virtual clock."
+    },
+    {
+      "id": "AEGIS-055",
+      "module": "Historical Replay",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Accelerated replay",
+      "description": "Replay at configurable speed multipliers.",
+      "acceptance": "Tests validate ordering and scaled timing."
+    },
+    {
+      "id": "AEGIS-056",
+      "module": "Historical Replay",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Fixed-rate replay",
+      "description": "Replay at a configurable event rate independent of original gaps.",
+      "acceptance": "Rate-control tests and metrics pass."
+    },
+    {
+      "id": "AEGIS-057",
+      "module": "Historical Replay",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Step-by-step replay",
+      "description": "Advance one event or one timestamp group at a time.",
+      "acceptance": "Interactive and API tests pass."
+    },
+    {
+      "id": "AEGIS-058",
+      "module": "Historical Replay",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Deterministic benchmark mode",
+      "description": "Replay without wall-clock sleeps using a virtual clock.",
+      "acceptance": "Repeated runs produce identical outputs."
+    },
+    {
+      "id": "AEGIS-059",
+      "module": "Historical Replay",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Unified strategy interface",
+      "description": "The same strategy API works with historical replay, simulated exchange, and paper-feed adapters.",
+      "acceptance": "Contract tests run one strategy against multiple feed implementations."
+    },
+    {
+      "id": "AEGIS-060",
+      "module": "Historical Replay",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Fault injection: delayed data",
+      "description": "Inject deterministic data delay.",
+      "acceptance": "Scenario fixtures verify delayed observations and stale-data responses."
+    },
+    {
+      "id": "AEGIS-061",
+      "module": "Historical Replay",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Fault injection: missing/duplicate/gap",
+      "description": "Inject missing, duplicated, and sequence-gap events.",
+      "acceptance": "Feed recovery tests cover each fault."
+    },
+    {
+      "id": "AEGIS-062",
+      "module": "Historical Replay",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Fault injection: market stress",
+      "description": "Inject spread widening, volatility spikes, and disappearing liquidity.",
+      "acceptance": "Scenario results and risk responses are reproducible."
+    },
+    {
+      "id": "AEGIS-063",
+      "module": "Historical Replay",
+      "milestone": "M2",
+      "priority": "must",
+      "title": "Fault injection: execution stress",
+      "description": "Inject rejection, latency, partial-fill, and output-backpressure events.",
+      "acceptance": "OMS/risk integration tests cover each fault."
+    },
+    {
+      "id": "AEGIS-064",
+      "module": "Market Data & Book Reconstruction",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Full-depth snapshots",
+      "description": "Load complete book snapshots into participant-side state.",
+      "acceptance": "Snapshot fixtures reconstruct expected levels and quantities."
+    },
+    {
+      "id": "AEGIS-065",
+      "module": "Market Data & Book Reconstruction",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Incremental updates",
+      "description": "Apply ordered price- or order-level updates.",
+      "acceptance": "Incremental sequence matches golden books."
+    },
+    {
+      "id": "AEGIS-066",
+      "module": "Market Data & Book Reconstruction",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Order-level reconstruction",
+      "description": "Support market-by-order reconstruction when data permits.",
+      "acceptance": "Order lifecycle fixtures pass."
+    },
+    {
+      "id": "AEGIS-067",
+      "module": "Market Data & Book Reconstruction",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Price-level reconstruction",
+      "description": "Support market-by-price reconstruction when only aggregated depth exists.",
+      "acceptance": "Aggregated update fixtures pass."
+    },
+    {
+      "id": "AEGIS-068",
+      "module": "Market Data & Book Reconstruction",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Sequence validation",
+      "description": "Validate monotonic sequence numbers and detect gaps, resets, and duplicates.",
+      "acceptance": "Seeded faults trigger exact diagnostics."
+    },
+    {
+      "id": "AEGIS-069",
+      "module": "Market Data & Book Reconstruction",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Stale-data detection",
+      "description": "Mark market state stale after configurable time or sequence conditions.",
+      "acceptance": "Virtual-clock tests pass."
+    },
+    {
+      "id": "AEGIS-070",
+      "module": "Market Data & Book Reconstruction",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Snapshot recovery",
+      "description": "Recover from a detected gap using a new snapshot and buffered deltas.",
+      "acceptance": "Recovery fixtures end in correct state."
+    },
+    {
+      "id": "AEGIS-071",
+      "module": "Market Data & Book Reconstruction",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Top-of-book metrics",
+      "description": "Calculate best bid/ask, spread, and mid-price.",
+      "acceptance": "Numeric fixtures pass."
+    },
+    {
+      "id": "AEGIS-072",
+      "module": "Market Data & Book Reconstruction",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Microprice",
+      "description": "Calculate a documented quantity-weighted microprice.",
+      "acceptance": "Numeric fixtures pass and edge cases are defined."
+    },
+    {
+      "id": "AEGIS-073",
+      "module": "Market Data & Book Reconstruction",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Depth and order-book imbalance",
+      "description": "Calculate configurable depth/quantity imbalance.",
+      "acceptance": "Numeric fixtures across multiple levels pass."
+    },
+    {
+      "id": "AEGIS-074",
+      "module": "Market Data & Book Reconstruction",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Trade/cancellation intensity",
+      "description": "Calculate rolling trade and cancellation intensity.",
+      "acceptance": "Online/offline equivalence tests pass."
+    },
+    {
+      "id": "AEGIS-075",
+      "module": "Market Data & Book Reconstruction",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Queue depletion and adverse selection",
+      "description": "Track queue depletion signals and post-fill adverse-selection windows.",
+      "acceptance": "Scenario fixtures produce expected metrics."
+    },
+    {
+      "id": "AEGIS-076",
+      "module": "Quantitative Research",
+      "milestone": "M4",
+      "priority": "must",
+      "title": "Calendar spread construction",
+      "description": "Construct near/far futures spreads with explicit contract and roll provenance.",
+      "acceptance": "Research dataset can reproduce every spread observation."
+    },
+    {
+      "id": "AEGIS-077",
+      "module": "Quantitative Research",
+      "milestone": "M4",
+      "priority": "must",
+      "title": "Term structure features",
+      "description": "Represent carry, contango/backwardation, expiry distance, and roll context.",
+      "acceptance": "Feature tests use known curve shapes."
+    },
+    {
+      "id": "AEGIS-078",
+      "module": "Quantitative Research",
+      "milestone": "M4",
+      "priority": "must",
+      "title": "Calendar-spread hedge ratio",
+      "description": "Support documented static or rolling hedge-ratio estimation.",
+      "acceptance": "Synthetic and historical tests validate estimates."
+    },
+    {
+      "id": "AEGIS-079",
+      "module": "Quantitative Research",
+      "milestone": "M4",
+      "priority": "must",
+      "title": "Calendar-spread stationarity",
+      "description": "Test rather than assume spread stationarity.",
+      "acceptance": "Report includes chosen test, assumptions, and caveats."
+    },
+    {
+      "id": "AEGIS-080",
+      "module": "Quantitative Research",
+      "milestone": "M4",
+      "priority": "must",
+      "title": "Calendar-spread z-score signals",
+      "description": "Generate leakage-free rolling entry/exit signals.",
+      "acceptance": "Signal timestamps use only contemporaneously available data."
+    },
+    {
+      "id": "AEGIS-081",
+      "module": "Quantitative Research",
+      "milestone": "M4",
+      "priority": "must",
+      "title": "Expiry and roll effects",
+      "description": "Evaluate how expiry proximity and roll dates affect calendar-spread behavior.",
+      "acceptance": "Attribution report includes roll/expiry slices."
+    },
+    {
+      "id": "AEGIS-082",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Cross-market economic rationale",
+      "description": "Require an explicit economic rationale for every pair or basket.",
+      "acceptance": "Experiment metadata includes rationale and invalidation conditions."
+    },
+    {
+      "id": "AEGIS-083",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Rolling regression",
+      "description": "Estimate rolling relationships without future leakage.",
+      "acceptance": "Offline fixture matches expected coefficients."
+    },
+    {
+      "id": "AEGIS-084",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Hedge-ratio estimation",
+      "description": "Estimate and version hedge ratios used in spreads.",
+      "acceptance": "Reproducible coefficient history is saved."
+    },
+    {
+      "id": "AEGIS-085",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Cointegration analysis",
+      "description": "Test cointegration where appropriate and document limitations.",
+      "acceptance": "Research report includes test configuration and result."
+    },
+    {
+      "id": "AEGIS-086",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Spread stationarity analysis",
+      "description": "Test the constructed residual/spread for stationarity.",
+      "acceptance": "Report includes test and structural caveats."
+    },
+    {
+      "id": "AEGIS-087",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Half-life estimation",
+      "description": "Estimate mean-reversion half-life when model assumptions are defensible.",
+      "acceptance": "Synthetic process test recovers approximate known half-life."
+    },
+    {
+      "id": "AEGIS-088",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Structural-break detection",
+      "description": "Detect or flag breakdowns in historical relationships.",
+      "acceptance": "Seeded break scenario is detected within documented tolerance."
+    },
+    {
+      "id": "AEGIS-089",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Cross-market cost-aware signals",
+      "description": "Apply realistic spread, fees, slippage, and execution delays to stat-arb.",
+      "acceptance": "Gross and net results are both reported."
+    },
+    {
+      "id": "AEGIS-090",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Volatility-regime features",
+      "description": "Calculate realized volatility, range/ATR, autocorrelation, volume, spread, imbalance, and distance-to-extreme features as available.",
+      "acceptance": "Online/offline equivalence tests pass."
+    },
+    {
+      "id": "AEGIS-091",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Regime classification",
+      "description": "Classify quiet, expansion, trend, reversal, and transition states using documented rules/models.",
+      "acceptance": "Synthetic scenario fixtures map to expected regimes."
+    },
+    {
+      "id": "AEGIS-092",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Regime-conditioned trading",
+      "description": "Enable strategy only in historically supported regimes.",
+      "acceptance": "Ablation compares conditioned and unconditional variants."
+    },
+    {
+      "id": "AEGIS-093",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Microstructure execution signal",
+      "description": "Optionally research queue imbalance, microprice, order flow, spread reversion, or adverse-selection signals.",
+      "acceptance": "No profitability claim without out-of-sample cost-aware evidence."
+    },
+    {
+      "id": "AEGIS-094",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Lead-lag research",
+      "description": "Measure lagged cross-market relationships without claiming causation from correlation alone.",
+      "acceptance": "Report distinguishes prediction, association, and causation."
+    },
+    {
+      "id": "AEGIS-095",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Strategy plugin interface",
+      "description": "Strategies implement a stable interface and cannot bypass risk or OMS.",
+      "acceptance": "Dependency and integration tests enforce the path."
+    },
+    {
+      "id": "AEGIS-096",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Multiple strategy families",
+      "description": "Calendar spread, cross-market/stat-arb, and volatility-regime strategies remain separate first-class modules.",
+      "acceptance": "Demo and traceability show all three families implemented."
+    },
+    {
+      "id": "AEGIS-097",
+      "module": "Quantitative Research",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Research reproducibility",
+      "description": "Every run stores config, data version, code commit, seed, date range, costs, and roll method.",
+      "acceptance": "Experiment manifest validates required fields."
+    },
+    {
+      "id": "AEGIS-098",
+      "module": "Online Statistics",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Rolling mean",
+      "description": "Update fixed-window mean without full recomputation.",
+      "acceptance": "Matches trusted offline calculations."
+    },
+    {
+      "id": "AEGIS-099",
+      "module": "Online Statistics",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Rolling variance",
+      "description": "Update fixed-window variance with numerically stable add/remove logic.",
+      "acceptance": "Matches trusted offline calculations within tolerance."
+    },
+    {
+      "id": "AEGIS-100",
+      "module": "Online Statistics",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Rolling standard deviation",
+      "description": "Expose stable rolling standard deviation.",
+      "acceptance": "Edge cases and equivalence tests pass."
+    },
+    {
+      "id": "AEGIS-101",
+      "module": "Online Statistics",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Rolling covariance",
+      "description": "Update covariance online.",
+      "acceptance": "Matches offline fixture."
+    },
+    {
+      "id": "AEGIS-102",
+      "module": "Online Statistics",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Rolling correlation",
+      "description": "Update correlation online with zero-variance handling.",
+      "acceptance": "Matches offline fixture and edge cases."
+    },
+    {
+      "id": "AEGIS-103",
+      "module": "Online Statistics",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Rolling z-score",
+      "description": "Compute leakage-free z-scores from prior/current window according to documented convention.",
+      "acceptance": "Timestamped fixture passes."
+    },
+    {
+      "id": "AEGIS-104",
+      "module": "Online Statistics",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Exponential statistics",
+      "description": "Support EW mean/variance with documented decay conventions.",
+      "acceptance": "Numeric fixtures pass."
+    },
+    {
+      "id": "AEGIS-105",
+      "module": "Online Statistics",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Realized volatility and beta",
+      "description": "Calculate realized volatility and rolling beta.",
+      "acceptance": "Offline equivalence tests pass."
+    },
+    {
+      "id": "AEGIS-106",
+      "module": "Online Statistics",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Online drawdown and P&L moments",
+      "description": "Track high-water mark, drawdown, mean, variance, and higher moments where used.",
+      "acceptance": "Scenario tests pass."
+    },
+    {
+      "id": "AEGIS-107",
+      "module": "Online Statistics",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Numerical/performance validation",
+      "description": "Compare C++ online output, error, latency, and memory against Python reference.",
+      "acceptance": "Cross-language report is committed."
+    },
+    {
+      "id": "AEGIS-108",
+      "module": "OMS & Execution",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Order lifecycle state machine",
+      "description": "Track Created, RiskPending, Rejected, Submitted, Acknowledged, PartiallyFilled, Filled, CancelPending, Cancelled, and Expired states.",
+      "acceptance": "Invalid transitions are rejected; transition tests cover all states."
+    },
+    {
+      "id": "AEGIS-109",
+      "module": "OMS & Execution",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Market-order execution",
+      "description": "Model aggressive market execution.",
+      "acceptance": "Integration tests reconcile fills and positions."
+    },
+    {
+      "id": "AEGIS-110",
+      "module": "OMS & Execution",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Passive limit execution",
+      "description": "Model resting limit orders and queue-dependent fills.",
+      "acceptance": "Scenario tests cover fill and nonfill outcomes."
+    },
+    {
+      "id": "AEGIS-111",
+      "module": "OMS & Execution",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Aggressive limit execution",
+      "description": "Model crossing limits with price caps.",
+      "acceptance": "Scenario tests cover multiple levels and residuals."
+    },
+    {
+      "id": "AEGIS-112",
+      "module": "OMS & Execution",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Cancel/amend lifecycle",
+      "description": "Model acknowledgements, races, and rejection outcomes for cancel/modify.",
+      "acceptance": "Race fixtures produce deterministic outcomes."
+    },
+    {
+      "id": "AEGIS-113",
+      "module": "OMS & Execution",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Network and exchange latency",
+      "description": "Model configurable feed, decision, gateway, exchange, and acknowledgement latency.",
+      "acceptance": "Latency attribution reconciles total path."
+    },
+    {
+      "id": "AEGIS-114",
+      "module": "OMS & Execution",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Partial fills",
+      "description": "OMS handles multiple fills and remaining quantities.",
+      "acceptance": "Position/cash reconciliation passes."
+    },
+    {
+      "id": "AEGIS-115",
+      "module": "OMS & Execution",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Queue-position approximation",
+      "description": "Estimate volume ahead, cancellation assumptions, traded volume, and fill probability when order-level truth is unavailable.",
+      "acceptance": "Model limitations are explicit and synthetic validation exists."
+    },
+    {
+      "id": "AEGIS-116",
+      "module": "OMS & Execution",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Fees and slippage",
+      "description": "Apply configurable fees, spread crossing, and slippage.",
+      "acceptance": "Net P&L reconciliation passes."
+    },
+    {
+      "id": "AEGIS-117",
+      "module": "OMS & Execution",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Missed trades",
+      "description": "Record signals that were not filled and their opportunity cost.",
+      "acceptance": "Attribution includes missed-trade statistics."
+    },
+    {
+      "id": "AEGIS-118",
+      "module": "OMS & Execution",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Position and cash accounting",
+      "description": "Maintain positions, average price, realized/unrealized P&L, and cash.",
+      "acceptance": "Double-entry-style reconciliation/property tests pass."
+    },
+    {
+      "id": "AEGIS-119",
+      "module": "OMS & Execution",
+      "milestone": "M3",
+      "priority": "must",
+      "title": "Environment-independent OMS",
+      "description": "OMS connects to simulated exchange and later paper adapter through interfaces.",
+      "acceptance": "Contract tests pass across adapters."
+    },
+    {
+      "id": "AEGIS-120",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Mandatory risk path",
+      "description": "No strategy or Decision Arena action may submit directly to an exchange adapter.",
+      "acceptance": "Architecture test rejects bypass dependencies."
+    },
+    {
+      "id": "AEGIS-121",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Maximum order quantity",
+      "description": "Reject or resize orders above per-instrument quantity limits.",
+      "acceptance": "Boundary tests pass."
+    },
+    {
+      "id": "AEGIS-122",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Maximum position",
+      "description": "Enforce long/short position limits.",
+      "acceptance": "Boundary and concurrent-fill tests pass."
+    },
+    {
+      "id": "AEGIS-123",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Maximum notional",
+      "description": "Enforce per-order and portfolio notional limits.",
+      "acceptance": "Multi-currency normalization tests pass or unsupported scope is explicit."
+    },
+    {
+      "id": "AEGIS-124",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Per-market and sector exposure",
+      "description": "Enforce market and grouped exposure limits.",
+      "acceptance": "Portfolio fixtures pass."
+    },
+    {
+      "id": "AEGIS-125",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Price collars",
+      "description": "Reject orders beyond configurable reference-price collars.",
+      "acceptance": "Stale/reference edge cases pass."
+    },
+    {
+      "id": "AEGIS-126",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Stale-data rejection",
+      "description": "Block trading on stale or invalid market state.",
+      "acceptance": "Fault-injection test passes."
+    },
+    {
+      "id": "AEGIS-127",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Duplicate-order protection",
+      "description": "Prevent duplicate client requests and replayed submissions.",
+      "acceptance": "Idempotency tests pass."
+    },
+    {
+      "id": "AEGIS-128",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Message-rate limits",
+      "description": "Throttle or reject excessive order/cancel rates.",
+      "acceptance": "Virtual-clock tests pass."
+    },
+    {
+      "id": "AEGIS-129",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Margin availability",
+      "description": "Estimate and enforce available margin using documented simplified or exchange-specific model.",
+      "acceptance": "Scenario fixtures pass and limitations are stated."
+    },
+    {
+      "id": "AEGIS-130",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Maximum leverage",
+      "description": "Enforce leverage limits.",
+      "acceptance": "Boundary tests pass."
+    },
+    {
+      "id": "AEGIS-131",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Daily loss limit",
+      "description": "Stop or reduce trading after daily loss threshold.",
+      "acceptance": "Loss-path scenario triggers exactly once."
+    },
+    {
+      "id": "AEGIS-132",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Maximum drawdown",
+      "description": "Stop or reduce trading after drawdown threshold.",
+      "acceptance": "High-water-mark scenarios pass."
+    },
+    {
+      "id": "AEGIS-133",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Volatility-triggered reduction",
+      "description": "Resize or reject risk as volatility rises.",
+      "acceptance": "Deterministic sizing fixtures pass."
+    },
+    {
+      "id": "AEGIS-134",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Concentration and correlation limits",
+      "description": "Limit concentrated or highly correlated portfolio exposures.",
+      "acceptance": "Portfolio scenarios pass."
+    },
+    {
+      "id": "AEGIS-135",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Strategy and portfolio kill switches",
+      "description": "Provide idempotent strategy-level and global shutdown.",
+      "acceptance": "Kill-switch tests cancel/disable safely and prevent new orders."
+    },
+    {
+      "id": "AEGIS-136",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Connectivity-loss response",
+      "description": "Define safe behavior on feed, exchange, or broker disconnect.",
+      "acceptance": "Fault scenarios pass."
+    },
+    {
+      "id": "AEGIS-137",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Risk decision audit",
+      "description": "Emit approve, resize, or reject events with reason codes.",
+      "acceptance": "Every proposal has exactly one auditable risk decision."
+    },
+    {
+      "id": "AEGIS-138",
+      "module": "Risk & Portfolio",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Portfolio risk analytics",
+      "description": "Report gross/net exposure, margin, strategy/market risk, volatility and drawdown contribution, and stress results.",
+      "acceptance": "Dashboard/report fixture reconciles with portfolio state."
+    },
+    {
+      "id": "AEGIS-139",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Train/validation/test separation",
+      "description": "Maintain explicit chronological or otherwise justified data partitions.",
+      "acceptance": "Experiment manifest prevents test-set tuning."
+    },
+    {
+      "id": "AEGIS-140",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Rolling walk-forward testing",
+      "description": "Train and test through rolling windows.",
+      "acceptance": "Fixture verifies window boundaries and no leakage."
+    },
+    {
+      "id": "AEGIS-141",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Expanding-window testing",
+      "description": "Support expanding training windows.",
+      "acceptance": "Fixture verifies boundaries."
+    },
+    {
+      "id": "AEGIS-142",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Parameter-stability surfaces",
+      "description": "Evaluate neighborhoods rather than only the best parameter point.",
+      "acceptance": "Report renders and stores a stability surface."
+    },
+    {
+      "id": "AEGIS-143",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Transaction-cost sensitivity",
+      "description": "Sweep fees, spread, and slippage assumptions.",
+      "acceptance": "Report shows break-even and degradation."
+    },
+    {
+      "id": "AEGIS-144",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Latency sensitivity",
+      "description": "Sweep decision/execution delays.",
+      "acceptance": "Report quantifies latency impact."
+    },
+    {
+      "id": "AEGIS-145",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Slippage sensitivity",
+      "description": "Sweep slippage and fill assumptions.",
+      "acceptance": "Report quantifies sensitivity."
+    },
+    {
+      "id": "AEGIS-146",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Bootstrap confidence intervals",
+      "description": "Bootstrap appropriate return/trade statistics with documented assumptions.",
+      "acceptance": "Seeded report is reproducible."
+    },
+    {
+      "id": "AEGIS-147",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Monte Carlo trade-sequence resampling",
+      "description": "Resample trade order to analyze drawdown/path risk.",
+      "acceptance": "Seeded report is reproducible."
+    },
+    {
+      "id": "AEGIS-148",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Multiple-market validation",
+      "description": "Evaluate hypotheses across relevant markets/contracts.",
+      "acceptance": "Report does not rely on one cherry-picked instrument."
+    },
+    {
+      "id": "AEGIS-149",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Regime-specific evaluation",
+      "description": "Break performance down by market regime.",
+      "acceptance": "Report includes all defined regimes."
+    },
+    {
+      "id": "AEGIS-150",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Random-signal baseline",
+      "description": "Compare against a random or shuffled baseline where meaningful.",
+      "acceptance": "Baseline result is stored."
+    },
+    {
+      "id": "AEGIS-151",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Simple-rule baseline",
+      "description": "Compare against a simpler strategy.",
+      "acceptance": "Baseline result is stored."
+    },
+    {
+      "id": "AEGIS-152",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Look-ahead-bias detection",
+      "description": "Automated tests prevent future data use.",
+      "acceptance": "Seeded leakage implementation is caught."
+    },
+    {
+      "id": "AEGIS-153",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Feature/data leakage checks",
+      "description": "Validate timestamps, fitting scope, and transformations.",
+      "acceptance": "Audit report passes."
+    },
+    {
+      "id": "AEGIS-154",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Roll-method sensitivity",
+      "description": "Compare research outcomes across futures roll conventions.",
+      "acceptance": "Report includes differences."
+    },
+    {
+      "id": "AEGIS-155",
+      "module": "Validation & Anti-Overfitting",
+      "milestone": "M5",
+      "priority": "must",
+      "title": "Strategy rejection report",
+      "description": "System can formally reject a strategy for costs, instability, concentration, test failure, or drawdown.",
+      "acceptance": "At least one intentionally weak strategy produces a rejection report."
+    },
+    {
+      "id": "AEGIS-156",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Return and risk metrics",
+      "description": "Report total/annualized return, volatility, Sharpe, Sortino, Calmar, and maximum drawdown.",
+      "acceptance": "Metrics match reference fixtures."
+    },
+    {
+      "id": "AEGIS-157",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Trade metrics",
+      "description": "Report win rate, profit factor, average win/loss, expectancy, turnover, and holding period.",
+      "acceptance": "Metrics match reference fixtures."
+    },
+    {
+      "id": "AEGIS-158",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Market and contract attribution",
+      "description": "Break results down by market and contract.",
+      "acceptance": "Components reconcile to total."
+    },
+    {
+      "id": "AEGIS-159",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Strategy attribution",
+      "description": "Break results down by strategy.",
+      "acceptance": "Components reconcile to total."
+    },
+    {
+      "id": "AEGIS-160",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Regime attribution",
+      "description": "Break results down by regime.",
+      "acceptance": "Components reconcile to total."
+    },
+    {
+      "id": "AEGIS-161",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Long/short attribution",
+      "description": "Separate long and short performance.",
+      "acceptance": "Components reconcile to total."
+    },
+    {
+      "id": "AEGIS-162",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Session/time attribution",
+      "description": "Break results down by hour/session where timestamps support it.",
+      "acceptance": "Components reconcile to total."
+    },
+    {
+      "id": "AEGIS-163",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Entry/execution attribution",
+      "description": "Break results down by entry and execution method.",
+      "acceptance": "Components reconcile to total."
+    },
+    {
+      "id": "AEGIS-164",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Gross/net attribution",
+      "description": "Separate gross alpha from fees, spread, slippage, latency, and roll impact.",
+      "acceptance": "Waterfall reconciles gross to net."
+    },
+    {
+      "id": "AEGIS-165",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Fill ratio",
+      "description": "Report fill ratio by order type and strategy.",
+      "acceptance": "Matches order/fill logs."
+    },
+    {
+      "id": "AEGIS-166",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Average slippage and time-to-fill",
+      "description": "Report execution quality distributions.",
+      "acceptance": "Matches order/fill logs."
+    },
+    {
+      "id": "AEGIS-167",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Adverse selection",
+      "description": "Measure post-fill price movement at configured horizons.",
+      "acceptance": "Scenario fixture passes."
+    },
+    {
+      "id": "AEGIS-168",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Passive/aggressive comparison",
+      "description": "Compare passive and aggressive execution.",
+      "acceptance": "Report includes both."
+    },
+    {
+      "id": "AEGIS-169",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Queue-model diagnostics",
+      "description": "Evaluate queue-position estimates where ground truth exists or on simulation.",
+      "acceptance": "Error metrics are reported."
+    },
+    {
+      "id": "AEGIS-170",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Cancellation/rejection rates",
+      "description": "Report cancellation and rejection statistics.",
+      "acceptance": "Matches event logs."
+    },
+    {
+      "id": "AEGIS-171",
+      "module": "Performance & Execution Attribution",
+      "milestone": "M6",
+      "priority": "must",
+      "title": "Latency attribution",
+      "description": "Break total decision-to-ack/fill path into feed, strategy, risk, gateway, exchange, and response components.",
+      "acceptance": "Components reconcile within tolerance."
+    },
+    {
+      "id": "AEGIS-172",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Historical market scenarios",
+      "description": "Create scenarios from deterministic replay with information frozen at decision time.",
+      "acceptance": "Scenario hash and timestamp provenance are stored."
+    },
+    {
+      "id": "AEGIS-173",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Visible market context",
+      "description": "Display recent price, bid/ask, depth, spread, volatility, position, P&L, and selected indicators.",
+      "acceptance": "UI test verifies configured fields."
+    },
+    {
+      "id": "AEGIS-174",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Timed actions",
+      "description": "Support BUY, SELL, HOLD, REDUCE, EXIT, and PASS under strict timers.",
+      "acceptance": "Timer and action-state tests pass."
+    },
+    {
+      "id": "AEGIS-175",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Confidence capture",
+      "description": "Capture configured confidence levels such as 55/70/85/95 percent.",
+      "acceptance": "Input validation and persistence tests pass."
+    },
+    {
+      "id": "AEGIS-176",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Response-time scoring",
+      "description": "Measure response time using a monotonic clock.",
+      "acceptance": "Synthetic timer test passes."
+    },
+    {
+      "id": "AEGIS-177",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Action-quality scoring",
+      "description": "Score decisions using predeclared scenario policy/model rather than hindsight alone.",
+      "acceptance": "Scoring fixture passes."
+    },
+    {
+      "id": "AEGIS-178",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Outcome scoring",
+      "description": "Separately record realized simulated outcome.",
+      "acceptance": "Outcome reconciliation passes."
+    },
+    {
+      "id": "AEGIS-179",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Risk compliance scoring",
+      "description": "Penalize or reject decisions that violate risk rules.",
+      "acceptance": "Risk integration fixture passes."
+    },
+    {
+      "id": "AEGIS-180",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Overtrading detection",
+      "description": "Measure unnecessary action frequency.",
+      "acceptance": "Behavior fixture passes."
+    },
+    {
+      "id": "AEGIS-181",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Passivity detection",
+      "description": "Measure missed high-confidence opportunities.",
+      "acceptance": "Behavior fixture passes."
+    },
+    {
+      "id": "AEGIS-182",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Post-win/loss behavior",
+      "description": "Analyze decisions after gains and losses.",
+      "acceptance": "Sequence fixture passes."
+    },
+    {
+      "id": "AEGIS-183",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Leading/trailing behavior",
+      "description": "Analyze risk-taking while score/P&L is ahead or behind.",
+      "acceptance": "Sequence fixture passes."
+    },
+    {
+      "id": "AEGIS-184",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Regime consistency",
+      "description": "Analyze behavior across market regimes.",
+      "acceptance": "Report includes regime slices."
+    },
+    {
+      "id": "AEGIS-185",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Futures First scoring mode",
+      "description": "Provide levels \u00b11, \u00b12, \u00b13, \u00b14, bonus \u00b16, and pass 0.",
+      "acceptance": "Golden scoring tests pass."
+    },
+    {
+      "id": "AEGIS-186",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Copyable result report",
+      "description": "Generate compact reports containing score, speed, accuracy, risk, confidence, and level/category detail.",
+      "acceptance": "Report schema test passes."
+    },
+    {
+      "id": "AEGIS-187",
+      "module": "Trader Decision Arena",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Recruitment/cohort mode",
+      "description": "Support standardized scenario sets and anonymized cohort comparison without claiming employment prediction.",
+      "acceptance": "Export and privacy tests pass."
+    },
+    {
+      "id": "AEGIS-188",
+      "module": "Counterfactual Decision Intelligence",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Alternative-action simulation",
+      "description": "Compute outcomes for feasible alternative actions using the same future path and execution assumptions.",
+      "acceptance": "Scenario fixture reconciles all alternatives."
+    },
+    {
+      "id": "AEGIS-189",
+      "module": "Counterfactual Decision Intelligence",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Decision/outcome separation",
+      "description": "Maintain distinct decision-quality and outcome-quality scores.",
+      "acceptance": "Data schema and UI display both."
+    },
+    {
+      "id": "AEGIS-190",
+      "module": "Counterfactual Decision Intelligence",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "No hindsight leakage in decision score",
+      "description": "Decision quality uses only information available at decision time.",
+      "acceptance": "Leakage test catches future-dependent scoring."
+    },
+    {
+      "id": "AEGIS-191",
+      "module": "Counterfactual Decision Intelligence",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Counterfactual explanation",
+      "description": "Explain chosen and alternative outcomes, assumptions, and uncertainty.",
+      "acceptance": "Report fixture includes all fields."
+    },
+    {
+      "id": "AEGIS-192",
+      "module": "Counterfactual Decision Intelligence",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Execution-aware counterfactuals",
+      "description": "Alternative actions use realistic fill/latency assumptions, not perfect prices.",
+      "acceptance": "Scenario test differentiates action fills."
+    },
+    {
+      "id": "AEGIS-193",
+      "module": "Counterfactual Decision Intelligence",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Uncertainty labeling",
+      "description": "Label model-dependent counterfactuals as estimates.",
+      "acceptance": "UI/report policy test passes."
+    },
+    {
+      "id": "AEGIS-194",
+      "module": "Confidence & Behaviour Analytics",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Confidence-bin accuracy",
+      "description": "Compare declared confidence with empirical success by bin.",
+      "acceptance": "Known synthetic calibration fixture passes."
+    },
+    {
+      "id": "AEGIS-195",
+      "module": "Confidence & Behaviour Analytics",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Brier score",
+      "description": "Calculate Brier score for probabilistic decisions.",
+      "acceptance": "Numeric fixture passes."
+    },
+    {
+      "id": "AEGIS-196",
+      "module": "Confidence & Behaviour Analytics",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Calibration error",
+      "description": "Calculate a documented calibration-error metric.",
+      "acceptance": "Numeric fixture passes."
+    },
+    {
+      "id": "AEGIS-197",
+      "module": "Confidence & Behaviour Analytics",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Answer and pass rates",
+      "description": "Measure participation and pass behavior.",
+      "acceptance": "Report reconciles actions."
+    },
+    {
+      "id": "AEGIS-198",
+      "module": "Confidence & Behaviour Analytics",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Response time by confidence",
+      "description": "Report speed by confidence level.",
+      "acceptance": "Report reconciles decisions."
+    },
+    {
+      "id": "AEGIS-199",
+      "module": "Confidence & Behaviour Analytics",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Risk after wins/losses",
+      "description": "Measure risk-taking following wins and losses.",
+      "acceptance": "Sequence fixture passes."
+    },
+    {
+      "id": "AEGIS-200",
+      "module": "Confidence & Behaviour Analytics",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Overconfidence and underconfidence",
+      "description": "Detect statistically meaningful calibration direction with caveats.",
+      "acceptance": "Synthetic fixtures distinguish both."
+    },
+    {
+      "id": "AEGIS-201",
+      "module": "Confidence & Behaviour Analytics",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Action consistency",
+      "description": "Measure consistency for materially similar scenarios.",
+      "acceptance": "Paired-scenario fixture passes."
+    },
+    {
+      "id": "AEGIS-202",
+      "module": "Confidence & Behaviour Analytics",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Regime-specific weakness",
+      "description": "Report calibration and performance by regime.",
+      "acceptance": "Report includes regime slices."
+    },
+    {
+      "id": "AEGIS-203",
+      "module": "Confidence & Behaviour Analytics",
+      "milestone": "M7",
+      "priority": "must",
+      "title": "Recruitment/training usage",
+      "description": "Support personal development, coaching, competitions, and assessment while avoiding deterministic hiring claims.",
+      "acceptance": "Product wording policy passes."
+    },
+    {
+      "id": "AEGIS-204",
+      "module": "Dashboard & Experiment Management",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Market Replay workspace",
+      "description": "Choose instrument/date, control replay, inspect book/trades, and inject faults.",
+      "acceptance": "End-to-end UI test completes a replay flow."
+    },
+    {
+      "id": "AEGIS-205",
+      "module": "Dashboard & Experiment Management",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Research Lab workspace",
+      "description": "Configure strategies, markets, periods, and experiments.",
+      "acceptance": "End-to-end UI test launches and retrieves an experiment."
+    },
+    {
+      "id": "AEGIS-206",
+      "module": "Dashboard & Experiment Management",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Risk Console",
+      "description": "Display positions, P&L, margin, exposures, breaches, and kill-switch status.",
+      "acceptance": "UI values reconcile with API fixture."
+    },
+    {
+      "id": "AEGIS-207",
+      "module": "Dashboard & Experiment Management",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Decision Arena workspace",
+      "description": "Run timed scenarios and show result analytics.",
+      "acceptance": "End-to-end UI test completes a scenario set."
+    },
+    {
+      "id": "AEGIS-208",
+      "module": "Dashboard & Experiment Management",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Performance Lab",
+      "description": "Display strategy, execution, latency, risk, and robustness analytics.",
+      "acceptance": "UI loads a versioned report."
+    },
+    {
+      "id": "AEGIS-209",
+      "module": "Dashboard & Experiment Management",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Experiment ID",
+      "description": "Assign immutable unique IDs.",
+      "acceptance": "Uniqueness test passes."
+    },
+    {
+      "id": "AEGIS-210",
+      "module": "Dashboard & Experiment Management",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Git commit capture",
+      "description": "Record code commit for every experiment.",
+      "acceptance": "Manifest field is mandatory."
+    },
+    {
+      "id": "AEGIS-211",
+      "module": "Dashboard & Experiment Management",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Data version capture",
+      "description": "Record dataset/version identifiers.",
+      "acceptance": "Manifest field is mandatory."
+    },
+    {
+      "id": "AEGIS-212",
+      "module": "Dashboard & Experiment Management",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Configuration capture",
+      "description": "Save full resolved configuration.",
+      "acceptance": "Round-trip test passes."
+    },
+    {
+      "id": "AEGIS-213",
+      "module": "Dashboard & Experiment Management",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Date/contract/roll capture",
+      "description": "Record date range, contracts, and roll method.",
+      "acceptance": "Manifest validation passes."
+    },
+    {
+      "id": "AEGIS-214",
+      "module": "Dashboard & Experiment Management",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Cost and seed capture",
+      "description": "Record cost assumptions and random seed.",
+      "acceptance": "Manifest validation passes."
+    },
+    {
+      "id": "AEGIS-215",
+      "module": "Dashboard & Experiment Management",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Artifact registry",
+      "description": "Register reports, logs, metrics, and plots by experiment.",
+      "acceptance": "Manifest links resolve."
+    },
+    {
+      "id": "AEGIS-216",
+      "module": "Dashboard & Experiment Management",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Re-run command",
+      "description": "Generate a reproducible rerun command.",
+      "acceptance": "Clean rerun reproduces key outputs within tolerance."
+    },
+    {
+      "id": "AEGIS-217",
+      "module": "Dashboard & Experiment Management",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Backend/frontend separation",
+      "description": "UI consumes versioned APIs rather than reaching into engine internals.",
+      "acceptance": "Dependency/API tests pass."
+    },
+    {
+      "id": "AEGIS-218",
+      "module": "Dashboard & Experiment Management",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Accessibility and usability",
+      "description": "Core dashboard and Decision Arena flows are keyboard-usable and expose clear timer/status states.",
+      "acceptance": "Accessibility smoke tests pass."
+    },
+    {
+      "id": "AEGIS-219",
+      "module": "Paper Trading Path",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Live/delayed market-data adapter",
+      "description": "Add a versioned adapter without changing strategy interfaces.",
+      "acceptance": "Contract tests match replay feed interface."
+    },
+    {
+      "id": "AEGIS-220",
+      "module": "Paper Trading Path",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Broker paper adapter",
+      "description": "Submit only to a paper/sandbox environment.",
+      "acceptance": "Environment guard blocks production endpoints."
+    },
+    {
+      "id": "AEGIS-221",
+      "module": "Paper Trading Path",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Position reconciliation",
+      "description": "Reconcile internal and broker-paper positions.",
+      "acceptance": "Mismatch scenario creates an alert and safe state."
+    },
+    {
+      "id": "AEGIS-222",
+      "module": "Paper Trading Path",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Restart recovery",
+      "description": "Recover OMS/portfolio state from snapshots/events.",
+      "acceptance": "Crash/restart integration test passes."
+    },
+    {
+      "id": "AEGIS-223",
+      "module": "Paper Trading Path",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Connectivity monitoring",
+      "description": "Detect disconnects and invoke safe behavior.",
+      "acceptance": "Fault scenario passes."
+    },
+    {
+      "id": "AEGIS-224",
+      "module": "Paper Trading Path",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Daily paper report",
+      "description": "Generate positions, trades, P&L, risk, and anomalies.",
+      "acceptance": "Report schema test passes."
+    },
+    {
+      "id": "AEGIS-225",
+      "module": "Paper Trading Path",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "No real-money execution",
+      "description": "Initial project has no enabled production trading path.",
+      "acceptance": "Configuration and code audit find no production endpoint enabled."
+    },
+    {
+      "id": "AEGIS-226",
+      "module": "Paper Trading Path",
+      "milestone": "M9",
+      "priority": "must",
+      "title": "Same strategy interface",
+      "description": "Strategies run unchanged across replay, simulation, and paper environments.",
+      "acceptance": "One strategy passes all adapter contract tests."
+    },
+    {
+      "id": "AEGIS-227",
+      "module": "Engineering Platform",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Modern C++ toolchain",
+      "description": "Use C++20 or newer, CMake presets, strict warnings, sanitizers, static analysis, and tests.",
+      "acceptance": "CI builds debug/release and runs configured checks."
+    },
+    {
+      "id": "AEGIS-228",
+      "module": "Engineering Platform",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Python research toolchain",
+      "description": "Use a pinned Python environment for data, research, validation, and reports.",
+      "acceptance": "Lockfile/environment install and tests pass."
+    },
+    {
+      "id": "AEGIS-229",
+      "module": "Engineering Platform",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "C++/Python bindings",
+      "description": "Use pybind11 or a documented equivalent for selected engine APIs.",
+      "acceptance": "Round-trip integration tests pass."
+    },
+    {
+      "id": "AEGIS-230",
+      "module": "Engineering Platform",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Columnar data interchange",
+      "description": "Use Parquet/Arrow and DuckDB where suitable with versioned schemas.",
+      "acceptance": "Schema and round-trip tests pass."
+    },
+    {
+      "id": "AEGIS-231",
+      "module": "Engineering Platform",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Configuration system",
+      "description": "Use versioned validated YAML/TOML/JSON configuration.",
+      "acceptance": "Invalid configs fail with clear errors."
+    },
+    {
+      "id": "AEGIS-232",
+      "module": "Engineering Platform",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Structured logging",
+      "description": "Emit machine-readable logs with event/experiment correlation IDs.",
+      "acceptance": "Logging fixture passes."
+    },
+    {
+      "id": "AEGIS-233",
+      "module": "Engineering Platform",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Unit, integration, property and replay tests",
+      "description": "Maintain distinct test layers.",
+      "acceptance": "CI reports each layer."
+    },
+    {
+      "id": "AEGIS-234",
+      "module": "Engineering Platform",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Continuous integration",
+      "description": "CI runs spec audit, build, tests, static checks, and secret scanning.",
+      "acceptance": "Main branch requires passing workflow."
+    },
+    {
+      "id": "AEGIS-235",
+      "module": "Engineering Platform",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Documentation",
+      "description": "Architecture, methods, assumptions, limitations, runbooks, and demo steps remain current.",
+      "acceptance": "Documentation audit maps claims to code/evidence."
+    },
+    {
+      "id": "AEGIS-236",
+      "module": "Engineering Platform",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Sample data policy",
+      "description": "Commit only small legally redistributable samples; large/licensed data stays external.",
+      "acceptance": "Repository audit passes."
+    },
+    {
+      "id": "AEGIS-237",
+      "module": "Engineering Platform",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Failure recovery",
+      "description": "Critical stateful services document shutdown, snapshot, and recovery behavior.",
+      "acceptance": "Recovery tests exist for exchange and participant state."
+    },
+    {
+      "id": "AEGIS-238",
+      "module": "Engineering Platform",
+      "milestone": "M0",
+      "priority": "must",
+      "title": "Observability",
+      "description": "Expose health, queue depth, dropped/backpressured events, latency, and risk status.",
+      "acceptance": "Integration fixture verifies metrics."
+    }
+  ]
+}

@@ -1,0 +1,242 @@
+# Feature Traceability Matrix
+
+| ID | Module | Milestone | Requirement | Status | Evidence |
+|---|---|---:|---|---|---|
+| AEGIS-001 | Governance | M0 | Frozen canonical specification | not_started | — |
+| AEGIS-002 | Governance | M0 | Requirement traceability | not_started | — |
+| AEGIS-003 | Governance | M0 | Evidence-based completion | not_started | — |
+| AEGIS-004 | Governance | M0 | Exchange/participant separation | not_started | — |
+| AEGIS-005 | Governance | M0 | Determinism before optimization | not_started | — |
+| AEGIS-006 | Governance | M0 | No fabricated claims | not_started | — |
+| AEGIS-007 | Governance | M0 | One active milestone | not_started | — |
+| AEGIS-008 | Governance | M0 | Decision records | not_started | — |
+| AEGIS-009 | Governance | M0 | Reproducible environments | not_started | — |
+| AEGIS-010 | Governance | M0 | Secrets isolation | not_started | — |
+| AEGIS-011 | Futures Data & Contract Lifecycle | M2 | Exchange and instrument metadata | not_started | — |
+| AEGIS-012 | Futures Data & Contract Lifecycle | M2 | Contract symbols and expiry metadata | not_started | — |
+| AEGIS-013 | Futures Data & Contract Lifecycle | M2 | Trading-session calendars | not_started | — |
+| AEGIS-014 | Futures Data & Contract Lifecycle | M2 | Volume and open-interest ingestion | not_started | — |
+| AEGIS-015 | Futures Data & Contract Lifecycle | M2 | Fixed-days roll policy | not_started | — |
+| AEGIS-016 | Futures Data & Contract Lifecycle | M2 | Volume-crossover roll policy | not_started | — |
+| AEGIS-017 | Futures Data & Contract Lifecycle | M2 | Open-interest-crossover roll policy | not_started | — |
+| AEGIS-018 | Futures Data & Contract Lifecycle | M2 | Liquidity-score roll policy | not_started | — |
+| AEGIS-019 | Futures Data & Contract Lifecycle | M2 | Unadjusted continuous series | not_started | — |
+| AEGIS-020 | Futures Data & Contract Lifecycle | M2 | Difference-adjusted continuous series | not_started | — |
+| AEGIS-021 | Futures Data & Contract Lifecycle | M2 | Ratio-adjusted continuous series | not_started | — |
+| AEGIS-022 | Futures Data & Contract Lifecycle | M2 | Return-preserving series | not_started | — |
+| AEGIS-023 | Futures Data & Contract Lifecycle | M2 | Roll audit report | not_started | — |
+| AEGIS-024 | Futures Data & Contract Lifecycle | M2 | Roll-method sensitivity | not_started | — |
+| AEGIS-025 | Futures Data & Contract Lifecycle | M2 | Bad-data detection | not_started | — |
+| AEGIS-026 | Futures Data & Contract Lifecycle | M2 | Normalized multi-market schema | not_started | — |
+| AEGIS-027 | Deterministic LOB & Matching | M1 | Price-time-priority order book | not_started | — |
+| AEGIS-028 | Deterministic LOB & Matching | M1 | Limit orders | not_started | — |
+| AEGIS-029 | Deterministic LOB & Matching | M1 | Market orders | not_started | — |
+| AEGIS-030 | Deterministic LOB & Matching | M1 | Cancel requests | not_started | — |
+| AEGIS-031 | Deterministic LOB & Matching | M1 | Quantity modifications | not_started | — |
+| AEGIS-032 | Deterministic LOB & Matching | M1 | Price modifications | not_started | — |
+| AEGIS-033 | Deterministic LOB & Matching | M1 | Partial fills | not_started | — |
+| AEGIS-034 | Deterministic LOB & Matching | M1 | Full fills | not_started | — |
+| AEGIS-035 | Deterministic LOB & Matching | M1 | Rejected orders | not_started | — |
+| AEGIS-036 | Deterministic LOB & Matching | M1 | Order-ID index | not_started | — |
+| AEGIS-037 | Deterministic LOB & Matching | M1 | Intrusive FIFO price queues | not_started | — |
+| AEGIS-038 | Deterministic LOB & Matching | M1 | Price-level index | not_started | — |
+| AEGIS-039 | Deterministic LOB & Matching | M1 | Output-sensitive matching | not_started | — |
+| AEGIS-040 | Deterministic LOB & Matching | M1 | Configurable matching rules | not_started | — |
+| AEGIS-041 | Deterministic LOB & Matching | M1 | Invariant checker | not_started | — |
+| AEGIS-042 | Low-Latency Engineering | M8 | Preallocated order pool | not_started | — |
+| AEGIS-043 | Low-Latency Engineering | M8 | Arena/free-list reuse | not_started | — |
+| AEGIS-044 | Low-Latency Engineering | M8 | Cache-aware layout | not_started | — |
+| AEGIS-045 | Low-Latency Engineering | M8 | Compact event representation | not_started | — |
+| AEGIS-046 | Low-Latency Engineering | M8 | Lock-free MPSC ingress | not_started | — |
+| AEGIS-047 | Low-Latency Engineering | M8 | Single-writer matching core | not_started | — |
+| AEGIS-048 | Low-Latency Engineering | M8 | Lock-free output queues | not_started | — |
+| AEGIS-049 | Low-Latency Engineering | M8 | Instrument sharding | not_started | — |
+| AEGIS-050 | Low-Latency Engineering | M8 | Core-pinning support | not_started | — |
+| AEGIS-051 | Low-Latency Engineering | M8 | No premature optimization | not_started | — |
+| AEGIS-052 | Low-Latency Engineering | M8 | Tail-latency measurement | not_started | — |
+| AEGIS-053 | Low-Latency Engineering | M8 | Platform-specific benchmark disclosure | not_started | — |
+| AEGIS-054 | Historical Replay | M2 | Original-speed replay | not_started | — |
+| AEGIS-055 | Historical Replay | M2 | Accelerated replay | not_started | — |
+| AEGIS-056 | Historical Replay | M2 | Fixed-rate replay | not_started | — |
+| AEGIS-057 | Historical Replay | M2 | Step-by-step replay | not_started | — |
+| AEGIS-058 | Historical Replay | M2 | Deterministic benchmark mode | not_started | — |
+| AEGIS-059 | Historical Replay | M2 | Unified strategy interface | not_started | — |
+| AEGIS-060 | Historical Replay | M2 | Fault injection: delayed data | not_started | — |
+| AEGIS-061 | Historical Replay | M2 | Fault injection: missing/duplicate/gap | not_started | — |
+| AEGIS-062 | Historical Replay | M2 | Fault injection: market stress | not_started | — |
+| AEGIS-063 | Historical Replay | M2 | Fault injection: execution stress | not_started | — |
+| AEGIS-064 | Market Data & Book Reconstruction | M3 | Full-depth snapshots | not_started | — |
+| AEGIS-065 | Market Data & Book Reconstruction | M3 | Incremental updates | not_started | — |
+| AEGIS-066 | Market Data & Book Reconstruction | M3 | Order-level reconstruction | not_started | — |
+| AEGIS-067 | Market Data & Book Reconstruction | M3 | Price-level reconstruction | not_started | — |
+| AEGIS-068 | Market Data & Book Reconstruction | M3 | Sequence validation | not_started | — |
+| AEGIS-069 | Market Data & Book Reconstruction | M3 | Stale-data detection | not_started | — |
+| AEGIS-070 | Market Data & Book Reconstruction | M3 | Snapshot recovery | not_started | — |
+| AEGIS-071 | Market Data & Book Reconstruction | M3 | Top-of-book metrics | not_started | — |
+| AEGIS-072 | Market Data & Book Reconstruction | M3 | Microprice | not_started | — |
+| AEGIS-073 | Market Data & Book Reconstruction | M3 | Depth and order-book imbalance | not_started | — |
+| AEGIS-074 | Market Data & Book Reconstruction | M3 | Trade/cancellation intensity | not_started | — |
+| AEGIS-075 | Market Data & Book Reconstruction | M3 | Queue depletion and adverse selection | not_started | — |
+| AEGIS-076 | Quantitative Research | M4 | Calendar spread construction | not_started | — |
+| AEGIS-077 | Quantitative Research | M4 | Term structure features | not_started | — |
+| AEGIS-078 | Quantitative Research | M4 | Calendar-spread hedge ratio | not_started | — |
+| AEGIS-079 | Quantitative Research | M4 | Calendar-spread stationarity | not_started | — |
+| AEGIS-080 | Quantitative Research | M4 | Calendar-spread z-score signals | not_started | — |
+| AEGIS-081 | Quantitative Research | M4 | Expiry and roll effects | not_started | — |
+| AEGIS-082 | Quantitative Research | M6 | Cross-market economic rationale | not_started | — |
+| AEGIS-083 | Quantitative Research | M6 | Rolling regression | not_started | — |
+| AEGIS-084 | Quantitative Research | M6 | Hedge-ratio estimation | not_started | — |
+| AEGIS-085 | Quantitative Research | M6 | Cointegration analysis | not_started | — |
+| AEGIS-086 | Quantitative Research | M6 | Spread stationarity analysis | not_started | — |
+| AEGIS-087 | Quantitative Research | M6 | Half-life estimation | not_started | — |
+| AEGIS-088 | Quantitative Research | M6 | Structural-break detection | not_started | — |
+| AEGIS-089 | Quantitative Research | M6 | Cross-market cost-aware signals | not_started | — |
+| AEGIS-090 | Quantitative Research | M6 | Volatility-regime features | not_started | — |
+| AEGIS-091 | Quantitative Research | M6 | Regime classification | not_started | — |
+| AEGIS-092 | Quantitative Research | M6 | Regime-conditioned trading | not_started | — |
+| AEGIS-093 | Quantitative Research | M6 | Microstructure execution signal | not_started | — |
+| AEGIS-094 | Quantitative Research | M6 | Lead-lag research | not_started | — |
+| AEGIS-095 | Quantitative Research | M6 | Strategy plugin interface | not_started | — |
+| AEGIS-096 | Quantitative Research | M6 | Multiple strategy families | not_started | — |
+| AEGIS-097 | Quantitative Research | M6 | Research reproducibility | not_started | — |
+| AEGIS-098 | Online Statistics | M3 | Rolling mean | not_started | — |
+| AEGIS-099 | Online Statistics | M3 | Rolling variance | not_started | — |
+| AEGIS-100 | Online Statistics | M3 | Rolling standard deviation | not_started | — |
+| AEGIS-101 | Online Statistics | M3 | Rolling covariance | not_started | — |
+| AEGIS-102 | Online Statistics | M3 | Rolling correlation | not_started | — |
+| AEGIS-103 | Online Statistics | M3 | Rolling z-score | not_started | — |
+| AEGIS-104 | Online Statistics | M3 | Exponential statistics | not_started | — |
+| AEGIS-105 | Online Statistics | M3 | Realized volatility and beta | not_started | — |
+| AEGIS-106 | Online Statistics | M3 | Online drawdown and P&L moments | not_started | — |
+| AEGIS-107 | Online Statistics | M3 | Numerical/performance validation | not_started | — |
+| AEGIS-108 | OMS & Execution | M3 | Order lifecycle state machine | not_started | — |
+| AEGIS-109 | OMS & Execution | M3 | Market-order execution | not_started | — |
+| AEGIS-110 | OMS & Execution | M3 | Passive limit execution | not_started | — |
+| AEGIS-111 | OMS & Execution | M3 | Aggressive limit execution | not_started | — |
+| AEGIS-112 | OMS & Execution | M3 | Cancel/amend lifecycle | not_started | — |
+| AEGIS-113 | OMS & Execution | M3 | Network and exchange latency | not_started | — |
+| AEGIS-114 | OMS & Execution | M3 | Partial fills | not_started | — |
+| AEGIS-115 | OMS & Execution | M3 | Queue-position approximation | not_started | — |
+| AEGIS-116 | OMS & Execution | M3 | Fees and slippage | not_started | — |
+| AEGIS-117 | OMS & Execution | M3 | Missed trades | not_started | — |
+| AEGIS-118 | OMS & Execution | M3 | Position and cash accounting | not_started | — |
+| AEGIS-119 | OMS & Execution | M3 | Environment-independent OMS | not_started | — |
+| AEGIS-120 | Risk & Portfolio | M5 | Mandatory risk path | not_started | — |
+| AEGIS-121 | Risk & Portfolio | M5 | Maximum order quantity | not_started | — |
+| AEGIS-122 | Risk & Portfolio | M5 | Maximum position | not_started | — |
+| AEGIS-123 | Risk & Portfolio | M5 | Maximum notional | not_started | — |
+| AEGIS-124 | Risk & Portfolio | M5 | Per-market and sector exposure | not_started | — |
+| AEGIS-125 | Risk & Portfolio | M5 | Price collars | not_started | — |
+| AEGIS-126 | Risk & Portfolio | M5 | Stale-data rejection | not_started | — |
+| AEGIS-127 | Risk & Portfolio | M5 | Duplicate-order protection | not_started | — |
+| AEGIS-128 | Risk & Portfolio | M5 | Message-rate limits | not_started | — |
+| AEGIS-129 | Risk & Portfolio | M5 | Margin availability | not_started | — |
+| AEGIS-130 | Risk & Portfolio | M5 | Maximum leverage | not_started | — |
+| AEGIS-131 | Risk & Portfolio | M5 | Daily loss limit | not_started | — |
+| AEGIS-132 | Risk & Portfolio | M5 | Maximum drawdown | not_started | — |
+| AEGIS-133 | Risk & Portfolio | M5 | Volatility-triggered reduction | not_started | — |
+| AEGIS-134 | Risk & Portfolio | M5 | Concentration and correlation limits | not_started | — |
+| AEGIS-135 | Risk & Portfolio | M5 | Strategy and portfolio kill switches | not_started | — |
+| AEGIS-136 | Risk & Portfolio | M5 | Connectivity-loss response | not_started | — |
+| AEGIS-137 | Risk & Portfolio | M5 | Risk decision audit | not_started | — |
+| AEGIS-138 | Risk & Portfolio | M5 | Portfolio risk analytics | not_started | — |
+| AEGIS-139 | Validation & Anti-Overfitting | M5 | Train/validation/test separation | not_started | — |
+| AEGIS-140 | Validation & Anti-Overfitting | M5 | Rolling walk-forward testing | not_started | — |
+| AEGIS-141 | Validation & Anti-Overfitting | M5 | Expanding-window testing | not_started | — |
+| AEGIS-142 | Validation & Anti-Overfitting | M5 | Parameter-stability surfaces | not_started | — |
+| AEGIS-143 | Validation & Anti-Overfitting | M5 | Transaction-cost sensitivity | not_started | — |
+| AEGIS-144 | Validation & Anti-Overfitting | M5 | Latency sensitivity | not_started | — |
+| AEGIS-145 | Validation & Anti-Overfitting | M5 | Slippage sensitivity | not_started | — |
+| AEGIS-146 | Validation & Anti-Overfitting | M5 | Bootstrap confidence intervals | not_started | — |
+| AEGIS-147 | Validation & Anti-Overfitting | M5 | Monte Carlo trade-sequence resampling | not_started | — |
+| AEGIS-148 | Validation & Anti-Overfitting | M5 | Multiple-market validation | not_started | — |
+| AEGIS-149 | Validation & Anti-Overfitting | M5 | Regime-specific evaluation | not_started | — |
+| AEGIS-150 | Validation & Anti-Overfitting | M5 | Random-signal baseline | not_started | — |
+| AEGIS-151 | Validation & Anti-Overfitting | M5 | Simple-rule baseline | not_started | — |
+| AEGIS-152 | Validation & Anti-Overfitting | M5 | Look-ahead-bias detection | not_started | — |
+| AEGIS-153 | Validation & Anti-Overfitting | M5 | Feature/data leakage checks | not_started | — |
+| AEGIS-154 | Validation & Anti-Overfitting | M5 | Roll-method sensitivity | not_started | — |
+| AEGIS-155 | Validation & Anti-Overfitting | M5 | Strategy rejection report | not_started | — |
+| AEGIS-156 | Performance & Execution Attribution | M6 | Return and risk metrics | not_started | — |
+| AEGIS-157 | Performance & Execution Attribution | M6 | Trade metrics | not_started | — |
+| AEGIS-158 | Performance & Execution Attribution | M6 | Market and contract attribution | not_started | — |
+| AEGIS-159 | Performance & Execution Attribution | M6 | Strategy attribution | not_started | — |
+| AEGIS-160 | Performance & Execution Attribution | M6 | Regime attribution | not_started | — |
+| AEGIS-161 | Performance & Execution Attribution | M6 | Long/short attribution | not_started | — |
+| AEGIS-162 | Performance & Execution Attribution | M6 | Session/time attribution | not_started | — |
+| AEGIS-163 | Performance & Execution Attribution | M6 | Entry/execution attribution | not_started | — |
+| AEGIS-164 | Performance & Execution Attribution | M6 | Gross/net attribution | not_started | — |
+| AEGIS-165 | Performance & Execution Attribution | M6 | Fill ratio | not_started | — |
+| AEGIS-166 | Performance & Execution Attribution | M6 | Average slippage and time-to-fill | not_started | — |
+| AEGIS-167 | Performance & Execution Attribution | M6 | Adverse selection | not_started | — |
+| AEGIS-168 | Performance & Execution Attribution | M6 | Passive/aggressive comparison | not_started | — |
+| AEGIS-169 | Performance & Execution Attribution | M6 | Queue-model diagnostics | not_started | — |
+| AEGIS-170 | Performance & Execution Attribution | M6 | Cancellation/rejection rates | not_started | — |
+| AEGIS-171 | Performance & Execution Attribution | M6 | Latency attribution | not_started | — |
+| AEGIS-172 | Trader Decision Arena | M7 | Historical market scenarios | not_started | — |
+| AEGIS-173 | Trader Decision Arena | M7 | Visible market context | not_started | — |
+| AEGIS-174 | Trader Decision Arena | M7 | Timed actions | not_started | — |
+| AEGIS-175 | Trader Decision Arena | M7 | Confidence capture | not_started | — |
+| AEGIS-176 | Trader Decision Arena | M7 | Response-time scoring | not_started | — |
+| AEGIS-177 | Trader Decision Arena | M7 | Action-quality scoring | not_started | — |
+| AEGIS-178 | Trader Decision Arena | M7 | Outcome scoring | not_started | — |
+| AEGIS-179 | Trader Decision Arena | M7 | Risk compliance scoring | not_started | — |
+| AEGIS-180 | Trader Decision Arena | M7 | Overtrading detection | not_started | — |
+| AEGIS-181 | Trader Decision Arena | M7 | Passivity detection | not_started | — |
+| AEGIS-182 | Trader Decision Arena | M7 | Post-win/loss behavior | not_started | — |
+| AEGIS-183 | Trader Decision Arena | M7 | Leading/trailing behavior | not_started | — |
+| AEGIS-184 | Trader Decision Arena | M7 | Regime consistency | not_started | — |
+| AEGIS-185 | Trader Decision Arena | M7 | Futures First scoring mode | not_started | — |
+| AEGIS-186 | Trader Decision Arena | M7 | Copyable result report | not_started | — |
+| AEGIS-187 | Trader Decision Arena | M7 | Recruitment/cohort mode | not_started | — |
+| AEGIS-188 | Counterfactual Decision Intelligence | M7 | Alternative-action simulation | not_started | — |
+| AEGIS-189 | Counterfactual Decision Intelligence | M7 | Decision/outcome separation | not_started | — |
+| AEGIS-190 | Counterfactual Decision Intelligence | M7 | No hindsight leakage in decision score | not_started | — |
+| AEGIS-191 | Counterfactual Decision Intelligence | M7 | Counterfactual explanation | not_started | — |
+| AEGIS-192 | Counterfactual Decision Intelligence | M7 | Execution-aware counterfactuals | not_started | — |
+| AEGIS-193 | Counterfactual Decision Intelligence | M7 | Uncertainty labeling | not_started | — |
+| AEGIS-194 | Confidence & Behaviour Analytics | M7 | Confidence-bin accuracy | not_started | — |
+| AEGIS-195 | Confidence & Behaviour Analytics | M7 | Brier score | not_started | — |
+| AEGIS-196 | Confidence & Behaviour Analytics | M7 | Calibration error | not_started | — |
+| AEGIS-197 | Confidence & Behaviour Analytics | M7 | Answer and pass rates | not_started | — |
+| AEGIS-198 | Confidence & Behaviour Analytics | M7 | Response time by confidence | not_started | — |
+| AEGIS-199 | Confidence & Behaviour Analytics | M7 | Risk after wins/losses | not_started | — |
+| AEGIS-200 | Confidence & Behaviour Analytics | M7 | Overconfidence and underconfidence | not_started | — |
+| AEGIS-201 | Confidence & Behaviour Analytics | M7 | Action consistency | not_started | — |
+| AEGIS-202 | Confidence & Behaviour Analytics | M7 | Regime-specific weakness | not_started | — |
+| AEGIS-203 | Confidence & Behaviour Analytics | M7 | Recruitment/training usage | not_started | — |
+| AEGIS-204 | Dashboard & Experiment Management | M9 | Market Replay workspace | not_started | — |
+| AEGIS-205 | Dashboard & Experiment Management | M9 | Research Lab workspace | not_started | — |
+| AEGIS-206 | Dashboard & Experiment Management | M9 | Risk Console | not_started | — |
+| AEGIS-207 | Dashboard & Experiment Management | M9 | Decision Arena workspace | not_started | — |
+| AEGIS-208 | Dashboard & Experiment Management | M9 | Performance Lab | not_started | — |
+| AEGIS-209 | Dashboard & Experiment Management | M9 | Experiment ID | not_started | — |
+| AEGIS-210 | Dashboard & Experiment Management | M9 | Git commit capture | not_started | — |
+| AEGIS-211 | Dashboard & Experiment Management | M9 | Data version capture | not_started | — |
+| AEGIS-212 | Dashboard & Experiment Management | M9 | Configuration capture | not_started | — |
+| AEGIS-213 | Dashboard & Experiment Management | M9 | Date/contract/roll capture | not_started | — |
+| AEGIS-214 | Dashboard & Experiment Management | M9 | Cost and seed capture | not_started | — |
+| AEGIS-215 | Dashboard & Experiment Management | M9 | Artifact registry | not_started | — |
+| AEGIS-216 | Dashboard & Experiment Management | M9 | Re-run command | not_started | — |
+| AEGIS-217 | Dashboard & Experiment Management | M9 | Backend/frontend separation | not_started | — |
+| AEGIS-218 | Dashboard & Experiment Management | M9 | Accessibility and usability | not_started | — |
+| AEGIS-219 | Paper Trading Path | M9 | Live/delayed market-data adapter | not_started | — |
+| AEGIS-220 | Paper Trading Path | M9 | Broker paper adapter | not_started | — |
+| AEGIS-221 | Paper Trading Path | M9 | Position reconciliation | not_started | — |
+| AEGIS-222 | Paper Trading Path | M9 | Restart recovery | not_started | — |
+| AEGIS-223 | Paper Trading Path | M9 | Connectivity monitoring | not_started | — |
+| AEGIS-224 | Paper Trading Path | M9 | Daily paper report | not_started | — |
+| AEGIS-225 | Paper Trading Path | M9 | No real-money execution | not_started | — |
+| AEGIS-226 | Paper Trading Path | M9 | Same strategy interface | not_started | — |
+| AEGIS-227 | Engineering Platform | M0 | Modern C++ toolchain | not_started | — |
+| AEGIS-228 | Engineering Platform | M0 | Python research toolchain | not_started | — |
+| AEGIS-229 | Engineering Platform | M0 | C++/Python bindings | not_started | — |
+| AEGIS-230 | Engineering Platform | M0 | Columnar data interchange | not_started | — |
+| AEGIS-231 | Engineering Platform | M0 | Configuration system | not_started | — |
+| AEGIS-232 | Engineering Platform | M0 | Structured logging | not_started | — |
+| AEGIS-233 | Engineering Platform | M0 | Unit, integration, property and replay tests | not_started | — |
+| AEGIS-234 | Engineering Platform | M0 | Continuous integration | not_started | — |
+| AEGIS-235 | Engineering Platform | M0 | Documentation | not_started | — |
+| AEGIS-236 | Engineering Platform | M0 | Sample data policy | not_started | — |
+| AEGIS-237 | Engineering Platform | M0 | Failure recovery | not_started | — |
+| AEGIS-238 | Engineering Platform | M0 | Observability | not_started | — |
