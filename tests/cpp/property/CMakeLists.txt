@@ -1,0 +1,3 @@
+aegis_add_test(aegis_property_tests property
+  test_build_info_invariants.cpp)
+target_link_libraries(aegis_property_tests PRIVATE aegis_common)

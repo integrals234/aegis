@@ -294,8 +294,9 @@ def check_cmake(root: Path, rules: Rules) -> list[str]:
     if duplicates:
         errors.append(f"rules defect: CMake target names collide: {sorted(set(duplicates))}")
     for cmake in sorted(root.rglob("CMakeLists.txt")):
-        if ".venv" in cmake.parts or "build" in cmake.parts:
-            continue
+        rel_parts = cmake.relative_to(root).parts
+        if {".venv", "build"} & set(rel_parts) or "fixtures" in rel_parts:
+            continue  # fixture trees are checked explicitly by their own tests
         text = cmake.read_text(encoding="utf-8")
         rel = cmake.relative_to(root).as_posix()
         for target, body in TARGET_LINK.findall(text):

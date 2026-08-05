@@ -1,0 +1,17 @@
+# AEGIS C++ formatting (AEGIS-227). Google base style with a 100-column limit;
+# formatting is checked in CI with --dry-run -Werror so review time is spent on
+# behaviour rather than layout.
+BasedOnStyle: Google
+Standard: c++20
+ColumnLimit: 100
+IndentWidth: 2
+DerivePointerAlignment: false
+PointerAlignment: Left
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<[^/]*>$'
+    Priority: 1
+  - Regex: '^<.*>$'
+    Priority: 2
+  - Regex: '^"cpp/.*"$'
+    Priority: 3

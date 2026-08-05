@@ -7,6 +7,24 @@
   ],
   "packages": [
     {
+      "name": "clang-format",
+      "version": "22.1.8",
+      "per_target": {
+        "3.12": "wheel",
+        "3.14": "wheel"
+      },
+      "error": null
+    },
+    {
+      "name": "clang-tidy",
+      "version": "22.1.8",
+      "per_target": {
+        "3.12": "wheel",
+        "3.14": "wheel"
+      },
+      "error": null
+    },
+    {
       "name": "hypothesis",
       "version": "6.165.1",
       "per_target": {

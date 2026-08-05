@@ -5,6 +5,8 @@
 # Any change here must be followed by:
 #   python3 tools/probe_dependencies.py --write-evidence
 #   bash scripts/lock_python.sh
+clang-format==22.1.8
+clang-tidy==22.1.8
 hypothesis==6.165.1
 jsonschema==4.26.0
 mypy==2.3.0
