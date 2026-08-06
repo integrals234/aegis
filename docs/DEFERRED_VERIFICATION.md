@@ -12,63 +12,64 @@ any of these `verified` while its obligation is open, and
 `tools/audit_requirements.py --check-deferred M<n>` fails the milestone that owes
 the evidence if it closes without paying.
 
+Nor can an obligation quietly slide to a later milestone. Each one carries an
+append-only ledger below; the audit requires the live `verification_blocked_until`
+to equal the head of that ledger, so moving a debt is itself a recorded act.
+
 
 **10 outstanding obligation(s).**
 
-| ID | Requirement | Status | Unblocks at | What is still missing |
-|---|---|---|---|---|
-| AEGIS-004 | Exchange/participant separation | implemented | M1 | No exchange book (M1) or strategy/risk/OMS code (M3) exists yet for the participant-pipeline rules to constrain; the rules currently bind only the substrate layers. |
-| AEGIS-005 | Determinism before optimization | implemented | M1 | Canonical output covers platform records only. M0 shows the harness detects nondeterminism; it is not a claim that AEGIS is deterministic. Real event input arrives with M1, and this is a hard gate before M8 optimization begins. |
-| AEGIS-009 | Reproducible environments | implemented | M1 | docker/Dockerfile.dev has never been built: Docker Desktop WSL integration is disabled on the development host, and no CI run has executed. A clean-machine transcript from a container or CI runner is still owed. |
-| AEGIS-227 | Modern C++ toolchain | implemented | M1 | The acceptance names CI building debug and release. The workflow exists and scripts/ci_local.sh runs the same matrix locally, but no CI run has executed; that requires an owner-created remote. |
-| AEGIS-229 | C++/Python bindings | implemented | M2 | The acceptance names 'selected engine APIs'; no engine exists. Config, metrics and replay surfaces are M2 work, where the roadmap places the bindings needed for data and replay. |
-| AEGIS-230 | Columnar data interchange | implemented | M2 | Parquet, Arrow and DuckDB round trips are not implemented. M0 has no columnar data to interchange, and building them now would require inventing the futures schema AEGIS-026 owns. |
-| AEGIS-233 | Unit, integration, property and replay tests | implemented | M1 | The acceptance names CI reporting each layer; no CI run has executed. Replay-layer depth arrives with M2's replay modes and research-layer depth with M4-M5 experiments. |
-| AEGIS-234 | Continuous integration | implemented | M1 | The acceptance is 'main branch requires passing workflow'. No git remote exists, no workflow run has executed, and branch protection is an owner action. |
-| AEGIS-237 | Failure recovery | implemented | M1 | The acceptance names recovery tests for exchange and participant state. Neither exists: exchange-state recovery arrives with M1 and participant-state recovery with M3. |
-| AEGIS-238 | Observability | implemented | M1 | queue depth, dropped/backpressured events, execution latency and risk status are not registered because nothing produces them. They arrive with M1's bounded queues, M3's execution path and M5's risk engine. |
+3 of them has been re-dated at least once since first registered; each move is listed under its requirement below.
+
+| ID | Requirement | Status | Unblocks at | Times re-dated | What is still missing |
+|---|---|---|---|---|---|
+| AEGIS-004 | Exchange/participant separation | implemented | M4 | 1 | Architecture rules declare the full participant pipeline, but configs/architecture_rules.yaml dates cpp/participant/strategy to M4, so the rule that strategy code cannot reach the exchange book is declared and unexercised until then. The exchange book itself arrives at M1. |
+| AEGIS-005 | Determinism before optimization | implemented | M1 | 0 | Canonical output covers platform records only. M0 shows the harness detects nondeterminism; it is not a claim that AEGIS is deterministic. Real event input arrives with M1, and this is a hard gate before M8 optimization begins. |
+| AEGIS-009 | Reproducible environments | implemented | M1 | 0 | docker/Dockerfile.dev has never been built: Docker Desktop WSL integration is disabled on the development host, and no CI run has executed. A clean-machine transcript from a container or CI runner is still owed. |
+| AEGIS-227 | Modern C++ toolchain | implemented | M1 | 0 | The acceptance names CI building debug and release. The workflow exists and scripts/ci_local.sh runs the same matrix locally, but no CI run has executed; that requires an owner-created remote. |
+| AEGIS-229 | C++/Python bindings | implemented | M2 | 0 | The acceptance names 'selected engine APIs'; no engine exists. Config, metrics and replay surfaces are M2 work, where the roadmap places the bindings needed for data and replay. |
+| AEGIS-230 | Columnar data interchange | implemented | M2 | 0 | Parquet, Arrow and DuckDB round trips are not implemented. M0 has no columnar data to interchange, and building them now would require inventing the futures schema AEGIS-026 owns. |
+| AEGIS-233 | Unit, integration, property and replay tests | implemented | M1 | 0 | The acceptance names CI reporting each layer; no CI run has executed. Replay-layer depth arrives with M2's replay modes and research-layer depth with M4-M5 experiments. |
+| AEGIS-234 | Continuous integration | implemented | M1 | 0 | The acceptance is 'main branch requires passing workflow'. No git remote exists, no workflow run has executed, and branch protection is an owner action. |
+| AEGIS-237 | Failure recovery | implemented | M3 | 1 | The acceptance names recovery tests for exchange and participant state. Exchange-state recovery arrives with M1; participant state lives in the OMS and portfolio layers, which configs/architecture_rules.yaml dates M3, so the obligation cannot be fully discharged before M3. |
+| AEGIS-238 | Observability | implemented | M5 | 1 | queue depth and dropped/backpressured events arrive with M1's bounded queues and execution latency with M3's execution path, but risk status has no producer until the risk engine, which configs/architecture_rules.yaml dates M5. Full metric coverage cannot be shown before M5. |
 
 ## Due at M1
-
-### AEGIS-004 — Exchange/participant separation
-
-- **Frozen acceptance criterion:** Architecture tests and dependency rules prevent participant strategy code from directly mutating the exchange book.
-- **Residual:** No exchange book (M1) or strategy/risk/OMS code (M3) exists yet for the participant-pipeline rules to constrain; the rules currently bind only the substrate layers.
 
 ### AEGIS-005 — Determinism before optimization
 
 - **Frozen acceptance criterion:** Identical event input and seed produce byte-identical canonical output before performance milestone begins.
 - **Residual:** Canonical output covers platform records only. M0 shows the harness detects nondeterminism; it is not a claim that AEGIS is deterministic. Real event input arrives with M1, and this is a hard gate before M8 optimization begins.
+- **Deferral ledger:**
+  - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: the acceptance names identical event input, and no event source exists until the exchange core lands at M1.
 
 ### AEGIS-009 — Reproducible environments
 
 - **Frozen acceptance criterion:** Clean environment instructions build and run integrity tests without undocumented steps.
 - **Residual:** docker/Dockerfile.dev has never been built: Docker Desktop WSL integration is disabled on the development host, and no CI run has executed. A clean-machine transcript from a container or CI runner is still owed.
+- **Deferral ledger:**
+  - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: the container has never been built and no CI run has executed, so no clean-machine transcript exists.
 
 ### AEGIS-227 — Modern C++ toolchain
 
 - **Frozen acceptance criterion:** CI builds debug/release and runs configured checks.
 - **Residual:** The acceptance names CI building debug and release. The workflow exists and scripts/ci_local.sh runs the same matrix locally, but no CI run has executed; that requires an owner-created remote.
+- **Deferral ledger:**
+  - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: the acceptance names CI building debug and release, and no CI run has executed.
 
 ### AEGIS-233 — Unit, integration, property and replay tests
 
 - **Frozen acceptance criterion:** CI reports each layer.
 - **Residual:** The acceptance names CI reporting each layer; no CI run has executed. Replay-layer depth arrives with M2's replay modes and research-layer depth with M4-M5 experiments.
+- **Deferral ledger:**
+  - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: the acceptance names CI reporting each layer, and no CI run has executed.
 
 ### AEGIS-234 — Continuous integration
 
 - **Frozen acceptance criterion:** Main branch requires passing workflow.
 - **Residual:** The acceptance is 'main branch requires passing workflow'. No git remote exists, no workflow run has executed, and branch protection is an owner action.
-
-### AEGIS-237 — Failure recovery
-
-- **Frozen acceptance criterion:** Recovery tests exist for exchange and participant state.
-- **Residual:** The acceptance names recovery tests for exchange and participant state. Neither exists: exchange-state recovery arrives with M1 and participant-state recovery with M3.
-
-### AEGIS-238 — Observability
-
-- **Frozen acceptance criterion:** Integration fixture verifies metrics.
-- **Residual:** queue depth, dropped/backpressured events, execution latency and risk status are not registered because nothing produces them. They arrive with M1's bounded queues, M3's execution path and M5's risk engine.
+- **Deferral ledger:**
+  - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: the acceptance names a passing workflow on the protected default branch; no remote, no run and no branch protection exist.
 
 ## Due at M2
 
@@ -76,8 +77,42 @@ the evidence if it closes without paying.
 
 - **Frozen acceptance criterion:** Round-trip integration tests pass.
 - **Residual:** The acceptance names 'selected engine APIs'; no engine exists. Config, metrics and replay surfaces are M2 work, where the roadmap places the bindings needed for data and replay.
+- **Deferral ledger:**
+  - 2026-08-06 — dated **M2** while closing M0: Registered while closing M0: the acceptance names selected engine APIs, and no engine exists to bind.
 
 ### AEGIS-230 — Columnar data interchange
 
 - **Frozen acceptance criterion:** Schema and round-trip tests pass.
 - **Residual:** Parquet, Arrow and DuckDB round trips are not implemented. M0 has no columnar data to interchange, and building them now would require inventing the futures schema AEGIS-026 owns.
+- **Deferral ledger:**
+  - 2026-08-06 — dated **M2** while closing M0: Registered while closing M0: there is no columnar data to interchange, and the futures schema AEGIS-026 owns does not exist yet.
+
+## Due at M3
+
+### AEGIS-237 — Failure recovery
+
+- **Frozen acceptance criterion:** Recovery tests exist for exchange and participant state.
+- **Residual:** The acceptance names recovery tests for exchange and participant state. Exchange-state recovery arrives with M1; participant state lives in the OMS and portfolio layers, which configs/architecture_rules.yaml dates M3, so the obligation cannot be fully discharged before M3.
+- **Deferral ledger:**
+  - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: the acceptance names exchange and participant recovery tests, and neither subsystem exists.
+  - 2026-08-06 — dated **M3** while closing M0: The independent M0 audit found the obligation dated M1 while participant-state recovery depends on the OMS and portfolio layers, which configs/architecture_rules.yaml dates M3. Re-dated to the milestone that can actually discharge it.
+
+## Due at M4
+
+### AEGIS-004 — Exchange/participant separation
+
+- **Frozen acceptance criterion:** Architecture tests and dependency rules prevent participant strategy code from directly mutating the exchange book.
+- **Residual:** Architecture rules declare the full participant pipeline, but configs/architecture_rules.yaml dates cpp/participant/strategy to M4, so the rule that strategy code cannot reach the exchange book is declared and unexercised until then. The exchange book itself arrives at M1.
+- **Deferral ledger:**
+  - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: the acceptance names participant strategy code, and no exchange book or participant pipeline existed for the rules to constrain.
+  - 2026-08-06 — dated **M4** while closing M0: The independent M0 audit found the obligation dated M1 while its own acceptance names participant strategy code, which configs/architecture_rules.yaml dates M4. Re-dated to the milestone that can actually discharge it.
+
+## Due at M5
+
+### AEGIS-238 — Observability
+
+- **Frozen acceptance criterion:** Integration fixture verifies metrics.
+- **Residual:** queue depth and dropped/backpressured events arrive with M1's bounded queues and execution latency with M3's execution path, but risk status has no producer until the risk engine, which configs/architecture_rules.yaml dates M5. Full metric coverage cannot be shown before M5.
+- **Deferral ledger:**
+  - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: queue depth, dropped/backpressured events, execution latency and risk status have no producers.
+  - 2026-08-06 — dated **M5** while closing M0: The independent M0 audit found the obligation dated M1 while risk status has no producer until the risk engine, which configs/architecture_rules.yaml dates M5. Re-dated to the milestone that can actually discharge it.

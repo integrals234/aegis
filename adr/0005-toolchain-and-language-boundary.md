@@ -53,11 +53,24 @@ anywhere else. The binding policy:
 
 A binding that handed Python a mutable pointer into a book would make the
 strategy → risk → OMS path optional from the Python side, which AEGIS-120
-forbids. The M0 surface is four pure functions, and a test asserts that surface
-so an addition that breaks the policy has to break a test first.
+forbids. The M0 surface is five pure functions — `version`, `build_info`,
+`envelope_schema_version`, `encode_envelope`, `decode_envelope` — and a test
+asserts that exact set, so an addition that breaks the policy has to break a test
+first.
 
 The bindings layer may depend only on `cpp-common` and `cpp-events`, so there is
 no exchange or participant code for a binding to reach.
+
+**Ratified deviation (owner, 2026-08-06).** The approved M0 plan specified
+`version()` and `build_info()` only. The implementation also exposes
+`envelope_schema_version()`, `encode_envelope()` and `decode_envelope()`. The
+owner ratified the addition after the independent M0 audit, on these grounds: the
+three additions are pure functions over `cpp/events`, they touch no engine state
+and no latency-critical path, they stay inside the bindings layer's declared
+dependencies, and they turn AEGIS-229's round-trip acceptance into a live
+comparison between the C++ and Python encoders rather than two assertions against
+a stored golden file — a strictly stronger cross-language guarantee. The policy
+above is unchanged; the surface test is what keeps it enforced.
 
 ## Alternatives considered
 
@@ -97,10 +110,12 @@ engine that does not exist would be building M1 early.
 - `scripts/check_cpp_style.sh` runs clang-format and clang-tidy over tracked and
   staged sources.
 - `tests/integration/test_bindings_roundtrip.py` asserts the loaded module is
-  the compiled extension and that the exported surface is exactly the four
+  the compiled extension and that the exported surface is exactly the five
   permitted functions.
 - Evidence: `experiments/evidence/AEGIS-228/`, `experiments/evidence/AEGIS-009/`.
 
 ## Owner approval
 
-Recorded in the approved M0 plan (`experiments/plans/M0.md`, P3 and Part 6).
+Recorded in the approved M0 plan (`experiments/plans/M0.md`, P3 and Part 6). The
+widened binding surface was ratified separately by the owner on 2026-08-06,
+following the independent M0 audit; see the ratified deviation above.

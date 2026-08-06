@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -46,7 +47,26 @@ REQUIRED_MODULES = {
 VALID_STATUS = {"not_started", "in_progress", "blocked", "implemented", "verified", "deferred"}
 VALID_MILESTONES = {f"M{n}" for n in range(10)}
 EVIDENCE_KEYS = ("implementation", "tests", "reports")
-STATUS_ENTRY_KEYS = set(EVIDENCE_KEYS) | {"status", "notes", "audit", "verification_blocked_until", "residual"}
+STATUS_ENTRY_KEYS = set(EVIDENCE_KEYS) | {
+    "status",
+    "notes",
+    "audit",
+    "verification_blocked_until",
+    "residual",
+    "deferral_history",
+}
+
+# A verification obligation is a debt, and a debt that can be moved by editing one
+# scalar is not a debt. Every obligation carries an append-only ledger; the head of
+# the ledger must agree with the live field, so re-dating an obligation without
+# recording that it was re-dated fails the audit.
+DEFERRAL_ENTRY_KEYS = {"blocked_until", "recorded_at", "date", "reason"}
+ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+# Evidence directories are per-requirement by convention; a file sitting in one
+# that no status entry cites is evidence nobody re-checks, which is how a stale
+# artifact survives a milestone.
+EVIDENCE_ROOT = "experiments/evidence"
 
 # Paths that exist but carry no information about whether anything works.
 NON_EVIDENCE_NAMES = {".gitkeep", ".gitignore", "__init__.py", "py.typed"}
@@ -133,16 +153,74 @@ def _check_entry_shape(rid: str, entry: object, errors: list[str]) -> dict[str, 
     return entry
 
 
+def _check_deferral_history(rid: str, entry: dict[str, Any], blocked_until: Any, errors: list[str]) -> None:
+    """The ledger behind ``verification_blocked_until``.
+
+    Without this, moving an obligation from M1 to M4 is a one-character edit that
+    no gate can distinguish from having always said M4. The history makes the move
+    itself the thing that must be written down, and the head-agreement rule below
+    means the live field cannot drift away from what was recorded.
+    """
+    history = entry.get("deferral_history")
+    if history is None:
+        errors.append(
+            f"{rid}: verification_blocked_until requires a deferral_history "
+            f"recording when and why the obligation was dated"
+        )
+        return
+    if not isinstance(history, list) or not history:
+        errors.append(f"{rid}: deferral_history must be a non-empty list")
+        return
+
+    previous_date = ""
+    for index, item in enumerate(history):
+        where = f"{rid}: deferral_history[{index}]"
+        if not isinstance(item, dict):
+            errors.append(f"{where} must be an object")
+            continue
+        missing = sorted(DEFERRAL_ENTRY_KEYS - set(item))
+        if missing:
+            errors.append(f"{where} is missing {', '.join(missing)}")
+        unknown = sorted(set(item) - DEFERRAL_ENTRY_KEYS)
+        if unknown:
+            errors.append(f"{where} has unknown fields: {', '.join(unknown)}")
+        for milestone_key in ("blocked_until", "recorded_at"):
+            value = item.get(milestone_key)
+            if value is not None and value not in VALID_MILESTONES:
+                errors.append(f"{where}.{milestone_key} must be a milestone ID, got {value!r}")
+        date = item.get("date")
+        if not isinstance(date, str) or not ISO_DATE.match(date):
+            errors.append(f"{where}.date must be an ISO date (YYYY-MM-DD), got {date!r}")
+        elif date < previous_date:
+            errors.append(f"{where}.date {date} is earlier than the entry before it ({previous_date})")
+        else:
+            previous_date = date
+        reason = item.get("reason")
+        if not isinstance(reason, str) or not reason.strip():
+            errors.append(f"{where}.reason must say why the obligation was dated there")
+
+    head = history[-1]
+    if isinstance(head, dict) and head.get("blocked_until") != blocked_until:
+        errors.append(
+            f"{rid}: verification_blocked_until is {blocked_until!r} but the last "
+            f"deferral_history entry records {head.get('blocked_until')!r} — an obligation "
+            f"cannot be moved without recording the move"
+        )
+
+
 def _check_obligation(rid: str, entry: dict[str, Any], status: str, errors: list[str]) -> None:
     blocked_until = entry.get("verification_blocked_until")
     if blocked_until is None:
         if entry.get("residual"):
             errors.append(f"{rid}: residual recorded without verification_blocked_until")
+        if entry.get("deferral_history"):
+            errors.append(f"{rid}: deferral_history recorded without verification_blocked_until")
         return
     if blocked_until not in VALID_MILESTONES:
         errors.append(f"{rid}: verification_blocked_until must be a milestone ID, got {blocked_until!r}")
     if not entry.get("residual"):
         errors.append(f"{rid}: verification_blocked_until requires a residual describing what is missing")
+    _check_deferral_history(rid, entry, blocked_until, errors)
     if status == "verified":
         # The anti-inflation rule as a gate rather than a convention.
         errors.append(
@@ -199,6 +277,37 @@ def _check_evidence(
         for required in ("auditor", "commit", "date"):
             if not audit.get(required):
                 errors.append(f"{rid}: audit.{required} is required for 'verified'")
+
+
+def _check_unregistered_evidence(
+    root: Path, statuses: dict[str, Any], errors: list[str]
+) -> None:
+    """Every artifact under ``experiments/evidence/<RID>/`` must be cited by <RID>.
+
+    An artifact no status entry points at is re-checked by nothing: it can fall
+    out of date with the tree and no gate notices, which is exactly how a stale
+    test-count report survives a milestone. Citing it is what puts it under the
+    evidence rules in :func:`_check_evidence`.
+    """
+    evidence_root = root / EVIDENCE_ROOT
+    if not evidence_root.is_dir():
+        return
+    for directory in sorted(p for p in evidence_root.iterdir() if p.is_dir()):
+        rid = directory.name
+        entry = statuses.get(rid)
+        cited: set[str] = set()
+        if isinstance(entry, dict):
+            for key in EVIDENCE_KEYS:
+                value = entry.get(key, [])
+                if isinstance(value, list):
+                    cited.update(v for v in value if isinstance(v, str))
+        for path in sorted(p for p in directory.rglob("*") if p.is_file()):
+            rel = path.relative_to(root).as_posix()
+            if rel not in cited:
+                errors.append(
+                    f"{rid}: evidence artifact is not registered in implementation_status.json: "
+                    f"{rel} (register it or delete it — an uncited artifact is re-checked by nothing)"
+                )
 
 
 def _check_frozen(root: Path, manifest_path: Path, errors: list[str]) -> None:
@@ -292,11 +401,16 @@ def run_audit(
             if not isinstance(entry, dict):
                 continue
             if entry.get("verification_blocked_until") == check_deferred:
+                history = entry.get("deferral_history")
+                moves = len(history) - 1 if isinstance(history, list) and history else 0
+                suffix = f"; re-dated {moves} time(s) since first registered" if moves else ""
                 errors.append(
                     f"{rid}: verification obligation due at {check_deferred} is still open "
-                    f"({entry.get('residual', 'no residual recorded')})"
+                    f"({entry.get('residual', 'no residual recorded')}){suffix}"
                 )
 
+    if deep:
+        _check_unregistered_evidence(root, statuses, errors)
     _check_frozen(root, frozen_manifest or (root / "requirements/frozen_hashes.json"), errors)
     return result
 

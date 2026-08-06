@@ -4,17 +4,17 @@
     {
       "runner": "pytest",
       "layer": "unit",
-      "collected": 318,
+      "collected": 337,
       "passed": true,
-      "duration_s": 2.1551485259988112,
-      "detail": "passed=318"
+      "duration_s": 5.070030856993981,
+      "detail": "passed=337"
     },
     {
       "runner": "pytest",
       "layer": "integration",
       "collected": 34,
       "passed": true,
-      "duration_s": 0.5169501040072646,
+      "duration_s": 1.34301354100171,
       "detail": "passed=34"
     },
     {
@@ -22,7 +22,7 @@
       "layer": "property",
       "collected": 11,
       "passed": true,
-      "duration_s": 2.128836739997496,
+      "duration_s": 4.953334970006836,
       "detail": "passed=11"
     },
     {
@@ -30,7 +30,7 @@
       "layer": "replay",
       "collected": 10,
       "passed": true,
-      "duration_s": 1.2721389420039486,
+      "duration_s": 2.844846799998777,
       "detail": "passed=10"
     },
     {
@@ -38,7 +38,7 @@
       "layer": "research",
       "collected": 18,
       "passed": true,
-      "duration_s": 0.6363406460004626,
+      "duration_s": 1.3063662569911685,
       "detail": "passed=18"
     },
     {
@@ -46,7 +46,7 @@
       "layer": "unit",
       "collected": 44,
       "passed": true,
-      "duration_s": 0.15932705900922883,
+      "duration_s": 0.37084330900688656,
       "detail": "100% tests passed, 0 tests failed out of 44"
     },
     {
@@ -54,7 +54,7 @@
       "layer": "property",
       "collected": 2,
       "passed": true,
-      "duration_s": 0.01792158800526522,
+      "duration_s": 0.042737434996524826,
       "detail": "100% tests passed, 0 tests failed out of 2"
     }
   ]

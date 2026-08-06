@@ -11,14 +11,17 @@ This document is the human-readable view of that register. It is generated and
 drift-checked in CI, so the published list cannot fall behind the tracker it
 claims to summarise.
 
-Three mechanisms keep an obligation from being forgotten, and this is only the
-third:
+Four mechanisms keep an obligation from being forgotten, and this is only the
+fourth:
 
 1. ``tools/audit_requirements.py`` hard-fails on `verified` while an obligation
    is open, which converts the anti-inflation rule from a convention into a gate;
 2. ``--check-deferred M<n>`` fails if an obligation due at that milestone is
    still open when it closes, so the debt lands on the milestone that owes it;
-3. this document, so a reader can see the outstanding list without reading JSON.
+3. every obligation carries an append-only ``deferral_history`` whose head must
+   agree with the live ``verification_blocked_until``, so an obligation cannot be
+   moved to a later milestone without the move itself being written down;
+4. this document, so a reader can see the outstanding list without reading JSON.
 """
 
 from __future__ import annotations
@@ -49,6 +52,10 @@ The register is not a note to self. `tools/audit_requirements.py` refuses to mar
 any of these `verified` while its obligation is open, and
 `tools/audit_requirements.py --check-deferred M<n>` fails the milestone that owes
 the evidence if it closes without paying.
+
+Nor can an obligation quietly slide to a later milestone. Each one carries an
+append-only ledger below; the audit requires the live `verification_blocked_until`
+to equal the head of that ledger, so moving a debt is itself a recorded act.
 """
 
 EMPTY = """\
@@ -73,6 +80,7 @@ def render(reqs: list[dict[str, Any]], statuses: dict[str, dict[str, Any]]) -> s
                 "blocked": blocked,
                 "residual": entry.get("residual", ""),
                 "acceptance": acceptance.get(rid, ""),
+                "history": entry.get("deferral_history", []),
             }
         )
 
@@ -84,18 +92,26 @@ def render(reqs: list[dict[str, Any]], statuses: dict[str, dict[str, Any]]) -> s
     for row in rows:
         by_milestone.setdefault(row["blocked"], []).append(row)
 
+    moved = sum(1 for row in rows if len(row["history"]) > 1)
     lines.append(f"**{len(rows)} outstanding obligation(s).**")
+    if moved:
+        lines.append("")
+        lines.append(
+            f"{moved} of them has been re-dated at least once since first registered; "
+            f"each move is listed under its requirement below."
+        )
     lines.append("")
-    lines.append("| ID | Requirement | Status | Unblocks at | What is still missing |")
-    lines.append("|---|---|---|---|---|")
+    lines.append("| ID | Requirement | Status | Unblocks at | Times re-dated | What is still missing |")
+    lines.append("|---|---|---|---|---|---|")
     for row in rows:
         residual = row["residual"].replace("|", "\\|")
         lines.append(
-            f"| {row['id']} | {row['title']} | {row['status']} | {row['blocked']} | {residual} |"
+            f"| {row['id']} | {row['title']} | {row['status']} | {row['blocked']} | "
+            f"{max(len(row['history']) - 1, 0)} | {residual} |"
         )
 
     lines.append("")
-    for milestone in sorted(by_milestone):
+    for milestone in sorted(by_milestone, key=lambda m: int(m[1:])):
         lines.append(f"## Due at {milestone}")
         lines.append("")
         for row in by_milestone[milestone]:
@@ -103,6 +119,12 @@ def render(reqs: list[dict[str, Any]], statuses: dict[str, dict[str, Any]]) -> s
             lines.append("")
             lines.append(f"- **Frozen acceptance criterion:** {row['acceptance']}")
             lines.append(f"- **Residual:** {row['residual']}")
+            lines.append("- **Deferral ledger:**")
+            for item in row["history"]:
+                lines.append(
+                    f"  - {item.get('date', '?')} — dated **{item.get('blocked_until', '?')}** "
+                    f"while closing {item.get('recorded_at', '?')}: {item.get('reason', '')}"
+                )
             lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"

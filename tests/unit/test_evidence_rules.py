@@ -221,6 +221,14 @@ def test_check_deferred_fails_when_an_obligation_comes_due(catalogue):
             implementation=["tools/thing.py"],
             verification_blocked_until="M1",
             residual="no exchange code exists yet",
+            deferral_history=[
+                {
+                    "blocked_until": "M1",
+                    "recorded_at": "M0",
+                    "date": "2026-08-06",
+                    "reason": "no exchange code exists yet",
+                }
+            ],
         )
     }
     root = catalogue([requirement()], statuses)
