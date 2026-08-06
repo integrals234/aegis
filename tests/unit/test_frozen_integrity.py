@@ -13,9 +13,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
-import pytest
-
 import check_frozen
+import pytest
 
 pytestmark = pytest.mark.unit
 

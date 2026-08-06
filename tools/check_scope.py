@@ -88,15 +88,15 @@ def check(root: Path, scope_path: Path, base: str, paths: list[str] | None = Non
 
     milestone = doc["milestones"].get(active)
     if milestone is None:
-        return errors + [f"{scope_path.name} declares no scope for active milestone {active}"]
+        return [*errors, f"{scope_path.name} declares no scope for active milestone {active}"]
 
     always = list(doc.get("always_allowed", []))
-    allowed = always + list(milestone.get("allowed", []))
+    allowed = [*always, *milestone.get("allowed", [])]
     denied = list(milestone.get("denied", []))
     changed = paths if paths is not None else changed_paths(root, base)
 
     for path in changed:
-        if matches(path, list(approvals)) or path in approvals:
+        if matches(path, sorted(approvals)) or path in approvals:
             continue
         # always_allowed and owner approvals outrank the milestone's deny list:
         # they describe paths no milestone owns (governance state, hygiene).

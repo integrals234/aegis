@@ -86,6 +86,15 @@
         "3.14": "wheel"
       },
       "error": null
+    },
+    {
+      "name": "types-PyYAML",
+      "version": "6.0.12.20260724",
+      "per_target": {
+        "3.12": "wheel",
+        "3.14": "wheel"
+      },
+      "error": null
     }
   ],
   "verdicts": {

@@ -24,7 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from audit_requirements import _is_substantive, load_json  # noqa: E402
+from audit_requirements import _is_substantive, load_json
 
 ROOT = Path(__file__).resolve().parents[1]
 

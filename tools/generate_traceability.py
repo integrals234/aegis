@@ -11,10 +11,11 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from audit_requirements import load_json  # noqa: E402  - path shim above must run first
+from audit_requirements import load_json
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -31,7 +32,7 @@ HEADER = [
 ]
 
 
-def render(reqs: list[dict], statuses: dict[str, dict]) -> str:
+def render(reqs: list[dict[str, Any]], statuses: dict[str, dict[str, Any]]) -> str:
     lines = list(HEADER)
     for r in reqs:
         s = statuses[r["id"]]

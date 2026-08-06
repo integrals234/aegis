@@ -15,10 +15,11 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from audit_requirements import (  # noqa: E402  - path shim above must run first
+from audit_requirements import (
     EVIDENCE_KEYS,
     VALID_MILESTONES,
     VALID_STATUS,
@@ -30,7 +31,7 @@ ROOT = Path(__file__).resolve().parents[1]
 STATUS_PATH = ROOT / "requirements/implementation_status.json"
 
 
-def _validate(rid: str, entry: dict, root: Path) -> list[str]:
+def _validate(rid: str, entry: dict[str, Any], root: Path) -> list[str]:
     errors: list[str] = []
     status = entry["status"]
 
@@ -75,9 +76,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--auditor", help="independent reviewer that verified the requirement")
     parser.add_argument("--audit-commit", help="commit the independent review covered")
     parser.add_argument("--audit-date", help="ISO date of the independent review")
-    parser.add_argument("--blocked-until", choices=sorted(VALID_MILESTONES), help="milestone that unblocks verification")
+    parser.add_argument(
+        "--blocked-until", choices=sorted(VALID_MILESTONES),
+        help="milestone that unblocks verification",
+    )
     parser.add_argument("--residual", help="what is still missing; required with --blocked-until")
-    parser.add_argument("--clear-obligation", action="store_true", help="remove a registered verification obligation")
+    parser.add_argument(
+        "--clear-obligation", action="store_true",
+        help="remove a registered verification obligation",
+    )
     parser.add_argument("--status-path", type=Path, default=STATUS_PATH)
     parser.add_argument("--root", type=Path, default=ROOT)
     args = parser.parse_args(argv)

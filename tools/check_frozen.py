@@ -47,7 +47,8 @@ def frozen_paths(root: Path) -> dict[str, str]:
     manifest = root / MANIFEST
     if not manifest.exists():
         raise SystemExit(f"ERROR: frozen manifest missing: {MANIFEST}")
-    return json.loads(manifest.read_text(encoding="utf-8"))
+    paths: dict[str, str] = json.loads(manifest.read_text(encoding="utf-8"))
+    return paths
 
 
 def approved_paths(root: Path) -> set[str]:

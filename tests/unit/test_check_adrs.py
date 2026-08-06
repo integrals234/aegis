@@ -6,9 +6,8 @@ import json
 import subprocess
 from pathlib import Path
 
-import pytest
-
 import check_adrs
+import pytest
 
 pytestmark = pytest.mark.unit
 
@@ -55,8 +54,8 @@ def tree(tmp_path: Path) -> Path:
         json.dumps(
             {
                 "requirements": [
-                    {"id": "AEGIS-004", "module": "Governance", "milestone": "M0", "title": "sep"},
-                    {"id": "AEGIS-008", "module": "Governance", "milestone": "M0", "title": "adr"},
+                    {"id": "AEGIS-004", "module": "Gov", "milestone": "M0", "title": "sep"},
+                    {"id": "AEGIS-008", "module": "Gov", "milestone": "M0", "title": "adr"},
                 ]
             }
         ),
@@ -76,7 +75,8 @@ def test_valid_adr_passes(tree):
 
 def test_missing_section_is_reported(tree):
     path = tree / "adr/0001-platform-architecture.md"
-    path.write_text(path.read_text(encoding="utf-8").replace("## Alternatives considered", "## Notes"), encoding="utf-8")
+    text = path.read_text(encoding="utf-8").replace("## Alternatives considered", "## Notes")
+    path.write_text(text, encoding="utf-8")
     assert any("Alternatives considered" in e for e in run(tree))
 
 

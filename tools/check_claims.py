@@ -22,6 +22,7 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -45,20 +46,20 @@ class Claim:
         return f"{self.path}:{self.line}: {self.rule}: {self.text}"
 
 
-def load_policy(path: Path) -> dict:
-    doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+def load_policy(path: Path) -> dict[str, Any]:
+    doc: dict[str, Any] = yaml.safe_load(path.read_text(encoding="utf-8"))
     for entry in doc.get("excluded_paths", []):
         if not entry.get("reason"):
             raise SystemExit(f"ERROR: excluded path {entry.get('path')!r} has no reason")
     return doc
 
 
-def fully_excluded(policy: dict) -> set[str]:
+def fully_excluded(policy: dict[str, Any]) -> set[str]:
     """Paths skipped entirely; entries naming `phrases` are only partly exempt."""
     return {e["path"] for e in policy.get("excluded_paths", []) if not e.get("phrases")}
 
 
-def exempt_phrases(policy: dict, rel: str) -> set[str]:
+def exempt_phrases(policy: dict[str, Any], rel: str) -> set[str]:
     exempt: set[str] = set()
     for entry in policy.get("excluded_paths", []):
         if entry["path"] == rel:
@@ -66,7 +67,7 @@ def exempt_phrases(policy: dict, rel: str) -> set[str]:
     return exempt
 
 
-def scanned_files(root: Path, policy: dict) -> list[Path]:
+def scanned_files(root: Path, policy: dict[str, Any]) -> list[Path]:
     excluded = fully_excluded(policy)
     files: set[Path] = set()
     for pattern in policy["scanned_globs"]:
@@ -92,7 +93,7 @@ def evidence_paths_resolve(root: Path, sentence: str, marker: str) -> bool:
     return found
 
 
-def check_file(root: Path, path: Path, policy: dict) -> list[Claim]:
+def check_file(root: Path, path: Path, policy: dict[str, Any]) -> list[Claim]:
     rel = path.relative_to(root).as_posix()
     raw = path.read_text(encoding="utf-8", errors="replace")
     text = strip_code(raw)
@@ -118,7 +119,7 @@ def check_file(root: Path, path: Path, policy: dict) -> list[Claim]:
 
     offset = 0
     for chunk in SENTENCE_SPLIT.split(text):
-        line = text.count("\n", 0, offset) + 1
+        line_no = text.count("\n", 0, offset) + 1
         offset += len(chunk) + 1
         sentence = chunk.strip()
         if not sentence or not NUMBER.search(sentence):
@@ -130,7 +131,7 @@ def check_file(root: Path, path: Path, policy: dict) -> list[Claim]:
         claims.append(
             Claim(
                 rel,
-                line,
+                line_no,
                 "numeric claim without resolvable evidence",
                 sentence[:160],
             )

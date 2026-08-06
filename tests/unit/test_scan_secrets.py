@@ -11,7 +11,6 @@ import subprocess
 from pathlib import Path
 
 import pytest
-
 import scan_secrets
 
 pytestmark = pytest.mark.unit

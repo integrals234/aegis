@@ -23,7 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from audit_requirements import load_json  # noqa: E402  - path shim above must run first
+from audit_requirements import load_json
 
 ROOT = Path(__file__).resolve().parents[1]
 ADR_DIR = "adr"
@@ -81,7 +81,9 @@ def check_structure(root: Path) -> tuple[list[str], set[str]]:
         if not ADR_FILENAME.match(name):
             errors.append(f"{rel}: filename must be NNNN-kebab-case-title.md")
             continue
-        known.add(ADR_FILENAME.match(name).group(1))
+        matched = ADR_FILENAME.match(name)
+        assert matched is not None  # guarded by the branch above
+        known.add(matched.group(1))
 
         text = path.read_text(encoding="utf-8")
         for section in REQUIRED_SECTIONS:

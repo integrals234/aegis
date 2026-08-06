@@ -47,7 +47,7 @@ def parse_pins(text: str) -> list[tuple[str, str]]:
 def hashes_for(name: str, version: str, timeout: float) -> list[str]:
     url = PYPI_JSON.format(name=name, version=version)
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa: S310 - fixed https host
+        with urllib.request.urlopen(url, timeout=timeout) as response:
             payload = json.load(response)
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as exc:
         raise SystemExit(f"cannot fetch hashes for {name}=={version}: {exc}") from exc

@@ -19,6 +19,7 @@ import json
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -61,7 +62,7 @@ class DuplicateKeyError(ValueError):
     """
 
 
-def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict:
+def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, Any]:
     seen: set[str] = set()
     for key, _ in pairs:
         if key in seen:
@@ -70,8 +71,11 @@ def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict:
     return dict(pairs)
 
 
-def load_json(path: Path) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_reject_duplicate_keys)
+def load_json(path: Path) -> dict[str, Any]:
+    loaded: dict[str, Any] = json.loads(
+        path.read_text(encoding="utf-8"), object_pairs_hook=_reject_duplicate_keys
+    )
+    return loaded
 
 
 @dataclass
@@ -115,7 +119,7 @@ def _is_substantive(path: Path) -> tuple[bool, str]:
     return True, ""
 
 
-def _check_entry_shape(rid: str, entry: object, errors: list[str]) -> dict | None:
+def _check_entry_shape(rid: str, entry: object, errors: list[str]) -> dict[str, Any] | None:
     if not isinstance(entry, dict):
         errors.append(f"{rid}: status entry must be an object")
         return None
@@ -129,7 +133,7 @@ def _check_entry_shape(rid: str, entry: object, errors: list[str]) -> dict | Non
     return entry
 
 
-def _check_obligation(rid: str, entry: dict, status: str, errors: list[str]) -> None:
+def _check_obligation(rid: str, entry: dict[str, Any], status: str, errors: list[str]) -> None:
     blocked_until = entry.get("verification_blocked_until")
     if blocked_until is None:
         if entry.get("residual"):
@@ -146,7 +150,9 @@ def _check_obligation(rid: str, entry: dict, status: str, errors: list[str]) -> 
         )
 
 
-def _check_evidence(rid: str, entry: dict, status: str, root: Path, deep: bool, errors: list[str]) -> None:
+def _check_evidence(
+    rid: str, entry: dict[str, Any], status: str, root: Path, deep: bool, errors: list[str]
+) -> None:
     for key in EVIDENCE_KEYS:
         for rel in entry.get(key, []):
             if Path(rel).is_absolute() or ".." in Path(rel).parts:
@@ -297,9 +303,14 @@ def run_audit(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--quick", action="store_true", help="structural checks only; skip evidence-content inspection")
+    parser.add_argument(
+        "--quick", action="store_true", help="structural checks only; skip evidence-content inspection"
+    )
     parser.add_argument("--milestone", help="restrict per-requirement checks to one milestone")
-    parser.add_argument("--check-deferred", metavar="MILESTONE", help="fail if any obligation due at MILESTONE is still open")
+    parser.add_argument(
+        "--check-deferred", metavar="MILESTONE",
+        help="fail if any obligation due at MILESTONE is still open",
+    )
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--requirements", type=Path)
     parser.add_argument("--status", type=Path)

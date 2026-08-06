@@ -20,6 +20,7 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_REQUIREMENTS = ROOT / "requirements/python-requirements.in"
@@ -128,10 +129,11 @@ def wheel_supports(filename: str, target: str) -> bool:
     return False
 
 
-def fetch(name: str, version: str, timeout: float) -> dict:
+def fetch(name: str, version: str, timeout: float) -> dict[str, Any]:
     url = PYPI_JSON.format(name=name, version=version)
-    with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa: S310 - fixed https host
-        return json.load(response)
+    with urllib.request.urlopen(url, timeout=timeout) as response:
+        payload: dict[str, Any] = json.load(response)
+    return payload
 
 
 def probe_package(name: str, version: str, targets: tuple[str, ...], timeout: float) -> PackageResult:

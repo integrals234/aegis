@@ -27,6 +27,7 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -89,7 +90,7 @@ class Layer:
 class Rules:
     layers: list[Layer]
     covered_roots: list[str]
-    banned: dict
+    banned: dict[str, Any]
 
 
 def load_rules(path: Path) -> Rules:
@@ -191,24 +192,31 @@ def check_cpp_file(path: Path, rel: str, layer: Layer, rules: Rules) -> list[str
 
     allowed_python_layers = set(banned.get("python_headers_only_in", []))
     for include in INCLUDE_QUOTED.findall(text) + INCLUDE_ANGLED.findall(text):
-        if any(marker in include for marker in PYTHON_HEADERS):
-            if layer.name not in allowed_python_layers and not layer.allows_python_headers:
-                errors.append(
-                    f"{rel}: Python headers are confined to {sorted(allowed_python_layers)} "
-                    f"(include \"{include}\")"
-                )
-        if any(marker in include for marker in banned.get("gateway_header_markers", [])):
-            if not layer.allows_gateway_adapters:
-                errors.append(
-                    f"{rel}: only the OMS may include gateway/adapter headers (include \"{include}\")"
-                )
+        if any(marker in include for marker in PYTHON_HEADERS) and (
+            layer.name not in allowed_python_layers and not layer.allows_python_headers
+        ):
+            errors.append(
+                f"{rel}: Python headers are confined to {sorted(allowed_python_layers)} "
+                f"(include \"{include}\")"
+            )
+        if (
+            any(marker in include for marker in banned.get("gateway_header_markers", []))
+            and not layer.allows_gateway_adapters
+        ):
+            errors.append(
+                f"{rel}: only the OMS may include gateway/adapter headers (include \"{include}\")"
+            )
 
     if layer.namespaces:
         for raw in NAMESPACE_OPEN.findall(text):
             opened = re.sub(r"\s+", "", raw)
             if not opened.startswith("aegis"):
                 continue
-            if not any(opened == ns or ns.startswith(opened + "::") or opened.startswith(ns) for ns in layer.namespaces):
+            owned = any(
+                opened == ns or ns.startswith(opened + "::") or opened.startswith(ns)
+                for ns in layer.namespaces
+            )
+            if not owned:
                 errors.append(
                     f"{rel}: opens namespace {opened}, which layer {layer.name} does not own "
                     f"(owns {layer.namespaces})"
@@ -290,7 +298,8 @@ def check_cmake(root: Path, rules: Rules) -> list[str]:
     # Only C++ layers build CMake targets; including Python layers here would
     # collide on names like aegis_common and misattribute every link edge.
     by_target = {layer.target: layer for layer in rules.layers if layer.language == "cpp"}
-    duplicates = [t for t in by_target if sum(1 for x in rules.layers if x.language == "cpp" and x.target == t) > 1]
+    cpp_layers = [layer for layer in rules.layers if layer.language == "cpp"]
+    duplicates = [t for t in by_target if sum(1 for x in cpp_layers if x.target == t) > 1]
     if duplicates:
         errors.append(f"rules defect: CMake target names collide: {sorted(set(duplicates))}")
     for cmake in sorted(root.rglob("CMakeLists.txt")):

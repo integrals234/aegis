@@ -105,7 +105,7 @@ def load_allowlist(root: Path) -> list[dict[str, str]]:
     path = root / ALLOWLIST
     if not path.exists():
         return []
-    entries = json.loads(path.read_text(encoding="utf-8"))["allow"]
+    entries: list[dict[str, str]] = json.loads(path.read_text(encoding="utf-8"))["allow"]
     for entry in entries:
         if not entry.get("reason"):
             raise SystemExit(f"ERROR: {ALLOWLIST} entry {entry.get('path')!r} has no reason")

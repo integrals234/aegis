@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 import check_claims
+import pytest
 
 pytestmark = pytest.mark.unit
 

@@ -11,7 +11,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 import update_status
 from audit_requirements import run_audit
 
@@ -72,7 +71,12 @@ def test_verified_with_real_evidence_passes(catalogue):
 
 def test_nonexistent_evidence_path_is_rejected(catalogue):
     statuses = {
-        "AEGIS-001": entry("verified", implementation=["tools/missing.py"], tests=["tests/missing.py"], audit=AUDIT_RECORD)
+        "AEGIS-001": entry(
+            "verified",
+            implementation=["tools/missing.py"],
+            tests=["tests/missing.py"],
+            audit=AUDIT_RECORD,
+        )
     }
     root = catalogue([requirement()], statuses)
     result = audit(root)
@@ -81,7 +85,12 @@ def test_nonexistent_evidence_path_is_rejected(catalogue):
 
 def test_empty_file_is_not_evidence(catalogue):
     statuses = {
-        "AEGIS-001": entry("verified", implementation=["tools/thing.py"], tests=["tests/unit/test_empty.py"], audit=AUDIT_RECORD)
+        "AEGIS-001": entry(
+            "verified",
+            implementation=["tools/thing.py"],
+            tests=["tests/unit/test_empty.py"],
+            audit=AUDIT_RECORD,
+        )
     }
     root = catalogue([requirement()], statuses)
     write(root, "tools/thing.py", "x = 1\n")
@@ -92,7 +101,9 @@ def test_empty_file_is_not_evidence(catalogue):
 
 def test_directory_is_not_evidence(catalogue):
     statuses = {
-        "AEGIS-001": entry("verified", implementation=["tools/thing.py"], tests=["tests/unit"], audit=AUDIT_RECORD)
+        "AEGIS-001": entry(
+            "verified", implementation=["tools/thing.py"], tests=["tests/unit"], audit=AUDIT_RECORD
+        )
     }
     root = catalogue([requirement()], statuses)
     write(root, "tools/thing.py", "x = 1\n")
@@ -103,7 +114,12 @@ def test_directory_is_not_evidence(catalogue):
 
 def test_gitkeep_is_not_evidence(catalogue):
     statuses = {
-        "AEGIS-001": entry("verified", implementation=["tools/thing.py"], tests=["tests/unit/.gitkeep"], audit=AUDIT_RECORD)
+        "AEGIS-001": entry(
+            "verified",
+            implementation=["tools/thing.py"],
+            tests=["tests/unit/.gitkeep"],
+            audit=AUDIT_RECORD,
+        )
     }
     root = catalogue([requirement()], statuses)
     write(root, "tools/thing.py", "x = 1\n")
@@ -114,7 +130,12 @@ def test_gitkeep_is_not_evidence(catalogue):
 
 def test_todo_only_file_is_not_evidence(catalogue):
     statuses = {
-        "AEGIS-001": entry("verified", implementation=["tools/thing.py"], tests=["tests/unit/test_todo.py"], audit=AUDIT_RECORD)
+        "AEGIS-001": entry(
+            "verified",
+            implementation=["tools/thing.py"],
+            tests=["tests/unit/test_todo.py"],
+            audit=AUDIT_RECORD,
+        )
     }
     root = catalogue([requirement()], statuses)
     write(root, "tools/thing.py", "x = 1\n")
@@ -151,7 +172,12 @@ def test_implemented_requires_a_substantive_implementation_path(catalogue):
 def test_quick_mode_skips_content_inspection(catalogue):
     """--quick is a fast structural pass; it must not silently become the gate."""
     statuses = {
-        "AEGIS-001": entry("verified", implementation=["tools/thing.py"], tests=["tests/unit/test_empty.py"], audit=AUDIT_RECORD)
+        "AEGIS-001": entry(
+            "verified",
+            implementation=["tools/thing.py"],
+            tests=["tests/unit/test_empty.py"],
+            audit=AUDIT_RECORD,
+        )
     }
     root = catalogue([requirement()], statuses)
     write(root, "tools/thing.py", "x = 1\n")

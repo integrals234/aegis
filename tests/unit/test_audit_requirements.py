@@ -10,7 +10,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from audit_requirements import DuplicateKeyError, load_json, run_audit
 
 pytestmark = pytest.mark.unit
