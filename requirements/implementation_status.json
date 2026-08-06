@@ -3,7 +3,7 @@
   "active_milestone": "M0",
   "requirements": {
     "AEGIS-001": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "tools/check_frozen.py",
         ".claude/hooks/protect_spec.py",
@@ -14,10 +14,15 @@
         "tests/unit/test_protect_spec_hook.py"
       ],
       "reports": [],
-      "notes": "Hash manifest plus branch-diff gate, hardened fail-closed hook covering frozen_hashes.json, pre-commit and CI. The hook is defence in depth; docs/LIMITATIONS.md records that it cannot see shell-mediated writes."
+      "notes": "Hash manifest plus branch-diff gate, hardened fail-closed hook covering frozen_hashes.json, pre-commit and CI. The hook is defence in depth; docs/LIMITATIONS.md records that it cannot see shell-mediated writes.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M0: 17 PASS, 5 FAIL); blocking findings R1-R4 remediated through 517c760; promoted by owner-approved fast-track closure - no second independent audit was performed",
+        "commit": "adf34ed",
+        "date": "2026-08-06"
+      }
     },
     "AEGIS-002": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "tools/audit_requirements.py",
         "tools/generate_traceability.py"
@@ -28,10 +33,15 @@
       "reports": [
         "docs/TRACEABILITY_MATRIX.md"
       ],
-      "notes": "Auditor refactored to run_audit(req_path, status_path, root) so it is testable against fixture trees; duplicate JSON keys, duplicate IDs, missing and orphan entries all detected. Matrix generated and drift-checked in CI."
+      "notes": "Auditor refactored to run_audit(req_path, status_path, root) so it is testable against fixture trees; duplicate JSON keys, duplicate IDs, missing and orphan entries all detected. Matrix generated and drift-checked in CI.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M0: 17 PASS, 5 FAIL); blocking findings R1-R4 remediated through 517c760; promoted by owner-approved fast-track closure - no second independent audit was performed",
+        "commit": "adf34ed",
+        "date": "2026-08-06"
+      }
     },
     "AEGIS-003": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "tools/audit_requirements.py",
         "tools/update_status.py",
@@ -43,7 +53,12 @@
       "reports": [
         "docs/DEFERRED_VERIFICATION.md"
       ],
-      "notes": "A path that exists is no longer evidence: directories, empty files, .gitkeep and TODO-only files are rejected. 'verified' requires an audit record and is hard-blocked while an obligation is open."
+      "notes": "A path that exists is no longer evidence: directories, empty files, .gitkeep and TODO-only files are rejected. 'verified' requires an audit record and is hard-blocked while an obligation is open.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M0: 17 PASS, 5 FAIL); blocking findings R1-R4 remediated through 517c760; promoted by owner-approved fast-track closure - no second independent audit was performed",
+        "commit": "adf34ed",
+        "date": "2026-08-06"
+      }
     },
     "AEGIS-004": {
       "status": "implemented",
@@ -101,7 +116,7 @@
       ]
     },
     "AEGIS-006": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "tools/check_claims.py",
         "configs/claims_policy.yaml"
@@ -110,10 +125,15 @@
         "tests/unit/test_check_claims.py"
       ],
       "reports": [],
-      "notes": "Forbidden phrasing from the frozen CV policy plus numbers adjacent to performance or trading units without a resolvable evidence marker. Exclusions are per-path with a reason and can be narrowed to named phrases."
+      "notes": "Forbidden phrasing from the frozen CV policy plus numbers adjacent to performance or trading units without a resolvable evidence marker. Exclusions are per-path with a reason and can be narrowed to named phrases.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M0: 17 PASS, 5 FAIL); blocking findings R1-R4 remediated through 517c760; promoted by owner-approved fast-track closure - no second independent audit was performed",
+        "commit": "adf34ed",
+        "date": "2026-08-06"
+      }
     },
     "AEGIS-007": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "tools/check_scope.py",
         "configs/milestone_scope.yaml",
@@ -123,10 +143,15 @@
         "tests/unit/test_scope_guard.py"
       ],
       "reports": [],
-      "notes": "Both halves of the acceptance: BUILD_STATE names exactly one active milestone, and the branch diff is checked against that milestone's allowed and denied paths."
+      "notes": "Both halves of the acceptance: BUILD_STATE names exactly one active milestone, and the branch diff is checked against that milestone's allowed and denied paths.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M0: 17 PASS, 5 FAIL); blocking findings R1-R4 remediated through 517c760; promoted by owner-approved fast-track closure - no second independent audit was performed",
+        "commit": "adf34ed",
+        "date": "2026-08-06"
+      }
     },
     "AEGIS-008": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "tools/check_adrs.py",
         "adr/0001-platform-architecture.md"
@@ -135,7 +160,12 @@
         "tests/unit/test_check_adrs.py"
       ],
       "reports": [],
-      "notes": "Structure, status, milestone and requirement IDs validated; dangling ADR references detected; and the linkage half enforced, so an architecture change on a branch must cite an ADR."
+      "notes": "Structure, status, milestone and requirement IDs validated; dangling ADR references detected; and the linkage half enforced, so an architecture change on a branch must cite an ADR.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M0: 17 PASS, 5 FAIL); blocking findings R1-R4 remediated through 517c760; promoted by owner-approved fast-track closure - no second independent audit was performed",
+        "commit": "adf34ed",
+        "date": "2026-08-06"
+      }
     },
     "AEGIS-009": {
       "status": "implemented",
@@ -162,7 +192,7 @@
       ]
     },
     "AEGIS-010": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "tools/scan_secrets.py",
         "configs/secret_scan_allowlist.json",
@@ -173,7 +203,12 @@
         "tests/unit/test_settings_deny_rules.py"
       ],
       "reports": [],
-      "notes": "Scanner covers worktree, index and history. The settings test is a configuration assertion, not a behavioural proof; the behavioural control is the scanner."
+      "notes": "Scanner covers worktree, index and history. The settings test is a configuration assertion, not a behavioural proof; the behavioural control is the scanner.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M0: 17 PASS, 5 FAIL); blocking findings R1-R4 remediated through 517c760; promoted by owner-approved fast-track closure - no second independent audit was performed",
+        "commit": "adf34ed",
+        "date": "2026-08-06"
+      }
     },
     "AEGIS-011": {
       "status": "not_started",
@@ -1712,7 +1747,7 @@
       ]
     },
     "AEGIS-228": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "requirements/requirements.lock",
         "requirements/python-requirements.in",
@@ -1725,7 +1760,12 @@
         "experiments/evidence/AEGIS-228/install_transcript.txt",
         "experiments/evidence/AEGIS-228/dependency_probe.json"
       ],
-      "notes": "Hash-pinned lockfile installing under --require-hashes, with a committed interpreter-compatibility probe and a clean-virtualenv install transcript."
+      "notes": "Hash-pinned lockfile installing under --require-hashes, with a committed interpreter-compatibility probe and a clean-virtualenv install transcript.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M0: 17 PASS, 5 FAIL); blocking findings R1-R4 remediated through 517c760; promoted by owner-approved fast-track closure - no second independent audit was performed",
+        "commit": "adf34ed",
+        "date": "2026-08-06"
+      }
     },
     "AEGIS-229": {
       "status": "implemented",
@@ -1772,7 +1812,7 @@
       ]
     },
     "AEGIS-231": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "configs/schemas/config.v1.json",
         "python/common/config.py",
@@ -1783,10 +1823,15 @@
         "tests/cpp/unit/test_config.cpp"
       ],
       "reports": [],
-      "notes": "One schema read at runtime by both loaders, mandatory enumerated config_version, defaults<file<env<CLI precedence with per-leaf provenance, and a 12-fixture corpus asserting on message content."
+      "notes": "One schema read at runtime by both loaders, mandatory enumerated config_version, defaults<file<env<CLI precedence with per-leaf provenance, and a 12-fixture corpus asserting on message content.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M0: 17 PASS, 5 FAIL); blocking findings R1-R4 remediated through 517c760; promoted by owner-approved fast-track closure - no second independent audit was performed",
+        "commit": "adf34ed",
+        "date": "2026-08-06"
+      }
     },
     "AEGIS-232": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "configs/schemas/log_record.v1.json",
         "python/common/logging.py",
@@ -1797,7 +1842,12 @@
         "tests/cpp/unit/test_logging.cpp"
       ],
       "reports": [],
-      "notes": "JSON Lines validated against one schema by both implementations, experiment_id and correlation_id on every record, injected clock and per-logger sequence for byte-identical output, and key-name redaction at record-build time."
+      "notes": "JSON Lines validated against one schema by both implementations, experiment_id and correlation_id on every record, injected clock and per-logger sequence for byte-identical output, and key-name redaction at record-build time.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M0: 17 PASS, 5 FAIL); blocking findings R1-R4 remediated through 517c760; promoted by owner-approved fast-track closure - no second independent audit was performed",
+        "commit": "adf34ed",
+        "date": "2026-08-06"
+      }
     },
     "AEGIS-233": {
       "status": "implemented",
@@ -1847,7 +1897,7 @@
       ]
     },
     "AEGIS-235": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "docs/RUNBOOK.md",
         "docs/DEMO.md",
@@ -1859,10 +1909,15 @@
         "tests/unit/test_check_docs.py"
       ],
       "reports": [],
-      "notes": "Executable documentation audit: required documents present and non-placeholder, evidence markers and internal links resolvable, requirement references real."
+      "notes": "Executable documentation audit: required documents present and non-placeholder, evidence markers and internal links resolvable, requirement references real.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M0: 17 PASS, 5 FAIL); blocking findings R1-R4 remediated through 517c760; promoted by owner-approved fast-track closure - no second independent audit was performed",
+        "commit": "adf34ed",
+        "date": "2026-08-06"
+      }
     },
     "AEGIS-236": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "tools/check_sample_data.py",
         "tools/check_pack_manifest.py",
@@ -1873,7 +1928,12 @@
         "tests/unit/test_check_sample_data.py"
       ],
       "reports": [],
-      "notes": "Both halves: committed samples capped, allowlisted and provenance-bearing with an explicit redistributable assertion; external datasets pinned to immutable versions with checksums. The committed sample is generated, not sliced from a licensed feed."
+      "notes": "Both halves: committed samples capped, allowlisted and provenance-bearing with an explicit redistributable assertion; external datasets pinned to immutable versions with checksums. The committed sample is generated, not sliced from a licensed feed.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M0: 17 PASS, 5 FAIL); blocking findings R1-R4 remediated through 517c760; promoted by owner-approved fast-track closure - no second independent audit was performed",
+        "commit": "adf34ed",
+        "date": "2026-08-06"
+      }
     },
     "AEGIS-237": {
       "status": "implemented",
