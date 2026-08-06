@@ -9,6 +9,9 @@
 #   readability-identifier-length ............ conflicts with idiomatic i/j/n.
 #   misc-non-private-member-variables ........ value types are used deliberately.
 #   *-magic-numbers .......................... fires on test fixtures.
+#   misc-include-cleaner ..................... flags headers the language
+#     requires but the source does not name, such as <compare> for a
+#     defaulted three-way comparison.
 #   portability-avoid-pragma-once ............ every compiler in
 #     docs/ENVIRONMENT.md implements #pragma once and the codebase uses it
 #     uniformly; include guards would add noise without adding portability.
@@ -29,7 +32,8 @@ Checks: >
   -misc-non-private-member-variables-in-classes,
   -cppcoreguidelines-avoid-magic-numbers,
   -readability-magic-numbers,
-  -portability-avoid-pragma-once
+  -portability-avoid-pragma-once,
+  -misc-include-cleaner
 
 WarningsAsErrors: '*'
 HeaderFilterRegex: '(cpp)/.*'

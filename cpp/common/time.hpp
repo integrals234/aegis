@@ -1,9 +1,7 @@
 #pragma once
 
-#include <compare>
+#include <compare>  // required for the defaulted three-way comparisons below
 #include <cstdint>
-#include <ratio>
-#include <type_traits>
 
 /// Time domains for AEGIS (ADR-0002).
 ///
@@ -104,28 +102,28 @@ using MonotonicTime = Timestamp<domain::Monotonic>;
 /// unspecified and differs across processes and reboots. Serialising one would
 /// produce a record that replays to a different value on the next run, which
 /// breaks the byte-identical canonical output AEGIS-005 requires.
+///
+/// Opt-in rather than opt-out: a domain added later is not serializable until
+/// somebody states that it is.
 template <typename T>
-struct is_serializable_timestamp : std::false_type {};
+inline constexpr bool kSerializableTimestamp = false;
 
 template <>
-struct is_serializable_timestamp<EventTime> : std::true_type {};
+inline constexpr bool kSerializableTimestamp<EventTime> = true;
 template <>
-struct is_serializable_timestamp<ReceiveTime> : std::true_type {};
+inline constexpr bool kSerializableTimestamp<ReceiveTime> = true;
 template <>
-struct is_serializable_timestamp<DecisionTime> : std::true_type {};
+inline constexpr bool kSerializableTimestamp<DecisionTime> = true;
 template <>
-struct is_serializable_timestamp<SubmitTime> : std::true_type {};
+inline constexpr bool kSerializableTimestamp<SubmitTime> = true;
 template <>
-struct is_serializable_timestamp<ExchangeTime> : std::true_type {};
+inline constexpr bool kSerializableTimestamp<ExchangeTime> = true;
 template <>
-struct is_serializable_timestamp<AckTime> : std::true_type {};
-
-template <typename T>
-inline constexpr bool is_serializable_timestamp_v = is_serializable_timestamp<T>::value;
+inline constexpr bool kSerializableTimestamp<AckTime> = true;
 
 /// Concept form, used to constrain encoders.
 template <typename T>
-concept SerializableTimestamp = is_serializable_timestamp_v<T>;
+concept SerializableTimestamp = kSerializableTimestamp<T>;
 
 /// The only supported way to move a timestamp into a persisted record.
 ///

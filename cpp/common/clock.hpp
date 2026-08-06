@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "cpp/common/time.hpp"
 
 /// Clock interfaces (ADR-0002).
