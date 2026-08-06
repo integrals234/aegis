@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aegis.local/schemas/experiment_manifest.v1.json",
+  "x-aegis-schema-name": "experiment_manifest",
+  "x-aegis-schema-version": 1,
+  "title": "AEGIS experiment manifest, version 1",
+  "description": "Everything needed to re-run an experiment and get the same answer (AEGIS-097, AEGIS-209 through AEGIS-216). A result whose manifest is incomplete is not reproducible, whatever the report says.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "code_commit",
+    "config_digest",
+    "seed",
+    "created_at_ns",
+    "rerun_command"
+  ],
+  "properties": {
+    "schema_version": { "type": "integer", "enum": [1] },
+    "experiment_id": {
+      "description": "Immutable unique identifier for this run (AEGIS-209).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+    },
+    "code_commit": {
+      "description": "Git commit the run executed (AEGIS-210). Recorded, not described: a report that says 'latest main' is not reproducible.",
+      "type": "string",
+      "minLength": 7,
+      "maxLength": 64,
+      "pattern": "^[0-9a-f]+(-dirty)?$"
+    },
+    "config_digest": {
+      "description": "SHA-256 of the resolved configuration (AEGIS-212). The resolved one, not the file: environment and CLI overrides change what actually ran.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "seed": {
+      "description": "Random seed (AEGIS-214).",
+      "type": "integer",
+      "minimum": 0
+    },
+    "created_at_ns": {
+      "description": "UTC nanoseconds when the manifest was written.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "rerun_command": {
+      "description": "The exact command that reproduces this run (AEGIS-216).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "data_version": {
+      "description": "Dataset identifier and version (AEGIS-211). Absent only when a run consumed no dataset.",
+      "type": "string",
+      "maxLength": 256
+    },
+    "date_range": {
+      "description": "Inclusive ISO dates covered by the run (AEGIS-213).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "properties": {
+        "start": { "type": "string", "minLength": 10, "maxLength": 10 },
+        "end": { "type": "string", "minLength": 10, "maxLength": 10 }
+      }
+    },
+    "contracts": {
+      "description": "Contracts the run used (AEGIS-213).",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 64 }
+    },
+    "roll_method": {
+      "description": "Futures roll convention (AEGIS-213). Results are not comparable across roll methods, so it is recorded rather than assumed.",
+      "type": "string",
+      "maxLength": 64
+    },
+    "costs": {
+      "description": "Cost assumptions applied (AEGIS-214). A gross-of-cost result reported as net is the single most common way a backtest misleads.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fees_bps": { "type": "number" },
+        "spread_bps": { "type": "number" },
+        "slippage_bps": { "type": "number" }
+      }
+    },
+    "environment": {
+      "description": "Toolchain and host facts (AEGIS-009, AEGIS-053).",
+      "type": "object",
+      "additionalProperties": true
+    },
+    "artifacts": {
+      "description": "Paths this run produced (AEGIS-215).",
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 512 }
+    }
+  }
+}

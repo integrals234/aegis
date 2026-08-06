@@ -1,0 +1,27 @@
+registry_version: 1
+
+# AEGIS-236 — large or licensed market data stays outside this repository and is
+# referenced here by *immutable* version identifier.
+#
+# "Download the latest from the vendor" is not a reference: the data changes,
+# the research does not, and the mismatch surfaces later as a result nobody can
+# reproduce. tools/check_sample_data.py rejects a version of `latest`, `current`
+# or a branch name for exactly that reason, and requires a checksum so a
+# downloaded copy can be shown to be the copy the research used.
+#
+# M0 references no datasets: no research has run, so pre-registering a vendor
+# feed would be recording an intention rather than a fact. Entries arrive with
+# M2's ingestion work (AEGIS-011 through AEGIS-014, AEGIS-026).
+
+datasets: []
+
+# Template for the entries M2 will add:
+#
+# datasets:
+#   - dataset_id: cme-es-futures-1min
+#     version: "2026-01-15"          # immutable; never `latest`
+#     licence: <exact licence name and whether redistribution is permitted>
+#     access: <how to obtain it, including any account or entitlement required>
+#     checksum: sha256:<digest of the archive as used>
+#     description: <what it contains and the period it covers>
+#     redistributable: false          # if true, consider a small committed sample instead
