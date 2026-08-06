@@ -13,6 +13,11 @@
 #     parameters of one type; avoiding it would mean a wrapper type per string
 #     argument. Domain confusions that actually matter (clock domains, price vs
 #     quantity) get real strong types instead — see cpp/common/time.hpp.
+#   *-bounds-avoid-unchecked-container-access . std::span has no checked at()
+#     before C++26, so on a C++20 codebase this check is unactionable for the
+#     one type where bounds actually matter. Indexed reads are guarded by an
+#     explicit size check at the point of use; .at() is the house style
+#     everywhere it exists.
 #   readability-braces-around-statements ..... the Google style this project
 #     formats to permits a single-statement if on one line.
 #   misc-include-cleaner ..................... flags headers the language
@@ -41,7 +46,8 @@ Checks: >
   -portability-avoid-pragma-once,
   -misc-include-cleaner,
   -readability-braces-around-statements,
-  -bugprone-easily-swappable-parameters
+  -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access
 
 WarningsAsErrors: '*'
 HeaderFilterRegex: '(cpp)/.*'

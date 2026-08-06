@@ -1,0 +1,78 @@
+{
+  "golden_version": 1,
+  "purpose": "Canonical encodings of cpp/events/envelope.hpp and python/common/envelope.py. Both implementations are tested against these exact bytes, so a change made to one and not the other fails a test instead of silently corrupting recordings. Regenerating this file to make a test pass is a change to the wire format and requires an ADR.",
+  "schema_version": 1,
+  "message_type": 0,
+  "cases": [
+    {
+      "name": "minimal",
+      "why": "Every field at its zero value: the shortest legal envelope.",
+      "fields": {
+        "sequence": 0,
+        "stream_id": 0,
+        "event_time_ns": 0,
+        "producer_id": "",
+        "experiment_id": "",
+        "correlation_id": "",
+        "payload_hex": ""
+      },
+      "encoded_hex": "0100000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "name": "typical",
+      "why": "The shape a real platform record takes.",
+      "fields": {
+        "sequence": 42,
+        "stream_id": 7,
+        "event_time_ns": 1700000000123456789,
+        "producer_id": "exchange.sequencer",
+        "experiment_id": "m0-envelope",
+        "correlation_id": "order-4711",
+        "payload_hex": "deadbeef"
+      },
+      "encoded_hex": "010000002a00000000000000070000000000000015cd853dfe9c9717120065786368616e67652e73657175656e6365720b006d302d656e76656c6f70650a006f726465722d3437313104000000deadbeef"
+    },
+    {
+      "name": "negative_event_time",
+      "why": "Timestamps before the Unix epoch must have a defined byte pattern.",
+      "fields": {
+        "sequence": 1,
+        "stream_id": 1,
+        "event_time_ns": -1,
+        "producer_id": "p",
+        "experiment_id": "e",
+        "correlation_id": "",
+        "payload_hex": "00"
+      },
+      "encoded_hex": "0100000001000000000000000100000000000000ffffffffffffffff01007001006500000100000000"
+    },
+    {
+      "name": "unicode_identifiers",
+      "why": "Identifiers are UTF-8 length-prefixed byte strings, not native strings.",
+      "fields": {
+        "sequence": 2,
+        "stream_id": 2,
+        "event_time_ns": 1,
+        "producer_id": "prod\u00fczent",
+        "experiment_id": "\u5b9f\u9a13",
+        "correlation_id": "id",
+        "payload_hex": "0102030405"
+      },
+      "encoded_hex": "010000000200000000000000020000000000000001000000000000000a0070726f64c3bc7a656e740600e5ae9fe9a89302006964050000000102030405"
+    },
+    {
+      "name": "max_sequence",
+      "why": "The 64-bit boundary must encode without wrapping.",
+      "fields": {
+        "sequence": 18446744073709551615,
+        "stream_id": 18446744073709551615,
+        "event_time_ns": 9223372036854775807,
+        "producer_id": "x",
+        "experiment_id": "y",
+        "correlation_id": "z",
+        "payload_hex": ""
+      },
+      "encoded_hex": "01000000ffffffffffffffffffffffffffffffffffffffffffffff7f01007801007901007a00000000"
+    }
+  ]
+}

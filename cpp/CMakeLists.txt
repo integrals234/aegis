@@ -23,3 +23,4 @@ set(JSON_Install OFF CACHE INTERNAL "")
 FetchContent_MakeAvailable(nlohmann_json)
 
 add_subdirectory(common)
+add_subdirectory(events)
