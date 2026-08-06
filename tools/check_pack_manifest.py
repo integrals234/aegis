@@ -28,8 +28,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = "PACK_MANIFEST.json"
 
-# Removed deliberately during M0 repository hygiene; see the slice 1 commit.
-DEFAULT_ALLOW_MISSING = ("*:Zone.Identifier",)
+# Removals M0 made deliberately, each with a reason:
+#   *:Zone.Identifier            NTFS interop artifacts, removed as repository hygiene.
+#   .github/workflows/spec-integrity.yml
+#                                superseded by the full ci.yml matrix, which runs
+#                                the same two checks plus every other gate.
+DEFAULT_ALLOW_MISSING = ("*:Zone.Identifier", ".github/workflows/spec-integrity.yml")
 
 
 def load_entries(root: Path) -> dict[str, str]:

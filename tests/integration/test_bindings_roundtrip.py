@@ -38,8 +38,16 @@ BUILD_HINT = (
 )
 
 
+# Preference order matters: a sanitizer-instrumented module cannot be loaded by
+# a plain interpreter (it needs the ASan runtime preloaded), so an alphabetical
+# glob that finds build/asan-ubsan first would fail for a reason unrelated to
+# the bindings.
+PRESET_PREFERENCE = ("debug", "release")
+
+
 def _load_bindings():
-    candidates = sorted(ROOT.glob("build/*/cpp/bindings"))
+    candidates = [ROOT / f"build/{preset}/cpp/bindings" for preset in PRESET_PREFERENCE]
+    candidates += [p for p in sorted(ROOT.glob("build/*/cpp/bindings")) if p not in candidates]
     for directory in candidates:
         if any(directory.glob("aegis_bindings*.so")):
             sys.path.insert(0, str(directory))

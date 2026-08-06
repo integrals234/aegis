@@ -57,7 +57,11 @@ TEST(Envelope, EncoderMatchesTheGoldenBytes) {
 }
 
 TEST(Envelope, GoldenBytesDecodeBackToTheCase) {
-  for (const auto& entry : golden().at("cases")) {
+  // The document is bound to a named variable on purpose: iterating
+  // `golden().at("cases")` would hold a reference into a temporary that dies
+  // before the loop body runs. AddressSanitizer caught exactly that.
+  const auto document = golden();
+  for (const auto& entry : document.at("cases")) {
     const auto bytes = aegis::events::from_hex(entry.at("encoded_hex").get<std::string>());
     const auto decoded = aegis::events::decode(bytes);
     ASSERT_TRUE(decoded.has_value()) << entry.at("name").get<std::string>();
