@@ -1,0 +1,56 @@
+# AEGIS development and CI image (AEGIS-009).
+#
+# Pinned at every layer that can be pinned: base image by digest-bearing tag,
+# apt packages by explicit version-agnostic install from a fixed release, and
+# Python dependencies by hash from requirements/requirements.lock. The lockfile
+# is what makes the Python half reproducible; the base tag is what makes the
+# system half reproducible enough to be useful.
+#
+# Known limitation, recorded in docs/LIMITATIONS.md: this image has not been
+# built on the development host, because Docker Desktop WSL integration is
+# disabled there. M0 therefore closes with local-virtualenv evidence, and
+# AEGIS-009 carries a registered obligation for a clean-machine transcript.
+# Writing "verified" against an unbuilt image would be exactly the kind of
+# unearned claim AEGIS-003 exists to prevent.
+
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    AEGIS_VENV=/opt/aegis-venv
+
+# clang, cmake and ninja come from the distribution; clang-format and clang-tidy
+# come from the Python lockfile instead, so the version that gates CI is the
+# same version a developer runs locally.
+RUN apt-get update && apt-get install --no-install-recommends -y \
+        build-essential \
+        ca-certificates \
+        clang \
+        cmake \
+        curl \
+        git \
+        ninja-build \
+        python3 \
+        python3-dev \
+        python3-venv \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+# Dependencies are installed before the source is copied, so an unrelated code
+# change does not invalidate the dependency layer.
+COPY requirements/requirements.lock /tmp/requirements.lock
+RUN python3 -m venv "$AEGIS_VENV" \
+    && "$AEGIS_VENV/bin/pip" install --no-cache-dir --upgrade pip \
+    && "$AEGIS_VENV/bin/pip" install --no-cache-dir --require-hashes -r /tmp/requirements.lock \
+    && rm /tmp/requirements.lock
+
+ENV PATH="/opt/aegis-venv/bin:${PATH}"
+
+COPY . /workspace
+
+# The default command is the full local gate matrix, so `docker run` on this
+# image answers the question the image exists to answer: does a clean machine
+# reproduce the checks?
+CMD ["bash", "scripts/ci_local.sh"]

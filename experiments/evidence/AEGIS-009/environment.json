@@ -1,0 +1,49 @@
+{
+  "build": {
+    "build_info": "aegis 0.1.0; compiler Clang 21.1.8; std c++20; build Debug; assertions on; sanitizers off",
+    "preset": "debug"
+  },
+  "cpu": {
+    "logical_cpus": 16,
+    "machine": "x86_64",
+    "model": "AMD Ryzen 7 5800HS with Radeon Graphics",
+    "processor": ""
+  },
+  "disclosure_note": "docs/BENCHMARK_POLICY.md requires this record alongside any performance figure. Where virtualisation.bare_metal_claimable is false, results must be labelled as WSL/VM/container figures.",
+  "memory": {
+    "total_kb": 7821388
+  },
+  "os": {
+    "distribution": "Ubuntu 26.04 LTS",
+    "release": "6.6.114.1-microsoft-standard-WSL2",
+    "system": "Linux",
+    "version": "#1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025"
+  },
+  "record_version": 1,
+  "repository": {
+    "branch": "milestone/m0-foundation",
+    "commit": "672d6bbb97eb0706d544c77c2fd72befe7ebf87a",
+    "dirty": true
+  },
+  "toolchain": {
+    "clang": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+    "clang_format": "clang-format version 22.1.8",
+    "clang_tidy": "LLVM (http://llvm.org/):",
+    "cmake": "cmake version 4.2.3",
+    "gcc": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "git": "git version 2.53.0",
+    "ninja": "1.13.2",
+    "python": {
+      "executable": "/home/vaibhav/aegis/.venv/bin/python",
+      "implementation": "CPython",
+      "version": "3.14.4"
+    }
+  },
+  "virtualisation": {
+    "bare_metal_claimable": false,
+    "container": false,
+    "detected_virt": "wsl",
+    "kernel": "6.6.114.1-microsoft-standard-WSL2",
+    "wsl": true
+  }
+}
