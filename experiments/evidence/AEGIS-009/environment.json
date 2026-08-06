@@ -22,13 +22,13 @@
   "record_version": 1,
   "repository": {
     "branch": "milestone/m0-foundation",
-    "commit": "672d6bbb97eb0706d544c77c2fd72befe7ebf87a",
-    "dirty": true
+    "commit": "90cd74d14d9e8a1d582c0b1052d73ac96ac07452",
+    "dirty": false
   },
   "toolchain": {
     "clang": "Ubuntu clang version 21.1.8 (6ubuntu1)",
-    "clang_format": "clang-format version 22.1.8",
-    "clang_tidy": "LLVM (http://llvm.org/):",
+    "clang_format": null,
+    "clang_tidy": null,
     "cmake": "cmake version 4.2.3",
     "gcc": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
     "git": "git version 2.53.0",
