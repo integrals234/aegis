@@ -1,5 +1,6 @@
 aegis_add_test(aegis_unit_tests unit
   test_config.cpp
+  test_logging.cpp
   test_time.cpp
   test_version.cpp)
 target_link_libraries(aegis_unit_tests PRIVATE aegis_common)

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aegis.local/schemas/log_record.v1.json",
+  "title": "AEGIS structured log record, version 1",
+  "description": "One JSON Lines record (AEGIS-232). Logs are machine-readable first: a run that cannot be joined back to its experiment, or ordered deterministically, is not evidence of anything.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "timestamp_ns", "level", "logger", "message", "experiment_id", "sequence"],
+  "properties": {
+    "schema_version": {
+      "description": "Version of this record shape. Present on every record so a reader can reject what it does not understand instead of misparsing it.",
+      "type": "integer",
+      "enum": [1]
+    },
+    "timestamp_ns": {
+      "description": "UTC nanoseconds since the Unix epoch, taken from an injected clock. Never a monotonic reading: those are meaningful only within one process run and would replay to different values.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "level": {
+      "type": "string",
+      "enum": ["trace", "debug", "info", "warn", "error"]
+    },
+    "logger": {
+      "description": "Component that emitted the record, e.g. 'exchange.sequencer'.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "message": {
+      "type": "string",
+      "maxLength": 4096
+    },
+    "experiment_id": {
+      "description": "The run this record belongs to. The same field appears in the message envelope, so a log line and an event can be joined without a lookup table (AEGIS-209, AEGIS-232).",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "correlation_id": {
+      "description": "Identifier tying a record to one causal chain — an order, a decision, a replayed event.",
+      "type": "string",
+      "maxLength": 128
+    },
+    "sequence": {
+      "description": "Monotone per logger instance. Two records sharing a timestamp still have a defined order, which is what makes a log file hashable for determinism checks (AEGIS-005).",
+      "type": "integer",
+      "minimum": 0
+    },
+    "fields": {
+      "description": "Structured payload. Scalars only: a nested blob defeats the point of machine-readable logs and invites unbounded records on a hot path.",
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "number", "integer", "boolean", "null"]
+      }
+    }
+  }
+}

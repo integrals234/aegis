@@ -5,6 +5,8 @@ add_library(aegis_common
   clock.hpp
   config.cpp
   config.hpp
+  logging.cpp
+  logging.hpp
   time.hpp
   version.cpp
   version.hpp)

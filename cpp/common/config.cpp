@@ -29,7 +29,7 @@ constexpr std::array<std::string_view, 17> kSupportedKeywords = {
     "maxLength", "pattern",    "items",    "examples",
     "default"};
 
-bool type_matches(const json& value, std::string_view type) {
+bool type_name_matches(const json& value, std::string_view type) {
   if (type == "object") {
     return value.is_object();
   }
@@ -52,6 +52,31 @@ bool type_matches(const json& value, std::string_view type) {
     return value.is_null();
   }
   return false;
+}
+
+/// `type` may be a single name or a list of alternatives, as in the log-record
+/// schema's scalar-only `fields` constraint.
+bool type_matches(const json& value, const json& type) {
+  if (type.is_array()) {
+    return std::ranges::any_of(type, [&value](const json& alternative) {
+      return type_name_matches(value, alternative.get<std::string>());
+    });
+  }
+  return type_name_matches(value, type.get<std::string>());
+}
+
+std::string describe_type(const json& type) {
+  if (!type.is_array()) {
+    return type.get<std::string>();
+  }
+  std::string names;
+  for (const auto& alternative : type) {
+    if (!names.empty()) {
+      names.append(" or ");
+    }
+    names.append(alternative.get<std::string>());
+  }
+  return names;
 }
 
 std::string join(std::string_view path, std::string_view key) {
@@ -145,8 +170,12 @@ void check_object(const json& value, const json& schema, const std::string& path
     }
   }
 
+  // additionalProperties is either a boolean or a schema every unlisted property
+  // must satisfy. Both forms appear in the AEGIS schemas.
+  const bool has_additional = schema.contains("additionalProperties");
+  const json additional = has_additional ? schema.at("additionalProperties") : json();
   const bool additional_allowed =
-      !schema.contains("additionalProperties") || schema.at("additionalProperties").get<bool>();
+      !has_additional || !additional.is_boolean() || additional.get<bool>();
   const json empty_properties = json::object();
   const json& properties =
       schema.contains("properties") ? schema.at("properties") : empty_properties;
@@ -158,6 +187,8 @@ void check_object(const json& value, const json& schema, const std::string& path
     } else if (!additional_allowed) {
       problems.push_back(problem(join(path, key),
                                  "unknown field; a typo here would otherwise be silently ignored"));
+    } else if (has_additional && additional.is_object()) {
+      validate_node(entry.value(), additional, join(path, key), problems);
     }
   }
 }
@@ -170,10 +201,10 @@ void validate_node(const json& value, const json& schema, const std::string& pat
   check_supported_keywords(schema, where, problems);
 
   if (schema.contains("type")) {
-    const auto expected = schema.at("type").get<std::string>();
+    const auto& expected = schema.at("type");
     if (!type_matches(value, expected)) {
-      problems.push_back(
-          problem(where, "expected " + expected + ", got " + std::string{value.type_name()}));
+      problems.push_back(problem(where, "expected " + describe_type(expected) + ", got " +
+                                            std::string{value.type_name()}));
       return;  // further checks would only report noise derived from the wrong type
     }
   }
