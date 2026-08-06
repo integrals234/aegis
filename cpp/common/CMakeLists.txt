@@ -1,6 +1,9 @@
 # Layer cpp-common: the substrate every other layer may depend on and which
 # depends on nothing (configs/architecture_rules.yaml).
 add_library(aegis_common
+  clock.cpp
+  clock.hpp
+  time.hpp
   version.cpp
   version.hpp)
 

@@ -42,7 +42,7 @@ select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "RUF"]
 
 [tool.mypy]
 python_version = "3.12"
-files = ["tools"]  # python/ joins once it holds modules (slices 8-10)
+files = ["python", "tools"]
 mypy_path = "python:tools"
 strict = true
 warn_unreachable = true
