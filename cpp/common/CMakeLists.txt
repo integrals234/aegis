@@ -3,12 +3,21 @@
 add_library(aegis_common
   clock.cpp
   clock.hpp
+  config.cpp
+  config.hpp
   time.hpp
   version.cpp
   version.hpp)
 
 target_include_directories(aegis_common PUBLIC ${PROJECT_SOURCE_DIR})
-target_link_libraries(aegis_common PRIVATE aegis_warnings)
+target_link_libraries(aegis_common
+  PUBLIC nlohmann_json::nlohmann_json
+  PRIVATE aegis_warnings)
+
+# The configuration schema is read at runtime, so the loader needs to know where
+# the repository root is when no explicit path is supplied.
+target_compile_definitions(aegis_common PRIVATE
+  AEGIS_SOURCE_ROOT="${PROJECT_SOURCE_DIR}")
 
 # Build facts are compiled in rather than described in prose, so a binary can
 # always report the toolchain that produced it (AEGIS-009, AEGIS-053).

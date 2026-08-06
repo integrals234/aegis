@@ -1,0 +1,5 @@
+{
+  "config_version": 1,
+  "run": { "experiment_id": "m0-smoke", "seed": 0 },
+  "logging": { "level": "info", "format": "jsonl" }
+}

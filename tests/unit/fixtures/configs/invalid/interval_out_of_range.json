@@ -1,0 +1,6 @@
+{
+  "config_version": 1,
+  "run": { "experiment_id": "slow-metrics", "seed": 1 },
+  "logging": { "level": "info", "format": "jsonl" },
+  "metrics": { "enabled": true, "snapshot_interval_ms": 0 }
+}

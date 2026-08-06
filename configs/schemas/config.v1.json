@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aegis.local/schemas/config.v1.json",
+  "title": "AEGIS configuration, version 1",
+  "description": "The single source of truth for AEGIS configuration (AEGIS-231). Both the Python reference loader (python/common/config.py) and the C++ loader (cpp/common/config.hpp) validate against this file; there is no second copy of these rules to fall out of step with it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["config_version", "run", "logging"],
+  "properties": {
+    "config_version": {
+      "description": "Schema version this document targets. Mandatory and enumerated: a document written against a future schema must be rejected, never silently interpreted under the old rules.",
+      "type": "integer",
+      "enum": [1]
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["experiment_id", "seed"],
+      "properties": {
+        "experiment_id": {
+          "description": "Immutable identifier for this run. The same value appears in every log record and message envelope, so an artifact can be traced back to the run that produced it (AEGIS-209, AEGIS-232).",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        },
+        "seed": {
+          "description": "Random seed. Recorded rather than defaulted, because an unrecorded seed makes a research result unreproducible (AEGIS-097, AEGIS-214).",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 512
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "format"],
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["trace", "debug", "info", "warn", "error"]
+        },
+        "format": {
+          "description": "Only JSON Lines is supported: logs must be machine-readable for AEGIS-232, and a human-formatted alternative would immediately become the one used in anger.",
+          "type": "string",
+          "enum": ["jsonl"]
+        },
+        "destination": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        }
+      }
+    },
+    "paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "output_dir": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "data_dir": { "type": "string", "minLength": 1, "maxLength": 512 }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "snapshot_interval_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3600000
+        }
+      }
+    }
+  }
+}

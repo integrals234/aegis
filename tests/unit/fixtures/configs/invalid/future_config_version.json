@@ -1,0 +1,5 @@
+{
+  "config_version": 2,
+  "run": { "experiment_id": "from-the-future", "seed": 1 },
+  "logging": { "level": "info", "format": "jsonl" }
+}

@@ -1,0 +1,4 @@
+{
+  "run": { "experiment_id": "no-version", "seed": 1 },
+  "logging": { "level": "info", "format": "jsonl" }
+}

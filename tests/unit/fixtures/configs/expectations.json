@@ -1,0 +1,15 @@
+{
+  "comment": "Each invalid fixture and the substring its rejection message must contain. Asserting on message content, not just on a non-zero exit code: 'invalid configs fail with clear errors' is the acceptance criterion for AEGIS-231, and an error that does not name the offending field is not clear.",
+  "invalid": {
+    "missing_config_version.json": "config_version",
+    "future_config_version.json": "not supported by this build",
+    "unknown_field.json": "loging",
+    "missing_required_seed.json": "seed",
+    "wrong_type_seed.json": "seed",
+    "bad_enum_level.json": "level",
+    "negative_seed.json": "seed",
+    "empty_experiment_id.json": "experiment_id",
+    "bad_experiment_id_pattern.json": "experiment_id",
+    "interval_out_of_range.json": "snapshot_interval_ms"
+  }
+}

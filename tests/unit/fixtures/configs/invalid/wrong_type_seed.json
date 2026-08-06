@@ -1,0 +1,5 @@
+{
+  "config_version": 1,
+  "run": { "experiment_id": "string-seed", "seed": "424242" },
+  "logging": { "level": "info", "format": "jsonl" }
+}

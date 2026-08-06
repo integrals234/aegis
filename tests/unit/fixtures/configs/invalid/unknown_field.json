@@ -1,0 +1,6 @@
+{
+  "config_version": 1,
+  "run": { "experiment_id": "typo", "seed": 1 },
+  "logging": { "level": "info", "format": "jsonl" },
+  "loging": { "level": "debug" }
+}

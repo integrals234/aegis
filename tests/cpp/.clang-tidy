@@ -1,0 +1,13 @@
+# AEGIS test-layer static analysis (AEGIS-227, AEGIS-233).
+#
+# Inherits the root configuration and relaxes two checks that measure the
+# GoogleTest macros rather than the test:
+#
+#   readability-function-cognitive-complexity — every TEST() body expands into
+#     branches from EXPECT_*; the reported complexity is the macro's, not the
+#     test's, and chasing it would push assertions out of the test that needs them.
+#   misc-use-anonymous-namespace — TEST() already gives each body internal linkage.
+InheritParentConfig: true
+Checks: >
+  -readability-function-cognitive-complexity,
+  -misc-use-anonymous-namespace
