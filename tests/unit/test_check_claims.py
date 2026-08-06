@@ -113,3 +113,14 @@ def test_phrase_scoped_exclusion_still_checks_numbers(tmp_path):
 
 def test_live_repository_has_no_unsupported_claims(repo_root):
     assert check_claims.run(repo_root, repo_root / "configs/claims_policy.yaml") == []
+
+
+def test_a_non_path_evidence_word_does_not_satisfy_a_claim(tmp_path):
+    """Otherwise a stray "evidence: something" in prose would license any number."""
+    tree = tmp_path / "tree"
+    tree.mkdir()
+    (tree / "claims_policy.yaml").write_text(
+        (OK / "claims_policy.yaml").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (tree / "CLAIMS.md").write_text("Median latency is 350 ns, evidence: soon\n", encoding="utf-8")
+    assert len(claims_for(tree)) == 1

@@ -77,3 +77,21 @@ def test_external_link_is_not_checked(tree):
 def test_unknown_requirement_reference_is_reported(tree):
     (tree / "docs/DEMO.md").write_text("# Demo\n\nCovers AEGIS-999.\n", encoding="utf-8")
     assert any("unknown requirement AEGIS-999" in e for e in check_docs.run(tree))
+
+
+def test_ordinary_prose_is_not_read_as_an_evidence_marker(tree):
+    """"counted as evidence: a directory" is prose, not a claim about a file
+    named "a". A gate that cries wolf gets switched off, so the target must look
+    like a path."""
+    (tree / "docs/RUNBOOK.md").write_text(
+        "# Runbook\n\nAny existing path counted as evidence: a directory, an empty file.\n",
+        encoding="utf-8",
+    )
+    assert check_docs.run(tree) == []
+
+
+def test_a_path_shaped_evidence_marker_is_still_checked(tree):
+    (tree / "docs/RUNBOOK.md").write_text(
+        "# Runbook\n\nStable, evidence: experiments/evidence/gone.json\n", encoding="utf-8"
+    )
+    assert any("evidence path does not exist" in e for e in check_docs.run(tree))

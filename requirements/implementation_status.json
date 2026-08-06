@@ -3,74 +3,144 @@
   "active_milestone": "M0",
   "requirements": {
     "AEGIS-001": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "tools/check_frozen.py",
+        ".claude/hooks/protect_spec.py",
+        "scripts/git-hooks/pre-commit"
+      ],
+      "tests": [
+        "tests/unit/test_frozen_integrity.py",
+        "tests/unit/test_protect_spec_hook.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Hash manifest plus branch-diff gate, hardened fail-closed hook covering frozen_hashes.json, pre-commit and CI. The hook is defence in depth; docs/LIMITATIONS.md records that it cannot see shell-mediated writes."
     },
     "AEGIS-002": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "tools/audit_requirements.py",
+        "tools/generate_traceability.py"
+      ],
+      "tests": [
+        "tests/unit/test_audit_requirements.py"
+      ],
+      "reports": [
+        "docs/TRACEABILITY_MATRIX.md"
+      ],
+      "notes": "Auditor refactored to run_audit(req_path, status_path, root) so it is testable against fixture trees; duplicate JSON keys, duplicate IDs, missing and orphan entries all detected. Matrix generated and drift-checked in CI."
     },
     "AEGIS-003": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "tools/audit_requirements.py",
+        "tools/update_status.py",
+        "tools/generate_deferred_register.py"
+      ],
+      "tests": [
+        "tests/unit/test_evidence_rules.py"
+      ],
+      "reports": [
+        "docs/DEFERRED_VERIFICATION.md"
+      ],
+      "notes": "A path that exists is no longer evidence: directories, empty files, .gitkeep and TODO-only files are rejected. 'verified' requires an audit record and is hard-blocked while an obligation is open."
     },
     "AEGIS-004": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "tools/check_architecture.py",
+        "configs/architecture_rules.yaml"
+      ],
+      "tests": [
+        "tests/unit/test_check_architecture.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Checker enforces include, import, namespace and CMake link edges over the real tree, with a committed counter-example tree exercising every rule.",
+      "verification_blocked_until": "M1",
+      "residual": "No exchange book (M1) or strategy/risk/OMS code (M3) exists yet for the participant-pipeline rules to constrain; the rules currently bind only the substrate layers."
     },
     "AEGIS-005": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "tools/determinism_check.py",
+        "python/common/determinism.py"
+      ],
+      "tests": [
+        "tests/replay/test_determinism_harness.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-005/summary.json"
+      ],
+      "notes": "Run-twice-across-processes harness with a committed nondeterministic counter-example it must flag.",
+      "verification_blocked_until": "M1",
+      "residual": "Canonical output covers platform records only. M0 shows the harness detects nondeterminism; it is not a claim that AEGIS is deterministic. Real event input arrives with M1, and this is a hard gate before M8 optimization begins."
     },
     "AEGIS-006": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "tools/check_claims.py",
+        "configs/claims_policy.yaml"
+      ],
+      "tests": [
+        "tests/unit/test_check_claims.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Forbidden phrasing from the frozen CV policy plus numbers adjacent to performance or trading units without a resolvable evidence marker. Exclusions are per-path with a reason and can be narrowed to named phrases."
     },
     "AEGIS-007": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "tools/check_scope.py",
+        "configs/milestone_scope.yaml",
+        "docs/BUILD_STATE.md"
+      ],
+      "tests": [
+        "tests/unit/test_scope_guard.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Both halves of the acceptance: BUILD_STATE names exactly one active milestone, and the branch diff is checked against that milestone's allowed and denied paths."
     },
     "AEGIS-008": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "tools/check_adrs.py",
+        "adr/0001-platform-architecture.md"
+      ],
+      "tests": [
+        "tests/unit/test_check_adrs.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Structure, status, milestone and requirement IDs validated; dangling ADR references detected; and the linkage half enforced, so an architecture change on a branch must cite an ADR."
     },
     "AEGIS-009": {
-      "status": "not_started",
-      "implementation": [],
+      "status": "implemented",
+      "implementation": [
+        "scripts/check_environment.sh",
+        "tools/capture_environment.py",
+        "docker/Dockerfile.dev",
+        "docs/ENVIRONMENT.md"
+      ],
       "tests": [],
-      "reports": [],
-      "notes": ""
+      "reports": [
+        "experiments/evidence/AEGIS-009/environment.json"
+      ],
+      "notes": "Version-checking environment script, lockfile drift detection, mechanical environment capture including virtualisation status, and a container definition.",
+      "verification_blocked_until": "M1",
+      "residual": "docker/Dockerfile.dev has never been built: Docker Desktop WSL integration is disabled on the development host, and no CI run has executed. A clean-machine transcript from a container or CI runner is still owed."
     },
     "AEGIS-010": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "tools/scan_secrets.py",
+        "configs/secret_scan_allowlist.json",
+        ".claude/settings.json"
+      ],
+      "tests": [
+        "tests/unit/test_scan_secrets.py",
+        "tests/unit/test_settings_deny_rules.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Scanner covers worktree, index and history. The settings test is a configuration assertion, not a behavioural proof; the behavioural control is the scanner."
     },
     "AEGIS-011": {
       "status": "not_started",
@@ -1585,88 +1655,177 @@
       "notes": ""
     },
     "AEGIS-227": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "CMakeLists.txt",
+        "CMakePresets.json",
+        ".clang-tidy",
+        ".clang-format"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_version.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "C++20, three presets, warnings as errors including -Wconversion, sanitizers with -fno-sanitize-recover, clang-tidy and clang-format pinned from the lockfile, third-party pinned by archive hash.",
+      "verification_blocked_until": "M1",
+      "residual": "The acceptance names CI building debug and release. The workflow exists and scripts/ci_local.sh runs the same matrix locally, but no CI run has executed; that requires an owner-created remote."
     },
     "AEGIS-228": {
-      "status": "not_started",
-      "implementation": [],
+      "status": "implemented",
+      "implementation": [
+        "requirements/requirements.lock",
+        "requirements/python-requirements.in",
+        "pyproject.toml",
+        "scripts/lock_python.sh",
+        "tools/probe_dependencies.py"
+      ],
       "tests": [],
-      "reports": [],
-      "notes": ""
+      "reports": [
+        "experiments/evidence/AEGIS-228/install_transcript.txt",
+        "experiments/evidence/AEGIS-228/dependency_probe.json"
+      ],
+      "notes": "Hash-pinned lockfile installing under --require-hashes, with a committed interpreter-compatibility probe and a clean-virtualenv install transcript."
     },
     "AEGIS-229": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/bindings/aegis_module.cpp",
+        "cpp/bindings/CMakeLists.txt"
+      ],
+      "tests": [
+        "tests/integration/test_bindings_roundtrip.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "pybind11 module confined to cpp/bindings by the architecture checker, exposing four pure functions. Round trips compare the C++ and Python encoders live and assert the loaded module is the compiled extension.",
+      "verification_blocked_until": "M2",
+      "residual": "The acceptance names 'selected engine APIs'; no engine exists. Config, metrics and replay surfaces are M2 work, where the roadmap places the bindings needed for data and replay."
     },
     "AEGIS-230": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "python/data/schema_registry.py",
+        "configs/schemas/experiment_manifest.v1.json"
+      ],
+      "tests": [
+        "tests/unit/test_schema_registry.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Versioned schema registry with unknown-version rejection, coexisting versions, recorded compatibility, and JSON Lines and CSV codecs with fixed ordering.",
+      "verification_blocked_until": "M2",
+      "residual": "Parquet, Arrow and DuckDB round trips are not implemented. M0 has no columnar data to interchange, and building them now would require inventing the futures schema AEGIS-026 owns."
     },
     "AEGIS-231": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "configs/schemas/config.v1.json",
+        "python/common/config.py",
+        "cpp/common/config.cpp"
+      ],
+      "tests": [
+        "tests/unit/test_config_validation.py",
+        "tests/cpp/unit/test_config.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "One schema read at runtime by both loaders, mandatory enumerated config_version, defaults<file<env<CLI precedence with per-leaf provenance, and a 12-fixture corpus asserting on message content."
     },
     "AEGIS-232": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "configs/schemas/log_record.v1.json",
+        "python/common/logging.py",
+        "cpp/common/logging.cpp"
+      ],
+      "tests": [
+        "tests/unit/test_structured_logging.py",
+        "tests/cpp/unit/test_logging.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "JSON Lines validated against one schema by both implementations, experiment_id and correlation_id on every record, injected clock and per-logger sequence for byte-identical output, and key-name redaction at record-build time."
     },
     "AEGIS-233": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "tools/run_test_layers.py",
+        "pyproject.toml",
+        "tests/cpp/CMakeLists.txt"
+      ],
+      "tests": [
+        "tests/unit/test_ci_parity.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Five pytest layers and two ctest labels, each run and reported separately, with a layer that collects zero tests failing.",
+      "verification_blocked_until": "M1",
+      "residual": "The acceptance names CI reporting each layer; no CI run has executed. Replay-layer depth arrives with M2's replay modes and research-layer depth with M4-M5 experiments."
     },
     "AEGIS-234": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        ".github/workflows/ci.yml",
+        "scripts/ci_local.sh"
+      ],
+      "tests": [
+        "tests/unit/test_ci_parity.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Six-job workflow covering spec audit, build, tests, static checks and secret scanning, mirrored by scripts/ci_local.sh and held in parity by a test.",
+      "verification_blocked_until": "M1",
+      "residual": "The acceptance is 'main branch requires passing workflow'. No git remote exists, no workflow run has executed, and branch protection is an owner action."
     },
     "AEGIS-235": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "docs/RUNBOOK.md",
+        "docs/DEMO.md",
+        "docs/LIMITATIONS.md",
+        "docs/ENVIRONMENT.md",
+        "tools/check_docs.py"
+      ],
+      "tests": [
+        "tests/unit/test_check_docs.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Executable documentation audit: required documents present and non-placeholder, evidence markers and internal links resolvable, requirement references real."
     },
     "AEGIS-236": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "tools/check_sample_data.py",
+        "tools/check_pack_manifest.py",
+        "data_samples/PROVENANCE.yaml",
+        "configs/external_datasets.yaml"
+      ],
+      "tests": [
+        "tests/unit/test_check_sample_data.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Both halves: committed samples capped, allowlisted and provenance-bearing with an explicit redistributable assertion; external datasets pinned to immutable versions with checksums. The committed sample is generated, not sliced from a licensed feed."
     },
     "AEGIS-237": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "python/common/recovery.py",
+        "docs/RECOVERY_CONTRACT.md"
+      ],
+      "tests": [
+        "tests/unit/test_recovery_contract.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Contract and interface: version refusal, byte-stable snapshots, round-trip verification and a defined shutdown sequence. No snapshot store, deliberately.",
+      "verification_blocked_until": "M1",
+      "residual": "The acceptance names recovery tests for exchange and participant state. Neither exists: exchange-state recovery arrives with M1 and participant-state recovery with M3."
     },
     "AEGIS-238": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "python/common/metrics.py"
+      ],
+      "tests": [
+        "tests/integration/test_metrics_registry.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Instance-owned registry with immutable pull-based snapshots, tail-reporting histograms by nearest rank, and a three-state health contract whose overall state is the worst check.",
+      "verification_blocked_until": "M1",
+      "residual": "queue depth, dropped/backpressured events, execution latency and risk status are not registered because nothing produces them. They arrive with M1's bounded queues, M3's execution path and M5's risk engine."
     }
   }
 }

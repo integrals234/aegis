@@ -43,7 +43,13 @@ REQUIRED_DOCS = (
 
 SCAN_GLOBS = ("*.md", "docs/**/*.md", "adr/**/*.md", "experiments/**/*.md")
 
-EVIDENCE_MARKER = re.compile(r"evidence:\s*([^\s,;)\]]+)", re.IGNORECASE)
+# The target must look like a path — containing a "/" or a file extension.
+# Without that, ordinary prose such as "counted as evidence: a directory"
+# is read as an evidence claim about a file named "a", and the audit reports a
+# problem that does not exist. A gate that cries wolf gets switched off.
+EVIDENCE_MARKER = re.compile(
+    r"evidence:\s*(?P<target>[^\s,;)\]]*(?:/|\.[A-Za-z0-9]{1,8})[^\s,;)\]]*)", re.IGNORECASE
+)
 MD_LINK = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 REQUIREMENT_ID = re.compile(r"\bAEGIS-(\d{3})\b")
 
@@ -76,8 +82,8 @@ def run(root: Path) -> list[str]:
         text = path.read_text(encoding="utf-8", errors="replace")
 
         for lineno, line in enumerate(text.splitlines(), start=1):
-            for marker in EVIDENCE_MARKER.findall(line):
-                target = marker.strip("`'\"")
+            for match in EVIDENCE_MARKER.finditer(line):
+                target = match.group("target").strip("`'\".,")
                 if not (root / target).exists():
                     errors.append(f"{rel}:{lineno}: evidence path does not exist: {target}")
 

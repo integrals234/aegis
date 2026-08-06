@@ -1,0 +1,61 @@
+{
+  "report_version": 1,
+  "layers": [
+    {
+      "runner": "pytest",
+      "layer": "unit",
+      "collected": 318,
+      "passed": true,
+      "duration_s": 2.1551485259988112,
+      "detail": "passed=318"
+    },
+    {
+      "runner": "pytest",
+      "layer": "integration",
+      "collected": 34,
+      "passed": true,
+      "duration_s": 0.5169501040072646,
+      "detail": "passed=34"
+    },
+    {
+      "runner": "pytest",
+      "layer": "property",
+      "collected": 11,
+      "passed": true,
+      "duration_s": 2.128836739997496,
+      "detail": "passed=11"
+    },
+    {
+      "runner": "pytest",
+      "layer": "replay",
+      "collected": 10,
+      "passed": true,
+      "duration_s": 1.2721389420039486,
+      "detail": "passed=10"
+    },
+    {
+      "runner": "pytest",
+      "layer": "research",
+      "collected": 18,
+      "passed": true,
+      "duration_s": 0.6363406460004626,
+      "detail": "passed=18"
+    },
+    {
+      "runner": "ctest",
+      "layer": "unit",
+      "collected": 44,
+      "passed": true,
+      "duration_s": 0.15932705900922883,
+      "detail": "100% tests passed, 0 tests failed out of 44"
+    },
+    {
+      "runner": "ctest",
+      "layer": "property",
+      "collected": 2,
+      "passed": true,
+      "duration_s": 0.01792158800526522,
+      "detail": "100% tests passed, 0 tests failed out of 2"
+    }
+  ]
+}

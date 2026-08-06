@@ -86,7 +86,11 @@ def strip_code(text: str) -> str:
 def evidence_paths_resolve(root: Path, sentence: str, marker: str) -> bool:
     """An evidence marker only counts when the path it names exists."""
     found = False
-    for raw in re.findall(rf"{re.escape(marker)}\s*([^\s,;)]+)", sentence, flags=re.IGNORECASE):
+    # Same path-shaped requirement as tools/check_docs.py: "evidence: a" in
+    # ordinary prose is not an evidence marker, and treating it as one would let
+    # a stray word satisfy a numeric claim.
+    pattern = rf"{re.escape(marker)}\s*([^\s,;)]*(?:/|\.[A-Za-z0-9]{{1,8}})[^\s,;)]*)"
+    for raw in re.findall(pattern, sentence, flags=re.IGNORECASE):
         found = True
         if not (root / raw.strip("`'\"")).exists():
             return False

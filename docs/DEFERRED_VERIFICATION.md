@@ -12,4 +12,72 @@ any of these `verified` while its obligation is open, and
 `tools/audit_requirements.py --check-deferred M<n>` fails the milestone that owes
 the evidence if it closes without paying.
 
-No verification obligations are outstanding.
+
+**10 outstanding obligation(s).**
+
+| ID | Requirement | Status | Unblocks at | What is still missing |
+|---|---|---|---|---|
+| AEGIS-004 | Exchange/participant separation | implemented | M1 | No exchange book (M1) or strategy/risk/OMS code (M3) exists yet for the participant-pipeline rules to constrain; the rules currently bind only the substrate layers. |
+| AEGIS-005 | Determinism before optimization | implemented | M1 | Canonical output covers platform records only. M0 shows the harness detects nondeterminism; it is not a claim that AEGIS is deterministic. Real event input arrives with M1, and this is a hard gate before M8 optimization begins. |
+| AEGIS-009 | Reproducible environments | implemented | M1 | docker/Dockerfile.dev has never been built: Docker Desktop WSL integration is disabled on the development host, and no CI run has executed. A clean-machine transcript from a container or CI runner is still owed. |
+| AEGIS-227 | Modern C++ toolchain | implemented | M1 | The acceptance names CI building debug and release. The workflow exists and scripts/ci_local.sh runs the same matrix locally, but no CI run has executed; that requires an owner-created remote. |
+| AEGIS-229 | C++/Python bindings | implemented | M2 | The acceptance names 'selected engine APIs'; no engine exists. Config, metrics and replay surfaces are M2 work, where the roadmap places the bindings needed for data and replay. |
+| AEGIS-230 | Columnar data interchange | implemented | M2 | Parquet, Arrow and DuckDB round trips are not implemented. M0 has no columnar data to interchange, and building them now would require inventing the futures schema AEGIS-026 owns. |
+| AEGIS-233 | Unit, integration, property and replay tests | implemented | M1 | The acceptance names CI reporting each layer; no CI run has executed. Replay-layer depth arrives with M2's replay modes and research-layer depth with M4-M5 experiments. |
+| AEGIS-234 | Continuous integration | implemented | M1 | The acceptance is 'main branch requires passing workflow'. No git remote exists, no workflow run has executed, and branch protection is an owner action. |
+| AEGIS-237 | Failure recovery | implemented | M1 | The acceptance names recovery tests for exchange and participant state. Neither exists: exchange-state recovery arrives with M1 and participant-state recovery with M3. |
+| AEGIS-238 | Observability | implemented | M1 | queue depth, dropped/backpressured events, execution latency and risk status are not registered because nothing produces them. They arrive with M1's bounded queues, M3's execution path and M5's risk engine. |
+
+## Due at M1
+
+### AEGIS-004 — Exchange/participant separation
+
+- **Frozen acceptance criterion:** Architecture tests and dependency rules prevent participant strategy code from directly mutating the exchange book.
+- **Residual:** No exchange book (M1) or strategy/risk/OMS code (M3) exists yet for the participant-pipeline rules to constrain; the rules currently bind only the substrate layers.
+
+### AEGIS-005 — Determinism before optimization
+
+- **Frozen acceptance criterion:** Identical event input and seed produce byte-identical canonical output before performance milestone begins.
+- **Residual:** Canonical output covers platform records only. M0 shows the harness detects nondeterminism; it is not a claim that AEGIS is deterministic. Real event input arrives with M1, and this is a hard gate before M8 optimization begins.
+
+### AEGIS-009 — Reproducible environments
+
+- **Frozen acceptance criterion:** Clean environment instructions build and run integrity tests without undocumented steps.
+- **Residual:** docker/Dockerfile.dev has never been built: Docker Desktop WSL integration is disabled on the development host, and no CI run has executed. A clean-machine transcript from a container or CI runner is still owed.
+
+### AEGIS-227 — Modern C++ toolchain
+
+- **Frozen acceptance criterion:** CI builds debug/release and runs configured checks.
+- **Residual:** The acceptance names CI building debug and release. The workflow exists and scripts/ci_local.sh runs the same matrix locally, but no CI run has executed; that requires an owner-created remote.
+
+### AEGIS-233 — Unit, integration, property and replay tests
+
+- **Frozen acceptance criterion:** CI reports each layer.
+- **Residual:** The acceptance names CI reporting each layer; no CI run has executed. Replay-layer depth arrives with M2's replay modes and research-layer depth with M4-M5 experiments.
+
+### AEGIS-234 — Continuous integration
+
+- **Frozen acceptance criterion:** Main branch requires passing workflow.
+- **Residual:** The acceptance is 'main branch requires passing workflow'. No git remote exists, no workflow run has executed, and branch protection is an owner action.
+
+### AEGIS-237 — Failure recovery
+
+- **Frozen acceptance criterion:** Recovery tests exist for exchange and participant state.
+- **Residual:** The acceptance names recovery tests for exchange and participant state. Neither exists: exchange-state recovery arrives with M1 and participant-state recovery with M3.
+
+### AEGIS-238 — Observability
+
+- **Frozen acceptance criterion:** Integration fixture verifies metrics.
+- **Residual:** queue depth, dropped/backpressured events, execution latency and risk status are not registered because nothing produces them. They arrive with M1's bounded queues, M3's execution path and M5's risk engine.
+
+## Due at M2
+
+### AEGIS-229 — C++/Python bindings
+
+- **Frozen acceptance criterion:** Round-trip integration tests pass.
+- **Residual:** The acceptance names 'selected engine APIs'; no engine exists. Config, metrics and replay surfaces are M2 work, where the roadmap places the bindings needed for data and replay.
+
+### AEGIS-230 — Columnar data interchange
+
+- **Frozen acceptance criterion:** Schema and round-trip tests pass.
+- **Residual:** Parquet, Arrow and DuckDB round trips are not implemented. M0 has no columnar data to interchange, and building them now would require inventing the futures schema AEGIS-026 owns.
