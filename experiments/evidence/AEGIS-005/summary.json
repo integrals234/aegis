@@ -1,0 +1,11 @@
+{
+  "producer": "platform",
+  "seed": 42,
+  "runs": 2,
+  "digests": [
+    "b1a8e317994a6af9d7438be04f807552e1f19288d44f8f4552b4deb8135a01c8",
+    "b1a8e317994a6af9d7438be04f807552e1f19288d44f8f4552b4deb8135a01c8"
+  ],
+  "stable": true,
+  "claim": "This run shows that the harness compares canonical output across processes. It is not a claim that AEGIS is deterministic: at M0 there is no engine, and the producer emits platform records only."
+}
