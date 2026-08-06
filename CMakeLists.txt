@@ -21,6 +21,12 @@ option(AEGIS_BUILD_TESTS "Build the C++ test layers" ON)
 option(AEGIS_BUILD_BINDINGS "Build the pybind11 bindings module" ON)
 option(AEGIS_WERROR "Treat warnings as errors" ON)
 
+# The static layer libraries are linked into the pybind11 shared module, so they
+# must be position-independent. Building them twice — once for the tests and once
+# for the module — would let the two diverge, and the whole point of the bindings
+# is that Python exercises the same code the C++ tests do.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 add_library(aegis_warnings INTERFACE)
 target_compile_options(aegis_warnings INTERFACE
   -Wall

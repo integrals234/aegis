@@ -24,3 +24,7 @@ FetchContent_MakeAvailable(nlohmann_json)
 
 add_subdirectory(common)
 add_subdirectory(events)
+
+if(AEGIS_BUILD_BINDINGS)
+  add_subdirectory(bindings)
+endif()
