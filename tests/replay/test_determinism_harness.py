@@ -98,7 +98,7 @@ def test_every_line_is_already_in_canonical_form(repo_root):
 
 
 def test_producers_are_registered_by_name():
-    assert set(PRODUCERS) == {"platform", "nondeterministic"}
+    assert set(PRODUCERS) == {"platform", "nondeterministic", "exchange"}
 
 
 def test_unknown_producer_is_reported_clearly():

@@ -1,0 +1,11 @@
+{"kind":"instrument","instrument_id":1,"price_floor_units":1000,"price_ceiling_units":2000,"tick_size_units":25,"min_quantity_units":50,"max_quantity_units":5000,"lot_size_units":50}
+{"kind":"new_order","event_time_nanos":0,"instrument_id":1,"participant_id":1,"client_order_id":1,"side":"BUY","order_type":"LIMIT","price_units":1000,"quantity_units":100}
+{"kind":"new_order","event_time_nanos":1,"instrument_id":1,"participant_id":1,"client_order_id":2,"side":"SELL","order_type":"LIMIT","price_units":1200,"quantity_units":150}
+{"kind":"new_order","event_time_nanos":2,"instrument_id":1,"participant_id":2,"client_order_id":1,"side":"BUY","order_type":"LIMIT","price_units":1100,"quantity_units":200}
+{"kind":"modify_order","event_time_nanos":3,"instrument_id":1,"participant_id":1,"order_id":1,"new_price_units":1000,"new_quantity_units":150}
+{"kind":"cancel_order","event_time_nanos":4,"instrument_id":1,"participant_id":2,"order_id":3}
+{"kind":"new_order","event_time_nanos":5,"instrument_id":1,"participant_id":3,"client_order_id":1,"side":"BUY","order_type":"LIMIT","price_units":1200,"quantity_units":100}
+{"kind":"modify_order","event_time_nanos":6,"instrument_id":1,"participant_id":1,"order_id":4,"new_price_units":1050,"new_quantity_units":150}
+{"kind":"new_order","event_time_nanos":7,"instrument_id":1,"participant_id":4,"client_order_id":1,"side":"SELL","order_type":"LIMIT","price_units":1050,"quantity_units":150}
+{"kind":"cancel_order","event_time_nanos":8,"instrument_id":1,"participant_id":1,"order_id":2}
+{"kind":"new_order","event_time_nanos":9,"instrument_id":1,"participant_id":5,"client_order_id":1,"side":"BUY","order_type":"MARKET","price_units":0,"quantity_units":100}

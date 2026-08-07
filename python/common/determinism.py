@@ -6,21 +6,24 @@ is proved here is narrower and stated plainly:
 
     **the harness detects nondeterminism.**
 
-Not "AEGIS is deterministic" — there is nothing yet whose determinism could be
-claimed. The producers below emit *platform* records: a resolved configuration,
-a metrics snapshot, and a stream of message envelopes with opaque payloads. No
-order, trade, book or sequencer type appears, because none exists.
+Not "AEGIS is deterministic" — at M0 there was nothing yet whose determinism
+could be claimed, and ``platform_producer``/``nondeterministic_producer``
+still emit only platform records: a resolved configuration, a metrics
+snapshot, a stream of message envelopes with opaque payloads. ``nondeterministic``
+is the negative fixture: a harness that has only ever seen deterministic
+output cannot demonstrate that it would notice nondeterministic output.
 
-Two producers are registered, and the second is the point of the file. A harness
-that has only ever seen deterministic output cannot demonstrate that it would
-notice nondeterministic output; ``nondeterministic`` exists so that claim is
-tested rather than assumed.
+``exchange_producer`` (M1, ADR-0012) is the point at which this stops being
+narrow: it runs the actual matching engine (via ``aegis_exchange_replay``)
+and its canonical output is the AEGIS-005 discharge for the exchange core.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import random
+import subprocess
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
@@ -28,6 +31,12 @@ from common.clock import EventTime, ManualClock, millis
 from common.envelope import Envelope, MessageType, encode
 from common.logging import ListSink, StructuredLogger
 from common.metrics import MetricsRegistry
+
+# The committed scenario aegis_exchange_replay runs (tests/cpp/unit's own
+# copy exercises the same commands at the unit-test level, in-process;
+# tests/cpp/unit/test_snapshot_roundtrip.cpp's ContinuationEqualityAcross...
+# case builds its command list to match).
+EXCHANGE_SCENARIO_RELATIVE_PATH = "tests/unit/fixtures/exchange/replay/basic_session.jsonl"
 
 CANONICAL_FORMAT_VERSION = 1
 
@@ -118,9 +127,56 @@ def nondeterministic_producer(seed: int, root: Path | None = None) -> str:
     return _canonical_document(records)
 
 
+def resolve_exchange_replay_binary(root: Path) -> Path:
+    """Locate ``aegis_exchange_replay``: ``AEGIS_EXCHANGE_REPLAY`` if set, else the
+    debug preset's default build output path.
+
+    A missing binary raises, never skips (ADR-0012) -- a skipping determinism
+    test is a green stub that proves nothing.
+    """
+    env_path = os.environ.get("AEGIS_EXCHANGE_REPLAY")
+    binary = Path(env_path) if env_path else root / "build/debug/cpp/exchange/app/aegis_exchange_replay"
+    if not binary.exists():
+        raise FileNotFoundError(
+            f"aegis_exchange_replay not found at {binary}. Build it with "
+            "'cmake --build --preset debug', or set AEGIS_EXCHANGE_REPLAY to its path."
+        )
+    return binary
+
+
+def exchange_producer(seed: int, root: Path | None = None) -> str:
+    """Run ``aegis_exchange_replay`` on the committed M1 scenario and return its
+    canonical stdout (ADR-0012, ADR-0013) -- the AEGIS-005 discharge for the
+    exchange core.
+
+    The matching engine reads no clock and no random source (ADR-0012;
+    ``tests/unit/test_exchange_determinism_lint.py`` enforces this), so unlike
+    ``platform_producer`` there is nothing for ``seed`` to seed. It is accepted
+    only to satisfy the ``Callable[[int, Path | None], str]`` shape every
+    registered producer shares, and is otherwise unused.
+    """
+    del seed
+    if root is None:
+        raise ValueError("exchange_producer requires root to locate the replay binary and fixture")
+    binary = resolve_exchange_replay_binary(root)
+    fixture = root / EXCHANGE_SCENARIO_RELATIVE_PATH
+    if not fixture.exists():
+        raise FileNotFoundError(f"exchange scenario fixture not found: {fixture}")
+    result = subprocess.run(
+        [str(binary), "--input", str(fixture)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"aegis_exchange_replay failed (exit {result.returncode}): {result.stderr}")
+    return result.stdout
+
+
 PRODUCERS: dict[str, Callable[[int, Path | None], str]] = {
     "platform": platform_producer,
     "nondeterministic": nondeterministic_producer,
+    "exchange": exchange_producer,
 }
 
 
