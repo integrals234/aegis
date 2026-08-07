@@ -1,0 +1,125 @@
+{
+  "golden_version": 1,
+  "purpose": "Canonical payload encodings of cpp/events/exchange_messages.hpp and python/common/exchange_messages.py (ADR-0009). Both implementations are tested against these exact bytes, so a change made to one and not the other fails a test instead of silently corrupting a recorded stream. These are payload bytes only, not framed in an Envelope. Regenerating this file to make a test pass is a wire-format change and requires an ADR.",
+  "cases": [
+    {
+      "name": "new_order",
+      "message_type": "kNewOrder",
+      "fields": {
+        "instrument_id": 7,
+        "participant_id": 101,
+        "client_order_id": 555,
+        "side": "BUY",
+        "order_type": "LIMIT",
+        "price_units": 10025,
+        "quantity_units": 300
+      },
+      "encoded_hex": "0700000065000000000000002b02000000000000000029270000000000002c01000000000000"
+    },
+    {
+      "name": "cancel_order",
+      "message_type": "kCancelOrder",
+      "fields": {
+        "instrument_id": 7,
+        "participant_id": 101,
+        "order_id": 88
+      },
+      "encoded_hex": "0700000065000000000000005800000000000000"
+    },
+    {
+      "name": "modify_order",
+      "message_type": "kModifyOrder",
+      "fields": {
+        "instrument_id": 7,
+        "participant_id": 101,
+        "order_id": 88,
+        "new_price_units": 10050,
+        "new_quantity_units": 200
+      },
+      "encoded_hex": "07000000650000000000000058000000000000004227000000000000c800000000000000"
+    },
+    {
+      "name": "order_accepted",
+      "message_type": "kOrderAccepted",
+      "fields": {
+        "causing_command_sequence": 3,
+        "order_id": 88,
+        "instrument_id": 7,
+        "participant_id": 101,
+        "client_order_id": 555,
+        "side": "BUY",
+        "order_type": "LIMIT",
+        "price_units": 10025,
+        "quantity_units": 300
+      },
+      "encoded_hex": "030000000000000058000000000000000700000065000000000000002b02000000000000000029270000000000002c01000000000000"
+    },
+    {
+      "name": "order_rejected",
+      "message_type": "kOrderRejected",
+      "fields": {
+        "causing_command_sequence": 4,
+        "instrument_id": 7,
+        "participant_id": 101,
+        "client_order_id": 556,
+        "reason": "QUANTITY_NOT_ON_LOT"
+      },
+      "encoded_hex": "04000000000000000700000065000000000000002c0200000000000003"
+    },
+    {
+      "name": "order_modified",
+      "message_type": "kOrderModified",
+      "fields": {
+        "causing_command_sequence": 5,
+        "order_id": 88,
+        "new_remaining_units": 100,
+        "cancelled_quantity_delta_units": 200
+      },
+      "encoded_hex": "050000000000000058000000000000006400000000000000c800000000000000"
+    },
+    {
+      "name": "order_replaced",
+      "message_type": "kOrderReplaced",
+      "fields": {
+        "causing_command_sequence": 6,
+        "old_order_id": 88,
+        "new_order_id": 90,
+        "instrument_id": 7,
+        "participant_id": 101,
+        "client_order_id": 555,
+        "side": "BUY",
+        "order_type": "LIMIT",
+        "price_units": 10050,
+        "quantity_units": 400
+      },
+      "encoded_hex": "060000000000000058000000000000005a000000000000000700000065000000000000002b02000000000000000042270000000000009001000000000000"
+    },
+    {
+      "name": "trade",
+      "message_type": "kTrade",
+      "fields": {
+        "causing_command_sequence": 7,
+        "instrument_id": 7,
+        "price_units": 10025,
+        "quantity_units": 150,
+        "maker_order_id": 88,
+        "taker_order_id": 91,
+        "maker_participant_id": 101,
+        "taker_participant_id": 202,
+        "taker_side": "SELL"
+      },
+      "encoded_hex": "0700000000000000070000002927000000000000960000000000000058000000000000005b000000000000006500000000000000ca0000000000000001"
+    },
+    {
+      "name": "order_terminated",
+      "message_type": "kOrderTerminated",
+      "fields": {
+        "causing_command_sequence": 8,
+        "order_id": 88,
+        "reason": "FILLED",
+        "cancelled_quantity_delta_units": 0
+      },
+      "encoded_hex": "08000000000000005800000000000000000000000000000000"
+    }
+  ]
+}

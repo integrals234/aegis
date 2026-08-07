@@ -73,7 +73,21 @@ bool take_string(std::span<const std::byte> bytes, std::size_t& offset, std::str
 }  // namespace
 
 bool is_known_message_type(std::uint16_t value) {
-  return value == static_cast<std::uint16_t>(MessageType::kUnspecified);
+  switch (static_cast<MessageType>(value)) {
+    case MessageType::kUnspecified:
+    case MessageType::kNewOrder:
+    case MessageType::kCancelOrder:
+    case MessageType::kModifyOrder:
+    case MessageType::kOrderAccepted:
+    case MessageType::kOrderRejected:
+    case MessageType::kOrderModified:
+    case MessageType::kOrderReplaced:
+    case MessageType::kTrade:
+    case MessageType::kOrderTerminated:
+      return true;
+    default:
+      return false;
+  }
 }
 
 std::string_view describe(DecodeError error) {
