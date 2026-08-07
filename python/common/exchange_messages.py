@@ -114,10 +114,16 @@ class OrderAcceptedEvent:
 
 @dataclass(frozen=True, slots=True)
 class OrderRejectedEvent:
+    """A rejection from a NewOrder (client_order_id identifies the rejected
+    submission, order_id is 0) or from a CancelOrder/ModifyOrder (order_id
+    identifies the targeted live order, client_order_id is 0). Exactly one of
+    the two is nonzero (ADR-0011)."""
+
     causing_command_sequence: int = 0
     instrument_id: int = 0
     participant_id: int = 0
     client_order_id: int = 0
+    order_id: int = 0
     reason: RejectReason = RejectReason.MALFORMED_MESSAGE
 
 
@@ -330,6 +336,7 @@ def encode_order_rejected(event: OrderRejectedEvent) -> bytes:
     _put_u32(parts, event.instrument_id)
     _put_u64(parts, event.participant_id)
     _put_u64(parts, event.client_order_id)
+    _put_u64(parts, event.order_id)
     _put_u8(parts, int(event.reason))
     return b"".join(parts)
 
@@ -340,10 +347,11 @@ def decode_order_rejected(data: bytes) -> OrderRejectedEvent:
     instrument_id, offset = _take_u32(data, offset)
     participant_id, offset = _take_u64(data, offset)
     client_order_id, offset = _take_u64(data, offset)
+    order_id, offset = _take_u64(data, offset)
     reason, offset = _take_enum(RejectReason, data, offset)
     _finish(data, offset)
     return OrderRejectedEvent(causing_command_sequence, instrument_id, participant_id, client_order_id,
-                               reason)
+                               order_id, reason)
 
 
 def encode_order_modified(event: OrderModifiedEvent) -> bytes:

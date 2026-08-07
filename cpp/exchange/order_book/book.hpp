@@ -56,6 +56,18 @@ class OrderBook {
   /// different `TerminationReason`s the caller must choose between.
   QuantityUnits record_fill(OrderId order_id, QuantityUnits fill_quantity);
 
+  /// Applies a priority-retaining quantity decrease (ADR-0011): reduces a
+  /// live order's `remaining` to `new_remaining`, adds the difference to its
+  /// `cancelled_quantity` (not `cumulative_filled` — nothing traded), and
+  /// keeps its level's `aggregate_quantity` consistent (P3) — all without
+  /// moving its FIFO position, since a decrease never changes priority.
+  /// `original_quantity` is untouched: P1 requires it stay fixed at whatever
+  /// it was when the order was created.
+  ///
+  /// Precondition: `order_id` is live and `new_remaining` does not exceed its
+  /// current `remaining`.
+  void apply_quantity_decrease(OrderId order_id, QuantityUnits new_remaining);
+
   [[nodiscard]] const OrderNode* find(OrderId order_id) const;
   [[nodiscard]] OrderNode* find(OrderId order_id);
 

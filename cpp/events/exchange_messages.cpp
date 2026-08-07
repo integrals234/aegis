@@ -208,6 +208,7 @@ std::vector<std::byte> encode(const OrderRejectedEvent& event) {
   put_u32(out, event.instrument_id);
   put_u64(out, event.participant_id);
   put_u64(out, event.client_order_id);
+  put_u64(out, event.order_id);
   put_u8(out, static_cast<std::uint8_t>(event.reason));
   return out;
 }
@@ -219,8 +220,9 @@ std::optional<OrderRejectedEvent> decode_order_rejected(std::span<const std::byt
   if (!take_u64(bytes, offset, event.causing_command_sequence) ||
       !take_u32(bytes, offset, event.instrument_id) ||
       !take_u64(bytes, offset, event.participant_id) ||
-      !take_u64(bytes, offset, event.client_order_id) || !take_u8(bytes, offset, raw_reason) ||
-      !is_known_reject_reason(raw_reason) || offset != bytes.size()) {
+      !take_u64(bytes, offset, event.client_order_id) || !take_u64(bytes, offset, event.order_id) ||
+      !take_u8(bytes, offset, raw_reason) || !is_known_reject_reason(raw_reason) ||
+      offset != bytes.size()) {
     return std::nullopt;
   }
   event.reason = static_cast<RejectReason>(raw_reason);

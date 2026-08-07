@@ -62,9 +62,23 @@
         "instrument_id": 7,
         "participant_id": 101,
         "client_order_id": 556,
+        "order_id": 0,
         "reason": "QUANTITY_NOT_ON_LOT"
       },
-      "encoded_hex": "04000000000000000700000065000000000000002c0200000000000003"
+      "encoded_hex": "04000000000000000700000065000000000000002c02000000000000000000000000000003"
+    },
+    {
+      "name": "order_rejected_from_cancel",
+      "message_type": "kOrderRejected",
+      "fields": {
+        "causing_command_sequence": 9,
+        "instrument_id": 7,
+        "participant_id": 101,
+        "client_order_id": 0,
+        "order_id": 88,
+        "reason": "UNKNOWN_ORDER_ID"
+      },
+      "encoded_hex": "09000000000000000700000065000000000000000000000000000000580000000000000008"
     },
     {
       "name": "order_modified",

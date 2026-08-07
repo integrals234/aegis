@@ -75,6 +75,17 @@ QuantityUnits OrderBook::record_fill(OrderId order_id, QuantityUnits fill_quanti
   return node.remaining;
 }
 
+void OrderBook::apply_quantity_decrease(OrderId order_id, QuantityUnits new_remaining) {
+  const auto found = order_index_.find(order_id.value());
+  OrderNode& node = storage_.node(found->second);
+  const QuantityUnits delta = node.remaining - new_remaining;
+  node.remaining = new_remaining;
+  node.cancelled_quantity += delta;
+
+  PriceLevel* level = levels_for(node.side).find(node.price_units);
+  level->aggregate_quantity -= delta;
+}
+
 const OrderNode* OrderBook::find(OrderId order_id) const {
   const auto found = order_index_.find(order_id.value());
   return found == order_index_.end() ? nullptr : &storage_.node(found->second);

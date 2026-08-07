@@ -47,7 +47,7 @@ order_accepted = st.builds(
 order_rejected = st.builds(
     em.OrderRejectedEvent,
     causing_command_sequence=uint64, instrument_id=uint32, participant_id=uint64,
-    client_order_id=uint64, reason=reject_reasons,
+    client_order_id=uint64, order_id=uint64, reason=reject_reasons,
 )
 order_modified = st.builds(
     em.OrderModifiedEvent,

@@ -131,11 +131,18 @@ struct OrderAcceptedEvent {
   friend bool operator==(const OrderAcceptedEvent&, const OrderAcceptedEvent&) = default;
 };
 
+/// A rejection can originate from a `NewOrder` (no order was ever created:
+/// `client_order_id` identifies which of the participant's submissions was
+/// rejected, `order_id` is 0) or from a `CancelOrder`/`ModifyOrder` (the
+/// command targets an already-assigned `OrderId`, not a `client_order_id`:
+/// `order_id` identifies it, `client_order_id` is 0). Exactly one of the two
+/// is nonzero; never both, never neither (ADR-0011).
 struct OrderRejectedEvent {
   std::uint64_t causing_command_sequence{0};
   std::uint32_t instrument_id{0};
   std::uint64_t participant_id{0};
   std::uint64_t client_order_id{0};
+  std::uint64_t order_id{0};
   RejectReason reason{RejectReason::kMalformedMessage};
 
   friend bool operator==(const OrderRejectedEvent&, const OrderRejectedEvent&) = default;

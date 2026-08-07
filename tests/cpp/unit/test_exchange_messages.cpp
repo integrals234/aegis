@@ -118,6 +118,7 @@ void check_case(const nlohmann::json& entry) {
         .instrument_id = f.at("instrument_id").get<std::uint32_t>(),
         .participant_id = f.at("participant_id").get<std::uint64_t>(),
         .client_order_id = f.at("client_order_id").get<std::uint64_t>(),
+        .order_id = f.at("order_id").get<std::uint64_t>(),
         .reason = parse_reject_reason(f.at("reason").get<std::string>()),
     };
     EXPECT_EQ(aegis::events::to_hex(encode(event)), expected_hex) << name;

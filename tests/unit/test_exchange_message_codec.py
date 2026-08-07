@@ -39,7 +39,7 @@ _BUILDERS = {
     ),
     "kOrderRejected": lambda f: em.OrderRejectedEvent(
         f["causing_command_sequence"], f["instrument_id"], f["participant_id"], f["client_order_id"],
-        em.RejectReason[f["reason"]]
+        f["order_id"], em.RejectReason[f["reason"]]
     ),
     "kOrderModified": lambda f: em.OrderModifiedEvent(
         f["causing_command_sequence"], f["order_id"], f["new_remaining_units"],
@@ -121,7 +121,7 @@ def test_trailing_bytes_fail_to_decode():
 
 
 def test_unknown_reject_reason_fails_to_decode():
-    event = em.OrderRejectedEvent(1, 2, 3, 4, em.RejectReason.MALFORMED_MESSAGE)
+    event = em.OrderRejectedEvent(1, 2, 3, 4, 0, em.RejectReason.MALFORMED_MESSAGE)
     encoded = bytearray(em.encode_order_rejected(event))
     encoded[-1] = 200  # not a defined RejectReason
     with pytest.raises(em.ExchangeMessageDecodeError):
