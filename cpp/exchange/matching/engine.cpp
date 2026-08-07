@@ -25,10 +25,15 @@ std::vector<EmittedEvent> MatchingEngine::apply_new_order(
 
   const QuantityUnits quantity{command.quantity_units};
   const auto quantity_reject = validate_quantity(spec, quantity);
-  const std::optional<RejectReason> price_reject =
-      command.order_type == OrderType::kLimit
-          ? validate_price(spec, PriceUnits{command.price_units})
-          : std::nullopt;
+  // A market order carries no price (ADR-0011): a nonzero price is a
+  // validation failure, decided before the order exists, exactly like an
+  // off-tick limit price — never a book-state outcome.
+  std::optional<RejectReason> price_reject;
+  if (command.order_type == OrderType::kLimit) {
+    price_reject = validate_price(spec, PriceUnits{command.price_units});
+  } else if (command.price_units != 0) {
+    price_reject = RejectReason::kPriceOnMarketOrder;
+  }
 
   const auto reject_reason = quantity_reject.has_value() ? quantity_reject : price_reject;
   if (reject_reason.has_value()) {

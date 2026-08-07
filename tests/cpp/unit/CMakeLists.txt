@@ -11,6 +11,7 @@ aegis_add_test(aegis_unit_tests unit
   test_level_index.cpp
   test_limit_orders.cpp
   test_logging.cpp
+  test_market_orders.cpp
   test_matching_fifo.cpp
   test_sequencer.cpp
   test_time.cpp
