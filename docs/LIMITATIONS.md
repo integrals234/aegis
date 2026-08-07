@@ -20,16 +20,60 @@ logging, a metrics registry, a message envelope with canonical encoding, a
 determinism harness, minimal bindings, a schema registry, an experiment-manifest
 schema, and CI.
 
+## What exists at M1
+
+M1 builds the deterministic single-instrument exchange core: sequencer,
+central limit order book, FIFO matching, the full reject matrix, snapshot and
+restore, a replay CLI, and benchmark workloads. **There is still no strategy,
+no risk engine, no OMS, no portfolio, no research, no attribution, no
+Decision Arena and no dashboard**, and no participant-facing market-data feed
+(`cpp/exchange/market_data` stays empty until M3, ADR-0012). Full detail:
+[docs/EXCHANGE_CORE.md](EXCHANGE_CORE.md).
+
+**Deliberately absent from the exchange core, by design (ADR-0011):**
+
+- **No self-trade prevention.** A participant can trade against its own
+  resting order; nothing here detects or blocks it.
+- **No auctions.** Every command matches immediately against the continuous
+  book; there is no opening/closing auction or call-market phase.
+- **No pro-rata allocation.** `MatchingPolicy` is an interface specifically
+  so a later milestone could add one (AEGIS-040), but M1 ships FIFO only —
+  `tests/cpp/unit/test_matching_policy_interface.cpp` proves the seam is
+  real without shipping the second implementation.
+- **No time-in-force beyond immediate matching.** Every limit order is
+  effectively GTC; there is no IOC, FOK, or GTD.
+- **Single-threaded, one writer per book.** `cpp/exchange/**` has no thread
+  pool, no lock-free structure, and no sharding — AEGIS-047's multi-writer
+  concurrency is M8 scope (`configs/architecture_rules.yaml` dates
+  `cpp/memory`/`cpp/queues` to M8).
+- **Client order IDs are reusable after termination.** Uniqueness is
+  enforced over live orders only, scoped to `(participant_id,
+  client_order_id)`; there is no unbounded tombstone set. See
+  `docs/EXCHANGE_CORE.md`'s "Order lifecycle" section and ADR-0011.
+- **The order-storage slab only grows.** `OrderStorage`'s slab
+  (`cpp/exchange/order_book/order_storage.hpp`) never shrinks back to the
+  allocator; a freed slot returns to an in-process free list, not to the
+  OS. A book that once held N concurrent live orders keeps at least that
+  much slab capacity for its process lifetime.
+- **Benchmark timings are WSL2 figures, not comparable ones.** Every
+  artifact under `experiments/evidence/AEGIS-036/` and
+  `experiments/evidence/AEGIS-039/` carries `"local_non_comparable": true`
+  and an `environment.virtualisation` block showing
+  `bare_metal_claimable: false`. The *asserted* acceptance is operation and
+  allocation counts, which are deterministic; no latency, throughput, HFT
+  or production claim is derived from any M1 number
+  (`docs/BENCHMARK_POLICY.md` rule 2; M8 owns tail-latency claims).
+
 ## Claims that cannot be made yet
 
 | Claim | Why not |
 |---|---|
-| "AEGIS is deterministic" | M0 shows only that **the harness detects nondeterminism**. There is no engine whose determinism could be tested; the producers emit platform records. |
-| Any latency or throughput figure | Nothing has been benchmarked. `docs/BENCHMARK_POLICY.md` governs when a figure may be quoted, and M8 owns the work. |
-| Any complexity claim (`O(1)` lookup, `O(k)` matching) | Those are AEGIS-036 and AEGIS-039, unimplemented. |
+| "AEGIS is deterministic" | M1 shows this for the exchange core specifically: `aegis_exchange_replay` on a committed scenario produces byte-identical canonical output across independent processes (`experiments/evidence/AEGIS-005/exchange/`). No participant, risk, OMS or strategy engine exists yet for the same claim to extend to. |
+| Any latency, throughput or "fast"/"low-latency" figure | `experiments/evidence/AEGIS-036/` and `AEGIS-039/` record timings because `docs/BENCHMARK_POLICY.md` requires it, every one labelled `local_non_comparable` and WSL2. None may be quoted as a performance claim; M8 owns that work. |
+| Strict complexity claims (`O(1)` lookup, `O(k)` matching) unqualified | Documented as *expected* O(1) lookup and O(k) in consumed resting orders (`docs/EXCHANGE_CORE.md`) — `configs/claims_policy.yaml` bans the unqualified "strict O(1)" wording. |
 | Any trading result, Sharpe or drawdown | No strategy, no data, no backtest. |
 | "Production", "HFT", "live" or "institutional-grade" | Simulation-only code; `docs/CV_CLAIMS_POLICY.md` forbids the phrasing, and `tools/check_claims.py` enforces it. |
-| Test coverage percentage | No coverage gate is configured; no M0 requirement asks for one. |
+| Test coverage percentage | No coverage gate is configured; no M1 requirement asks for one. |
 
 ## Controls that are partial by construction
 
@@ -86,6 +130,14 @@ is written and `scripts/ci_local.sh` runs the same stages locally, but AEGIS-234
 acceptance names *a passing workflow on the protected default branch*. Creating
 the remote and the branch-protection rule are owner actions. AEGIS-227, AEGIS-233
 and AEGIS-234 carry obligations for the same reason.
+
+**These four obligations (AEGIS-009, 227, 233, 234) came due at M1 and are
+still open.** None is dischargeable by M1's own code — M1 built the exchange
+core, not CI infrastructure — and none was re-dated: re-dating without a
+structural reason a later milestone can actually pay would be exactly the
+kind of undocumented deferral the operating contract forbids. They remain
+registered exactly as M0 left them; see `docs/DEFERRED_VERIFICATION.md` and
+`docs/BUILD_STATE.md`'s "Owner actions outstanding" section.
 
 ### Development happens under WSL2
 

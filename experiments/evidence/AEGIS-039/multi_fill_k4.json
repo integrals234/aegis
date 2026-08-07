@@ -1,0 +1,83 @@
+{
+  "allocation_count": 4000,
+  "claim": "Operation and allocation counts are the asserted acceptance (AEGIS-036/AEGIS-039); timing is recorded because docs/BENCHMARK_POLICY.md requires it, is local and non-comparable, and is not a latency, throughput, HFT or production claim.",
+  "disclosure_note": "docs/BENCHMARK_POLICY.md required fields: message mix, event count, instrument/level/order counts, fill distribution, allocation count and latency percentiles are in this record's top level; CPU/RAM/OS/virtualisation/compiler/build/sanitizer state is in 'environment'.",
+  "environment": {
+    "build": {
+      "build_info": "aegis 0.1.0; compiler Clang 21.1.8; std c++20; build RelWithDebInfo; assertions off; sanitizers off",
+      "preset": "release"
+    },
+    "cpu": {
+      "logical_cpus": 16,
+      "machine": "x86_64",
+      "model": "AMD Ryzen 7 5800HS with Radeon Graphics",
+      "processor": ""
+    },
+    "disclosure_note": "docs/BENCHMARK_POLICY.md requires this record alongside any performance figure. Where virtualisation.bare_metal_claimable is false, results must be labelled as WSL/VM/container figures.",
+    "memory": {
+      "total_kb": 7821388
+    },
+    "os": {
+      "distribution": "Ubuntu 26.04 LTS",
+      "release": "6.6.114.1-microsoft-standard-WSL2",
+      "system": "Linux",
+      "version": "#1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025"
+    },
+    "record_version": 1,
+    "repository": {
+      "branch": "milestone/m1-exchange-core",
+      "commit": "05db77ad069b7f153e1542470de52fa7edfc5fcd",
+      "dirty": true
+    },
+    "toolchain": {
+      "clang": "Ubuntu clang version 21.1.8 (6ubuntu1)",
+      "clang_format": null,
+      "clang_tidy": null,
+      "cmake": "cmake version 4.2.3",
+      "gcc": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+      "git": "git version 2.53.0",
+      "ninja": "1.13.2",
+      "python": {
+        "executable": "/home/vaibhav/aegis/.venv/bin/python",
+        "implementation": "CPython",
+        "version": "3.14.4"
+      }
+    },
+    "virtualisation": {
+      "bare_metal_claimable": false,
+      "container": false,
+      "detected_virt": "wsl",
+      "kernel": "6.6.114.1-microsoft-standard-WSL2",
+      "wsl": true
+    }
+  },
+  "fill_distribution": {
+    "multi_fill": {
+      "count": 500,
+      "k": 4
+    }
+  },
+  "instruments": 1,
+  "latencies": {
+    "aggressor": {
+      "count": 500,
+      "max_ns": 4980.0,
+      "median_ns": 370.0,
+      "p95_ns": 421.0,
+      "p999_ns": 4890.0,
+      "p99_ns": 2876.0
+    }
+  },
+  "levels": 4,
+  "local_non_comparable": true,
+  "measured_operations": 500,
+  "message_mix": {
+    "marketable": 100
+  },
+  "orders": 4,
+  "reproducible_command": "build/release/cpp/exchange/app/aegis_exchange_bench --workload multi_fill_multi_level_aggressor --k 4 --seed 1729",
+  "seed": 1729,
+  "throughput_ops_per_sec": 385009.2787236172,
+  "warmup_operations": 50,
+  "workload": "multi_fill_multi_level_aggressor_k4"
+}

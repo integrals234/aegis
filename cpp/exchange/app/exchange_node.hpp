@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory_resource>
 #include <unordered_map>
 #include <vector>
 
@@ -45,9 +46,16 @@ class ExchangeNode {
         event_log_(next_event_sequence),
         matching_engine_(policy_, next_order_id) {}
 
-  /// Registers a fresh, empty `OrderBook` for `spec.instrument_id`.
+  /// Registers a fresh, empty `OrderBook` for `spec.instrument_id`, backed by
+  /// `resource` (ADR-0010; defaults to the global resource, so every
+  /// existing call site is unaffected). `aegis_exchange_bench` is the one
+  /// caller that passes its own, to measure per-instance allocation counts
+  /// against a benchmark workload the way
+  /// `tests/cpp/property/test_allocation_counters.cpp` measures them against
+  /// a unit-test workload.
   /// Precondition: no book is already registered for that id.
-  void add_instrument(const InstrumentSpec& spec, std::size_t order_capacity = 0);
+  void add_instrument(const InstrumentSpec& spec, std::size_t order_capacity = 0,
+                      std::pmr::memory_resource* resource = std::pmr::get_default_resource());
 
   [[nodiscard]] const InstrumentSpec* instrument(InstrumentId id) const;
   [[nodiscard]] OrderBook* book(InstrumentId id);

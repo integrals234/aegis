@@ -29,7 +29,16 @@ Feed Adapter -> Book Builder -> Features -> Strategies -> Risk -> OMS -> Gateway
 7. Decision Arena uses frozen-at-decision information and the same risk/execution abstractions.
 8. Python orchestrates research and reporting; latency-sensitive deterministic cores live in C++.
 9. No shared mutable book across matching threads; one writer per book partition.
+   M1 built the single-instrument case (`ExchangeNode`, `cpp/exchange/**`,
+   single-threaded); multi-writer sharding across partitions is AEGIS-047 (M8).
 10. Every external boundary uses versioned messages and explicit clocks.
+
+## Exchange core (M1)
+
+The identifier spaces, price/quantity grid, documented complexity and
+invariant scopes are concrete decisions, not just principles — recorded in
+[docs/EXCHANGE_CORE.md](EXCHANGE_CORE.md) and `adr/0009` through `adr/0013`,
+not duplicated here.
 
 ## Clock model
 

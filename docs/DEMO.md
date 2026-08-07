@@ -1,10 +1,11 @@
 # Demo
 
-**AEGIS has no exchange, no strategy, no risk engine, no execution model, no
-research and no analytics.** M0 built the governance and engineering foundation
-that later milestones are checked against. This demo shows that foundation and
-nothing more; the capability demo the project's definition of done describes
-belongs to M9.
+**AEGIS has a deterministic single-instrument exchange core (M1): sequencer,
+central limit order book, FIFO matching, snapshot/restore and a replay CLI.
+There is still no strategy, no risk engine, no OMS, no portfolio, no research
+and no analytics.** M0 built the governance and engineering foundation this
+core is checked against; the capability demo the project's definition of done
+describes belongs to M9.
 
 Every command below runs against the committed repository and takes a few
 minutes end to end.
@@ -163,10 +164,63 @@ bash scripts/ci_local.sh
 
 The same stages `.github/workflows/ci.yml` runs, reported as a table.
 
+## 11. A limit order book, matched deterministically
+
+```bash
+cmake --build --preset debug
+./build/debug/cpp/exchange/app/aegis_exchange_replay \
+    --input tests/unit/fixtures/exchange/replay/basic_session.jsonl
+```
+
+Ten commands — new orders, a priority-retaining decrease, a cancel-replace, a
+cancel, and a market order against an empty book — produce eighteen canonical
+event lines: accepts, a trade, terminations, a modify and a replace. Run it
+twice; the output is byte-identical.
+
+## 12. Snapshot, restore, and continuation equality
+
+```bash
+./build/debug/cpp/exchange/app/aegis_exchange_replay \
+    --input tests/unit/fixtures/exchange/replay/basic_session.jsonl \
+    --limit 6 --snapshot-out /tmp/aegis-demo-snapshot.bin
+
+./build/debug/cpp/exchange/app/aegis_exchange_replay \
+    --input tests/unit/fixtures/exchange/replay/basic_session.jsonl \
+    --skip 6 --restore-from /tmp/aegis-demo-snapshot.bin
+```
+
+The second command's output is byte-identical to the last nine lines of step
+11's uninterrupted run — including every `EventSequence` and `OrderId`
+assigned after the split (ADR-0013).
+
+## 13. The exchange engine is deterministic across processes
+
+```bash
+python3 tools/determinism_check.py --producer exchange --runs 2
+```
+
+Two fresh processes, different `PYTHONHASHSEED`, running the real matching
+engine — not a platform stub. This is the AEGIS-005 discharge for the
+exchange core.
+
+## 14. Benchmark workloads, with their claim boundary
+
+```bash
+cmake --build --preset release
+python3 tools/run_exchange_bench.py --preset release
+cat experiments/evidence/AEGIS-036/lookup_cancel.json
+```
+
+Every field `docs/BENCHMARK_POLICY.md` requires is in the artifact, including
+`"local_non_comparable": true` and `environment.virtualisation`. No latency
+or throughput number here is a performance claim — see
+[docs/LIMITATIONS.md](LIMITATIONS.md).
+
 ## What this demo deliberately does not show
 
-No order book, no matching, no fills, no strategy signal, no risk decision, no
-P&L, no backtest, no attribution, no Decision Arena scenario, no dashboard, and
-no latency or throughput figure. Those are M1 through M9. See
+No strategy signal, no risk decision, no P&L, no backtest, no attribution, no
+Decision Arena scenario, no dashboard, and no latency or throughput figure
+that is a comparable claim rather than a disclosed, WSL2-labelled local
+measurement. Those are M2 through M9. See
 [docs/LIMITATIONS.md](LIMITATIONS.md) and
 [docs/DEFERRED_VERIFICATION.md](DEFERRED_VERIFICATION.md).

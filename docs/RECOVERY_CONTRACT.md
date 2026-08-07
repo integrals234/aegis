@@ -2,16 +2,17 @@
 
 AEGIS-237 requires every critical stateful service to document its shutdown,
 snapshot and recovery behaviour. This document is that contract. At M0 it
-describes obligations and the interface that expresses them; the implementations
-arrive with the services they belong to.
+described obligations and the interface that expresses them; implementations
+arrive with the services they belong to — the exchange side landed at M1.
 
-## What exists at M0, and what does not
+## What exists at M1, and what does not
 
 | Delivered | Deferred |
 |---|---|
-| The contract below | Exchange-state recovery (M1, with the exchange) |
-| `python/common/recovery.py` — protocol, version refusal, round-trip check | Participant-state recovery (M3, with the OMS and portfolio) |
-| `tests/unit/test_recovery_contract.py` — the contract exercised through an implementer | Restart recovery for paper trading (M9, AEGIS-222) |
+| The contract below | Participant-state recovery (M3, with the OMS and portfolio) |
+| `python/common/recovery.py` — protocol, version refusal, round-trip check | Restart recovery for paper trading (M9, AEGIS-222) |
+| `tests/unit/test_recovery_contract.py` — the contract exercised through an implementer | |
+| **Exchange-state recovery** — `cpp/exchange/state/snapshot.{hpp,cpp}` (ADR-0013): `ExchangeSnapshot` v1, byte-stable codec, version and counter-consistency refusal, `tests/cpp/unit/test_snapshot_roundtrip.cpp` (round trip and continuation equality), `tests/replay/test_exchange_determinism.py` (the same split exercised across process boundaries via `aegis_exchange_replay --snapshot-out`/`--restore-from`) | |
 
 **There is no snapshot store, and that is deliberate.** A general-purpose store
 is where a shared state substrate is born: by M9 the exchange and the
@@ -75,11 +76,13 @@ step 2 has recorded state that never existed.
 
 | Milestone | Owed evidence |
 |---|---|
-| M1 | Exchange-state recovery test: sequencer position and book state survive a snapshot/restore cycle, verified by round trip. |
+| M1 | **Paid.** Exchange-state recovery test: sequencer position and book state survive a snapshot/restore cycle, verified by round trip — `tests/cpp/unit/test_snapshot_roundtrip.cpp`, `tests/replay/test_exchange_determinism.py`. |
 | M3 | Participant-state recovery test: OMS order lifecycle and portfolio positions survive the same cycle. |
 | M9 | Restart recovery against the paper adapter, including reconciliation of positions after restore (AEGIS-221, AEGIS-222). |
 
-These are registered in `requirements/implementation_status.json` under
-`verification_blocked_until`, so AEGIS-237 cannot be marked `verified` before the
-evidence exists, and `tools/audit_requirements.py --check-deferred` fails the
-owing milestone if it closes without paying.
+The M3 and M9 rows are registered in `requirements/implementation_status.json`
+under `verification_blocked_until`, so AEGIS-237 cannot be marked `verified`
+before that evidence exists, and `tools/audit_requirements.py --check-deferred`
+fails the owing milestone if it closes without paying. AEGIS-237 itself is
+still `implemented`, not `verified` — the M1 row being paid narrows what it is
+missing, and an independent audit still decides promotion.

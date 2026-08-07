@@ -92,28 +92,24 @@
       "status": "implemented",
       "implementation": [
         "tools/determinism_check.py",
-        "python/common/determinism.py"
+        "python/common/determinism.py",
+        "cpp/exchange/app/replay_main.cpp"
       ],
       "tests": [
-        "tests/replay/test_determinism_harness.py"
+        "tests/replay/test_determinism_harness.py",
+        "tests/replay/test_exchange_determinism.py"
       ],
       "reports": [
         "experiments/evidence/AEGIS-005/summary.json",
         "experiments/evidence/AEGIS-005/canonical_output.txt",
         "experiments/evidence/AEGIS-005/run1.hash",
-        "experiments/evidence/AEGIS-005/run2.hash"
+        "experiments/evidence/AEGIS-005/run2.hash",
+        "experiments/evidence/AEGIS-005/exchange/summary.json",
+        "experiments/evidence/AEGIS-005/exchange/canonical_output.txt",
+        "experiments/evidence/AEGIS-005/exchange/run1.hash",
+        "experiments/evidence/AEGIS-005/exchange/run2.hash"
       ],
-      "notes": "Run-twice-across-processes harness with a committed nondeterministic counter-example it must flag.",
-      "verification_blocked_until": "M1",
-      "residual": "Canonical output covers platform records only. M0 shows the harness detects nondeterminism; it is not a claim that AEGIS is deterministic. Real event input arrives with M1, and this is a hard gate before M8 optimization begins.",
-      "deferral_history": [
-        {
-          "blocked_until": "M1",
-          "recorded_at": "M0",
-          "date": "2026-08-06",
-          "reason": "Registered while closing M0: the acceptance names identical event input, and no event source exists until the exchange core lands at M1."
-        }
-      ]
+      "notes": "M1 exchange engine supplies real event input: aegis_exchange_replay on a committed scenario produces byte-identical canonical output across independent processes with varied PYTHONHASHSEED, and a run split at a snapshot boundary across two process invocations reproduces the same tail byte for byte. The M1-registered obligation (real event input arrives with M1) is discharged; any later-arriving engine is expected to register its own producer and evidence the same way."
     },
     "AEGIS-006": {
       "status": "verified",
@@ -323,109 +319,212 @@
       "notes": ""
     },
     "AEGIS-027": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/exchange/order_book/book.hpp",
+        "cpp/exchange/order_book/book.cpp",
+        "cpp/exchange/order_book/types.hpp",
+        "cpp/exchange/sequencer/sequencer.hpp",
+        "cpp/exchange/sequencer/sequencer.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_matching_fifo.cpp",
+        "tests/cpp/unit/test_book_add_cancel.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "CommandSequence-keyed Priority gives price-time priority; golden sequences prove price beats arrival across levels and CommandSequence breaks ties at equal price, including two commands sharing an EventTime (ADR-0012)."
     },
     "AEGIS-028": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/exchange/matching/engine.hpp",
+        "cpp/exchange/matching/engine.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_limit_orders.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Bid/ask, crossing/non-crossing, partial and full fills, invalid input covered."
     },
     "AEGIS-029": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/exchange/matching/engine.hpp",
+        "cpp/exchange/matching/engine.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_market_orders.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Full fill, partial fill with residual terminated kResidualCanceled, empty-book acceptance, price-on-market-order rejection; never rejected for lack of liquidity (ADR-0011)."
     },
     "AEGIS-030": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/exchange/order_book/book.hpp",
+        "cpp/exchange/order_book/book.cpp",
+        "cpp/exchange/matching/engine.hpp",
+        "cpp/exchange/matching/engine.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_modify_semantics.cpp",
+        "tests/cpp/property/test_order_index.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Cancel by OrderId is one hash lookup plus one O(1) intrusive-queue unlink, no price-queue scan; state, quantities and kOrderTerminated events verified."
     },
     "AEGIS-031": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/exchange/matching/engine.hpp",
+        "cpp/exchange/matching/engine.cpp",
+        "cpp/exchange/order_book/book.hpp",
+        "cpp/exchange/order_book/book.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_modify_semantics.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Price-unchanged decrease retains priority in place; quantity increase is cancel-replace with a new OrderId at the tail (ADR-0011)."
     },
     "AEGIS-032": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/exchange/matching/engine.hpp",
+        "cpp/exchange/matching/engine.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_modify_semantics.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Any price change is cancel-replace: old OrderId terminates kReplaced, new OrderId rests at the tail of its new level."
     },
     "AEGIS-033": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/exchange/matching/engine.hpp",
+        "cpp/exchange/matching/engine.cpp"
+      ],
+      "tests": [
+        "tests/cpp/property/test_quantity_conservation.cpp",
+        "tests/cpp/unit/test_limit_orders.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "P1-P4 conservation asserted over generated operation sequences, ledger built from the decoded event stream, never book internals."
     },
     "AEGIS-034": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/exchange/matching/engine.hpp",
+        "cpp/exchange/matching/engine.cpp",
+        "cpp/exchange/order_book/book.hpp",
+        "cpp/exchange/order_book/book.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_full_fills.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Level emptied and erased, index entry removed, no stale handle reachable; verified against the structural invariant checker too."
     },
     "AEGIS-035": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/exchange/order_book/instrument.hpp",
+        "cpp/exchange/order_book/instrument.cpp",
+        "cpp/exchange/matching/engine.hpp",
+        "cpp/exchange/matching/engine.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_reject_matrix.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Every RejectReason enumerator reachable via a compile-time-checked table; adding a reason without a case fails to compile."
     },
     "AEGIS-036": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "cpp/exchange/order_book/order_storage.hpp",
+        "cpp/exchange/order_book/book.hpp",
+        "cpp/exchange/order_book/book.cpp"
+      ],
+      "tests": [
+        "tests/cpp/property/test_order_index.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-036/lookup_cancel.json"
+      ],
+      "notes": "Pre-sized std::pmr::unordered_map from OrderId to slab index; expected O(1), never claimed strict O(1) (configs/claims_policy.yaml, ADR-0010). Benchmark workload and correctness-under-churn test both pass."
     },
     "AEGIS-037": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/exchange/order_book/order_storage.hpp",
+        "cpp/exchange/order_book/level.hpp"
+      ],
+      "tests": [
+        "tests/cpp/property/test_allocation_counters.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Intrusive doubly-linked FIFO queue over the index-handle slab; injected memory_resource proves zero allocations across a warmed steady-state add/cancel/match cycle, in debug, release and asan-ubsan."
     },
     "AEGIS-038": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/exchange/order_book/level_index.hpp",
+        "cpp/exchange/order_book/level_index.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_level_index.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "MapLevelIndex behind the LevelIndex interface; expected O(log D), D = documented finite price-domain cardinality (ceiling-floor)/tick+1."
     },
     "AEGIS-039": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "cpp/exchange/matching/fifo_policy.hpp",
+        "cpp/exchange/matching/fifo_policy.cpp",
+        "cpp/exchange/matching/matching_policy.hpp"
+      ],
+      "tests": [
+        "tests/cpp/property/test_match_visits.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-039/single_fill_aggressor.json",
+        "experiments/evidence/AEGIS-039/multi_fill_k8.json",
+        "experiments/evidence/AEGIS-039/policy_mix.json",
+        "experiments/evidence/AEGIS-039/multi_fill_k2.json",
+        "experiments/evidence/AEGIS-039/multi_fill_k4.json",
+        "experiments/evidence/AEGIS-039/multi_fill_k16.json",
+        "experiments/evidence/AEGIS-039/multi_fill_k32.json"
+      ],
+      "notes": "Matching walks only the levels/orders a fill consumes, O(k); property test asserts visited count tracks consumed count, and benchmark workloads (single-fill, multi-fill k in {2,4,8,16,32}, policy mix) show it, all local_non_comparable."
     },
     "AEGIS-040": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/exchange/matching/matching_policy.hpp",
+        "cpp/exchange/matching/fifo_policy.hpp",
+        "cpp/exchange/matching/fifo_policy.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_matching_policy_interface.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "MatchingPolicy interface plus a test-only second policy proves the seam is real without shipping pro-rata."
     },
     "AEGIS-041": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/exchange/order_book/invariants.hpp",
+        "cpp/exchange/order_book/invariants.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_book_invariants.cpp",
+        "tests/cpp/property/test_book_invariants_fuzz.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "check_invariants at kStructural and kQuiescent; hand-corrupted fixtures prove both scopes actually fire; fuzz harness calls kQuiescent after every generated command."
     },
     "AEGIS-042": {
       "status": "not_started",
@@ -1939,15 +2038,19 @@
       "status": "implemented",
       "implementation": [
         "python/common/recovery.py",
-        "docs/RECOVERY_CONTRACT.md"
+        "docs/RECOVERY_CONTRACT.md",
+        "cpp/exchange/state/snapshot.hpp",
+        "cpp/exchange/state/snapshot.cpp"
       ],
       "tests": [
-        "tests/unit/test_recovery_contract.py"
+        "tests/unit/test_recovery_contract.py",
+        "tests/cpp/unit/test_snapshot_roundtrip.cpp",
+        "tests/replay/test_exchange_determinism.py"
       ],
       "reports": [],
       "notes": "Contract and interface: version refusal, byte-stable snapshots, round-trip verification and a defined shutdown sequence. No snapshot store, deliberately.",
       "verification_blocked_until": "M3",
-      "residual": "The acceptance names recovery tests for exchange and participant state. Exchange-state recovery arrives with M1; participant state lives in the OMS and portfolio layers, which configs/architecture_rules.yaml dates M3, so the obligation cannot be fully discharged before M3.",
+      "residual": "The acceptance names recovery tests for exchange and participant state. Exchange-state recovery is paid at M1: sequencer position and book state survive a snapshot/restore cycle, verified by round trip and by continuation equality across a process boundary (docs/RECOVERY_CONTRACT.md M1 row, ADR-0013). Participant-state recovery still requires the OMS and portfolio layers, which configs/architecture_rules.yaml dates M3.",
       "deferral_history": [
         {
           "blocked_until": "M1",

@@ -18,3 +18,11 @@ target_link_libraries(aegis_exchange_app
 add_executable(aegis_exchange_replay replay_main.cpp)
 target_link_libraries(aegis_exchange_replay
   PRIVATE aegis_exchange_app nlohmann_json::nlohmann_json aegis_warnings)
+
+# aegis_exchange_bench: the three named workloads plus the BENCHMARK_POLICY
+# required mix (AEGIS-036, AEGIS-039, §4.7). Only this target links
+# cpp/common's real SystemSteadyClock for latency measurement — every other
+# exchange layer takes an injected clock or none at all.
+add_executable(aegis_exchange_bench bench_main.cpp)
+target_link_libraries(aegis_exchange_bench
+  PRIVATE aegis_exchange_app nlohmann_json::nlohmann_json aegis_warnings)

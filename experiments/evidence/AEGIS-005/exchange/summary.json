@@ -1,0 +1,11 @@
+{
+  "producer": "exchange",
+  "seed": 42,
+  "runs": 2,
+  "digests": [
+    "9c38f6a66066851dc3611525874d05c1ed258c321cb0469142e77f78e53a01d6",
+    "9c38f6a66066851dc3611525874d05c1ed258c321cb0469142e77f78e53a01d6"
+  ],
+  "stable": true,
+  "claim": "This run shows that aegis_exchange_replay produces byte-identical canonical event output across independent processes with different PYTHONHASHSEED, for the committed M1 scenario. This is the AEGIS-005 discharge for the exchange core: identical event input produces byte-identical canonical output (ADR-0012)."
+}

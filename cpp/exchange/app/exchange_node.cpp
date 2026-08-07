@@ -32,9 +32,11 @@ std::vector<EmittedEvent> unknown_instrument_reject(std::uint32_t instrument_id,
 
 }  // namespace
 
-void ExchangeNode::add_instrument(const InstrumentSpec& spec, std::size_t order_capacity) {
+void ExchangeNode::add_instrument(const InstrumentSpec& spec, std::size_t order_capacity,
+                                  std::pmr::memory_resource* resource) {
   instruments_.emplace(spec.instrument_id.value(), spec);
-  auto [it, inserted] = books_.try_emplace(spec.instrument_id.value(), spec.instrument_id);
+  auto [it, inserted] =
+      books_.try_emplace(spec.instrument_id.value(), spec.instrument_id, resource);
   if (inserted && order_capacity > 0) {
     it->second.reserve(order_capacity);
   }
