@@ -97,19 +97,31 @@ std::vector<EmittedEvent> MatchingEngine::apply_new_order(
     events::CommandSequence command_sequence) {
   std::vector<EmittedEvent> events_out;
 
+  // AEGIS-035 validation order: duplicate client-order-id scope (ADR-0011 —
+  // live orders only, per-participant), then the quantity grid, then the
+  // price grid / market-order price check.
+  std::optional<RejectReason> reject_reason;
+  if (book.find_live_by_client_id(ParticipantId{command.participant_id},
+                                  ClientOrderId{command.client_order_id})
+          .has_value()) {
+    reject_reason = RejectReason::kDuplicateClientOrderId;
+  }
+
   const QuantityUnits quantity{command.quantity_units};
-  const auto quantity_reject = validate_quantity(spec, quantity);
+  if (!reject_reason.has_value()) {
+    reject_reason = validate_quantity(spec, quantity);
+  }
   // A market order carries no price (ADR-0011): a nonzero price is a
   // validation failure, decided before the order exists, exactly like an
   // off-tick limit price — never a book-state outcome.
-  std::optional<RejectReason> price_reject;
-  if (command.order_type == OrderType::kLimit) {
-    price_reject = validate_price(spec, PriceUnits{command.price_units});
-  } else if (command.price_units != 0) {
-    price_reject = RejectReason::kPriceOnMarketOrder;
+  if (!reject_reason.has_value()) {
+    if (command.order_type == OrderType::kLimit) {
+      reject_reason = validate_price(spec, PriceUnits{command.price_units});
+    } else if (command.price_units != 0) {
+      reject_reason = RejectReason::kPriceOnMarketOrder;
+    }
   }
 
-  const auto reject_reason = quantity_reject.has_value() ? quantity_reject : price_reject;
   if (reject_reason.has_value()) {
     events_out.push_back(
         make_event(events::MessageType::kOrderRejected,

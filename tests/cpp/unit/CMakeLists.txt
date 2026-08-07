@@ -1,5 +1,6 @@
 aegis_add_test(aegis_unit_tests unit
   test_book_add_cancel.cpp
+  test_client_order_id_scope.cpp
   test_config.cpp
   test_envelope.cpp
   test_event_log.cpp
@@ -14,6 +15,7 @@ aegis_add_test(aegis_unit_tests unit
   test_market_orders.cpp
   test_matching_fifo.cpp
   test_modify_semantics.cpp
+  test_reject_matrix.cpp
   test_sequencer.cpp
   test_time.cpp
   test_version.cpp)

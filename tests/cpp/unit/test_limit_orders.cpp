@@ -112,8 +112,8 @@ TEST(LimitOrders, NoncrossingAskRests) {
 
 TEST(LimitOrders, TwoOrdersAtDifferentPricesBothRestWithoutCrossing) {
   Harness h;
-  h.submit(make_new_order(Side::kBuy, 1000, 100));
-  h.submit(make_new_order(Side::kSell, 1100, 100));
+  h.submit(make_new_order(Side::kBuy, 1000, 100, /*participant_id=*/1, /*client_order_id=*/1));
+  h.submit(make_new_order(Side::kSell, 1100, 100, /*participant_id=*/1, /*client_order_id=*/2));
 
   EXPECT_EQ(h.book.best_bid(), PriceUnits{1000});
   EXPECT_EQ(h.book.best_ask(), PriceUnits{1100});
@@ -162,8 +162,9 @@ TEST(LimitOrders, CrossingOrderTakesThePriceImprovement) {
   // A resting sell at 1000 is better than the buyer's limit of 1025; the
   // trade must print at the maker's (better) price, not the taker's limit.
   Harness h;
-  h.submit(make_new_order(Side::kSell, 1000, 100));
-  const auto events = h.submit(make_new_order(Side::kBuy, 1025, 100));
+  h.submit(make_new_order(Side::kSell, 1000, 100, /*participant_id=*/1, /*client_order_id=*/1));
+  const auto events =
+      h.submit(make_new_order(Side::kBuy, 1025, 100, /*participant_id=*/1, /*client_order_id=*/2));
 
   const auto trade = decode_trade(events[1].payload);
   EXPECT_EQ(trade.value_or(TradeEvent{.price_units = -1}).price_units, 1000);
