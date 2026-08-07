@@ -50,6 +50,20 @@ ARCHITECTURAL_PATHS = (
 )
 REFERENCE_DOCS = ("docs", "adr", "experiments")
 
+# A milestone plan of record legitimately previews the ADRs its own later
+# slices will write — experiments/plans/M1.md names ADR-0010/0011/0013 for
+# work slices 4-9 own. That is a forward reference, not a typo or a stale
+# link, and it is narrow by construction: only a plan-of-record path may be
+# listed here, and only for the ADR numbers its own milestone will produce.
+# Mirrors the same reasoning as the excluded_paths mechanism in
+# configs/claims_policy.yaml (which exempts the same file for the same
+# reason: it quotes forward-looking content in order to describe it).
+# Remove an entry's number the moment that ADR is actually written, so the
+# check keeps proving something for every number it has not yet excused.
+DANGLING_REFERENCE_EXEMPTIONS: dict[str, set[str]] = {
+    "experiments/plans/M1.md": {"0010", "0011", "0013"},
+}
+
 
 def git(root: Path, *args: str) -> str:
     result = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, check=False)
@@ -121,8 +135,9 @@ def check_dangling_references(root: Path, known: set[str]) -> list[str]:
             continue
         for path in sorted(base.rglob("*.md")):
             rel = path.relative_to(root).as_posix()
+            exempt = DANGLING_REFERENCE_EXEMPTIONS.get(rel, set())
             for number in set(ADR_REFERENCE.findall(path.read_text(encoding="utf-8"))):
-                if number == "0000":
+                if number == "0000" or number in exempt:
                     continue
                 if number not in known:
                     errors.append(f"{rel}: references ADR-{number}, which does not exist")

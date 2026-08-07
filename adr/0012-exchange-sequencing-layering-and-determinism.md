@@ -89,8 +89,9 @@ events, sequencer, order_book}`; `app → all of the above`. No edge points to
 - **One identifier space for priority, event order and order identity.**
   Rejected: a snapshot restore that silently loses one counter reproduces
   plausible-looking output from the wrong state, and nothing would notice.
-  Three snapshotted counters plus continuation equality (ADR-0013) is what
-  makes that failure visible.
+  Three snapshotted counters plus continuation equality — the snapshot and
+  recovery design recorded in its own ADR when that layer lands (slice 9) —
+  is what makes that failure visible.
 - **Leave `cpp-exchange-market-data` dated M1 and put event log/snapshot code
   there to pass the emptiness check.** Rejected: that is precisely the vacuous
   pass `check_layer_population` exists to prevent, and it would misname
