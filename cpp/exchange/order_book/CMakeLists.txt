@@ -7,6 +7,8 @@ add_library(aegis_exchange_order_book
   book.hpp
   instrument.cpp
   instrument.hpp
+  invariants.cpp
+  invariants.hpp
   level.hpp
   level_index.cpp
   level_index.hpp

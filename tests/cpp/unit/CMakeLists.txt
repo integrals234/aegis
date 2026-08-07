@@ -1,5 +1,6 @@
 aegis_add_test(aegis_unit_tests unit
   test_book_add_cancel.cpp
+  test_book_invariants.cpp
   test_client_order_id_scope.cpp
   test_config.cpp
   test_envelope.cpp

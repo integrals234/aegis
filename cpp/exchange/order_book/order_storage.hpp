@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <memory_resource>
 #include <vector>
@@ -89,6 +90,19 @@ class OrderStorage {
   [[nodiscard]] std::size_t live_count() const { return nodes_.size() - free_list_.size(); }
   [[nodiscard]] std::size_t free_count() const { return free_list_.size(); }
   [[nodiscard]] std::size_t capacity() const { return nodes_.capacity(); }
+
+  /// The number of slots ever allocated (live + free) — the upper bound for
+  /// a full slab scan. Slot indices are always in `[0, size())`.
+  [[nodiscard]] std::size_t size() const { return nodes_.size(); }
+
+  /// Whether slot `index` is on the free list rather than live. Expensive
+  /// (linear scan) by design — this exists only for the debug-only invariant
+  /// checker (AEGIS-041, `cpp/exchange/order_book/invariants.hpp`), which is
+  /// explicitly not held to the O(1) bar the hot add/cancel/fill path is.
+  [[nodiscard]] bool is_free(std::size_t index) const {
+    return std::ranges::any_of(free_list_,
+                               [index](std::size_t free_index) { return free_index == index; });
+  }
 
  private:
   std::pmr::vector<OrderNode> nodes_;

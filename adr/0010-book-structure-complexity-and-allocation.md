@@ -38,9 +38,9 @@ never about time).
 from `OrderId` to slab index — one hash lookup plus one O(1) intrusive
 queue unlink, no price-queue scan (AEGIS-030, AEGIS-036). Documentation says
 *expected* constant-time lookup over a pre-sized index, worst case linear in
-bucket occupancy under adversarial hashing; `configs/claims_policy.yaml`
-bans "all operations strict O(1)", and this wording is deliberately short of
-that claim.
+bucket occupancy under adversarial hashing; `configs/claims_policy.yaml`'s ban
+on claiming every book operation runs in strictly constant time is exactly
+why the wording stops short of that claim.
 
 ### Price-level index: `MapLevelIndex`, expected O(log D)
 
