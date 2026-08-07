@@ -19,6 +19,7 @@ aegis_add_test(aegis_unit_tests unit
   test_modify_semantics.cpp
   test_reject_matrix.cpp
   test_sequencer.cpp
+  test_snapshot_roundtrip.cpp
   test_time.cpp
   test_version.cpp)
 target_link_libraries(aegis_unit_tests PRIVATE

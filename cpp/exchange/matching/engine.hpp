@@ -30,6 +30,14 @@ class MatchingEngine {
  public:
   explicit MatchingEngine(const MatchingPolicy& policy) : policy_(&policy) {}
 
+  /// Restores position after a snapshot (ADR-0013). `next_order_id` is the
+  /// value the *next* accepted order (a fresh `NewOrder` or a cancel-replace)
+  /// will be assigned.
+  MatchingEngine(const MatchingPolicy& policy, std::uint64_t next_order_id)
+      : policy_(&policy), next_order_id_(next_order_id) {}
+
+  [[nodiscard]] std::uint64_t next_order_id() const { return next_order_id_; }
+
   /// Validates and applies `command` to `book` under `spec`'s grid, assigning
   /// a new `OrderId` on acceptance. `command_sequence` is the causal
   /// reference stamped into every emitted event's `causing_command_sequence`

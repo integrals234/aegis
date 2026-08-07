@@ -4,7 +4,9 @@
 # cpp-exchange-sequencer and cpp-exchange-order-book.
 add_library(aegis_exchange_state
   event_log.cpp
-  event_log.hpp)
+  event_log.hpp
+  snapshot.cpp
+  snapshot.hpp)
 
 target_include_directories(aegis_exchange_state PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(aegis_exchange_state

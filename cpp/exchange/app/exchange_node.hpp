@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "cpp/common/time.hpp"
 #include "cpp/exchange/matching/engine.hpp"
 #include "cpp/exchange/matching/fifo_policy.hpp"
 #include "cpp/exchange/order_book/book.hpp"
@@ -29,6 +30,21 @@ class ExchangeNode {
  public:
   ExchangeNode() : matching_engine_(policy_) {}
 
+  /// Restores position after a snapshot (ADR-0013): `sequencer_`,
+  /// `event_log_` and `matching_engine_` all start from the values a prior
+  /// run's `state::ExchangeSnapshot` recorded, rather than from 1. The
+  /// caller still owns `add_instrument()` for every instrument the snapshot
+  /// covers and replaying `state::restore_orders_into()` for each — a
+  /// snapshot carries no `InstrumentSpec`, so there is no book to restore
+  /// orders into until the caller supplies one (`cpp-exchange-state` may not
+  /// depend on `cpp-exchange-app`, so it cannot do this itself).
+  ExchangeNode(events::CommandSequence next_command_sequence,
+               common::ExchangeTime last_exchange_time, events::EventSequence next_event_sequence,
+               std::uint64_t next_order_id)
+      : sequencer_(next_command_sequence, last_exchange_time),
+        event_log_(next_event_sequence),
+        matching_engine_(policy_, next_order_id) {}
+
   /// Registers a fresh, empty `OrderBook` for `spec.instrument_id`.
   /// Precondition: no book is already registered for that id.
   void add_instrument(const InstrumentSpec& spec, std::size_t order_capacity = 0);
@@ -52,6 +68,7 @@ class ExchangeNode {
   [[nodiscard]] const Sequencer& sequencer() const { return sequencer_; }
   [[nodiscard]] EventLog& event_log() { return event_log_; }
   [[nodiscard]] const EventLog& event_log() const { return event_log_; }
+  [[nodiscard]] std::uint64_t next_order_id() const { return matching_engine_.next_order_id(); }
 
  private:
   Sequencer sequencer_;

@@ -98,8 +98,7 @@ Uniqueness is enforced over **live orders only**: the book's
 `live_client_ids_` map (`cpp/exchange/order_book/book.{hpp,cpp}`, landed in
 slice 1) holds exactly the currently open orders and is derivable from the
 book's own state, so a snapshot restore rebuilds it rather than persisting
-it — the snapshot and recovery design is recorded in its own ADR when that
-layer lands (slice 9). Reuse of a client order id after its order
+it — see ADR-0013 for the snapshot and recovery design. Reuse of a client order id after its order
 has terminated is accepted — enforcing otherwise is exactly the tombstone
 problem `kOrderAlreadyTerminal`'s removal avoids. `RejectReason::kDuplicateClientOrderId`
 is the enumerator for the live-collision case; the check itself and its
