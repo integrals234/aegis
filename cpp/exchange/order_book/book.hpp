@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <memory_resource>
 #include <optional>
 #include <unordered_map>
 #include <utility>
@@ -23,11 +24,24 @@ namespace aegis::exchange {
 
 class OrderBook {
  public:
-  explicit OrderBook(InstrumentId instrument_id) : instrument_id_(instrument_id) {}
+  /// `resource` (ADR-0010) defaults to the global resource, so every
+  /// existing call site is unaffected; a caller that wants measured
+  /// per-instance allocation (`tests/cpp/property/test_allocation_counters.cpp`)
+  /// passes its own. The slab, both level indices and both id maps all draw
+  /// from the same resource — allocation is attributable to the one book
+  /// that owns it, not split across a global allocator and an injected one.
+  explicit OrderBook(InstrumentId instrument_id,
+                     std::pmr::memory_resource* resource = std::pmr::get_default_resource())
+      : instrument_id_(instrument_id),
+        storage_(resource),
+        bids_(/*descending=*/true, resource),
+        asks_(/*descending=*/false, resource),
+        order_index_(resource),
+        live_client_ids_(resource) {}
 
   /// Reserves slab and order-index capacity ahead of the steady-state
-  /// zero-allocation cycle (AEGIS-037; slice 6 adds the counters that measure
-  /// it against an injected `memory_resource`).
+  /// zero-allocation cycle (AEGIS-037) — measured against the injected
+  /// `memory_resource` by `tests/cpp/property/test_allocation_counters.cpp`.
   void reserve(std::size_t order_capacity);
 
   /// Inserts `descriptor` as a resting order at its price, at the tail of
@@ -102,10 +116,11 @@ class OrderBook {
 
   InstrumentId instrument_id_;
   OrderStorage storage_;
-  MapLevelIndex bids_{/*descending=*/true};
-  MapLevelIndex asks_{/*descending=*/false};
-  std::unordered_map<std::uint64_t, std::size_t> order_index_;  ///< OrderId::value() -> slab index.
-  std::map<std::pair<std::uint64_t, std::uint64_t>, OrderId>
+  MapLevelIndex bids_;
+  MapLevelIndex asks_;
+  std::pmr::unordered_map<std::uint64_t, std::size_t>
+      order_index_;  ///< OrderId::value() -> slab index.
+  std::pmr::map<std::pair<std::uint64_t, std::uint64_t>, OrderId>
       live_client_ids_;  ///< (participant, client) -> OrderId.
 };
 

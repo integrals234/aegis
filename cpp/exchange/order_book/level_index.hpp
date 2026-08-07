@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <memory_resource>
 #include <optional>
 
 #include "cpp/exchange/order_book/level.hpp"
@@ -56,8 +57,12 @@ class LevelIndex {
 class MapLevelIndex final : public LevelIndex {
  public:
   /// `descending`: true for bids (best = highest price), false for asks
-  /// (best = lowest price).
-  explicit MapLevelIndex(bool descending) : levels_(PriceOrder{descending}) {}
+  /// (best = lowest price). `resource` (ADR-0010) defaults to the global
+  /// resource so existing call sites are unaffected; a book that wants
+  /// measured per-instance allocation passes its own.
+  explicit MapLevelIndex(bool descending,
+                         std::pmr::memory_resource* resource = std::pmr::get_default_resource())
+      : levels_(PriceOrder{descending}, resource) {}
 
   PriceLevel& level_at(PriceUnits price) override;
   [[nodiscard]] PriceLevel* find(PriceUnits price) override;
@@ -77,7 +82,7 @@ class MapLevelIndex final : public LevelIndex {
     }
   };
 
-  std::map<PriceUnits, PriceLevel, PriceOrder> levels_;
+  std::pmr::map<PriceUnits, PriceLevel, PriceOrder> levels_;
 };
 
 }  // namespace aegis::exchange

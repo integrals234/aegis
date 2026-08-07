@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory_resource>
 #include <vector>
 
 #include "cpp/exchange/order_book/level.hpp"
@@ -36,20 +37,35 @@ struct OrderNode {
   std::size_t next_index{kInvalidIndex};
 };
 
-/// Index-handle slab: nodes live in a vector at a stable index for their
-/// lifetime; a free list of indices — never pointers — tracks reusable slots,
-/// so growth cannot dangle a handle held elsewhere (AEGIS-037, ADR-0010).
+/// Index-handle slab: nodes live in a `std::pmr::vector` at a stable index for
+/// their lifetime; a free list of indices — never pointers — tracks reusable
+/// slots, so growth cannot dangle a handle held elsewhere (AEGIS-037,
+/// ADR-0010).
 ///
-/// `reserve()` up front is what lets a steady-state add/cancel/match cycle
-/// perform zero allocations once warmed; slice 6 adds the injected
-/// `memory_resource` and the counters that turn that into a measured
-/// property rather than a design intention.
+/// Both containers take an injected `std::pmr::memory_resource*` (ADR-0010)
+/// rather than using the global default: allocation is then attributable to
+/// the one book that owns it, measurable per-instance by a counting resource
+/// in tests, and has no hidden global mutable state (which
+/// `configs/architecture_rules.yaml`'s `mutable_globals_forbidden_in` bans in
+/// this layer regardless). `reserve()` up front is what lets a steady-state
+/// add/cancel/match cycle perform zero calls to that resource once warmed —
+/// `tests/cpp/property/test_allocation_counters.cpp` measures it.
 ///
 /// Deliberately not the M8 pool: no generation counters, no cross-book
 /// sharing, no zero-allocation latency claim (AEGIS-042/043 own those).
 class OrderStorage {
  public:
-  void reserve(std::size_t capacity) { nodes_.reserve(capacity); }
+  explicit OrderStorage(std::pmr::memory_resource* resource = std::pmr::get_default_resource())
+      : nodes_(resource), free_list_(resource) {}
+
+  /// Reserves both the node slab and the free list to `capacity`: a run that
+  /// never holds more than `capacity` live orders simultaneously, and never
+  /// frees more than `capacity` of them without an intervening allocate,
+  /// cannot grow either container past this call.
+  void reserve(std::size_t capacity) {
+    nodes_.reserve(capacity);
+    free_list_.reserve(capacity);
+  }
 
   [[nodiscard]] std::size_t allocate() {
     if (!free_list_.empty()) {
@@ -75,8 +91,8 @@ class OrderStorage {
   [[nodiscard]] std::size_t capacity() const { return nodes_.capacity(); }
 
  private:
-  std::vector<OrderNode> nodes_;
-  std::vector<std::size_t> free_list_;
+  std::pmr::vector<OrderNode> nodes_;
+  std::pmr::vector<std::size_t> free_list_;
 };
 
 }  // namespace aegis::exchange
