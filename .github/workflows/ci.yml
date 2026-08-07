@@ -52,7 +52,7 @@ jobs:
 
       - name: Active milestone
         run: |
-          $AEGIS_VENV/bin/python tools/audit_requirements.py --milestone M0
+          $AEGIS_VENV/bin/python tools/audit_requirements.py --milestone M1
 
       - name: Frozen specification files
         run: |

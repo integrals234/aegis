@@ -80,7 +80,7 @@ negative_gates() {
 
 # --- Governance -------------------------------------------------------------
 stage "requirement audit"        "$PYTHON" tools/audit_requirements.py
-stage "milestone audit"          "$PYTHON" tools/audit_requirements.py --milestone M0
+stage "milestone audit"          "$PYTHON" tools/audit_requirements.py --milestone M1
 stage "frozen files"             "$PYTHON" tools/check_frozen.py --base main
 stage "scope guard"              "$PYTHON" tools/check_scope.py --base main
 stage "architecture"             "$PYTHON" tools/check_architecture.py
