@@ -63,6 +63,18 @@ std::optional<OrderNode> OrderBook::cancel(OrderId order_id) {
   return removed;
 }
 
+QuantityUnits OrderBook::record_fill(OrderId order_id, QuantityUnits fill_quantity) {
+  const auto found = order_index_.find(order_id.value());
+  OrderNode& node = storage_.node(found->second);
+  node.remaining -= fill_quantity;
+  node.cumulative_filled += fill_quantity;
+
+  PriceLevel* level = levels_for(node.side).find(node.price_units);
+  level->aggregate_quantity -= fill_quantity;
+
+  return node.remaining;
+}
+
 const OrderNode* OrderBook::find(OrderId order_id) const {
   const auto found = order_index_.find(order_id.value());
   return found == order_index_.end() ? nullptr : &storage_.node(found->second);

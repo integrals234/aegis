@@ -6,8 +6,10 @@ aegis_add_test(aegis_unit_tests unit
   test_exchange_messages.cpp
   test_exchange_node.cpp
   test_exchange_types.cpp
+  test_full_fills.cpp
   test_instrument_grid.cpp
   test_level_index.cpp
+  test_limit_orders.cpp
   test_logging.cpp
   test_matching_fifo.cpp
   test_sequencer.cpp

@@ -2,6 +2,8 @@
 # depend on cpp-common, cpp-events and cpp-exchange-order-book
 # (configs/architecture_rules.yaml).
 add_library(aegis_exchange_matching
+  engine.cpp
+  engine.hpp
   fifo_policy.cpp
   fifo_policy.hpp
   matching_policy.hpp)

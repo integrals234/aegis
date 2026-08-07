@@ -43,6 +43,19 @@ class OrderBook {
   /// before removal, or `std::nullopt` if `order_id` is not live.
   std::optional<OrderNode> cancel(OrderId order_id);
 
+  /// Records a fill against a live resting order: decrements its `remaining`,
+  /// increments its `cumulative_filled`, and keeps its level's
+  /// `aggregate_quantity` consistent (P3) — all without moving its FIFO
+  /// position, since a partial fill never changes priority. Returns the
+  /// order's `remaining` after the fill, so the caller can decide whether it
+  /// is now fully filled.
+  ///
+  /// Precondition: `order_id` is live and `fill_quantity` does not exceed its
+  /// current `remaining`. Does not remove a fully filled order — that is a
+  /// separate `cancel()` call, because "fully filled" and "cancelled" are
+  /// different `TerminationReason`s the caller must choose between.
+  QuantityUnits record_fill(OrderId order_id, QuantityUnits fill_quantity);
+
   [[nodiscard]] const OrderNode* find(OrderId order_id) const;
   [[nodiscard]] OrderNode* find(OrderId order_id);
 
