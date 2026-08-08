@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <nlohmann/json.hpp>
+#include <sys/resource.h>
 
 #include "cpp/common/clock.hpp"
 #include "cpp/exchange/app/exchange_node.hpp"
@@ -35,6 +36,7 @@ using aegis::common::MonotonicTime;
 using aegis::common::SystemSteadyClock;
 using aegis::events::exchange::CancelOrderCommand;
 using aegis::events::exchange::decode_order_accepted;
+using aegis::events::exchange::decode_trade;
 using aegis::events::exchange::ModifyOrderCommand;
 using aegis::events::exchange::NewOrderCommand;
 using aegis::events::exchange::OrderType;
@@ -91,6 +93,44 @@ class CountingResource final : public std::pmr::memory_resource {
   return spec;
 }
 
+/// Total user+system CPU time consumed by this process so far, in seconds
+/// (`docs/BENCHMARK_POLICY.md` requires CPU utilization alongside
+/// throughput). `getrusage` is POSIX and portable to every platform this
+/// codebase builds on; unlike `SystemSteadyClock`, it measures work done,
+/// not wall time elapsed, so the ratio of the two across one measured run is
+/// the utilization figure.
+[[nodiscard]] double cpu_seconds_now() {
+  rusage usage{};
+  getrusage(RUSAGE_SELF, &usage);
+  const auto to_seconds = [](const timeval& value) {
+    return static_cast<double>(value.tv_sec) + (static_cast<double>(value.tv_usec) / 1e6);
+  };
+  return to_seconds(usage.ru_utime) + to_seconds(usage.ru_stime);
+}
+
+struct FillTracker {
+  int fill_count{0};
+  std::int64_t filled_quantity_units{0};
+};
+
+/// Scans one command's emitted events for trades and folds them into
+/// `tracker`. Used by `run_policy_mix`, where "add" never crosses (buy-only
+/// additions against a buy-only seeded book) but "marketable" and
+/// "multi_level" can — scanning every `apply_new_order` result generically,
+/// rather than assuming which branches fill, is what keeps this correct if
+/// that ever changes.
+void accumulate_fills(FillTracker& tracker,
+                      const std::vector<aegis::exchange::EmittedEvent>& emitted) {
+  for (const auto& event : emitted) {
+    if (event.message_type == aegis::events::MessageType::kTrade) {
+      const auto trade =
+          decode_trade(event.payload).value_or(aegis::events::exchange::TradeEvent{});
+      ++tracker.fill_count;
+      tracker.filled_quantity_units += trade.quantity_units;
+    }
+  }
+}
+
 [[nodiscard]] Json summarize_latency(std::vector<double> nanos) {
   std::ranges::sort(nanos);
   const auto percentile = [&](double fraction) -> double {
@@ -130,9 +170,9 @@ class CountingResource final : public std::pmr::memory_resource {
 
 [[nodiscard]] Json make_report(const std::string& workload, std::uint64_t seed,
                                int warmup_operations, int measured_operations,
-                               double total_wall_seconds, Json latencies, Json message_mix,
-                               int instruments, int levels, int orders, Json fill_distribution,
-                               std::size_t allocation_count,
+                               double total_wall_seconds, double cpu_utilization, Json latencies,
+                               Json message_mix, int instruments, int levels, int orders,
+                               Json fill_distribution, std::size_t allocation_count,
                                const std::string& reproducible_command) {
   return Json{
       {"workload", workload},
@@ -142,6 +182,7 @@ class CountingResource final : public std::pmr::memory_resource {
       {"throughput_ops_per_sec", total_wall_seconds > 0.0
                                      ? static_cast<double>(measured_operations) / total_wall_seconds
                                      : 0.0},
+      {"cpu_utilization", cpu_utilization},
       {"latencies", std::move(latencies)},
       {"message_mix", std::move(message_mix)},
       {"instruments", instruments},
@@ -152,10 +193,20 @@ class CountingResource final : public std::pmr::memory_resource {
       {"local_non_comparable", true},
       {"claim",
        "Operation and allocation counts are the asserted acceptance (AEGIS-036/AEGIS-039); "
-       "timing is recorded because docs/BENCHMARK_POLICY.md requires it, is local and "
-       "non-comparable, and is not a latency, throughput, HFT or production claim."},
+       "timing and cpu_utilization are recorded because docs/BENCHMARK_POLICY.md requires "
+       "them, are local and non-comparable, and are not a latency, throughput, HFT or "
+       "production claim."},
       {"reproducible_command", reproducible_command},
   };
+}
+
+/// `cpu_utilization = process CPU seconds consumed / wall-clock seconds
+/// elapsed` across exactly the bracketed measured run — 1.0 for a
+/// single-threaded loop that never blocks, lower if the OS scheduled this
+/// process out.
+[[nodiscard]] double cpu_utilization_between(double cpu_seconds_before, double cpu_seconds_after,
+                                             double wall_seconds) {
+  return wall_seconds > 0.0 ? (cpu_seconds_after - cpu_seconds_before) / wall_seconds : 0.0;
 }
 
 /// AEGIS-036: N resting orders across `kLevels` price levels, then K seeded
@@ -219,12 +270,15 @@ class CountingResource final : public std::pmr::memory_resource {
   std::vector<double> cancel_nanos;
   lookup_nanos.reserve(kMeasuredOps);
   cancel_nanos.reserve(kMeasuredOps);
+  const auto cpu_start = cpu_seconds_now();
   const auto wall_start = clock.now();
   run_once(kMeasuredOps, kWarmupOps, &lookup_nanos, &cancel_nanos);
   const auto wall_end = clock.now();
+  const auto cpu_end = cpu_seconds_now();
+  const auto wall_seconds = elapsed(wall_start, wall_end).seconds();
 
-  return make_report("lookup_cancel", seed, kWarmupOps, kMeasuredOps,
-                     elapsed(wall_start, wall_end).seconds(),
+  return make_report("lookup_cancel", seed, kWarmupOps, kMeasuredOps, wall_seconds,
+                     cpu_utilization_between(cpu_start, cpu_end, wall_seconds),
                      Json{{"lookup", summarize_latency(lookup_nanos)},
                           {"cancel", summarize_latency(cancel_nanos)}},
                      Json{{"lookup", 50}, {"cancel", 50}}, 1, kLevels, kLevels * kOrdersPerLevel,
@@ -282,12 +336,15 @@ class CountingResource final : public std::pmr::memory_resource {
   const auto allocations_before_measured = resource.allocations();
   std::vector<double> nanos;
   nanos.reserve(kMeasuredOps);
+  const auto cpu_start = cpu_seconds_now();
   const auto wall_start = clock.now();
   run_once(kMeasuredOps, &nanos);
   const auto wall_end = clock.now();
+  const auto cpu_end = cpu_seconds_now();
+  const auto wall_seconds = elapsed(wall_start, wall_end).seconds();
 
-  return make_report("single_fill_aggressor", seed, kWarmupOps, kMeasuredOps,
-                     elapsed(wall_start, wall_end).seconds(),
+  return make_report("single_fill_aggressor", seed, kWarmupOps, kMeasuredOps, wall_seconds,
+                     cpu_utilization_between(cpu_start, cpu_end, wall_seconds),
                      Json{{"aggressor", summarize_latency(nanos)}}, Json{{"marketable", 100}}, 1, 1,
                      1, Json{{"single_fill", kMeasuredOps}},
                      resource.allocations() - allocations_before_measured,
@@ -349,12 +406,16 @@ class CountingResource final : public std::pmr::memory_resource {
   const auto allocations_before_measured = resource.allocations();
   std::vector<double> nanos;
   nanos.reserve(kMeasuredOps);
+  const auto cpu_start = cpu_seconds_now();
   const auto wall_start = clock.now();
   run_once(kMeasuredOps, &nanos);
   const auto wall_end = clock.now();
+  const auto cpu_end = cpu_seconds_now();
+  const auto wall_seconds = elapsed(wall_start, wall_end).seconds();
 
   return make_report("multi_fill_multi_level_aggressor_k" + std::to_string(k), seed, kWarmupOps,
-                     kMeasuredOps, elapsed(wall_start, wall_end).seconds(),
+                     kMeasuredOps, wall_seconds,
+                     cpu_utilization_between(cpu_start, cpu_end, wall_seconds),
                      Json{{"aggressor", summarize_latency(nanos)}}, Json{{"marketable", 100}}, 1, k,
                      k, Json{{"multi_fill", Json{{"k", k}, {"count", kMeasuredOps}}}},
                      resource.allocations() - allocations_before_measured,
@@ -399,6 +460,7 @@ class CountingResource final : public std::pmr::memory_resource {
   int modify_count = 0;
   int marketable_count = 0;
   int multi_level_count = 0;
+  FillTracker fill_tracker;
 
   const auto run_once = [&](int count, std::vector<double>* out) {
     for (int i = 0; i < count; ++i) {
@@ -422,6 +484,7 @@ class CountingResource final : public std::pmr::memory_resource {
         if (accepted.order_id != 0) {
           live_ids.push_back(accepted.order_id);
         }
+        accumulate_fills(fill_tracker, events);
         ++add_count;
       } else if (roll <= 75 && !live_ids.empty()) {  // cancel
         const auto index = level_dist(rng) % live_ids.size();
@@ -443,24 +506,26 @@ class CountingResource final : public std::pmr::memory_resource {
                                     command_sequence);
         ++modify_count;
       } else if (roll <= 95) {  // marketable
-        std::ignore = node.apply_new_order(NewOrderCommand{.instrument_id = 1,
-                                                           .participant_id = 4,
-                                                           .client_order_id = next_client_id++,
-                                                           .side = Side::kSell,
-                                                           .order_type = OrderType::kLimit,
-                                                           .price_units = kPriceFloorUnits,
-                                                           .quantity_units = kLotSizeUnits},
-                                           command_sequence);
+        accumulate_fills(fill_tracker,
+                         node.apply_new_order(NewOrderCommand{.instrument_id = 1,
+                                                              .participant_id = 4,
+                                                              .client_order_id = next_client_id++,
+                                                              .side = Side::kSell,
+                                                              .order_type = OrderType::kLimit,
+                                                              .price_units = kPriceFloorUnits,
+                                                              .quantity_units = kLotSizeUnits},
+                                              command_sequence));
         ++marketable_count;
       } else {  // large multi-level-crossing order
-        std::ignore = node.apply_new_order(NewOrderCommand{.instrument_id = 1,
-                                                           .participant_id = 5,
-                                                           .client_order_id = next_client_id++,
-                                                           .side = Side::kSell,
-                                                           .order_type = OrderType::kLimit,
-                                                           .price_units = kPriceFloorUnits,
-                                                           .quantity_units = kLotSizeUnits * 20},
-                                           command_sequence);
+        accumulate_fills(fill_tracker,
+                         node.apply_new_order(NewOrderCommand{.instrument_id = 1,
+                                                              .participant_id = 5,
+                                                              .client_order_id = next_client_id++,
+                                                              .side = Side::kSell,
+                                                              .order_type = OrderType::kLimit,
+                                                              .price_units = kPriceFloorUnits,
+                                                              .quantity_units = kLotSizeUnits * 20},
+                                              command_sequence));
         ++multi_level_count;
       }
       const auto end = SystemSteadyClock{}.now();
@@ -472,23 +537,30 @@ class CountingResource final : public std::pmr::memory_resource {
 
   run_once(kWarmupOps, nullptr);
   add_count = cancel_count = modify_count = marketable_count = multi_level_count = 0;
+  fill_tracker = FillTracker{};
   const auto allocations_before_measured = resource.allocations();
   std::vector<double> nanos;
   nanos.reserve(kMeasuredOps);
   const auto clock = SystemSteadyClock{};
+  const auto cpu_start = cpu_seconds_now();
   const auto wall_start = clock.now();
   run_once(kMeasuredOps, &nanos);
   const auto wall_end = clock.now();
+  const auto cpu_end = cpu_seconds_now();
+  const auto wall_seconds = elapsed(wall_start, wall_end).seconds();
 
   return make_report(
-      "policy_mix", seed, kWarmupOps, kMeasuredOps, elapsed(wall_start, wall_end).seconds(),
+      "policy_mix", seed, kWarmupOps, kMeasuredOps, wall_seconds,
+      cpu_utilization_between(cpu_start, cpu_end, wall_seconds),
       Json{{"operation", summarize_latency(nanos)}},
       Json{{"add", add_count},
            {"cancel", cancel_count},
            {"modify", modify_count},
            {"marketable", marketable_count},
            {"multi_level", multi_level_count}},
-      1, kLevels, static_cast<int>(live_ids.size()), Json::object(),
+      1, kLevels, static_cast<int>(live_ids.size()),
+      Json{{"fill_count", fill_tracker.fill_count},
+           {"filled_quantity_units", fill_tracker.filled_quantity_units}},
       resource.allocations() - allocations_before_measured,
       "build/release/cpp/exchange/app/aegis_exchange_bench --workload policy_mix --seed " +
           std::to_string(seed));

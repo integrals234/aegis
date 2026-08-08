@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "cpp/exchange/app/exchange_node.hpp"
 #include "cpp/exchange/matching/engine.hpp"
 #include "cpp/exchange/matching/fifo_policy.hpp"
 
@@ -24,6 +25,7 @@ using aegis::events::exchange::NewOrderCommand;
 using aegis::events::exchange::OrderType;
 using aegis::events::exchange::RejectReason;
 using aegis::events::exchange::Side;
+using aegis::exchange::ExchangeNode;
 using aegis::exchange::FifoPolicy;
 using aegis::exchange::InstrumentId;
 using aegis::exchange::InstrumentSpec;
@@ -87,11 +89,20 @@ std::optional<RejectReason> reason_of(const std::vector<aegis::exchange::Emitted
 std::optional<RejectReason> trigger(RejectReason target) {
   switch (target) {
     case RejectReason::kUnknownInstrument: {
-      // Exercised at the ExchangeNode routing layer (test_exchange_node.cpp),
-      // not through MatchingEngine directly: there is no book to hand it an
-      // unknown instrument, so this row documents the reason exists rather
-      // than re-deriving ExchangeNode's own dedicated test.
-      return RejectReason::kUnknownInstrument;
+      // Genuinely routed through ExchangeNode, not MatchingEngine: there is
+      // no book to hand MatchingEngine an unknown instrument to, so this
+      // reason can only be produced at the routing layer (ADR-0011,
+      // AEGIS-035). No instrument is ever registered on this node.
+      ExchangeNode node;
+      const auto events = node.apply_new_order(NewOrderCommand{.instrument_id = 999,
+                                                               .participant_id = 1,
+                                                               .client_order_id = 1,
+                                                               .side = Side::kBuy,
+                                                               .order_type = OrderType::kLimit,
+                                                               .price_units = 1000,
+                                                               .quantity_units = 100},
+                                               CommandSequence{1});
+      return reason_of(events);
     }
     case RejectReason::kDuplicateClientOrderId: {
       Harness h;

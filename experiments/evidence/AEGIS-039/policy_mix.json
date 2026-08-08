@@ -1,6 +1,7 @@
 {
   "allocation_count": 1693,
-  "claim": "Operation and allocation counts are the asserted acceptance (AEGIS-036/AEGIS-039); timing is recorded because docs/BENCHMARK_POLICY.md requires it, is local and non-comparable, and is not a latency, throughput, HFT or production claim.",
+  "claim": "Operation and allocation counts are the asserted acceptance (AEGIS-036/AEGIS-039); timing and cpu_utilization are recorded because docs/BENCHMARK_POLICY.md requires them, are local and non-comparable, and are not a latency, throughput, HFT or production claim.",
+  "cpu_utilization": 0.9963690963150191,
   "disclosure_note": "docs/BENCHMARK_POLICY.md required fields: message mix, event count, instrument/level/order counts, fill distribution, allocation count and latency percentiles are in this record's top level; CPU/RAM/OS/virtualisation/compiler/build/sanitizer state is in 'environment'.",
   "environment": {
     "build": {
@@ -23,10 +24,32 @@
       "system": "Linux",
       "version": "#1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025"
     },
+    "power": {
+      "affinity_cpus": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "governor": "unknown",
+      "turbo": "unknown"
+    },
     "record_version": 1,
     "repository": {
       "branch": "milestone/m1-exchange-core",
-      "commit": "05db77ad069b7f153e1542470de52fa7edfc5fcd",
+      "commit": "b33ca67d2994f62a0d1e9a9a827cc3f69844e350",
       "dirty": true
     },
     "toolchain": {
@@ -51,16 +74,19 @@
       "wsl": true
     }
   },
-  "fill_distribution": {},
+  "fill_distribution": {
+    "fill_count": 2314,
+    "filled_quantity_units": 115700
+  },
   "instruments": 1,
   "latencies": {
     "operation": {
       "count": 5000,
-      "max_ns": 55627.0,
-      "median_ns": 380.0,
-      "p95_ns": 701.0,
-      "p999_ns": 9568.0,
-      "p99_ns": 802.0
+      "max_ns": 122820.0,
+      "median_ns": 391.0,
+      "p95_ns": 732.0,
+      "p999_ns": 10119.0,
+      "p99_ns": 942.0
     }
   },
   "levels": 100,
@@ -76,7 +102,7 @@
   "orders": 1344,
   "reproducible_command": "build/release/cpp/exchange/app/aegis_exchange_bench --workload policy_mix --seed 1729",
   "seed": 1729,
-  "throughput_ops_per_sec": 2240948.584572055,
+  "throughput_ops_per_sec": 1980853.0741849283,
   "warmup_operations": 500,
   "workload": "policy_mix"
 }

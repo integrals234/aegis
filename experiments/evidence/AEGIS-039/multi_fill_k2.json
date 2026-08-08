@@ -1,6 +1,7 @@
 {
   "allocation_count": 2000,
-  "claim": "Operation and allocation counts are the asserted acceptance (AEGIS-036/AEGIS-039); timing is recorded because docs/BENCHMARK_POLICY.md requires it, is local and non-comparable, and is not a latency, throughput, HFT or production claim.",
+  "claim": "Operation and allocation counts are the asserted acceptance (AEGIS-036/AEGIS-039); timing and cpu_utilization are recorded because docs/BENCHMARK_POLICY.md requires them, are local and non-comparable, and are not a latency, throughput, HFT or production claim.",
+  "cpu_utilization": 1.0015650992706044,
   "disclosure_note": "docs/BENCHMARK_POLICY.md required fields: message mix, event count, instrument/level/order counts, fill distribution, allocation count and latency percentiles are in this record's top level; CPU/RAM/OS/virtualisation/compiler/build/sanitizer state is in 'environment'.",
   "environment": {
     "build": {
@@ -23,10 +24,32 @@
       "system": "Linux",
       "version": "#1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025"
     },
+    "power": {
+      "affinity_cpus": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "governor": "unknown",
+      "turbo": "unknown"
+    },
     "record_version": 1,
     "repository": {
       "branch": "milestone/m1-exchange-core",
-      "commit": "05db77ad069b7f153e1542470de52fa7edfc5fcd",
+      "commit": "b33ca67d2994f62a0d1e9a9a827cc3f69844e350",
       "dirty": true
     },
     "toolchain": {
@@ -61,11 +84,11 @@
   "latencies": {
     "aggressor": {
       "count": 500,
-      "max_ns": 3156.0,
-      "median_ns": 341.0,
-      "p95_ns": 381.0,
-      "p999_ns": 3086.0,
-      "p99_ns": 2905.0
+      "max_ns": 3036.0,
+      "median_ns": 351.0,
+      "p95_ns": 481.0,
+      "p999_ns": 2886.0,
+      "p99_ns": 2514.0
     }
   },
   "levels": 2,
@@ -77,7 +100,7 @@
   "orders": 2,
   "reproducible_command": "build/release/cpp/exchange/app/aegis_exchange_bench --workload multi_fill_multi_level_aggressor --k 2 --seed 1729",
   "seed": 1729,
-  "throughput_ops_per_sec": 634065.5522330521,
+  "throughput_ops_per_sec": 615211.9774389464,
   "warmup_operations": 50,
   "workload": "multi_fill_multi_level_aggressor_k2"
 }

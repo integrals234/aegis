@@ -50,19 +50,21 @@ ARCHITECTURAL_PATHS = (
 )
 REFERENCE_DOCS = ("docs", "adr", "experiments")
 
-# A milestone plan of record legitimately previews the ADRs its own later
-# slices will write — experiments/plans/M1.md names ADR-0010/0011/0013 for
-# work slices 4-9 own. That is a forward reference, not a typo or a stale
-# link, and it is narrow by construction: only a plan-of-record path may be
-# listed here, and only for the ADR numbers its own milestone will produce.
-# Mirrors the same reasoning as the excluded_paths mechanism in
-# configs/claims_policy.yaml (which exempts the same file for the same
-# reason: it quotes forward-looking content in order to describe it).
-# Remove an entry's number the moment that ADR is actually written, so the
-# check keeps proving something for every number it has not yet excused.
-DANGLING_REFERENCE_EXEMPTIONS: dict[str, set[str]] = {
-    "experiments/plans/M1.md": {"0010", "0011", "0013"},
-}
+# A milestone plan of record may legitimately preview an ADR its own later
+# slices will write — that is a forward reference, not a typo or a stale
+# link, and the mechanism below is narrow by construction: only a
+# plan-of-record path may be listed here, and only for the specific ADR
+# numbers its own milestone will produce. Mirrors the same reasoning as the
+# excluded_paths mechanism in configs/claims_policy.yaml (which exempts a
+# plan file for the same reason: it quotes forward-looking content in order
+# to describe it).
+#
+# Empty now: experiments/plans/M1.md previewed ADR-0010/0011/0013, and all
+# three exist under adr/ as of M1 slice 11's remediation, so M1.md's own
+# references to them are no longer dangling and need no exemption. Remove an
+# entry's number the moment that ADR is actually written, so the check keeps
+# proving something for every number it has not yet excused.
+DANGLING_REFERENCE_EXEMPTIONS: dict[str, set[str]] = {}
 
 
 def git(root: Path, *args: str) -> str:

@@ -435,7 +435,8 @@
         "cpp/exchange/matching/engine.cpp"
       ],
       "tests": [
-        "tests/cpp/unit/test_reject_matrix.cpp"
+        "tests/cpp/unit/test_reject_matrix.cpp",
+        "tests/cpp/unit/test_exchange_node.cpp"
       ],
       "reports": [],
       "notes": "Every RejectReason enumerator reachable via a compile-time-checked table; adding a reason without a case fails to compile."
@@ -465,7 +466,7 @@
         "tests/cpp/property/test_allocation_counters.cpp"
       ],
       "reports": [],
-      "notes": "Intrusive doubly-linked FIFO queue over the index-handle slab; injected memory_resource proves zero allocations across a warmed steady-state add/cancel/match cycle, in debug, release and asan-ubsan."
+      "notes": "Intrusive doubly-linked FIFO queue over the index-handle slab; injected memory_resource proves zero allocations across a warmed steady-state add/cancel cycle, in debug, release and asan-ubsan."
     },
     "AEGIS-038": {
       "status": "implemented",
@@ -474,7 +475,8 @@
         "cpp/exchange/order_book/level_index.cpp"
       ],
       "tests": [
-        "tests/cpp/unit/test_level_index.cpp"
+        "tests/cpp/unit/test_level_index.cpp",
+        "tests/cpp/unit/test_instrument_grid.cpp"
       ],
       "reports": [],
       "notes": "MapLevelIndex behind the LevelIndex interface; expected O(log D), D = documented finite price-domain cardinality (ceiling-floor)/tick+1."

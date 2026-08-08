@@ -1,6 +1,7 @@
 {
   "allocation_count": 0,
-  "claim": "Operation and allocation counts are the asserted acceptance (AEGIS-036/AEGIS-039); timing is recorded because docs/BENCHMARK_POLICY.md requires it, is local and non-comparable, and is not a latency, throughput, HFT or production claim.",
+  "claim": "Operation and allocation counts are the asserted acceptance (AEGIS-036/AEGIS-039); timing and cpu_utilization are recorded because docs/BENCHMARK_POLICY.md requires them, are local and non-comparable, and are not a latency, throughput, HFT or production claim.",
+  "cpu_utilization": 1.0006376663488719,
   "disclosure_note": "docs/BENCHMARK_POLICY.md required fields: message mix, event count, instrument/level/order counts, fill distribution, allocation count and latency percentiles are in this record's top level; CPU/RAM/OS/virtualisation/compiler/build/sanitizer state is in 'environment'.",
   "environment": {
     "build": {
@@ -23,10 +24,32 @@
       "system": "Linux",
       "version": "#1 SMP PREEMPT_DYNAMIC Mon Dec  1 20:46:23 UTC 2025"
     },
+    "power": {
+      "affinity_cpus": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "governor": "unknown",
+      "turbo": "unknown"
+    },
     "record_version": 1,
     "repository": {
       "branch": "milestone/m1-exchange-core",
-      "commit": "05db77ad069b7f153e1542470de52fa7edfc5fcd",
+      "commit": "b33ca67d2994f62a0d1e9a9a827cc3f69844e350",
       "dirty": true
     },
     "toolchain": {
@@ -56,19 +79,19 @@
   "latencies": {
     "cancel": {
       "count": 4000,
-      "max_ns": 32151.0,
-      "median_ns": 361.0,
-      "p95_ns": 491.0,
-      "p999_ns": 2816.0,
-      "p99_ns": 762.0
+      "max_ns": 9298.0,
+      "median_ns": 351.0,
+      "p95_ns": 451.0,
+      "p999_ns": 2856.0,
+      "p99_ns": 702.0
     },
     "lookup": {
       "count": 4000,
-      "max_ns": 962.0,
+      "max_ns": 1193.0,
       "median_ns": 40.0,
-      "p95_ns": 61.0,
-      "p999_ns": 441.0,
-      "p99_ns": 150.0
+      "p95_ns": 60.0,
+      "p999_ns": 461.0,
+      "p99_ns": 131.0
     }
   },
   "levels": 200,
@@ -81,7 +104,7 @@
   "orders": 5000,
   "reproducible_command": "build/release/cpp/exchange/app/aegis_exchange_bench --workload lookup_cancel --seed 1729",
   "seed": 1729,
-  "throughput_ops_per_sec": 1995726.15244454,
+  "throughput_ops_per_sec": 2077089.0842737353,
   "warmup_operations": 500,
   "workload": "lookup_cancel"
 }
