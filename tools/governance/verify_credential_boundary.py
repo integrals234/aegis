@@ -83,6 +83,11 @@ def gh(*args: str) -> tuple[int, str]:
     return result.returncode, (result.stdout or "") + (result.stderr or "")
 
 
+def _git(*args: str) -> str:
+    result = subprocess.run(["git", *args], capture_output=True, text=True, check=False)
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
 def http_status(output: str) -> str:
     """Pull the status code out of gh's error text; absent means it succeeded."""
     marker = "HTTP "
@@ -304,6 +309,12 @@ def main(argv: list[str] | None = None) -> int:
                 {
                     "repository": REPO,
                     "generated_on": datetime.now(UTC).strftime("%Y-%m-%d"),
+                    # Provenance. A dirty worktree means the artifact is not
+                    # reproducible from any commit, which is exactly what the M1
+                    # benchmark observation is about; record it rather than
+                    # letting a reader assume otherwise.
+                    "repository_commit": _git("rev-parse", "HEAD"),
+                    "dirty": bool(_git("status", "--porcelain")),
                     "invariant": (
                         "no commit enters main without a fresh approving review from the "
                         "separate owner identity"
