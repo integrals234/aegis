@@ -63,12 +63,37 @@ layers:
     may_depend_on: [cpp-common, cpp-events, cpp-exchange-order-book]
     expect_sources_from_milestone: M1
 
+  # Event log, journal and snapshot codec are exchange *state*: neither matching
+  # nor market data, so placing them under either layer would let that layer's
+  # emptiness check pass vacuously (ADR-0012).
+  - name: cpp-exchange-state
+    paths: [cpp/exchange/state]
+    language: cpp
+    namespaces: [aegis::exchange]
+    may_depend_on: [cpp-common, cpp-events, cpp-exchange-sequencer, cpp-exchange-order-book]
+    expect_sources_from_milestone: M1
+
+  # The composition root: nothing else may legally see all of sequencer, book,
+  # matching and state at once (ADR-0012).
+  - name: cpp-exchange-app
+    paths: [cpp/exchange/app]
+    language: cpp
+    namespaces: [aegis::exchange]
+    may_depend_on: [cpp-common, cpp-events, cpp-exchange-sequencer, cpp-exchange-order-book,
+                    cpp-exchange-matching, cpp-exchange-state]
+    expect_sources_from_milestone: M1
+
+  # No M1 requirement asks the exchange to publish a market-data feed; the first
+  # genuine consumer is the participant feed handler and book reconstruction
+  # (AEGIS-064-070, M3). Re-dated from M1 to M3 in ADR-0012 — see that ADR and
+  # docs/DEFERRED_VERIFICATION.md for the reasoning. No requirement is attached
+  # to this layer, so re-dating it defers nothing.
   - name: cpp-exchange-market-data
     paths: [cpp/exchange/market_data]
     language: cpp
     namespaces: [aegis::exchange]
     may_depend_on: [cpp-common, cpp-events, cpp-exchange-order-book]
-    expect_sources_from_milestone: M1
+    expect_sources_from_milestone: M3
 
   - name: cpp-replay
     paths: [cpp/replay]
@@ -219,6 +244,7 @@ banned:
   # Hidden global state defeats deterministic replay and the single-writer rule.
   mutable_globals_forbidden_in: [cpp-exchange-sequencer, cpp-exchange-order-book,
                                  cpp-exchange-matching, cpp-exchange-market-data,
+                                 cpp-exchange-state, cpp-exchange-app,
                                  cpp-participant-feed-handler, cpp-participant-book-builder,
                                  cpp-participant-strategy, cpp-participant-risk,
                                  cpp-participant-oms, cpp-participant-portfolio,

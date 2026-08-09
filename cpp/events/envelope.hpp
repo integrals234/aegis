@@ -51,7 +51,21 @@ inline constexpr std::uint16_t kEnvelopeSchemaVersion = 1;
 /// NOLINTNEXTLINE(performance-enum-size)
 enum class MessageType : std::uint16_t {
   kUnspecified = 0,  ///< Platform framing; payload is opaque to the transport.
-  // 1..999 reserved for exchange-side domain messages (M1).
+
+  // 1..999 reserved for exchange-side domain messages (M1, ADR-0009).
+  // Commands: assigned no CommandSequence on the wire — the sequencer assigns
+  // one on receipt. Framed with Envelope.sequence = CommandSequence.
+  kNewOrder = 1,
+  kCancelOrder = 2,
+  kModifyOrder = 3,
+  // Events: framed with Envelope.sequence = EventSequence.
+  kOrderAccepted = 10,
+  kOrderRejected = 11,
+  kOrderModified = 12,
+  kOrderReplaced = 13,
+  kTrade = 14,
+  kOrderTerminated = 15,
+
   // 1000..1999 reserved for participant-side domain messages (M3).
 };
 

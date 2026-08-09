@@ -5,9 +5,10 @@
 # the target_link_libraries edges below and rejects any that the layer DAG does
 # not permit, so the build graph and the architecture cannot drift apart.
 #
-# Layers that belong to later milestones (exchange, participant, replay, memory,
-# queues, statistics) are deliberately absent: the roadmap places them in M1-M8,
-# and an empty placeholder target would let their rules pass vacuously.
+# Layers that belong to later milestones (participant, replay, memory, queues,
+# statistics, and the exchange's own market-data layer, re-dated to M3 by
+# ADR-0012) are deliberately absent: the roadmap places them in M2-M8, and an
+# empty placeholder target would let their rules pass vacuously.
 
 # nlohmann/json is pinned by release URL and archive hash. It is the only
 # third-party runtime dependency of the C++ substrate: the configuration loader
@@ -24,6 +25,7 @@ FetchContent_MakeAvailable(nlohmann_json)
 
 add_subdirectory(common)
 add_subdirectory(events)
+add_subdirectory(exchange)
 
 if(AEGIS_BUILD_BINDINGS)
   add_subdirectory(bindings)

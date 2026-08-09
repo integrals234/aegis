@@ -1,6 +1,6 @@
 # Runbook
 
-Operating procedures for AEGIS at M0. Everything here is a command you can run;
+Operating procedures for AEGIS at M1. Everything here is a command you can run;
 where a procedure has a rule, the rule is enforced by a tool named alongside it.
 
 Setup lives in [docs/ENVIRONMENT.md](ENVIRONMENT.md).
@@ -59,8 +59,50 @@ python3 tools/determinism_check.py --runs 2 --seed 42 \
 python3 tools/determinism_check.py --producer nondeterministic --expect-failure
 ```
 
-At M0 this shows that the harness detects nondeterminism. It is not a claim that
-AEGIS is deterministic — see [docs/LIMITATIONS.md](LIMITATIONS.md).
+At M0 this shows that the harness detects nondeterminism. It is not a claim
+that AEGIS is deterministic — see [docs/LIMITATIONS.md](LIMITATIONS.md).
+
+**M1 exchange core** (ADR-0012, ADR-0013). Build `aegis_exchange_replay`
+first (below), then:
+
+```bash
+python3 tools/determinism_check.py --producer exchange --runs 2 \
+    --write-evidence experiments/evidence/AEGIS-005/exchange
+
+# AEGIS_EXCHANGE_REPLAY overrides the default build/debug binary path.
+AEGIS_EXCHANGE_REPLAY=build/release/cpp/exchange/app/aegis_exchange_replay \
+    python3 tools/determinism_check.py --producer exchange --runs 2
+```
+
+A missing binary raises, never skips — see `python/common/determinism.py`'s
+`resolve_exchange_replay_binary`.
+
+## Running the exchange replay CLI directly
+
+```bash
+./build/debug/cpp/exchange/app/aegis_exchange_replay \
+    --input tests/unit/fixtures/exchange/replay/basic_session.jsonl
+```
+
+Writes one canonical hex line per emitted event to stdout. `--limit N
+--snapshot-out PATH` stops after N commands and writes a snapshot;
+`--skip N --restore-from PATH` restores from it and continues from command
+N+1 — the same split `tests/cpp/unit/test_snapshot_roundtrip.cpp` exercises
+in-process, here as two separate process invocations.
+
+## Exchange benchmark workloads (AEGIS-036, AEGIS-039)
+
+```bash
+cmake --build --preset release
+python3 tools/run_exchange_bench.py --preset release
+```
+
+Writes one disclosed JSON artifact per workload to
+`experiments/evidence/AEGIS-036/` (`lookup_cancel`) and
+`experiments/evidence/AEGIS-039/` (`single_fill_aggressor`,
+`multi_fill_k{2,4,8,16,32}`, `policy_mix`), each carrying the full
+`docs/BENCHMARK_POLICY.md` disclosure plus `"local_non_comparable": true`.
+See [docs/LIMITATIONS.md](LIMITATIONS.md) for the claim boundary.
 
 ## Recording a requirement's status
 

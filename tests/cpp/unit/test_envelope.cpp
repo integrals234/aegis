@@ -158,13 +158,19 @@ TEST(Envelope, EveryDecodeErrorHasAHumanReadableReason) {
   }
 }
 
-TEST(Envelope, OnlyTheUnspecifiedMessageTypeExistsAtM0) {
-  // Domain message types belong to M1 and M3. Defining them here would be
-  // building the exchange early, and their numbers are permanent once written.
+TEST(Envelope, ExchangeMessageTypesAreKnownAtM1) {
+  // Exchange domain types were added at M1 (cpp/events/exchange_messages.hpp,
+  // ADR-0009); participant domain types still belong to M3. Numbers are
+  // permanent once written, so this pins the exact set rather than a range.
   EXPECT_TRUE(
       aegis::events::is_known_message_type(static_cast<std::uint16_t>(MessageType::kUnspecified)));
-  EXPECT_FALSE(aegis::events::is_known_message_type(1));
-  EXPECT_FALSE(aegis::events::is_known_message_type(1000));
+  EXPECT_TRUE(
+      aegis::events::is_known_message_type(static_cast<std::uint16_t>(MessageType::kNewOrder)));
+  EXPECT_TRUE(aegis::events::is_known_message_type(
+      static_cast<std::uint16_t>(MessageType::kOrderTerminated)));
+  EXPECT_FALSE(aegis::events::is_known_message_type(4))  // reserved, unassigned
+      << "gaps between assigned command numbers must stay unknown";
+  EXPECT_FALSE(aegis::events::is_known_message_type(1000));  // participant domain, M3
 }
 
 }  // namespace

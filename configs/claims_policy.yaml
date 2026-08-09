@@ -41,6 +41,11 @@ excluded_paths:
     phrases:
       - institutional-grade
       - production trading system
+  - path: experiments/plans/M1.md
+    reason: The M1 plan quotes the banned vocabulary and the O(1) wording it forbids, in order to state the claim guardrails M1 prose must follow.
+    phrases:
+      - all operations strict O(1)
+      - institutional-grade
 
 # Phrases that may never appear as an AEGIS claim, quoted from the frozen
 # CV claims policy.

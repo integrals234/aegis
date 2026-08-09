@@ -32,6 +32,42 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# Per-producer evidence claim text (ADR-0012): the M0 platform wording
+# ("not a claim that AEGIS is deterministic") is accurate for a stub producer
+# with no engine behind it, and would be false for the exchange producer,
+# whose whole point is an engine-determinism claim. Keeping the text
+# producer-specific is what keeps M0's narrow wording from silently
+# traveling onto M1 evidence it does not describe.
+CLAIMS: dict[str, str] = {
+    "platform": (
+        "This run shows that the harness compares canonical output across "
+        "processes. It is not a claim that AEGIS is deterministic: at M0 there "
+        "is no engine, and the producer emits platform records only."
+    ),
+    "nondeterministic": (
+        "This run shows that the harness compares canonical output across "
+        "processes. It is not a claim that AEGIS is deterministic: at M0 there "
+        "is no engine, and the producer emits platform records only."
+    ),
+    "exchange": (
+        "This run shows that aegis_exchange_replay produces byte-identical "
+        "canonical event output across independent processes with different "
+        "PYTHONHASHSEED, for the committed M1 scenario. This is the AEGIS-005 "
+        "discharge for the exchange core: identical event input produces "
+        "byte-identical canonical output (ADR-0012)."
+    ),
+}
+
+
+def claim_for(producer: str) -> str:
+    return CLAIMS.get(
+        producer,
+        f"This run shows that the harness compares canonical output across processes "
+        f"for producer {producer!r}. No specific claim text is registered for it in "
+        "tools/determinism_check.py's CLAIMS mapping.",
+    )
+
+
 RUNNER = """
 import sys
 sys.path.insert(0, {python_dir!r})
@@ -103,11 +139,7 @@ def main(argv: list[str] | None = None) -> int:
                     "runs": args.runs,
                     "digests": digests,
                     "stable": stable,
-                    "claim": (
-                        "This run shows that the harness compares canonical output across "
-                        "processes. It is not a claim that AEGIS is deterministic: at M0 there "
-                        "is no engine, and the producer emits platform records only."
-                    ),
+                    "claim": claim_for(args.producer),
                 },
                 indent=2,
             )

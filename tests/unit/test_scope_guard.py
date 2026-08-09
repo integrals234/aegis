@@ -89,4 +89,9 @@ def test_malformed_milestone_id_is_an_error(tree):
 
 
 def test_live_branch_is_in_scope(repo_root):
-    assert check_scope.check(repo_root, repo_root / "configs/milestone_scope.yaml", "main") == []
+    # "origin/main", not bare "main": a checkout produced by actions/checkout
+    # (fetch-depth 0) creates a local branch only for the ref under test, so
+    # bare "main" does not resolve there even though origin/main does. This
+    # is exactly the ref .github/workflows/ci.yml's own gate invocations use
+    # (`--base origin/main`) for the identical reason.
+    assert check_scope.check(repo_root, repo_root / "configs/milestone_scope.yaml", "origin/main") == []

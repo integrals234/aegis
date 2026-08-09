@@ -12,10 +12,19 @@ name: AEGIS CI
 # requirement carries a registered verification obligation until a real run
 # exists — see docs/DEFERRED_VERIFICATION.md.
 
+# Triggers are deliberately narrow. Running on both `push: ["**"]` and
+# `pull_request` meant every commit on a branch with an open PR ran the whole
+# matrix twice, for the same tree, burning runner time and doubling the
+# notifications without checking anything the other run did not.
+#
+# A feature branch is now covered by its pull request; `main` is covered by
+# the push that lands on it. `workflow_dispatch` stays so a branch without a
+# PR can still be checked on demand.
 on:
-  push:
-    branches: ["**"]
   pull_request:
+    branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
 
 concurrency:
@@ -52,7 +61,7 @@ jobs:
 
       - name: Active milestone
         run: |
-          $AEGIS_VENV/bin/python tools/audit_requirements.py --milestone M0
+          $AEGIS_VENV/bin/python tools/audit_requirements.py --milestone M1
 
       - name: Frozen specification files
         run: |
@@ -144,12 +153,19 @@ jobs:
         run: |
           $AEGIS_VENV/bin/mypy
 
+      # -DPython3_EXECUTABLE pins CMake to the venv this job actually installed
+      # pybind11 into, instead of leaving FindPython3 to pick from PATH; and
+      # -DAEGIS_REQUIRE_BINDINGS=ON makes a failure to configure the module an
+      # error here rather than a silently missing target that surfaces later as
+      # an unexplained import failure in the integration layer.
       - name: Build the C++ extension the integration layer needs
         run: |
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build python3-dev
           export PATH="$AEGIS_VENV/bin:$PATH"
-          cmake --preset debug
+          cmake --preset debug \
+            -DPython3_EXECUTABLE="$AEGIS_VENV/bin/python" \
+            -DAEGIS_REQUIRE_BINDINGS=ON
           cmake --build --preset debug
 
       # Each layer runs and is reported separately, and a layer that collects
@@ -190,10 +206,16 @@ jobs:
           "$AEGIS_VENV/bin/pip" install --upgrade pip
           "$AEGIS_VENV/bin/pip" install --require-hashes -r requirements/requirements.lock
 
+      # See the python job for why Python3_EXECUTABLE and AEGIS_REQUIRE_BINDINGS
+      # are pinned: the debug preset's compile_commands.json is what the style
+      # step below feeds to clang-tidy, and a missing bindings target there
+      # produces diagnostics about a broken parse rather than about the code.
       - name: Configure, build and test
         run: |
           export PATH="$AEGIS_VENV/bin:$PATH"
-          cmake --preset ${{ matrix.preset }}
+          cmake --preset ${{ matrix.preset }} \
+            -DPython3_EXECUTABLE="$AEGIS_VENV/bin/python" \
+            -DAEGIS_REQUIRE_BINDINGS=ON
           cmake --build --preset ${{ matrix.preset }}
           ctest --preset ${{ matrix.preset }}
 

@@ -59,16 +59,28 @@ def _load_bindings():
     return aegis_bindings
 
 
-bindings = _load_bindings()
+@pytest.fixture(scope="module")
+def bindings():
+    """Load the extension per module, not at import time.
+
+    pytest imports every test module during collection, *before* deselecting
+    by marker. Loading at module scope therefore turned one missing artifact
+    into a collection error in all five layers at once — unit, integration,
+    property, replay and research each reporting a single error that named
+    none of them. The failure is unchanged in force (still a failure, never a
+    skip, per AEGIS-003); it is now attributed to the layer that actually
+    depends on the extension.
+    """
+    return _load_bindings()
 
 
-def test_the_module_under_test_is_compiled():
+def test_the_module_under_test_is_compiled(bindings):
     """A pure-Python fallback would make every test below meaningless."""
     assert getattr(bindings, "__compiled__", False) is True
     assert bindings.__file__.endswith(".so"), bindings.__file__
 
 
-def test_build_info_is_a_real_computation_not_a_constant():
+def test_build_info_is_a_real_computation_not_a_constant(bindings):
     """The value must describe this binary, not a string somebody typed."""
     info = bindings.build_info()
     for expected in ("compiler", "std c++", "build", "assertions", "sanitizers"):
@@ -76,11 +88,11 @@ def test_build_info_is_a_real_computation_not_a_constant():
     assert bindings.version() in info
 
 
-def test_version_is_dotted():
+def test_version_is_dotted(bindings):
     assert bindings.version().count(".") >= 1
 
 
-def test_both_implementations_agree_on_the_wire_version():
+def test_both_implementations_agree_on_the_wire_version(bindings):
     assert bindings.envelope_schema_version() == ENVELOPE_SCHEMA_VERSION
 
 
@@ -105,7 +117,7 @@ CASES = [
 
 
 @pytest.mark.parametrize("envelope", CASES)
-def test_cpp_encoder_matches_the_python_encoder(envelope):
+def test_cpp_encoder_matches_the_python_encoder(bindings, envelope):
     """One wire format, two implementations, checked against each other live."""
     from_cpp = bindings.encode_envelope(
         sequence=envelope.sequence,
@@ -120,7 +132,7 @@ def test_cpp_encoder_matches_the_python_encoder(envelope):
 
 
 @pytest.mark.parametrize("envelope", CASES)
-def test_python_encoded_bytes_decode_in_cpp(envelope):
+def test_python_encoded_bytes_decode_in_cpp(bindings, envelope):
     decoded = bindings.decode_envelope(encode(envelope))
     assert decoded["sequence"] == envelope.sequence
     assert decoded["stream_id"] == envelope.stream_id
@@ -133,7 +145,7 @@ def test_python_encoded_bytes_decode_in_cpp(envelope):
 
 
 @pytest.mark.parametrize("envelope", CASES)
-def test_cpp_encoded_bytes_decode_in_python(envelope):
+def test_cpp_encoded_bytes_decode_in_python(bindings, envelope):
     from_cpp = bindings.encode_envelope(
         sequence=envelope.sequence,
         stream_id=envelope.stream_id,
@@ -146,7 +158,7 @@ def test_cpp_encoded_bytes_decode_in_python(envelope):
     assert decode(from_cpp) == envelope
 
 
-def test_cpp_decoder_reports_why_a_message_was_rejected():
+def test_cpp_decoder_reports_why_a_message_was_rejected(bindings):
     """A feed handler must be able to count which kind of malformed message it saw."""
     with pytest.raises(ValueError, match="beyond its declared payload"):
         bindings.decode_envelope(encode(Envelope()) + b"\x00")
@@ -160,7 +172,7 @@ def test_cpp_decoder_reports_why_a_message_was_rejected():
         bindings.decode_envelope(b"\x01\x00")
 
 
-def test_bindings_expose_no_mutable_engine_state():
+def test_bindings_expose_no_mutable_engine_state(bindings):
     """ADR-0005: no binding may mutate engine internals or run on the hot path.
 
     Enforced structurally at M0 by there being nothing else to expose — the

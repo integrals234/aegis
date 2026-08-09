@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import platform
 import re
 import shutil
@@ -87,6 +88,34 @@ def virtualisation_facts() -> dict[str, Any]:
     return facts
 
 
+def power_facts() -> dict[str, Any]:
+    """Power governor, turbo state and CPU affinity (``docs/BENCHMARK_POLICY.md``).
+
+    WSL2 and many virtualised or containerised hosts do not expose the
+    ``cpufreq``/``intel_pstate`` sysfs paths at all — this records
+    ``"unknown"`` rather than guessing, which is the same discipline
+    ``virtualisation_facts`` already applies to detection it cannot make.
+    """
+    governor_path = Path("/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor")
+    governor = governor_path.read_text(encoding="utf-8").strip() if governor_path.exists() else "unknown"
+
+    no_turbo_path = Path("/sys/devices/system/cpu/intel_pstate/no_turbo")
+    boost_path = Path("/sys/devices/system/cpu/cpufreq/boost")
+    if no_turbo_path.exists():
+        turbo = "disabled" if no_turbo_path.read_text(encoding="utf-8").strip() == "1" else "enabled"
+    elif boost_path.exists():
+        turbo = "enabled" if boost_path.read_text(encoding="utf-8").strip() == "1" else "disabled"
+    else:
+        turbo = "unknown"
+
+    try:
+        affinity_cpus: list[int] | None = sorted(os.sched_getaffinity(0))
+    except AttributeError:
+        affinity_cpus = None  # not available on this platform
+
+    return {"governor": governor, "turbo": turbo, "affinity_cpus": affinity_cpus}
+
+
 def toolchain_facts() -> dict[str, Any]:
     return {
         "python": {
@@ -146,6 +175,7 @@ def capture(root: Path, preset: str) -> dict[str, Any]:
         },
         "cpu": cpu_facts(),
         "memory": memory_facts(),
+        "power": power_facts(),
         "virtualisation": virtualisation_facts(),
         "toolchain": toolchain_facts(),
         "build": build_facts(root, preset),

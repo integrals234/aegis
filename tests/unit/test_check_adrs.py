@@ -113,6 +113,48 @@ def test_dangling_adr_reference_is_reported(tree):
     assert any("references ADR-0042, which does not exist" in e for e in run(tree))
 
 
+def test_exempted_plan_reference_is_not_reported(tree, monkeypatch):
+    # A plan of record may legitimately preview an ADR its own later slices
+    # write (check_adrs.DANGLING_REFERENCE_EXEMPTIONS); this must not report.
+    # The exemption is set here rather than relied on from production data —
+    # the mechanism must hold regardless of which real ADR numbers, if any,
+    # happen to be exempted in the live repository at any given moment.
+    monkeypatch.setattr(
+        check_adrs, "DANGLING_REFERENCE_EXEMPTIONS", {"experiments/plans/M1.md": {"0099"}}
+    )
+    (tree / "experiments/plans").mkdir(parents=True)
+    (tree / "experiments/plans/M1.md").write_text(
+        "Snapshot design is recorded in ADR-0099.\n", encoding="utf-8"
+    )
+    assert not any("ADR-0099" in e for e in run(tree))
+
+
+def test_exemption_is_narrow_to_the_named_path(tree, monkeypatch):
+    # The same forward reference from any other document must still fail —
+    # the exemption is not a blanket allowance for the ADR number.
+    monkeypatch.setattr(
+        check_adrs, "DANGLING_REFERENCE_EXEMPTIONS", {"experiments/plans/M1.md": {"0099"}}
+    )
+    (tree / "experiments/other").mkdir(parents=True)
+    (tree / "experiments/other/NOTES.md").write_text(
+        "Snapshot design is recorded in ADR-0099.\n", encoding="utf-8"
+    )
+    assert any("references ADR-0099, which does not exist" in e for e in run(tree))
+
+
+def test_exemption_is_narrow_to_the_named_numbers(tree, monkeypatch):
+    # The exempted file may not cite an arbitrary unwritten ADR — only the
+    # specific numbers check_adrs.DANGLING_REFERENCE_EXEMPTIONS lists for it.
+    monkeypatch.setattr(
+        check_adrs, "DANGLING_REFERENCE_EXEMPTIONS", {"experiments/plans/M1.md": {"0099"}}
+    )
+    (tree / "experiments/plans").mkdir(parents=True)
+    (tree / "experiments/plans/M1.md").write_text(
+        "Unrelated future work is recorded in ADR-0088.\n", encoding="utf-8"
+    )
+    assert any("references ADR-0088, which does not exist" in e for e in run(tree))
+
+
 def test_bad_filename_is_reported(tree):
     (tree / "adr/notes.md").write_text(VALID_ADR, encoding="utf-8")
     assert any("filename must be" in e for e in run(tree))

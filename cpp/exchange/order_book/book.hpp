@@ -1,0 +1,127 @@
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory_resource>
+#include <optional>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#include "cpp/exchange/order_book/level_index.hpp"
+#include "cpp/exchange/order_book/order_storage.hpp"
+#include "cpp/exchange/order_book/types.hpp"
+
+/// The central limit order book for one instrument (AEGIS-027, AEGIS-030,
+/// AEGIS-036, AEGIS-037, AEGIS-038).
+///
+/// Single instrument, single writer, no statics. `OrderBook` knows how to
+/// store, order and remove resting orders; it has no knowledge of matching,
+/// validation or wire messages — `cpp-exchange-matching` depends on this
+/// layer, never the reverse (configs/architecture_rules.yaml).
+namespace aegis::exchange {
+
+class OrderBook {
+ public:
+  /// `resource` (ADR-0010) defaults to the global resource, so every
+  /// existing call site is unaffected; a caller that wants measured
+  /// per-instance allocation (`tests/cpp/property/test_allocation_counters.cpp`)
+  /// passes its own. The slab, both level indices and both id maps all draw
+  /// from the same resource — allocation is attributable to the one book
+  /// that owns it, not split across a global allocator and an injected one.
+  explicit OrderBook(InstrumentId instrument_id,
+                     std::pmr::memory_resource* resource = std::pmr::get_default_resource())
+      : instrument_id_(instrument_id),
+        storage_(resource),
+        bids_(/*descending=*/true, resource),
+        asks_(/*descending=*/false, resource),
+        order_index_(resource),
+        live_client_ids_(resource) {}
+
+  /// Reserves slab and order-index capacity ahead of the steady-state
+  /// zero-allocation cycle (AEGIS-037) — measured against the injected
+  /// `memory_resource` by `tests/cpp/property/test_allocation_counters.cpp`.
+  void reserve(std::size_t order_capacity);
+
+  /// Inserts `descriptor` as a resting order at its price, at the tail of
+  /// that level's FIFO queue — price-time priority by construction
+  /// (AEGIS-027). `descriptor.prev_index`/`next_index` are ignored and
+  /// overwritten.
+  ///
+  /// Precondition: `descriptor.order_id` is not already live in this book.
+  void add(const OrderNode& descriptor);
+
+  /// Removes the order by id: one hash lookup plus one O(1) queue unlink —
+  /// no price-queue scan (AEGIS-030). Returns the order's state immediately
+  /// before removal, or `std::nullopt` if `order_id` is not live.
+  std::optional<OrderNode> cancel(OrderId order_id);
+
+  /// Records a fill against a live resting order: decrements its `remaining`,
+  /// increments its `cumulative_filled`, and keeps its level's
+  /// `aggregate_quantity` consistent (P3) — all without moving its FIFO
+  /// position, since a partial fill never changes priority. Returns the
+  /// order's `remaining` after the fill, so the caller can decide whether it
+  /// is now fully filled.
+  ///
+  /// Precondition: `order_id` is live and `fill_quantity` does not exceed its
+  /// current `remaining`. Does not remove a fully filled order — that is a
+  /// separate `cancel()` call, because "fully filled" and "cancelled" are
+  /// different `TerminationReason`s the caller must choose between.
+  QuantityUnits record_fill(OrderId order_id, QuantityUnits fill_quantity);
+
+  /// Applies a priority-retaining quantity decrease (ADR-0011): reduces a
+  /// live order's `remaining` to `new_remaining`, adds the difference to its
+  /// `cancelled_quantity` (not `cumulative_filled` — nothing traded), and
+  /// keeps its level's `aggregate_quantity` consistent (P3) — all without
+  /// moving its FIFO position, since a decrease never changes priority.
+  /// `original_quantity` is untouched: P1 requires it stay fixed at whatever
+  /// it was when the order was created.
+  ///
+  /// Precondition: `order_id` is live and `new_remaining` does not exceed its
+  /// current `remaining`.
+  void apply_quantity_decrease(OrderId order_id, QuantityUnits new_remaining);
+
+  [[nodiscard]] const OrderNode* find(OrderId order_id) const;
+  [[nodiscard]] OrderNode* find(OrderId order_id);
+
+  /// The order id currently live under `(participant_id, client_order_id)`,
+  /// if any. Scope is per-participant, not global (ADR-0011).
+  [[nodiscard]] std::optional<OrderId> find_live_by_client_id(ParticipantId participant_id,
+                                                              ClientOrderId client_order_id) const;
+
+  [[nodiscard]] std::optional<PriceUnits> best_bid() const { return bids_.best_price(); }
+  [[nodiscard]] std::optional<PriceUnits> best_ask() const { return asks_.best_price(); }
+
+  [[nodiscard]] const PriceLevel* level_at(Side side, PriceUnits price) const;
+
+  /// Order ids at `price` on `side`, oldest first — the FIFO arrival order
+  /// golden sequences check (AEGIS-027).
+  [[nodiscard]] std::vector<OrderId> orders_at(Side side, PriceUnits price) const;
+
+  [[nodiscard]] InstrumentId instrument_id() const { return instrument_id_; }
+  [[nodiscard]] std::size_t live_order_count() const { return storage_.live_count(); }
+
+  [[nodiscard]] const OrderStorage& storage() const { return storage_; }
+  [[nodiscard]] const LevelIndex& levels(Side side) const { return levels_for(side); }
+
+ private:
+  [[nodiscard]] LevelIndex& levels_for(Side side) {
+    return side == Side::kBuy ? static_cast<LevelIndex&>(bids_) : static_cast<LevelIndex&>(asks_);
+  }
+  [[nodiscard]] const LevelIndex& levels_for(Side side) const {
+    return side == Side::kBuy ? static_cast<const LevelIndex&>(bids_)
+                              : static_cast<const LevelIndex&>(asks_);
+  }
+
+  InstrumentId instrument_id_;
+  OrderStorage storage_;
+  MapLevelIndex bids_;
+  MapLevelIndex asks_;
+  std::pmr::unordered_map<std::uint64_t, std::size_t>
+      order_index_;  ///< OrderId::value() -> slab index.
+  std::pmr::map<std::pair<std::uint64_t, std::uint64_t>, OrderId>
+      live_client_ids_;  ///< (participant, client) -> OrderId.
+};
+
+}  // namespace aegis::exchange
