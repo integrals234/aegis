@@ -133,13 +133,20 @@
       "implementation": [
         "tools/check_scope.py",
         "configs/milestone_scope.yaml",
-        "docs/BUILD_STATE.md"
+        "docs/BUILD_STATE.md",
+        "tools/governance/authoritative_check.py",
+        "configs/governance/policy.yaml"
       ],
       "tests": [
-        "tests/unit/test_scope_guard.py"
+        "tests/unit/test_scope_guard.py",
+        "tests/unit/test_authoritative_governance.py",
+        "tests/unit/test_credential_boundary.py",
+        "tests/unit/test_governance_workflow.py"
       ],
-      "reports": [],
-      "notes": "Both halves of the acceptance: BUILD_STATE names exactly one active milestone, and the branch diff is checked against that milestone's allowed and denied paths.",
+      "reports": [
+        "experiments/evidence/AEGIS-007/credential_boundary.json"
+      ],
+      "notes": "Both halves of the acceptance: BUILD_STATE names exactly one active milestone, and the branch diff is checked against that milestone's allowed and denied paths. R8 remediated 2026-08-09 (ADR-0014): approvals and the active milestone are now read from configs/governance/policy.yaml on protected main by a pull_request_target job running main's checker, so a branch can no longer authorise itself; tools/check_scope.py is retained, unchanged in logic, as an advisory local check.",
       "audit": {
         "auditor": "aegis-spec-auditor (independent /audit-milestone M0: 17 PASS, 5 FAIL); blocking findings R1-R4 remediated through 517c760; promoted by owner-approved fast-track closure - no second independent audit was performed",
         "commit": "adf34ed",
