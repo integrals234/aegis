@@ -33,10 +33,26 @@ trap cleanup EXIT
 # --detach: we only want main's files, never to move a branch ref.
 git worktree add --quiet --detach "$WORKTREE" "$BASE"
 
+CHECKER="$WORKTREE/tools/governance/authoritative_check.py"
+if [[ ! -f "$CHECKER" ]]; then
+  cat >&2 <<MSG
+ERROR: $BASE has no tools/governance/authoritative_check.py.
+
+The authoritative checker must come from the base branch — that is the entire
+point, and borrowing this branch's copy instead would reproduce exactly the
+circularity R8 removed. So this script cannot fall back to a local copy.
+
+If the R8 bootstrap has not merged yet, this is expected: there is no
+authoritative gate to preflight against, and the bootstrap pull request is
+judged by the pre-existing checks plus owner review. See ADR-0014.
+MSG
+  exit 2
+fi
+
 echo "Judging $(git rev-parse --short HEAD) against the policy on $BASE"
 echo
 
-"$PYTHON" "$WORKTREE/tools/governance/authoritative_check.py" \
+"$PYTHON" "$CHECKER" \
   --trusted-root "$WORKTREE" \
   --candidate-repo "$ROOT" \
   --head-sha HEAD \
