@@ -161,7 +161,7 @@ jobs:
       - name: Build the C++ extension the integration layer needs
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build python3-dev
+          sudo apt-get install -y clang cmake ninja-build python3-dev python3-venv
           export PATH="$AEGIS_VENV/bin:$PATH"
           cmake --preset debug \
             -DPython3_EXECUTABLE="$AEGIS_VENV/bin/python" \
@@ -201,7 +201,7 @@ jobs:
       - name: Install the toolchain
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build python3-dev
+          sudo apt-get install -y clang cmake ninja-build python3-dev python3-venv
           python3 -m venv "$AEGIS_VENV"
           "$AEGIS_VENV/bin/pip" install --upgrade pip
           "$AEGIS_VENV/bin/pip" install --require-hashes -r requirements/requirements.lock
@@ -250,6 +250,85 @@ jobs:
         run: |
           "$AEGIS_VENV/bin/python" tools/determinism_check.py \
             --producer nondeterministic --expect-failure
+
+  # AEGIS-009: "Clean environment instructions build and run integrity tests
+  # without undocumented steps."
+  #
+  # This job is the acceptance criterion executed rather than asserted. It runs
+  # the canonical procedure from docs/ENVIRONMENT.md *verbatim* on a clean
+  # GitHub-hosted runner and nothing else — deliberately no actions/setup-python,
+  # because the document tells a reader to use the machine's own python3, and
+  # setup-python would both deviate from that and export Python3_ROOT_DIR.
+  # If a command here has to differ from the document, the document is wrong
+  # and that is the bug this job exists to surface.
+  #
+  # The transcript and the captured environment record are uploaded as the
+  # clean-machine evidence AEGIS-009 owes.
+  reproducibility:
+    name: Clean-machine reproducibility (AEGIS-009)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The document says `git clone <repository>` — an ordinary clone with
+          # its history. actions/checkout defaults to --depth=1, which is not
+          # that: it fetches only the ref under test, so origin/main does not
+          # exist and tools/check_scope.py cannot compute a merge base. Cloning
+          # in full is what the canonical procedure actually describes.
+          fetch-depth: 0
+
+      # docs/ENVIRONMENT.md "Setting up", step 0.
+      - name: Step 0 — system toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build python3-dev python3-venv
+
+      # Step 1. Note this is the machine's own python3, not a tool-cache one.
+      - name: Step 1 — pinned Python environment
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install --upgrade pip
+          .venv/bin/pip install --require-hashes -r requirements/requirements.lock
+
+      - name: Step 2 — git hooks
+        run: bash scripts/install_git_hooks.sh
+
+      # Step 3. The executable form of docs/ENVIRONMENT.md: if step 0 or 1 is
+      # incomplete, this fails here instead of somewhere further downstream.
+      - name: Step 3 — verify the environment
+        run: |
+          export PATH="$PWD/.venv/bin:$PATH"
+          bash scripts/check_environment.sh
+
+      # docs/ENVIRONMENT.md "Building and testing", with the documented options.
+      - name: Build and run the integrity tests
+        run: |
+          export PATH="$PWD/.venv/bin:$PATH"
+          AEGIS_CMAKE_OPTS=(-DPython3_EXECUTABLE="$PWD/.venv/bin/python" -DAEGIS_REQUIRE_BINDINGS=ON)
+          cmake --preset debug "${AEGIS_CMAKE_OPTS[@]}"
+          cmake --build --preset debug
+          ctest --preset debug
+          cmake --preset release "${AEGIS_CMAKE_OPTS[@]}"
+          cmake --build --preset release
+          ctest --preset release
+          python3 tools/run_test_layers.py --python .venv/bin/python
+
+      # docs/ENVIRONMENT.md "Environment capture". This is the clean-machine
+      # record: capture_environment.py's `ci` block ties it to this run.
+      - name: Capture the clean-machine environment record
+        run: |
+          export PATH="$PWD/.venv/bin:$PATH"
+          python3 tools/capture_environment.py --preset debug \
+            --output "$RUNNER_TEMP/environment.json"
+          cat "$RUNNER_TEMP/environment.json"
+
+      - name: Upload the clean-machine evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aegis-009-clean-machine
+          path: ${{ runner.temp }}/environment.json
+          if-no-files-found: error
 
   negative-gates:
     name: Gates fail on their counter-examples

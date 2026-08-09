@@ -1,0 +1,131 @@
+{
+  "acceptance": "Main branch requires passing workflow.",
+  "effective_rules_on_main": [
+    {
+      "ruleset_id": 20596537,
+      "ruleset_source": "integrals234/aegis",
+      "ruleset_source_type": "Repository",
+      "type": "deletion"
+    },
+    {
+      "ruleset_id": 20596537,
+      "ruleset_source": "integrals234/aegis",
+      "ruleset_source_type": "Repository",
+      "type": "non_fast_forward"
+    },
+    {
+      "parameters": {
+        "allowed_merge_methods": [
+          "merge",
+          "squash",
+          "rebase"
+        ],
+        "dismiss_stale_reviews_on_push": false,
+        "require_code_owner_review": false,
+        "require_last_push_approval": false,
+        "required_approving_review_count": 0,
+        "required_review_thread_resolution": false,
+        "required_reviewers": []
+      },
+      "ruleset_id": 20596537,
+      "ruleset_source": "integrals234/aegis",
+      "ruleset_source_type": "Repository",
+      "type": "pull_request"
+    },
+    {
+      "parameters": {
+        "do_not_enforce_on_create": false,
+        "required_status_checks": [
+          {
+            "context": "C++ debug",
+            "integration_id": 15368
+          },
+          {
+            "context": "Gates fail on their counter-examples",
+            "integration_id": 15368
+          },
+          {
+            "context": "Governance and specification integrity",
+            "integration_id": 15368
+          },
+          {
+            "context": "Secret scanning",
+            "integration_id": 15368
+          },
+          {
+            "context": "C++ asan-ubsan",
+            "integration_id": 15368
+          },
+          {
+            "context": "C++ release",
+            "integration_id": 15368
+          },
+          {
+            "context": "Python 3.12",
+            "integration_id": 15368
+          },
+          {
+            "context": "Python 3.14",
+            "integration_id": 15368
+          },
+          {
+            "context": "Determinism harness",
+            "integration_id": 15368
+          }
+        ],
+        "strict_required_status_checks_policy": true
+      },
+      "ruleset_id": 20596537,
+      "ruleset_source": "integrals234/aegis",
+      "ruleset_source_type": "Repository",
+      "type": "required_status_checks"
+    }
+  ],
+  "protection_mechanism": "repository ruleset (not the legacy branch-protection API)",
+  "provenance": {
+    "captured_at": "2026-08-09",
+    "note": "External evidence: a real GitHub-hosted runner, not the WSL2 development host. Recorded verbatim from the API so it can be re-queried and compared.",
+    "regenerate": [
+      "gh api repos/integrals234/aegis/actions/runs/31286449399",
+      "gh api repos/integrals234/aegis/actions/runs/31286449399/jobs --paginate",
+      "gh api repos/integrals234/aegis/rules/branches/main",
+      "gh api repos/integrals234/aegis/rulesets/20596537"
+    ],
+    "source": "GitHub Actions REST API, repository integrals234/aegis"
+  },
+  "pull_request_required": true,
+  "required_status_check_contexts": [
+    "C++ asan-ubsan",
+    "C++ debug",
+    "C++ release",
+    "Determinism harness",
+    "Gates fail on their counter-examples",
+    "Governance and specification integrity",
+    "Python 3.12",
+    "Python 3.14",
+    "Secret scanning"
+  ],
+  "requirement": "AEGIS-234",
+  "ruleset": {
+    "created_at": "2026-08-09T00:32:22.790Z",
+    "enforcement": "active",
+    "id": 20596537,
+    "name": "Protect main",
+    "target": "branch",
+    "updated_at": "2026-08-09T00:32:22.848Z"
+  },
+  "strict_up_to_date_required": true,
+  "successful_run_on_main": {
+    "conclusion": "success",
+    "created_at": "2026-08-09T00:34:08Z",
+    "event": "push",
+    "head_branch": "main",
+    "head_sha": "ddc82f8c47bf8c4b59dfec8d7e3fd87d109c4865",
+    "html_url": "https://github.com/integrals234/aegis/actions/runs/31286449399",
+    "id": 31286449399,
+    "name": "AEGIS CI",
+    "run_attempt": 1,
+    "status": "completed",
+    "updated_at": "2026-08-09T00:42:44Z"
+  }
+}

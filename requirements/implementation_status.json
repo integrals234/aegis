@@ -173,19 +173,11 @@
       ],
       "tests": [],
       "reports": [
-        "experiments/evidence/AEGIS-009/environment.json"
+        "experiments/evidence/AEGIS-009/environment.json",
+        "experiments/evidence/AEGIS-009/clean_machine_environment.json",
+        "experiments/evidence/AEGIS-009/clean_machine_procedure.json"
       ],
-      "notes": "Version-checking environment script, lockfile drift detection, mechanical environment capture including virtualisation status, and a container definition.",
-      "verification_blocked_until": "M1",
-      "residual": "docker/Dockerfile.dev has never been built: Docker Desktop WSL integration is disabled on the development host, and no CI run has executed. A clean-machine transcript from a container or CI runner is still owed.",
-      "deferral_history": [
-        {
-          "blocked_until": "M1",
-          "recorded_at": "M0",
-          "date": "2026-08-06",
-          "reason": "Registered while closing M0: the container has never been built and no CI run has executed, so no clean-machine transcript exists."
-        }
-      ]
+      "notes": "Discharged by external evidence 2026-08-09. GitHub Actions run 31295058007, job 'Clean-machine reproducibility (AEGIS-009)', executed docs/ENVIRONMENT.md's canonical procedure verbatim on a clean ubuntu-24.04 runner (image 20260720.247.2, virtualisation.wsl=false), deliberately without actions/setup-python so it used the machine's own python3 as the document instructs. Every clause of the acceptance is covered: clean environment (the runner, not the WSL2 development host); instructions followed (commands_executed is the runner's own echo of the documented commands); no undocumented steps (the job has no step beyond the documented ones, and the apt prerequisites and the two CMake options it uses are now part of the document); builds (debug and release both configured and built, with pybind11 resolved from the venv and AEGIS_REQUIRE_BINDINGS=ON proving the bindings module was really produced); runs integrity tests (ctest 180/180 on both presets, then all seven test layers). scripts/check_environment.sh, the executable form of the document, ran and passed before the build. experiments/evidence/AEGIS-009/environment.json is retained as the development-host record; the clean-machine record is clean_machine_environment.json. docker/Dockerfile.dev remains unbuilt and out of scope: the frozen acceptance names no container."
     },
     "AEGIS-010": {
       "status": "verified",
@@ -319,7 +311,7 @@
       "notes": ""
     },
     "AEGIS-027": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/exchange/order_book/book.hpp",
         "cpp/exchange/order_book/book.cpp",
@@ -332,10 +324,15 @@
         "tests/cpp/unit/test_book_add_cancel.cpp"
       ],
       "reports": [],
-      "notes": "CommandSequence-keyed Priority gives price-time priority; golden sequences prove price beats arrival across levels and CommandSequence breaks ties at equal price, including two commands sharing an EventTime (ADR-0012)."
+      "notes": "CommandSequence-keyed Priority gives price-time priority; golden sequences prove price beats arrival across levels and CommandSequence breaks ties at equal price, including two commands sharing an EventTime (ADR-0012).",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M1 against the final tree: 15 PASS, 0 FAIL); no blocking finding; earlier audit of b33ca67 superseded, R1-R7 confirmed present, AEGIS-009/227/233/234 external-evidence discharges confirmed genuine",
+        "commit": "2747ea6",
+        "date": "2026-08-09"
+      }
     },
     "AEGIS-028": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/exchange/matching/engine.hpp",
         "cpp/exchange/matching/engine.cpp"
@@ -344,10 +341,15 @@
         "tests/cpp/unit/test_limit_orders.cpp"
       ],
       "reports": [],
-      "notes": "Bid/ask, crossing/non-crossing, partial and full fills, invalid input covered."
+      "notes": "Bid/ask, crossing/non-crossing, partial and full fills, invalid input covered.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M1 against the final tree: 15 PASS, 0 FAIL); no blocking finding; earlier audit of b33ca67 superseded, R1-R7 confirmed present, AEGIS-009/227/233/234 external-evidence discharges confirmed genuine",
+        "commit": "2747ea6",
+        "date": "2026-08-09"
+      }
     },
     "AEGIS-029": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/exchange/matching/engine.hpp",
         "cpp/exchange/matching/engine.cpp"
@@ -356,10 +358,15 @@
         "tests/cpp/unit/test_market_orders.cpp"
       ],
       "reports": [],
-      "notes": "Full fill, partial fill with residual terminated kResidualCanceled, empty-book acceptance, price-on-market-order rejection; never rejected for lack of liquidity (ADR-0011)."
+      "notes": "Full fill, partial fill with residual terminated kResidualCanceled, empty-book acceptance, price-on-market-order rejection; never rejected for lack of liquidity (ADR-0011).",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M1 against the final tree: 15 PASS, 0 FAIL); no blocking finding; earlier audit of b33ca67 superseded, R1-R7 confirmed present, AEGIS-009/227/233/234 external-evidence discharges confirmed genuine",
+        "commit": "2747ea6",
+        "date": "2026-08-09"
+      }
     },
     "AEGIS-030": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/exchange/order_book/book.hpp",
         "cpp/exchange/order_book/book.cpp",
@@ -371,10 +378,15 @@
         "tests/cpp/property/test_order_index.cpp"
       ],
       "reports": [],
-      "notes": "Cancel by OrderId is one hash lookup plus one O(1) intrusive-queue unlink, no price-queue scan; state, quantities and kOrderTerminated events verified."
+      "notes": "Cancel by OrderId is one hash lookup plus one O(1) intrusive-queue unlink, no price-queue scan; state, quantities and kOrderTerminated events verified.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M1 against the final tree: 15 PASS, 0 FAIL); no blocking finding; earlier audit of b33ca67 superseded, R1-R7 confirmed present, AEGIS-009/227/233/234 external-evidence discharges confirmed genuine",
+        "commit": "2747ea6",
+        "date": "2026-08-09"
+      }
     },
     "AEGIS-031": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/exchange/matching/engine.hpp",
         "cpp/exchange/matching/engine.cpp",
@@ -385,10 +397,15 @@
         "tests/cpp/unit/test_modify_semantics.cpp"
       ],
       "reports": [],
-      "notes": "Price-unchanged decrease retains priority in place; quantity increase is cancel-replace with a new OrderId at the tail (ADR-0011)."
+      "notes": "Price-unchanged decrease retains priority in place; quantity increase is cancel-replace with a new OrderId at the tail (ADR-0011).",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M1 against the final tree: 15 PASS, 0 FAIL); no blocking finding; earlier audit of b33ca67 superseded, R1-R7 confirmed present, AEGIS-009/227/233/234 external-evidence discharges confirmed genuine",
+        "commit": "2747ea6",
+        "date": "2026-08-09"
+      }
     },
     "AEGIS-032": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/exchange/matching/engine.hpp",
         "cpp/exchange/matching/engine.cpp"
@@ -397,10 +414,15 @@
         "tests/cpp/unit/test_modify_semantics.cpp"
       ],
       "reports": [],
-      "notes": "Any price change is cancel-replace: old OrderId terminates kReplaced, new OrderId rests at the tail of its new level."
+      "notes": "Any price change is cancel-replace: old OrderId terminates kReplaced, new OrderId rests at the tail of its new level.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M1 against the final tree: 15 PASS, 0 FAIL); no blocking finding; earlier audit of b33ca67 superseded, R1-R7 confirmed present, AEGIS-009/227/233/234 external-evidence discharges confirmed genuine",
+        "commit": "2747ea6",
+        "date": "2026-08-09"
+      }
     },
     "AEGIS-033": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/exchange/matching/engine.hpp",
         "cpp/exchange/matching/engine.cpp"
@@ -410,10 +432,15 @@
         "tests/cpp/unit/test_limit_orders.cpp"
       ],
       "reports": [],
-      "notes": "P1-P4 conservation asserted over generated operation sequences, ledger built from the decoded event stream, never book internals."
+      "notes": "P1-P4 conservation asserted over generated operation sequences, ledger built from the decoded event stream, never book internals.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M1 against the final tree: 15 PASS, 0 FAIL); no blocking finding; earlier audit of b33ca67 superseded, R1-R7 confirmed present, AEGIS-009/227/233/234 external-evidence discharges confirmed genuine",
+        "commit": "2747ea6",
+        "date": "2026-08-09"
+      }
     },
     "AEGIS-034": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/exchange/matching/engine.hpp",
         "cpp/exchange/matching/engine.cpp",
@@ -424,10 +451,15 @@
         "tests/cpp/unit/test_full_fills.cpp"
       ],
       "reports": [],
-      "notes": "Level emptied and erased, index entry removed, no stale handle reachable; verified against the structural invariant checker too."
+      "notes": "Level emptied and erased, index entry removed, no stale handle reachable; verified against the structural invariant checker too.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M1 against the final tree: 15 PASS, 0 FAIL); no blocking finding; earlier audit of b33ca67 superseded, R1-R7 confirmed present, AEGIS-009/227/233/234 external-evidence discharges confirmed genuine",
+        "commit": "2747ea6",
+        "date": "2026-08-09"
+      }
     },
     "AEGIS-035": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/exchange/order_book/instrument.hpp",
         "cpp/exchange/order_book/instrument.cpp",
@@ -439,10 +471,15 @@
         "tests/cpp/unit/test_exchange_node.cpp"
       ],
       "reports": [],
-      "notes": "Every RejectReason enumerator reachable via a compile-time-checked table; adding a reason without a case fails to compile."
+      "notes": "Every RejectReason enumerator reachable via a compile-time-checked table; adding a reason without a case fails to compile.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M1 against the final tree: 15 PASS, 0 FAIL); no blocking finding; earlier audit of b33ca67 superseded, R1-R7 confirmed present, AEGIS-009/227/233/234 external-evidence discharges confirmed genuine",
+        "commit": "2747ea6",
+        "date": "2026-08-09"
+      }
     },
     "AEGIS-036": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/exchange/order_book/order_storage.hpp",
         "cpp/exchange/order_book/book.hpp",
@@ -454,10 +491,15 @@
       "reports": [
         "experiments/evidence/AEGIS-036/lookup_cancel.json"
       ],
-      "notes": "Pre-sized std::pmr::unordered_map from OrderId to slab index; expected O(1), never claimed strict O(1) (configs/claims_policy.yaml, ADR-0010). Benchmark workload and correctness-under-churn test both pass."
+      "notes": "Pre-sized std::pmr::unordered_map from OrderId to slab index; expected O(1), never claimed strict O(1) (configs/claims_policy.yaml, ADR-0010). Benchmark workload and correctness-under-churn test both pass.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M1 against the final tree: 15 PASS, 0 FAIL); no blocking finding; earlier audit of b33ca67 superseded, R1-R7 confirmed present, AEGIS-009/227/233/234 external-evidence discharges confirmed genuine",
+        "commit": "2747ea6",
+        "date": "2026-08-09"
+      }
     },
     "AEGIS-037": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/exchange/order_book/order_storage.hpp",
         "cpp/exchange/order_book/level.hpp"
@@ -466,10 +508,15 @@
         "tests/cpp/property/test_allocation_counters.cpp"
       ],
       "reports": [],
-      "notes": "Intrusive doubly-linked FIFO queue over the index-handle slab; injected memory_resource proves zero allocations across a warmed steady-state add/cancel cycle, in debug, release and asan-ubsan."
+      "notes": "Intrusive doubly-linked FIFO queue over the index-handle slab; injected memory_resource proves zero allocations across a warmed steady-state add/cancel cycle, in debug, release and asan-ubsan.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M1 against the final tree: 15 PASS, 0 FAIL); no blocking finding; earlier audit of b33ca67 superseded, R1-R7 confirmed present, AEGIS-009/227/233/234 external-evidence discharges confirmed genuine",
+        "commit": "2747ea6",
+        "date": "2026-08-09"
+      }
     },
     "AEGIS-038": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/exchange/order_book/level_index.hpp",
         "cpp/exchange/order_book/level_index.cpp"
@@ -479,10 +526,15 @@
         "tests/cpp/unit/test_instrument_grid.cpp"
       ],
       "reports": [],
-      "notes": "MapLevelIndex behind the LevelIndex interface; expected O(log D), D = documented finite price-domain cardinality (ceiling-floor)/tick+1."
+      "notes": "MapLevelIndex behind the LevelIndex interface; expected O(log D), D = documented finite price-domain cardinality (ceiling-floor)/tick+1.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M1 against the final tree: 15 PASS, 0 FAIL); no blocking finding; earlier audit of b33ca67 superseded, R1-R7 confirmed present, AEGIS-009/227/233/234 external-evidence discharges confirmed genuine",
+        "commit": "2747ea6",
+        "date": "2026-08-09"
+      }
     },
     "AEGIS-039": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/exchange/matching/fifo_policy.hpp",
         "cpp/exchange/matching/fifo_policy.cpp",
@@ -500,10 +552,15 @@
         "experiments/evidence/AEGIS-039/multi_fill_k16.json",
         "experiments/evidence/AEGIS-039/multi_fill_k32.json"
       ],
-      "notes": "Matching walks only the levels/orders a fill consumes, O(k); property test asserts visited count tracks consumed count, and benchmark workloads (single-fill, multi-fill k in {2,4,8,16,32}, policy mix) show it, all local_non_comparable."
+      "notes": "Matching walks only the levels/orders a fill consumes, O(k); property test asserts visited count tracks consumed count, and benchmark workloads (single-fill, multi-fill k in {2,4,8,16,32}, policy mix) show it, all local_non_comparable.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M1 against the final tree: 15 PASS, 0 FAIL); no blocking finding; earlier audit of b33ca67 superseded, R1-R7 confirmed present, AEGIS-009/227/233/234 external-evidence discharges confirmed genuine",
+        "commit": "2747ea6",
+        "date": "2026-08-09"
+      }
     },
     "AEGIS-040": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/exchange/matching/matching_policy.hpp",
         "cpp/exchange/matching/fifo_policy.hpp",
@@ -513,10 +570,15 @@
         "tests/cpp/unit/test_matching_policy_interface.cpp"
       ],
       "reports": [],
-      "notes": "MatchingPolicy interface plus a test-only second policy proves the seam is real without shipping pro-rata."
+      "notes": "MatchingPolicy interface plus a test-only second policy proves the seam is real without shipping pro-rata.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M1 against the final tree: 15 PASS, 0 FAIL); no blocking finding; earlier audit of b33ca67 superseded, R1-R7 confirmed present, AEGIS-009/227/233/234 external-evidence discharges confirmed genuine",
+        "commit": "2747ea6",
+        "date": "2026-08-09"
+      }
     },
     "AEGIS-041": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/exchange/order_book/invariants.hpp",
         "cpp/exchange/order_book/invariants.cpp"
@@ -526,7 +588,12 @@
         "tests/cpp/property/test_book_invariants_fuzz.cpp"
       ],
       "reports": [],
-      "notes": "check_invariants at kStructural and kQuiescent; hand-corrupted fixtures prove both scopes actually fire; fuzz harness calls kQuiescent after every generated command."
+      "notes": "check_invariants at kStructural and kQuiescent; hand-corrupted fixtures prove both scopes actually fire; fuzz harness calls kQuiescent after every generated command.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M1 against the final tree: 15 PASS, 0 FAIL); no blocking finding; earlier audit of b33ca67 superseded, R1-R7 confirmed present, AEGIS-009/227/233/234 external-evidence discharges confirmed genuine",
+        "commit": "2747ea6",
+        "date": "2026-08-09"
+      }
     },
     "AEGIS-042": {
       "status": "not_started",
@@ -1834,18 +1901,10 @@
       "tests": [
         "tests/cpp/unit/test_version.cpp"
       ],
-      "reports": [],
-      "notes": "C++20, three presets, warnings as errors including -Wconversion, sanitizers with -fno-sanitize-recover, clang-tidy and clang-format pinned from the lockfile, third-party pinned by archive hash.",
-      "verification_blocked_until": "M1",
-      "residual": "The acceptance names CI building debug and release. The workflow exists and scripts/ci_local.sh runs the same matrix locally, but no CI run has executed; that requires an owner-created remote.",
-      "deferral_history": [
-        {
-          "blocked_until": "M1",
-          "recorded_at": "M0",
-          "date": "2026-08-06",
-          "reason": "Registered while closing M0: the acceptance names CI building debug and release, and no CI run has executed."
-        }
-      ]
+      "reports": [
+        "experiments/evidence/AEGIS-227/ci_cpp_build_matrix.json"
+      ],
+      "notes": "CI builds all three presets and runs their checks. Discharged by external evidence: GitHub Actions run 31286449399 (push to main, commit ddc82f8) built debug (Debug) and release (RelWithDebInfo), plus asan-ubsan, each running ctest to 180/180, and the debug job ran clang-format and clang-tidy over all 73 C++ sources to '[style] ok'."
     },
     "AEGIS-228": {
       "status": "verified",
@@ -1961,19 +2020,11 @@
         "tests/unit/test_ci_parity.py"
       ],
       "reports": [
-        "experiments/evidence/AEGIS-233/test_layers.json"
+        "experiments/evidence/AEGIS-233/test_layers.json",
+        "experiments/evidence/AEGIS-233/ci_test_layers_3.12.json",
+        "experiments/evidence/AEGIS-233/ci_test_layers_3.14.json"
       ],
-      "notes": "Five pytest layers and two ctest labels, each run and reported separately, with a layer that collects zero tests failing. The layer report is registered evidence, so the audit re-checks it and it cannot silently fall behind the tree.",
-      "verification_blocked_until": "M1",
-      "residual": "The acceptance names CI reporting each layer; no CI run has executed. Replay-layer depth arrives with M2's replay modes and research-layer depth with M4-M5 experiments.",
-      "deferral_history": [
-        {
-          "blocked_until": "M1",
-          "recorded_at": "M0",
-          "date": "2026-08-06",
-          "reason": "Registered while closing M0: the acceptance names CI reporting each layer, and no CI run has executed."
-        }
-      ]
+      "notes": "Seven layers run and are reported separately, and a layer collecting zero tests fails by construction. Discharged by external evidence: GitHub Actions run 31286449399 (push to main) reported all seven on both Python 3.12 and 3.14 \u2014 pytest unit/integration/property/replay/research and ctest unit/property, 668 tests each interpreter, every layer non-empty and passing."
     },
     "AEGIS-234": {
       "status": "implemented",
@@ -1984,18 +2035,10 @@
       "tests": [
         "tests/unit/test_ci_parity.py"
       ],
-      "reports": [],
-      "notes": "Six-job workflow covering spec audit, build, tests, static checks and secret scanning, mirrored by scripts/ci_local.sh and held in parity by a test.",
-      "verification_blocked_until": "M1",
-      "residual": "The acceptance is 'main branch requires passing workflow'. No git remote exists, no workflow run has executed, and branch protection is an owner action.",
-      "deferral_history": [
-        {
-          "blocked_until": "M1",
-          "recorded_at": "M0",
-          "date": "2026-08-06",
-          "reason": "Registered while closing M0: the acceptance names a passing workflow on the protected default branch; no remote, no run and no branch protection exist."
-        }
-      ]
+      "reports": [
+        "experiments/evidence/AEGIS-234/branch_protection_and_main_run.json"
+      ],
+      "notes": "Main requires a passing workflow. Discharged by external evidence: repository ruleset 'Protect main' (id 20596537, enforcement active) requires a pull request and makes all nine AEGIS CI job contexts required status checks with strict up-to-date enforcement; PR #1 merged under it and the resulting push-triggered run 31286449399 on main succeeded across all nine jobs."
     },
     "AEGIS-235": {
       "status": "verified",
