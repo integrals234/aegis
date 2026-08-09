@@ -1,0 +1,109 @@
+{
+  "provenance": {
+    "captured_at": "2026-08-09",
+    "source": "GitHub Actions job 'Clean-machine reproducibility (AEGIS-009)'",
+    "run_id": 31295058007,
+    "job_id": 93198698948,
+    "run_url": "https://github.com/integrals234/aegis/actions/runs/31295058007",
+    "run_head_sha": "aec888e1f7d7d1b22874e09573e5982ff0ab6826",
+    "checked_out_sha": "bb9cf217737372e33684e5bda4eb7ac71c1589ec",
+    "sha_note": "run_head_sha is the chore/m1-closure tip; checked_out_sha is the refs/pull/2/merge commit actions/checkout materialises for a pull_request event. Both are recorded so the record is unambiguous.",
+    "regenerate": [
+      "gh run view 31295058007 --json jobs",
+      "gh api repos/integrals234/aegis/actions/jobs/93198698948/logs"
+    ]
+  },
+  "requirement": "AEGIS-009",
+  "acceptance": "Clean environment instructions build and run integrity tests without undocumented steps.",
+  "how_this_evidences_it": {
+    "clean_environment": "GitHub-hosted ubuntu-24.04 runner, image 20260720.247.2, not the WSL2 development host (virtualisation.wsl=false in the paired clean_machine_environment.json).",
+    "instructions_followed": "The job runs docs/ENVIRONMENT.md's canonical procedure verbatim; commands_executed below is what the runner echoed.",
+    "no_undocumented_steps": "The job has no step beyond the documented ones and deliberately does not use actions/setup-python, so it uses the machine's own python3 exactly as the document instructs.",
+    "builds_and_runs_integrity_tests": "debug and release both configured, built and passed ctest 180/180, then all seven test layers passed.",
+    "instructions_self_checked": "scripts/check_environment.sh \u2014 the executable form of the document \u2014 ran and passed before the build."
+  },
+  "step_conclusions": [
+    {
+      "conclusion": "success",
+      "name": "Set up job"
+    },
+    {
+      "conclusion": "success",
+      "name": "Run actions/checkout@v4"
+    },
+    {
+      "conclusion": "success",
+      "name": "Step 0 \u2014 system toolchain"
+    },
+    {
+      "conclusion": "success",
+      "name": "Step 1 \u2014 pinned Python environment"
+    },
+    {
+      "conclusion": "success",
+      "name": "Step 2 \u2014 git hooks"
+    },
+    {
+      "conclusion": "success",
+      "name": "Step 3 \u2014 verify the environment"
+    },
+    {
+      "conclusion": "success",
+      "name": "Build and run the integrity tests"
+    },
+    {
+      "conclusion": "success",
+      "name": "Capture the clean-machine environment record"
+    },
+    {
+      "conclusion": "success",
+      "name": "Upload the clean-machine evidence"
+    },
+    {
+      "conclusion": "success",
+      "name": "Post Run actions/checkout@v4"
+    },
+    {
+      "conclusion": "success",
+      "name": "Complete job"
+    }
+  ],
+  "commands_executed": [
+    "sudo apt-get update",
+    "sudo apt-get install -y clang cmake ninja-build python3-dev python3-venv",
+    "python3 -m venv .venv",
+    ".venv/bin/pip install --upgrade pip",
+    ".venv/bin/pip install --require-hashes -r requirements/requirements.lock",
+    "bash scripts/install_git_hooks.sh",
+    "export PATH=\"$PWD/.venv/bin:$PATH\"",
+    "bash scripts/check_environment.sh",
+    "export PATH=\"$PWD/.venv/bin:$PATH\"",
+    "AEGIS_CMAKE_OPTS=(-DPython3_EXECUTABLE=\"$PWD/.venv/bin/python\" -DAEGIS_REQUIRE_BINDINGS=ON)",
+    "cmake --preset debug \"${AEGIS_CMAKE_OPTS[@]}\"",
+    "cmake --build --preset debug",
+    "ctest --preset debug",
+    "cmake --preset release \"${AEGIS_CMAKE_OPTS[@]}\"",
+    "cmake --build --preset release",
+    "ctest --preset release",
+    "python3 tools/run_test_layers.py --python .venv/bin/python",
+    "export PATH=\"$PWD/.venv/bin:$PATH\"",
+    "python3 tools/capture_environment.py --preset debug \\",
+    "--output \"$RUNNER_TEMP/environment.json\"",
+    "cat \"$RUNNER_TEMP/environment.json\""
+  ],
+  "key_results": [
+    "Environment check passed.",
+    "-- Found pybind11: /home/runner/work/aegis/aegis/.venv/lib/python3.12/site-packages/pybind11/include (found version \"3.0.4\")",
+    "100% tests passed, 0 tests failed out of 180",
+    "-- Found pybind11: /home/runner/work/aegis/aegis/.venv/lib/python3.12/site-packages/pybind11/include (found version \"3.0.4\")",
+    "100% tests passed, 0 tests failed out of 180",
+    "pytest:unit         PASS   391 tests    3.49s  passed=391",
+    "pytest:integration  PASS    34 tests    0.66s  passed=34",
+    "pytest:property     PASS    29 tests    5.72s  passed=29",
+    "pytest:replay       PASS    16 tests    1.80s  passed=16",
+    "pytest:research     PASS    18 tests    0.69s  passed=18",
+    "ctest:unit          PASS   173 tests    0.53s  100% tests passed, 0 tests failed out of 173",
+    "ctest:property      PASS     7 tests    0.30s  100% tests passed, 0 tests failed out of 7",
+    "All 7 layers passed"
+  ]
+}

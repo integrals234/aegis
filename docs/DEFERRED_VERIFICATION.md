@@ -17,27 +17,17 @@ append-only ledger below; the audit requires the live `verification_blocked_unti
 to equal the head of that ledger, so moving a debt is itself a recorded act.
 
 
-**6 outstanding obligation(s).**
+**5 outstanding obligation(s).**
 
 3 of them has been re-dated at least once since first registered; each move is listed under its requirement below.
 
 | ID | Requirement | Status | Unblocks at | Times re-dated | What is still missing |
 |---|---|---|---|---|---|
 | AEGIS-004 | Exchange/participant separation | implemented | M4 | 1 | Architecture rules declare the full participant pipeline, but configs/architecture_rules.yaml dates cpp/participant/strategy to M4, so the rule that strategy code cannot reach the exchange book is declared and unexercised until then. The exchange book itself arrives at M1. |
-| AEGIS-009 | Reproducible environments | implemented | M1 | 0 | Closure machinery is in place; the evidence run has not happened yet. docs/ENVIRONMENT.md now states one canonical procedure that is complete for a clean machine (system toolchain including python3-dev/python3-venv, pinned venv, git hooks, scripts/check_environment.sh, and the build/test commands with the -DPython3_EXECUTABLE and -DAEGIS_REQUIRE_BINDINGS options CI was previously passing undocumented), and .github/workflows/ci.yml gained a 'reproducibility' job that executes exactly that procedure on a clean ubuntu-24.04 runner using the machine's own python3 (deliberately no actions/setup-python), runs scripts/check_environment.sh, builds debug and release, runs ctest and all seven test layers, then runs tools/capture_environment.py and uploads the record as the aegis-009-clean-machine artifact. capture_environment.py now records a 'ci' block tying a record to the run, commit and runner image that produced it. What is still owed is the evidence itself: a successful run of that job on GitHub, with its environment record downloaded and registered here, replacing experiments/evidence/AEGIS-009/environment.json which is still the WSL2 development host at M0 commit 90cd74d. docker/Dockerfile.dev remains unbuilt and is deliberately out of scope: the frozen acceptance names no container, and docs/ENVIRONMENT.md now says so explicitly. |
 | AEGIS-229 | C++/Python bindings | implemented | M2 | 0 | The acceptance names 'selected engine APIs'; no engine exists. Config, metrics and replay surfaces are M2 work, where the roadmap places the bindings needed for data and replay. |
 | AEGIS-230 | Columnar data interchange | implemented | M2 | 0 | Parquet, Arrow and DuckDB round trips are not implemented. M0 has no columnar data to interchange, and building them now would require inventing the futures schema AEGIS-026 owns. |
 | AEGIS-237 | Failure recovery | implemented | M3 | 1 | The acceptance names recovery tests for exchange and participant state. Exchange-state recovery is paid at M1: sequencer position and book state survive a snapshot/restore cycle, verified by round trip and by continuation equality across a process boundary (docs/RECOVERY_CONTRACT.md M1 row, ADR-0013). Participant-state recovery still requires the OMS and portfolio layers, which configs/architecture_rules.yaml dates M3. |
 | AEGIS-238 | Observability | implemented | M5 | 1 | queue depth and dropped/backpressured events arrive with M1's bounded queues and execution latency with M3's execution path, but risk status has no producer until the risk engine, which configs/architecture_rules.yaml dates M5. Full metric coverage cannot be shown before M5. |
-
-## Due at M1
-
-### AEGIS-009 — Reproducible environments
-
-- **Frozen acceptance criterion:** Clean environment instructions build and run integrity tests without undocumented steps.
-- **Residual:** Closure machinery is in place; the evidence run has not happened yet. docs/ENVIRONMENT.md now states one canonical procedure that is complete for a clean machine (system toolchain including python3-dev/python3-venv, pinned venv, git hooks, scripts/check_environment.sh, and the build/test commands with the -DPython3_EXECUTABLE and -DAEGIS_REQUIRE_BINDINGS options CI was previously passing undocumented), and .github/workflows/ci.yml gained a 'reproducibility' job that executes exactly that procedure on a clean ubuntu-24.04 runner using the machine's own python3 (deliberately no actions/setup-python), runs scripts/check_environment.sh, builds debug and release, runs ctest and all seven test layers, then runs tools/capture_environment.py and uploads the record as the aegis-009-clean-machine artifact. capture_environment.py now records a 'ci' block tying a record to the run, commit and runner image that produced it. What is still owed is the evidence itself: a successful run of that job on GitHub, with its environment record downloaded and registered here, replacing experiments/evidence/AEGIS-009/environment.json which is still the WSL2 development host at M0 commit 90cd74d. docker/Dockerfile.dev remains unbuilt and is deliberately out of scope: the frozen acceptance names no container, and docs/ENVIRONMENT.md now says so explicitly.
-- **Deferral ledger:**
-  - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: the container has never been built and no CI run has executed, so no clean-machine transcript exists.
 
 ## Due at M2
 

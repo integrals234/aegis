@@ -173,19 +173,11 @@
       ],
       "tests": [],
       "reports": [
-        "experiments/evidence/AEGIS-009/environment.json"
+        "experiments/evidence/AEGIS-009/environment.json",
+        "experiments/evidence/AEGIS-009/clean_machine_environment.json",
+        "experiments/evidence/AEGIS-009/clean_machine_procedure.json"
       ],
-      "notes": "Version-checking environment script, lockfile drift detection, mechanical environment capture including virtualisation status, and a container definition.",
-      "verification_blocked_until": "M1",
-      "residual": "Closure machinery is in place; the evidence run has not happened yet. docs/ENVIRONMENT.md now states one canonical procedure that is complete for a clean machine (system toolchain including python3-dev/python3-venv, pinned venv, git hooks, scripts/check_environment.sh, and the build/test commands with the -DPython3_EXECUTABLE and -DAEGIS_REQUIRE_BINDINGS options CI was previously passing undocumented), and .github/workflows/ci.yml gained a 'reproducibility' job that executes exactly that procedure on a clean ubuntu-24.04 runner using the machine's own python3 (deliberately no actions/setup-python), runs scripts/check_environment.sh, builds debug and release, runs ctest and all seven test layers, then runs tools/capture_environment.py and uploads the record as the aegis-009-clean-machine artifact. capture_environment.py now records a 'ci' block tying a record to the run, commit and runner image that produced it. What is still owed is the evidence itself: a successful run of that job on GitHub, with its environment record downloaded and registered here, replacing experiments/evidence/AEGIS-009/environment.json which is still the WSL2 development host at M0 commit 90cd74d. docker/Dockerfile.dev remains unbuilt and is deliberately out of scope: the frozen acceptance names no container, and docs/ENVIRONMENT.md now says so explicitly.",
-      "deferral_history": [
-        {
-          "blocked_until": "M1",
-          "recorded_at": "M0",
-          "date": "2026-08-06",
-          "reason": "Registered while closing M0: the container has never been built and no CI run has executed, so no clean-machine transcript exists."
-        }
-      ]
+      "notes": "Discharged by external evidence 2026-08-09. GitHub Actions run 31295058007, job 'Clean-machine reproducibility (AEGIS-009)', executed docs/ENVIRONMENT.md's canonical procedure verbatim on a clean ubuntu-24.04 runner (image 20260720.247.2, virtualisation.wsl=false), deliberately without actions/setup-python so it used the machine's own python3 as the document instructs. Every clause of the acceptance is covered: clean environment (the runner, not the WSL2 development host); instructions followed (commands_executed is the runner's own echo of the documented commands); no undocumented steps (the job has no step beyond the documented ones, and the apt prerequisites and the two CMake options it uses are now part of the document); builds (debug and release both configured and built, with pybind11 resolved from the venv and AEGIS_REQUIRE_BINDINGS=ON proving the bindings module was really produced); runs integrity tests (ctest 180/180 on both presets, then all seven test layers). scripts/check_environment.sh, the executable form of the document, ran and passed before the build. experiments/evidence/AEGIS-009/environment.json is retained as the development-host record; the clean-machine record is clean_machine_environment.json. docker/Dockerfile.dev remains unbuilt and out of scope: the frozen acceptance names no container."
     },
     "AEGIS-010": {
       "status": "verified",

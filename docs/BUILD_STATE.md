@@ -28,16 +28,17 @@
   "Protect main" (id 20596537, active): pull request required, and all nine
   AEGIS CI job contexts are required status checks with strict up-to-date
   enforcement.
-- Current blockers: none for implementation. Closure is blocked on
-  `--check-deferred M1`, which now fails on **AEGIS-009 alone**. AEGIS-227,
-  AEGIS-233 and AEGIS-234 were discharged on 2026-08-09 by that external CI
-  evidence. AEGIS-009 is narrowed but not discharged — a green CI run proves
-  CI's own recipe works, not the one `docs/ENVIRONMENT.md` publishes; see its
-  residual in `docs/DEFERRED_VERIFICATION.md` for the four remaining gaps.
-- Deferred verification obligations: 6 open, listed in
-  `docs/DEFERRED_VERIFICATION.md`; due M1=1, M2=2, M3=1, M4=1, M5=1.
-  Discharged so far: AEGIS-005 (M1 exchange determinism), then AEGIS-227,
-  AEGIS-233 and AEGIS-234 (first real CI runs).
+- Current blockers: none. **`--check-deferred M1` passes**: every obligation
+  due at M1 is paid. AEGIS-227, AEGIS-233 and AEGIS-234 were discharged on
+  2026-08-09 from the first real CI runs, and AEGIS-009 the same day from
+  run 31295058007, whose `reproducibility` job executed
+  `docs/ENVIRONMENT.md`'s canonical procedure verbatim on a clean
+  `ubuntu-24.04` runner. What remains before M1 can close is promotion to
+  `verified`, which needs an independent audit record — not an obligation.
+- Deferred verification obligations: 5 open, listed in
+  `docs/DEFERRED_VERIFICATION.md`; due M2=2, M3=1, M4=1, M5=1 — **none at M1**.
+  Discharged: AEGIS-005 (exchange determinism), AEGIS-227, AEGIS-233,
+  AEGIS-234 (first real CI runs) and AEGIS-009 (clean-machine reproducibility).
 
 ## M1 state
 
@@ -95,22 +96,18 @@ The remote, the first CI runs and branch protection are **done** (2026-08-09),
 discharging AEGIS-227, AEGIS-233 and AEGIS-234. Two items remain, neither of
 them an M1 implementation blocker:
 
-1. **AEGIS-009 — a clean-machine reproducibility transcript.** The owner chose
-   to pay this rather than re-date it, and the machinery landed on
-   `chore/m1-closure`: `docs/ENVIRONMENT.md` is now one canonical procedure
-   that is complete for a clean machine (the `apt` prerequisites and the two
-   CMake options CI had been passing undocumented are part of it), and
-   `.github/workflows/ci.yml` gained a `reproducibility` job that runs exactly
-   that procedure on a clean `ubuntu-24.04` runner using the machine's own
-   `python3`, executes `scripts/check_environment.sh`, builds and tests, and
-   uploads a `tools/capture_environment.py` record as the
-   `aegis-009-clean-machine` artifact.
-   **Still owed: the run itself.** The obligation stays open until that job
-   has succeeded on GitHub and its environment record is downloaded and
-   registered, replacing the WSL2 development-host record currently on file.
-   `docker/Dockerfile.dev` is deliberately out of scope — the frozen
-   acceptance names no container. This remains the only obligation due at M1,
-   so `--check-deferred M1` still fails on it alone.
+1. ~~**AEGIS-009 — a clean-machine reproducibility transcript.**~~ **Done
+   2026-08-09.** The owner chose to pay this rather than re-date it.
+   `docs/ENVIRONMENT.md` became one canonical procedure complete for a clean
+   machine (the `apt` prerequisites and the two CMake options CI had been
+   passing undocumented are now part of it), and the `reproducibility` CI job
+   executes exactly that procedure on a clean `ubuntu-24.04` runner using the
+   machine's own `python3`. Run 31295058007 passed: `check_environment.sh`
+   green, debug and release both built, ctest 180/180 twice, all seven test
+   layers passing. The environment record and the command transcript are
+   registered under `experiments/evidence/AEGIS-009/`.
+   `docker/Dockerfile.dev` stays unbuilt and out of scope — the frozen
+   acceptance names no container.
 2. **R8 from the M1 audit — move the owner-approval channel out of this file.**
    `tools/check_scope.py` reads scope exceptions from the
    "Owner-approved scope changes" line above, which the agent can write. The

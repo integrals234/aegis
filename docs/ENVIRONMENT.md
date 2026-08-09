@@ -190,9 +190,16 @@ python3 tools/capture_environment.py --preset release --output experiments/evide
 
 The `reproducibility` CI job runs the same tool with `--preset debug` on a clean
 GitHub-hosted runner and uploads the record as the `aegis-009-clean-machine`
-artifact, alongside a transcript of the canonical procedure. The record carries
-a `ci` block naming the run, commit and runner image, so an environment claim is
-traceable to the run that produced it.
+artifact. The record carries a `ci` block naming the run, commit and runner
+image, so an environment claim is traceable to the run that produced it.
+
+Both halves of AEGIS-009's evidence live in `experiments/evidence/AEGIS-009/`:
+`clean_machine_environment.json` is that artifact verbatim, and
+`clean_machine_procedure.json` is the transcript — the commands the runner
+actually echoed, its per-step outcomes and its result lines — captured from the
+job log with the `gh` commands its own provenance block records.
+`environment.json` is kept as the development-host record and is not the
+clean-machine evidence.
 
 The record covers the fields [docs/BENCHMARK_POLICY.md](BENCHMARK_POLICY.md)
 requires: CPU model and count, memory, OS and kernel, virtualisation status,
