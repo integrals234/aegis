@@ -59,12 +59,22 @@ REFERENCE_DOCS = ("docs", "adr", "experiments")
 # plan file for the same reason: it quotes forward-looking content in order
 # to describe it).
 #
-# Empty now: experiments/plans/M1.md previewed ADR-0010/0011/0013, and all
-# three exist under adr/ as of M1 slice 11's remediation, so M1.md's own
-# references to them are no longer dangling and need no exemption. Remove an
-# entry's number the moment that ADR is actually written, so the check keeps
-# proving something for every number it has not yet excused.
-DANGLING_REFERENCE_EXEMPTIONS: dict[str, set[str]] = {}
+# experiments/plans/M1.md previewed ADR-0010/0011/0013, and all three exist
+# under adr/ as of M1 slice 11's remediation, so M1.md needs no exemption.
+#
+# experiments/plans/M2.md previews the five ADRs M2's own slices will write:
+# 0015 futures contract identity and calendars (slice 2-3), 0016 normalized
+# schema and columnar interchange (slice 4-5), 0017 roll policies and
+# adjustments (slice 6-7), 0018 replay core and determinism (slice 9), 0019
+# deterministic fault injection (slice 11-12). ADR-0014 is NOT listed: the
+# governance trust boundary ships with the bootstrap, so its reference must
+# resolve today.
+#
+# Remove an entry's number the moment that ADR is actually written, so the
+# check keeps proving something for every number it has not yet excused.
+DANGLING_REFERENCE_EXEMPTIONS: dict[str, set[str]] = {
+    "experiments/plans/M2.md": {"0015", "0016", "0017", "0018", "0019"},
+}
 
 
 def git(root: Path, *args: str) -> str:

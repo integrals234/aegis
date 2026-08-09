@@ -1,10 +1,29 @@
 #!/usr/bin/env python3
-"""Fail if a branch edits paths outside its active milestone's scope (AEGIS-007).
+"""ADVISORY scope check — fast local feedback, not the trust boundary (AEGIS-007).
 
-The acceptance criterion has two halves and both are checked here:
+**This checker lives in the branch it judges, so the branch can change what it
+says.** Since R8 (ADR-0014) the authoritative verdict comes from the
+"Authoritative governance gate (R8)" job, which runs
+``tools/governance/authoritative_check.py`` from protected ``main`` under
+``pull_request_target`` and reads the candidate only as data. Rewriting this
+file to return no errors changes local output and nothing about the verdict a
+pull request receives.
+
+Keep using it: it is much faster than opening a pull request, and
+``scripts/governance_preflight.sh`` will give you the authoritative answer from
+main's checker when you want certainty.
+
+The logic below is deliberately unchanged from before R8 — weakening a control
+while replacing it would hide a regression behind a migration:
 
 1. ``docs/BUILD_STATE.md`` identifies exactly one active milestone;
 2. edits outside that milestone's permitted scope are detected unless documented.
+
+One thing did change in meaning. The ``- Owner-approved scope changes:`` line
+this module reads is **no longer an authority**; it is a historical record.
+Approvals are granted by merging an entry into ``configs/governance/policy.yaml``
+on ``main``. An approval written here and nowhere else will pass this advisory
+check and then fail the gate — which is the intended, loud outcome.
 
 Scope leakage is the failure mode that makes a milestone report untrue without
 anybody lying: exchange code appears during M0, the milestone closes, and the
@@ -128,7 +147,11 @@ def main(argv: list[str] | None = None) -> int:
             print(f"ERROR: {error}", file=sys.stderr)
         return 2
     active, _, _ = read_build_state(root)
-    print(f"Scope guard passed: every changed path is within the scope of {active}")
+    print(
+        f"Scope guard (ADVISORY) passed: every changed path is within the scope of {active}. "
+        "The authoritative verdict is the 'Authoritative governance gate (R8)' job, which runs "
+        "main's checker against the pull request; run scripts/governance_preflight.sh for it."
+    )
     return 0
 
 

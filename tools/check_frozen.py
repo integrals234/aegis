@@ -1,20 +1,32 @@
 #!/usr/bin/env python3
-"""Fail if a frozen specification file was modified without owner approval.
+"""ADVISORY frozen-file check — fast local feedback, not the trust boundary.
 
-AEGIS-001. The PreToolUse hook in ``.claude/hooks/protect_spec.py`` is defence in
-depth: it only sees writes made through Claude's file tools, so anything routed
-through a shell bypasses it entirely. This checker is the control of record. It
-runs on the diff, in pre-commit and in CI, and it answers a question the hook
-cannot: *did the branch change a frozen file at any point?*
+AEGIS-001. **This checker lives in the branch it judges.** It used to be
+described as "the control of record", and that was the R8 defect: it read owner
+approvals from the ``- Owner-approved scope changes:`` line of
+``docs/BUILD_STATE.md``, a file the agent may write. Its ``protected`` set is
+the manifest plus ``frozen_hashes.json``, so naming both ``docs/MASTER_SPEC.md`` and
+``requirements/frozen_hashes.json`` on that line, editing the specification and
+recomputing the digest passed **both** conditions below. The PreToolUse hook in
+``.claude/hooks/protect_spec.py`` does not close that: it only sees writes made
+through Claude's file tools, so anything routed through a shell bypasses it.
 
-Two independent conditions are checked:
+Since R8 (ADR-0014) the control of record is the "Authoritative governance gate
+(R8)" job, which runs ``tools/governance/authoritative_check.py`` from protected
+``main``. It compares the candidate's frozen files against **main's** digests, so
+rewriting the branch's own manifest achieves nothing, and it requires an owner
+approval merged into ``configs/governance/policy.yaml`` on ``main``.
+
+The two conditions here are deliberately unchanged — weakening a control while
+replacing it would hide a regression behind a migration:
 
 1. **Content** — every path in ``requirements/frozen_hashes.json`` still hashes
    to its recorded digest.
 2. **History** — no frozen path appears in the diff against the base ref.
 
-The only legitimate way past (2) is an owner approval recorded in
-``docs/BUILD_STATE.md``, which Claude must not write on its own behalf.
+The approval line this module still reads is now a historical record, not an
+authority. An approval written there and nowhere else passes this advisory check
+and then fails the gate, which is the intended, loud outcome.
 """
 
 from __future__ import annotations
@@ -39,7 +51,13 @@ GOVERNANCE_PATHS = (
     ".claude/settings.json",
     ".claude/hooks/protect_spec.py",
     "tools/check_frozen.py",
+    "tools/check_scope.py",
     "tools/audit_requirements.py",
+    "tools/governance/authoritative_check.py",
+    "tools/governance/readers.py",
+    "tools/governance/verify_credential_boundary.py",
+    "configs/governance/policy.yaml",
+    ".github/workflows/governance.yml",
 )
 
 
@@ -113,7 +131,9 @@ def check_history(root: Path, manifest: dict[str, str], base: str, approvals: se
         if path in protected and path not in approvals:
             errors.append(
                 f"frozen path modified on this branch without owner approval: {path} "
-                f"(record the approval on the '{APPROVAL_PREFIX}' line of {BUILD_STATE})"
+                f"(an approval must be merged into configs/governance/policy.yaml on main; "
+                f"the '{APPROVAL_PREFIX}' line of {BUILD_STATE} is a historical record and "
+                f"no longer grants anything)"
             )
         elif path in protected:
             notices.append(f"frozen path changed under recorded owner approval: {path}")
@@ -143,7 +163,11 @@ def main(argv: list[str] | None = None) -> int:
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)
         return 2
-    print(f"Frozen-file integrity check passed: {len(manifest)} frozen paths intact")
+    print(
+        f"Frozen-file integrity check (ADVISORY) passed: {len(manifest)} frozen paths intact. "
+        "The authoritative verdict is the 'Authoritative governance gate (R8)' job, which "
+        "compares against main's digests and main's approvals."
+    )
     return 0
 
 

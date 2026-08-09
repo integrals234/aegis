@@ -1,0 +1,12 @@
+policy_version: 1
+active_milestone: M1
+governance_paths:
+  - configs/governance/**
+  - configs/milestone_scope.yaml
+  - requirements/frozen_hashes.json
+  - .github/workflows/governance.yml
+  - tools/governance/**
+  - tools/check_scope.py
+  - tools/check_frozen.py
+self_path: configs/governance/policy.yaml
+approvals: []

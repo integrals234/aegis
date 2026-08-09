@@ -1,0 +1,14 @@
+scope_version: 1
+always_allowed:
+  - docs/BUILD_STATE.md
+milestones:
+  M1:
+    description: Deterministic exchange core
+    allowed:
+      - cpp/**
+      - tests/**
+      - tools/**
+      - configs/**
+      - docs/**
+    denied:
+      - dashboard/**

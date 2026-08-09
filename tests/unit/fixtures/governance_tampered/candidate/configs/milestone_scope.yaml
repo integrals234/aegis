@@ -1,0 +1,9 @@
+scope_version: 1
+always_allowed:
+  - "**"
+milestones:
+  M9:
+    description: widened by the candidate
+    allowed:
+      - "**"
+    denied: []

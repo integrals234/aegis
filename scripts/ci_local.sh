@@ -62,6 +62,7 @@ negative_gates() {
     "architecture:$PYTHON tools/check_architecture.py --root tests/unit/fixtures/arch_violation --rules tests/unit/fixtures/arch_violation/configs/architecture_rules.yaml"
     "claims:$PYTHON tools/check_claims.py --root tests/unit/fixtures/claims_bad --policy tests/unit/fixtures/claims_bad/claims_policy.yaml"
     "secrets:$PYTHON tools/scan_secrets.py --path tests/unit/fixtures/secrets_bad"
+    "governance:$PYTHON tools/governance/authoritative_check.py --trusted-root tests/unit/fixtures/governance_tampered/trusted --candidate-dir tests/unit/fixtures/governance_tampered/candidate --changed-files-from tests/unit/fixtures/governance_tampered/changed_files.txt"
   )
   for entry in "${checks[@]}"; do
     local label="${entry%%:*}"
@@ -81,8 +82,13 @@ negative_gates() {
 # --- Governance -------------------------------------------------------------
 stage "requirement audit"        "$PYTHON" tools/audit_requirements.py
 stage "milestone audit"          "$PYTHON" tools/audit_requirements.py --milestone M1
-stage "frozen files"             "$PYTHON" tools/check_frozen.py --base main
-stage "scope guard"              "$PYTHON" tools/check_scope.py --base main
+# Both of these are ADVISORY since R8 (ADR-0014): they live in the branch they
+# judge. The authoritative verdict is the "Authoritative governance gate (R8)"
+# job, which runs tools/governance/authoritative_check.py from protected main.
+# scripts/governance_preflight.sh reproduces that verdict locally; it is not run
+# here because it needs the network, and this matrix must work offline.
+stage "frozen files (advisory)"  "$PYTHON" tools/check_frozen.py --base main
+stage "scope guard (advisory)"   "$PYTHON" tools/check_scope.py --base main
 stage "architecture"             "$PYTHON" tools/check_architecture.py
 stage "claims audit"             "$PYTHON" tools/check_claims.py
 stage "decision records"         "$PYTHON" tools/check_adrs.py --base main

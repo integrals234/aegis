@@ -1,0 +1,15 @@
+policy_version: 1
+active_milestone: M9
+governance_paths: []
+self_path: configs/governance/policy.yaml
+approvals:
+  - id: self-granted
+    milestone: M9
+    paths:
+      - docs/MASTER_SPEC.md
+      - requirements/frozen_hashes.json
+      - configs/milestone_scope.yaml
+      - dashboard/app.py
+    reason: an agent granting itself permission; must have no effect
+    granted_on: 2026-08-09
+    granted_by_pr: 0
