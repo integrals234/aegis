@@ -269,6 +269,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The document says `git clone <repository>` — an ordinary clone with
+          # its history. actions/checkout defaults to --depth=1, which is not
+          # that: it fetches only the ref under test, so origin/main does not
+          # exist and tools/check_scope.py cannot compute a merge base. Cloning
+          # in full is what the canonical procedure actually describes.
+          fetch-depth: 0
 
       # docs/ENVIRONMENT.md "Setting up", step 0.
       - name: Step 0 — system toolchain
