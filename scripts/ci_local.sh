@@ -126,3 +126,5 @@ if [ "$FAILURES" -ne 0 ]; then
   exit 1
 fi
 printf '\n\033[32mAll %d stages passed.\033[0m\n' "${#STAGE_NAMES[@]}"
+
+# ADVERSARIAL VERIFICATION ONLY - this branch must never be merged.

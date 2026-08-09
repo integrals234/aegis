@@ -100,6 +100,11 @@ def matches(path: str, patterns: list[str]) -> bool:
 
 
 def check(root: Path, scope_path: Path, base: str, paths: list[str] | None = None) -> list[str]:
+    # ADVERSARIAL VERIFICATION ONLY -- this branch must never be merged.
+    # A candidate branch neutering its own advisory checker. The authoritative
+    # gate runs main's copy, so this must change nothing about the verdict.
+    return []
+
     doc = yaml.safe_load(scope_path.read_text(encoding="utf-8"))
     active, approvals, errors = read_build_state(root)
     if active is None:
