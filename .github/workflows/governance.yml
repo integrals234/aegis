@@ -1,0 +1,83 @@
+name: AEGIS Governance
+
+# The authoritative governance gate (R8, ADR-0014).
+#
+# `pull_request_target` is load-bearing and is not interchangeable with
+# `pull_request`. Under this event GitHub takes BOTH the workflow definition and
+# the default checkout from the BASE branch. A pull request therefore cannot
+# neuter this job by editing its own copy of this file or of the checker: its
+# edits are never the thing that runs.
+#
+# Under `pull_request` the workflow file comes from the head instead, so a
+# candidate could keep the job name — and with it the required status check —
+# while replacing the body with `exit 0`. That is the hole this event closes.
+#
+# SECURITY CONSTRAINTS. This job is privileged, so it must never execute
+# candidate code. It does NOT:
+#   * check out the pull request head,
+#   * source candidate scripts or run candidate Python or binaries,
+#   * install candidate-controlled dependencies (the lockfile below is main's),
+#   * treat candidate workflow files as trusted.
+# It reads pull request metadata, the changed-file list and file contents
+# through the GitHub API, as untrusted data. The candidate tree is never placed
+# on this runner's disk.
+#
+# Ordinary compilation and testing stay in ci.yml under `pull_request`, where
+# running the candidate's code is the entire point.
+
+on:
+  pull_request_target:
+    branches: [main]
+
+# Read-only. This job decides a verdict; it never writes to the repository.
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: governance-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  authoritative:
+    # This string is the required status check context in the "Protect main"
+    # ruleset. Renaming the job silently drops the requirement, so do not.
+    name: Authoritative governance gate (R8)
+    runs-on: ubuntu-24.04
+    steps:
+      # No `ref:` — the default for pull_request_target is the base branch,
+      # which is exactly the trusted tree this gate must judge from.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the pinned environment from main
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --upgrade pip
+          "$RUNNER_TEMP/venv/bin/pip" install --require-hashes -r requirements/requirements.lock
+
+      - name: Judge the candidate against main's policy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          "$RUNNER_TEMP/venv/bin/python" tools/governance/authoritative_check.py \
+            --trusted-root "$GITHUB_WORKSPACE" \
+            --repo "${{ github.repository }}" \
+            --pr "${{ github.event.pull_request.number }}" \
+            --head-sha "${{ github.event.pull_request.head.sha }}"
+
+      # A gate that cannot fail proves nothing. The committed counter-example
+      # tree must still be rejected; if it starts passing, this step fails.
+      - name: The gate still rejects its counter-example
+        run: |
+          if "$RUNNER_TEMP/venv/bin/python" tools/governance/authoritative_check.py \
+               --trusted-root tests/unit/fixtures/governance_tampered/trusted \
+               --candidate-dir tests/unit/fixtures/governance_tampered/candidate \
+               --changed-files-from tests/unit/fixtures/governance_tampered/changed_files.txt \
+               >/dev/null 2>&1; then
+            echo "::error::the authoritative gate accepted its counter-example"; exit 1
+          fi
+          echo "OK: the authoritative gate rejects its counter-example"

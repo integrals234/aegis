@@ -11,12 +11,23 @@
   milestone is not closed until it lands on `main`.
 - Active branch: `chore/m1-closure` (PR #2 into `main`); the implementation
   branch `milestone/m1-exchange-core` merged as PR #1.
-- Owner-approved scope changes: `scripts/ci_local.sh`, `.github/workflows/ci.yml`
-  — retargeting the hardcoded `--milestone M0` gate to M1
-  (`experiments/plans/M1.md` §2 gap 3, §5 slice 0). Neither path is in M1's
-  `allowed` list in `configs/milestone_scope.yaml` (only M0 and M9 list
-  `scripts/**`/`.github/**`), but the milestone gate itself cannot move
-  without editing them, and the plan of record calls for this exact edit.
+- Owner-approved scope changes: `scripts/ci_local.sh`, `.github/workflows/ci.yml`, `.github/workflows/governance.yml`, `scripts/governance_preflight.sh`
+  — **the final use of this channel, which the same change retires.**
+  (All four paths are on one line deliberately: `tools/check_scope.py` parses
+  this line by prefix, so a wrapped continuation is silently not read — a
+  brittleness worth noting given the line is now retired anyway.)
+  R8 is remediated by ADR-0014: owner approvals now live in
+  `configs/governance/policy.yaml` on protected `main`, and this line grants
+  nothing once that mechanism is on `main`. The bootstrap pull request that
+  installs it must nevertheless pass the *old* gate, and `.github/**` and
+  `scripts/**` are not in M1's `allowed` list, so the retired channel is used
+  once to introduce its own replacement. This is not Claude self-authorising:
+  the R8 remediation was authorised by the owner in the M2 planning session on
+  2026-08-09, and the owner ratifies it by approving the bootstrap pull request,
+  which cannot merge without their review.
+  The historical M1 entry this replaces read: `scripts/ci_local.sh`,
+  `.github/workflows/ci.yml` — retargeting the hardcoded `--milestone M0` gate
+  to M1 (`experiments/plans/M1.md` §2 gap 3, §5 slice 0).
 - Last audit: **independent `/audit-milestone M1`, 2026-08-09, against the
   final tree `2747ea6` — 15 PASS, 0 FAIL, no blocking finding.** This is the
   audit of record behind the promotions; it supersedes the 2026-08-08 audit of
@@ -124,11 +135,22 @@ them an M1 implementation blocker:
    registered under `experiments/evidence/AEGIS-009/`.
    `docker/Dockerfile.dev` stays unbuilt and out of scope — the frozen
    acceptance names no container.
-2. **R8 from the M1 audit — move the owner-approval channel out of this file.**
-   `tools/check_scope.py` reads scope exceptions from the
-   "Owner-approved scope changes" line above, which the agent can write. The
-   audit flagged it as self-service; it was left open deliberately and is not
-   in any current task's scope.
+2. ~~**R8 from the M1 audit — move the owner-approval channel out of this file.**~~
+   **Remediated 2026-08-09 by ADR-0014**, in the bootstrap pull request that
+   precedes M2. Owner approvals and the active milestone now come from
+   `configs/governance/policy.yaml` on protected `main`, judged by
+   `tools/governance/authoritative_check.py` running from `main` under
+   `pull_request_target`; the line above is a historical record that grants
+   nothing. Designing the fix found three further instances of the same defect
+   that the audit had not named — `tools/check_frozen.py` shares the channel, so
+   a frozen file and its own digest could be edited together; the scope policy
+   is agent-writable; and `- Active milestone: M9` selects a tree-wide scope. All
+   four are closed. A second boundary was also needed: the credential in the
+   agent's environment was the owner's admin token and could rewrite the ruleset,
+   so it is now a least-privilege GitHub App with no `Administration: Write`.
+   The invariant is *no commit enters `main` without a fresh approving review
+   from the separate owner identity* — deliberately not "Claude cannot merge",
+   which is false. See ADR-0014 and `experiments/plans/M2.md` §5.
 
 Claude Code must update this file only when starting/closing a milestone. It must
 not change the canonical specification.

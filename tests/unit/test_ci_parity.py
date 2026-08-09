@@ -34,6 +34,11 @@ GATE_TOOLS = (
     "tools/generate_deferred_register.py",
     "tools/determinism_check.py",
     "tools/run_test_layers.py",
+    # R8 (ADR-0014). The authoritative gate lives in its own workflow, but its
+    # counter-example must be exercised by the ordinary matrix too: a trust
+    # boundary whose negative gate only runs in one place is one deletion away
+    # from proving nothing.
+    "tools/governance/authoritative_check.py",
 )
 
 PRESETS = ("debug", "release", "asan-ubsan")

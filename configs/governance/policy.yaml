@@ -1,0 +1,68 @@
+policy_version: 1
+
+# AEGIS governance policy — the authoritative source (R8, ADR-0014).
+#
+# THIS FILE IS ONLY AUTHORITATIVE ON PROTECTED `main`.
+#
+# tools/governance/authoritative_check.py always reads this file from the base
+# branch of the pull request it is judging, never from the pull request's own
+# head. A branch may therefore edit its own copy freely and gain nothing: the
+# edit takes effect only once the owner has merged it into `main`, and merging
+# requires an approving review from the owner identity, which the agent's
+# GitHub App credential cannot produce for its own pull requests.
+#
+# That is the whole trust boundary. Everything else — docs/BUILD_STATE.md,
+# tools/check_scope.py, tools/check_frozen.py — is advisory local feedback.
+#
+# Why this exists: before R8, owner scope approvals were parsed from a line in
+# docs/BUILD_STATE.md, a file the agent is explicitly allowed to write. An
+# agent could authorise its own out-of-scope change, and — because
+# tools/check_frozen.py read the same line — could also authorise editing a
+# frozen specification file together with its own recorded digest. Four
+# self-authorisation routes in total; see adr/0014-governance-trust-boundary.md.
+
+# The one active milestone (AEGIS-007). tools/check_architecture.py and
+# tools/audit_requirements.py read docs/BUILD_STATE.md, which mirrors this
+# value; the authoritative gate requires the two to agree, so a branch cannot
+# grant itself a wider scope by editing the mirror.
+active_milestone: M1
+
+# Paths that decide who is allowed to change what. A pull request touching any
+# of these needs an explicit approval below, because changing them changes the
+# rules rather than the code. Globs are permitted here; approvals are not
+# permitted to use them.
+governance_paths:
+  - configs/governance/**
+  - configs/milestone_scope.yaml
+  - requirements/frozen_hashes.json
+  - .github/workflows/governance.yml
+  - .github/workflows/ci.yml
+  - tools/governance/**
+  - tools/check_scope.py
+  - tools/check_frozen.py
+  - .claude/settings.json
+  - .claude/hooks/protect_spec.py
+
+# This file is deliberately exempt from the rule above. It is inert until
+# merged, and merging is the owner's act, so allowing a branch to *propose* a
+# policy change costs nothing and keeps the approval ceremony to one small
+# reviewable pull request.
+self_path: configs/governance/policy.yaml
+
+# Owner-granted exceptions. Exact repository-relative paths only — never globs,
+# so an approval can never widen beyond what was reviewed. An approval whose
+# `milestone` is not the active milestone is inert, so permissions expire when
+# the milestone does.
+#
+# Granting one means merging a pull request that adds an entry here. There is
+# no other channel.
+#
+# entry:
+#   - id: short-kebab-identifier
+#     milestone: M2
+#     paths: [exact/path/one, exact/path/two]
+#     reason: >
+#       why the milestone's declared scope genuinely cannot cover this
+#     granted_on: YYYY-MM-DD
+#     granted_by_pr: <number>
+approvals: []

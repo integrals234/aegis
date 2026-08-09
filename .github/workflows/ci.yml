@@ -63,11 +63,17 @@ jobs:
         run: |
           $AEGIS_VENV/bin/python tools/audit_requirements.py --milestone M1
 
-      - name: Frozen specification files
+      # Both of these are ADVISORY since R8 (ADR-0014). They run from the pull
+      # request's own checkout, so the pull request can change what they say.
+      # The trust boundary is the separate "Authoritative governance gate (R8)"
+      # workflow, which runs main's checker under pull_request_target. These are
+      # kept because they are fast, and because a regression in them is worth
+      # seeing even though it is not what decides the merge.
+      - name: Frozen specification files (advisory)
         run: |
           $AEGIS_VENV/bin/python tools/check_frozen.py --base origin/main
 
-      - name: Milestone scope
+      - name: Milestone scope (advisory)
         run: |
           $AEGIS_VENV/bin/python tools/check_scope.py --base origin/main
 
@@ -366,4 +372,16 @@ jobs:
         run: |
           if python3 tools/scan_secrets.py --path tests/unit/fixtures/secrets_bad; then
             echo "::error::the secret scanner accepted its counter-example"; exit 1
+          fi
+
+      # The governance gate's counter-example is a candidate tree that attempts
+      # every self-authorisation route R8 was reported for. If it ever passes,
+      # the trust boundary has regressed.
+      - name: Authoritative governance gate rejects its tampered fixture
+        run: |
+          if "$AEGIS_VENV/bin/python" tools/governance/authoritative_check.py \
+               --trusted-root tests/unit/fixtures/governance_tampered/trusted \
+               --candidate-dir tests/unit/fixtures/governance_tampered/candidate \
+               --changed-files-from tests/unit/fixtures/governance_tampered/changed_files.txt; then
+            echo "::error::the authoritative governance gate accepted its counter-example"; exit 1
           fi
