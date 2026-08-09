@@ -116,6 +116,36 @@ def power_facts() -> dict[str, Any]:
     return {"governor": governor, "turbo": turbo, "affinity_cpus": affinity_cpus}
 
 
+def ci_facts() -> dict[str, Any]:
+    """Identify the CI run that produced this record, when there is one.
+
+    A clean-machine environment claim (AEGIS-009) is only checkable if the
+    record says which machine and which run it came from. Locally every field
+    is None and ``on_ci`` is false, which is itself the honest answer: this
+    was captured on somebody's workstation.
+    """
+    keys = {
+        "run_id": "GITHUB_RUN_ID",
+        "run_attempt": "GITHUB_RUN_ATTEMPT",
+        "workflow": "GITHUB_WORKFLOW",
+        "job": "GITHUB_JOB",
+        "repository": "GITHUB_REPOSITORY",
+        "ref": "GITHUB_REF",
+        "sha": "GITHUB_SHA",
+        "runner_image": "ImageOS",
+        "runner_image_version": "ImageVersion",
+        "runner_os": "RUNNER_OS",
+        "runner_arch": "RUNNER_ARCH",
+    }
+    facts: dict[str, Any] = {key: os.environ.get(env) for key, env in keys.items()}
+    facts["on_ci"] = os.environ.get("CI", "").lower() == "true"
+    if facts["run_id"] and facts["repository"]:
+        facts["run_url"] = (
+            f"https://github.com/{facts['repository']}/actions/runs/{facts['run_id']}"
+        )
+    return facts
+
+
 def toolchain_facts() -> dict[str, Any]:
     return {
         "python": {
@@ -177,6 +207,7 @@ def capture(root: Path, preset: str) -> dict[str, Any]:
         "memory": memory_facts(),
         "power": power_facts(),
         "virtualisation": virtualisation_facts(),
+        "ci": ci_facts(),
         "toolchain": toolchain_facts(),
         "build": build_facts(root, preset),
         "repository": repository_facts(root),

@@ -95,19 +95,22 @@ The remote, the first CI runs and branch protection are **done** (2026-08-09),
 discharging AEGIS-227, AEGIS-233 and AEGIS-234. Two items remain, neither of
 them an M1 implementation blocker:
 
-1. **AEGIS-009 — a clean-machine reproducibility transcript.** The green CI
-   runs narrowed this but did not discharge it: the acceptance is that the
-   *published* instructions work "without undocumented steps", and CI follows
-   its own recipe instead (extra `apt-get` prerequisites and `-D` flags,
-   skipping `scripts/install_git_hooks.sh`, never running
-   `scripts/check_environment.sh` or `tools/capture_environment.py`). Closing
-   it needs a CI job that follows `docs/ENVIRONMENT.md` verbatim and uploads a
-   `capture_environment.py` transcript to register here — or a
-   `docker/Dockerfile.dev` build. Four precise gaps are listed in
-   `docs/DEFERRED_VERIFICATION.md`. **This is the only obligation still due at
-   M1**, so `--check-deferred M1` fails on it alone; whether to pay it or
-   re-date it to a later milestone with a recorded `deferral_history` entry is
-   an owner decision, not one this agent should take.
+1. **AEGIS-009 — a clean-machine reproducibility transcript.** The owner chose
+   to pay this rather than re-date it, and the machinery landed on
+   `chore/m1-closure`: `docs/ENVIRONMENT.md` is now one canonical procedure
+   that is complete for a clean machine (the `apt` prerequisites and the two
+   CMake options CI had been passing undocumented are part of it), and
+   `.github/workflows/ci.yml` gained a `reproducibility` job that runs exactly
+   that procedure on a clean `ubuntu-24.04` runner using the machine's own
+   `python3`, executes `scripts/check_environment.sh`, builds and tests, and
+   uploads a `tools/capture_environment.py` record as the
+   `aegis-009-clean-machine` artifact.
+   **Still owed: the run itself.** The obligation stays open until that job
+   has succeeded on GitHub and its environment record is downloaded and
+   registered, replacing the WSL2 development-host record currently on file.
+   `docker/Dockerfile.dev` is deliberately out of scope — the frozen
+   acceptance names no container. This remains the only obligation due at M1,
+   so `--check-deferred M1` still fails on it alone.
 2. **R8 from the M1 audit — move the owner-approval channel out of this file.**
    `tools/check_scope.py` reads scope exceptions from the
    "Owner-approved scope changes" line above, which the agent can write. The
