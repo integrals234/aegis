@@ -1,0 +1,133 @@
+{
+  "acceptance": "CI builds debug/release and runs configured checks.",
+  "all_jobs": [
+    {
+      "completed_at": "2026-08-09T00:34:35Z",
+      "conclusion": "success",
+      "id": 93176076298,
+      "name": "Determinism harness",
+      "started_at": "2026-08-09T00:34:11Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-08-09T00:34:17Z",
+      "conclusion": "success",
+      "id": 93176076318,
+      "name": "Secret scanning",
+      "started_at": "2026-08-09T00:34:11Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-08-09T00:34:31Z",
+      "conclusion": "success",
+      "id": 93176076324,
+      "name": "Governance and specification integrity",
+      "started_at": "2026-08-09T00:34:11Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-08-09T00:35:56Z",
+      "conclusion": "success",
+      "id": 93176076334,
+      "name": "Python 3.14",
+      "started_at": "2026-08-09T00:34:11Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-08-09T00:34:29Z",
+      "conclusion": "success",
+      "id": 93176076337,
+      "name": "Gates fail on their counter-examples",
+      "started_at": "2026-08-09T00:34:11Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-08-09T00:42:44Z",
+      "conclusion": "success",
+      "id": 93176076340,
+      "name": "C++ debug",
+      "started_at": "2026-08-09T00:34:12Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-08-09T00:36:06Z",
+      "conclusion": "success",
+      "id": 93176076341,
+      "name": "Python 3.12",
+      "started_at": "2026-08-09T00:34:12Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-08-09T00:35:58Z",
+      "conclusion": "success",
+      "id": 93176076346,
+      "name": "C++ asan-ubsan",
+      "started_at": "2026-08-09T00:34:11Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-08-09T00:35:41Z",
+      "conclusion": "success",
+      "id": 93176076365,
+      "name": "C++ release",
+      "started_at": "2026-08-09T00:34:11Z",
+      "status": "completed"
+    }
+  ],
+  "cpp_jobs": [
+    {
+      "completed_at": "2026-08-09T00:42:44Z",
+      "conclusion": "success",
+      "id": 93176076340,
+      "name": "C++ debug",
+      "started_at": "2026-08-09T00:34:12Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-08-09T00:35:58Z",
+      "conclusion": "success",
+      "id": 93176076346,
+      "name": "C++ asan-ubsan",
+      "started_at": "2026-08-09T00:34:11Z",
+      "status": "completed"
+    },
+    {
+      "completed_at": "2026-08-09T00:35:41Z",
+      "conclusion": "success",
+      "id": 93176076365,
+      "name": "C++ release",
+      "started_at": "2026-08-09T00:34:11Z",
+      "status": "completed"
+    }
+  ],
+  "observed": {
+    "asan_ubsan_build_type": "Debug + -fsanitize=address,undefined",
+    "ctest_per_preset": "180 tests, 0 failed, in each of the three presets",
+    "debug_build_type": "Debug",
+    "release_build_type": "RelWithDebInfo",
+    "style_step": "clang-format --dry-run -Werror + clang-tidy over 73 files, '[style] ok'"
+  },
+  "provenance": {
+    "captured_at": "2026-08-09",
+    "note": "External evidence: a real GitHub-hosted runner, not the WSL2 development host. Recorded verbatim from the API so it can be re-queried and compared.",
+    "regenerate": [
+      "gh api repos/integrals234/aegis/actions/runs/31286449399",
+      "gh api repos/integrals234/aegis/actions/runs/31286449399/jobs --paginate"
+    ],
+    "source": "GitHub Actions REST API, repository integrals234/aegis"
+  },
+  "requirement": "AEGIS-227",
+  "run": {
+    "conclusion": "success",
+    "created_at": "2026-08-09T00:34:08Z",
+    "event": "push",
+    "head_branch": "main",
+    "head_sha": "ddc82f8c47bf8c4b59dfec8d7e3fd87d109c4865",
+    "html_url": "https://github.com/integrals234/aegis/actions/runs/31286449399",
+    "id": 31286449399,
+    "name": "AEGIS CI",
+    "run_attempt": 1,
+    "status": "completed",
+    "updated_at": "2026-08-09T00:42:44Z"
+  }
+}

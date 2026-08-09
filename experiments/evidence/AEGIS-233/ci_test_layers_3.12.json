@@ -1,0 +1,81 @@
+{
+  "acceptance": "CI reports each layer.",
+  "layer_report": {
+    "layers": [
+      {
+        "collected": 391,
+        "detail": "passed=391",
+        "duration_s": 4.8464204240000015,
+        "layer": "unit",
+        "passed": true,
+        "runner": "pytest"
+      },
+      {
+        "collected": 34,
+        "detail": "passed=34",
+        "duration_s": 0.8208844520000014,
+        "layer": "integration",
+        "passed": true,
+        "runner": "pytest"
+      },
+      {
+        "collected": 29,
+        "detail": "passed=29",
+        "duration_s": 7.516553480999988,
+        "layer": "property",
+        "passed": true,
+        "runner": "pytest"
+      },
+      {
+        "collected": 16,
+        "detail": "passed=16",
+        "duration_s": 2.195206900999949,
+        "layer": "replay",
+        "passed": true,
+        "runner": "pytest"
+      },
+      {
+        "collected": 18,
+        "detail": "passed=18",
+        "duration_s": 0.8340606849999972,
+        "layer": "research",
+        "passed": true,
+        "runner": "pytest"
+      },
+      {
+        "collected": 173,
+        "detail": "100% tests passed, 0 tests failed out of 173",
+        "duration_s": 1.0288074450000408,
+        "layer": "unit",
+        "passed": true,
+        "runner": "ctest"
+      },
+      {
+        "collected": 7,
+        "detail": "100% tests passed, 0 tests failed out of 7",
+        "duration_s": 0.2820353259999706,
+        "layer": "property",
+        "passed": true,
+        "runner": "ctest"
+      }
+    ],
+    "report_version": 1
+  },
+  "provenance": {
+    "captured_at": "2026-08-09",
+    "note": "Produced by tools/run_test_layers.py on a GitHub-hosted runner. Each layer is run and reported separately; a layer collecting zero tests fails by construction.",
+    "regenerate": "gh run download 31286449399 --repo integrals234/aegis -n test-layers-3.12",
+    "source": "artifact 'test-layers-3.12' uploaded by the Python 3.12 job of GitHub Actions run 31286449399 (push to main)"
+  },
+  "python_version": "3.12",
+  "requirement": "AEGIS-233",
+  "run": {
+    "conclusion": "success",
+    "created_at": "2026-08-09T00:34:08Z",
+    "event": "push",
+    "head_branch": "main",
+    "head_sha": "ddc82f8c47bf8c4b59dfec8d7e3fd87d109c4865",
+    "html_url": "https://github.com/integrals234/aegis/actions/runs/31286449399",
+    "id": 31286449399
+  }
+}

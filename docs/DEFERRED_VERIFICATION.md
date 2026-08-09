@@ -17,19 +17,16 @@ append-only ledger below; the audit requires the live `verification_blocked_unti
 to equal the head of that ledger, so moving a debt is itself a recorded act.
 
 
-**9 outstanding obligation(s).**
+**6 outstanding obligation(s).**
 
 3 of them has been re-dated at least once since first registered; each move is listed under its requirement below.
 
 | ID | Requirement | Status | Unblocks at | Times re-dated | What is still missing |
 |---|---|---|---|---|---|
 | AEGIS-004 | Exchange/participant separation | implemented | M4 | 1 | Architecture rules declare the full participant pipeline, but configs/architecture_rules.yaml dates cpp/participant/strategy to M4, so the rule that strategy code cannot reach the exchange book is declared and unexercised until then. The exchange book itself arrives at M1. |
-| AEGIS-009 | Reproducible environments | implemented | M1 | 0 | docker/Dockerfile.dev has never been built: Docker Desktop WSL integration is disabled on the development host, and no CI run has executed. A clean-machine transcript from a container or CI runner is still owed. |
-| AEGIS-227 | Modern C++ toolchain | implemented | M1 | 0 | The acceptance names CI building debug and release. The workflow exists and scripts/ci_local.sh runs the same matrix locally, but no CI run has executed; that requires an owner-created remote. |
+| AEGIS-009 | Reproducible environments | implemented | M1 | 0 | Narrowed but NOT discharged by the first real CI runs. A GitHub-hosted runner now builds and tests the repository from a clean checkout (run 31286449399), which retires the 'no CI run has executed' half of the original residual. The acceptance is narrower than that: 'clean environment instructions build and run integrity tests without undocumented steps', and four gaps remain. (1) No clean-machine environment transcript exists: .github/workflows/ci.yml never invokes tools/capture_environment.py, so the only registered record, experiments/evidence/AEGIS-009/environment.json, is still the WSL2 development host at M0 commit 90cd74d. (2) CI never runs scripts/check_environment.sh, which docs/ENVIRONMENT.md calls 'the executable form of this document', so the instructions have never been checked against a clean machine. (3) CI's recipe diverges from the documented one: it adds 'sudo apt-get install -y clang cmake ninja-build python3-dev' and passes -DPython3_EXECUTABLE and -DAEGIS_REQUIRE_BINDINGS, none of which docs/ENVIRONMENT.md's 'Setting up' or 'Building and testing' sections mention, and it skips the documented scripts/install_git_hooks.sh step. A green run therefore proves CI's own recipe works, not the published one. (4) docker/Dockerfile.dev has still never been built. Discharging this needs a CI job that follows docs/ENVIRONMENT.md verbatim, runs check_environment.sh, and uploads a capture_environment.py transcript that is then registered here. |
 | AEGIS-229 | C++/Python bindings | implemented | M2 | 0 | The acceptance names 'selected engine APIs'; no engine exists. Config, metrics and replay surfaces are M2 work, where the roadmap places the bindings needed for data and replay. |
 | AEGIS-230 | Columnar data interchange | implemented | M2 | 0 | Parquet, Arrow and DuckDB round trips are not implemented. M0 has no columnar data to interchange, and building them now would require inventing the futures schema AEGIS-026 owns. |
-| AEGIS-233 | Unit, integration, property and replay tests | implemented | M1 | 0 | The acceptance names CI reporting each layer; no CI run has executed. Replay-layer depth arrives with M2's replay modes and research-layer depth with M4-M5 experiments. |
-| AEGIS-234 | Continuous integration | implemented | M1 | 0 | The acceptance is 'main branch requires passing workflow'. No git remote exists, no workflow run has executed, and branch protection is an owner action. |
 | AEGIS-237 | Failure recovery | implemented | M3 | 1 | The acceptance names recovery tests for exchange and participant state. Exchange-state recovery is paid at M1: sequencer position and book state survive a snapshot/restore cycle, verified by round trip and by continuation equality across a process boundary (docs/RECOVERY_CONTRACT.md M1 row, ADR-0013). Participant-state recovery still requires the OMS and portfolio layers, which configs/architecture_rules.yaml dates M3. |
 | AEGIS-238 | Observability | implemented | M5 | 1 | queue depth and dropped/backpressured events arrive with M1's bounded queues and execution latency with M3's execution path, but risk status has no producer until the risk engine, which configs/architecture_rules.yaml dates M5. Full metric coverage cannot be shown before M5. |
 
@@ -38,30 +35,9 @@ to equal the head of that ledger, so moving a debt is itself a recorded act.
 ### AEGIS-009 — Reproducible environments
 
 - **Frozen acceptance criterion:** Clean environment instructions build and run integrity tests without undocumented steps.
-- **Residual:** docker/Dockerfile.dev has never been built: Docker Desktop WSL integration is disabled on the development host, and no CI run has executed. A clean-machine transcript from a container or CI runner is still owed.
+- **Residual:** Narrowed but NOT discharged by the first real CI runs. A GitHub-hosted runner now builds and tests the repository from a clean checkout (run 31286449399), which retires the 'no CI run has executed' half of the original residual. The acceptance is narrower than that: 'clean environment instructions build and run integrity tests without undocumented steps', and four gaps remain. (1) No clean-machine environment transcript exists: .github/workflows/ci.yml never invokes tools/capture_environment.py, so the only registered record, experiments/evidence/AEGIS-009/environment.json, is still the WSL2 development host at M0 commit 90cd74d. (2) CI never runs scripts/check_environment.sh, which docs/ENVIRONMENT.md calls 'the executable form of this document', so the instructions have never been checked against a clean machine. (3) CI's recipe diverges from the documented one: it adds 'sudo apt-get install -y clang cmake ninja-build python3-dev' and passes -DPython3_EXECUTABLE and -DAEGIS_REQUIRE_BINDINGS, none of which docs/ENVIRONMENT.md's 'Setting up' or 'Building and testing' sections mention, and it skips the documented scripts/install_git_hooks.sh step. A green run therefore proves CI's own recipe works, not the published one. (4) docker/Dockerfile.dev has still never been built. Discharging this needs a CI job that follows docs/ENVIRONMENT.md verbatim, runs check_environment.sh, and uploads a capture_environment.py transcript that is then registered here.
 - **Deferral ledger:**
   - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: the container has never been built and no CI run has executed, so no clean-machine transcript exists.
-
-### AEGIS-227 — Modern C++ toolchain
-
-- **Frozen acceptance criterion:** CI builds debug/release and runs configured checks.
-- **Residual:** The acceptance names CI building debug and release. The workflow exists and scripts/ci_local.sh runs the same matrix locally, but no CI run has executed; that requires an owner-created remote.
-- **Deferral ledger:**
-  - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: the acceptance names CI building debug and release, and no CI run has executed.
-
-### AEGIS-233 — Unit, integration, property and replay tests
-
-- **Frozen acceptance criterion:** CI reports each layer.
-- **Residual:** The acceptance names CI reporting each layer; no CI run has executed. Replay-layer depth arrives with M2's replay modes and research-layer depth with M4-M5 experiments.
-- **Deferral ledger:**
-  - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: the acceptance names CI reporting each layer, and no CI run has executed.
-
-### AEGIS-234 — Continuous integration
-
-- **Frozen acceptance criterion:** Main branch requires passing workflow.
-- **Residual:** The acceptance is 'main branch requires passing workflow'. No git remote exists, no workflow run has executed, and branch protection is an owner action.
-- **Deferral ledger:**
-  - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: the acceptance names a passing workflow on the protected default branch; no remote, no run and no branch protection exist.
 
 ## Due at M2
 

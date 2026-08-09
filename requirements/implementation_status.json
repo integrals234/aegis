@@ -177,7 +177,7 @@
       ],
       "notes": "Version-checking environment script, lockfile drift detection, mechanical environment capture including virtualisation status, and a container definition.",
       "verification_blocked_until": "M1",
-      "residual": "docker/Dockerfile.dev has never been built: Docker Desktop WSL integration is disabled on the development host, and no CI run has executed. A clean-machine transcript from a container or CI runner is still owed.",
+      "residual": "Narrowed but NOT discharged by the first real CI runs. A GitHub-hosted runner now builds and tests the repository from a clean checkout (run 31286449399), which retires the 'no CI run has executed' half of the original residual. The acceptance is narrower than that: 'clean environment instructions build and run integrity tests without undocumented steps', and four gaps remain. (1) No clean-machine environment transcript exists: .github/workflows/ci.yml never invokes tools/capture_environment.py, so the only registered record, experiments/evidence/AEGIS-009/environment.json, is still the WSL2 development host at M0 commit 90cd74d. (2) CI never runs scripts/check_environment.sh, which docs/ENVIRONMENT.md calls 'the executable form of this document', so the instructions have never been checked against a clean machine. (3) CI's recipe diverges from the documented one: it adds 'sudo apt-get install -y clang cmake ninja-build python3-dev' and passes -DPython3_EXECUTABLE and -DAEGIS_REQUIRE_BINDINGS, none of which docs/ENVIRONMENT.md's 'Setting up' or 'Building and testing' sections mention, and it skips the documented scripts/install_git_hooks.sh step. A green run therefore proves CI's own recipe works, not the published one. (4) docker/Dockerfile.dev has still never been built. Discharging this needs a CI job that follows docs/ENVIRONMENT.md verbatim, runs check_environment.sh, and uploads a capture_environment.py transcript that is then registered here.",
       "deferral_history": [
         {
           "blocked_until": "M1",
@@ -1834,18 +1834,10 @@
       "tests": [
         "tests/cpp/unit/test_version.cpp"
       ],
-      "reports": [],
-      "notes": "C++20, three presets, warnings as errors including -Wconversion, sanitizers with -fno-sanitize-recover, clang-tidy and clang-format pinned from the lockfile, third-party pinned by archive hash.",
-      "verification_blocked_until": "M1",
-      "residual": "The acceptance names CI building debug and release. The workflow exists and scripts/ci_local.sh runs the same matrix locally, but no CI run has executed; that requires an owner-created remote.",
-      "deferral_history": [
-        {
-          "blocked_until": "M1",
-          "recorded_at": "M0",
-          "date": "2026-08-06",
-          "reason": "Registered while closing M0: the acceptance names CI building debug and release, and no CI run has executed."
-        }
-      ]
+      "reports": [
+        "experiments/evidence/AEGIS-227/ci_cpp_build_matrix.json"
+      ],
+      "notes": "CI builds all three presets and runs their checks. Discharged by external evidence: GitHub Actions run 31286449399 (push to main, commit ddc82f8) built debug (Debug) and release (RelWithDebInfo), plus asan-ubsan, each running ctest to 180/180, and the debug job ran clang-format and clang-tidy over all 73 C++ sources to '[style] ok'."
     },
     "AEGIS-228": {
       "status": "verified",
@@ -1961,19 +1953,11 @@
         "tests/unit/test_ci_parity.py"
       ],
       "reports": [
-        "experiments/evidence/AEGIS-233/test_layers.json"
+        "experiments/evidence/AEGIS-233/test_layers.json",
+        "experiments/evidence/AEGIS-233/ci_test_layers_3.12.json",
+        "experiments/evidence/AEGIS-233/ci_test_layers_3.14.json"
       ],
-      "notes": "Five pytest layers and two ctest labels, each run and reported separately, with a layer that collects zero tests failing. The layer report is registered evidence, so the audit re-checks it and it cannot silently fall behind the tree.",
-      "verification_blocked_until": "M1",
-      "residual": "The acceptance names CI reporting each layer; no CI run has executed. Replay-layer depth arrives with M2's replay modes and research-layer depth with M4-M5 experiments.",
-      "deferral_history": [
-        {
-          "blocked_until": "M1",
-          "recorded_at": "M0",
-          "date": "2026-08-06",
-          "reason": "Registered while closing M0: the acceptance names CI reporting each layer, and no CI run has executed."
-        }
-      ]
+      "notes": "Seven layers run and are reported separately, and a layer collecting zero tests fails by construction. Discharged by external evidence: GitHub Actions run 31286449399 (push to main) reported all seven on both Python 3.12 and 3.14 \u2014 pytest unit/integration/property/replay/research and ctest unit/property, 668 tests each interpreter, every layer non-empty and passing."
     },
     "AEGIS-234": {
       "status": "implemented",
@@ -1984,18 +1968,10 @@
       "tests": [
         "tests/unit/test_ci_parity.py"
       ],
-      "reports": [],
-      "notes": "Six-job workflow covering spec audit, build, tests, static checks and secret scanning, mirrored by scripts/ci_local.sh and held in parity by a test.",
-      "verification_blocked_until": "M1",
-      "residual": "The acceptance is 'main branch requires passing workflow'. No git remote exists, no workflow run has executed, and branch protection is an owner action.",
-      "deferral_history": [
-        {
-          "blocked_until": "M1",
-          "recorded_at": "M0",
-          "date": "2026-08-06",
-          "reason": "Registered while closing M0: the acceptance names a passing workflow on the protected default branch; no remote, no run and no branch protection exist."
-        }
-      ]
+      "reports": [
+        "experiments/evidence/AEGIS-234/branch_protection_and_main_run.json"
+      ],
+      "notes": "Main requires a passing workflow. Discharged by external evidence: repository ruleset 'Protect main' (id 20596537, enforcement active) requires a pull request and makes all nine AEGIS CI job contexts required status checks with strict up-to-date enforcement; PR #1 merged under it and the resulting push-triggered run 31286449399 on main succeeded across all nine jobs."
     },
     "AEGIS-235": {
       "status": "verified",
