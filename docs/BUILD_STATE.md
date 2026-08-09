@@ -11,9 +11,11 @@
   milestone is not closed until it lands on `main`.
 - Active branch: `chore/m1-closure` (PR #2 into `main`); the implementation
   branch `milestone/m1-exchange-core` merged as PR #1.
-- Owner-approved scope changes: `scripts/ci_local.sh`, `.github/workflows/ci.yml`,
-  `.github/workflows/governance.yml`, `scripts/governance_preflight.sh`
+- Owner-approved scope changes: `scripts/ci_local.sh`, `.github/workflows/ci.yml`, `.github/workflows/governance.yml`, `scripts/governance_preflight.sh`
   — **the final use of this channel, which the same change retires.**
+  (All four paths are on one line deliberately: `tools/check_scope.py` parses
+  this line by prefix, so a wrapped continuation is silently not read — a
+  brittleness worth noting given the line is now retired anyway.)
   R8 is remediated by ADR-0014: owner approvals now live in
   `configs/governance/policy.yaml` on protected `main`, and this line grants
   nothing once that mechanism is on `main`. The bootstrap pull request that
