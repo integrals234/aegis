@@ -825,32 +825,57 @@
       "notes": ""
     },
     "AEGIS-054": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/replay/pacing.hpp",
+        "cpp/replay/pacing.cpp",
+        "cpp/replay/replay_engine.hpp",
+        "cpp/replay/replay_engine.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_pacing.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "M2 slice 10. OriginalSpeedPacing::wait_before returns the exact original gap between two events' own timestamps. ReplayEngine::next_with_pacing pairs the next emitted event with the policy-computed wait; never sleeps. See ADR-0018's slice 10 addendum. Not yet 'verified'."
     },
     "AEGIS-055": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/replay/pacing.hpp",
+        "cpp/replay/pacing.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_pacing.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "M2 slice 10. AcceleratedPacing::wait_before divides the original gap by a caller-supplied multiplier (constructor-validated strictly positive). See ADR-0018's slice 10 addendum. Not yet 'verified'."
     },
     "AEGIS-056": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/replay/pacing.hpp",
+        "cpp/replay/pacing.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_pacing.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "M2 slice 10. FixedRatePacing::wait_before returns a constant configured interval (constructor-validated non-negative) independent of the original gap. See ADR-0018's slice 10 addendum. Not yet 'verified'."
     },
     "AEGIS-057": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/replay/pacing.hpp",
+        "cpp/replay/pacing.cpp",
+        "cpp/replay/replay_engine.hpp",
+        "cpp/replay/replay_engine.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_pacing.cpp",
+        "tests/cpp/unit/test_replay_engine.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "M2 slice 10. StepPacing::wait_before is always zero; advancing one event at a time is ReplayEngine::next (slice 9), and one timestamp group at a time is ReplayEngine::next_group (slice 9). See ADR-0018's slice 10 addendum. Not yet 'verified'."
     },
     "AEGIS-058": {
       "status": "implemented",

@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <utility>
 
+#include "cpp/replay/pacing.hpp"
+
 namespace aegis::replay {
 
 ReplayEngine::ReplayEngine(std::vector<ReplayEvent> events, VirtualClock& clock)
@@ -30,6 +32,26 @@ std::vector<ReplayEvent> ReplayEngine::next_group() {
         *emitted);  // NOLINT(bugprone-unchecked-optional-access) - has_next() just checked
   }
   return group;
+}
+
+std::optional<std::pair<ReplayEvent, common::Duration>> ReplayEngine::next_with_pacing(
+    const PacingPolicy& policy) {
+  if (!has_next()) {
+    return std::nullopt;
+  }
+  const bool is_first_emission = (position_ == 0);
+  const ReplayEvent previous = is_first_emission ? events_[position_] : events_[position_ - 1];
+
+  auto emitted = next();
+  // Unreachable: has_next() was just checked above and next() only returns
+  // nullopt when the stream is exhausted.
+  if (!emitted.has_value()) {
+    return std::nullopt;
+  }
+
+  const auto wait =
+      is_first_emission ? common::Duration{0} : policy.wait_before(previous, *emitted);
+  return std::make_pair(*emitted, wait);
 }
 
 std::optional<RecordIndex> ReplayEngine::cursor() const {

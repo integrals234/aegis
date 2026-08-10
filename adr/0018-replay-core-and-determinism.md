@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-08-10
-- Requirement IDs: AEGIS-058
+- Requirement IDs: AEGIS-058, AEGIS-054, AEGIS-055, AEGIS-056, AEGIS-057
 - Milestone: M2
 
 ## Context
@@ -131,8 +131,95 @@ determinism and reproducibility; that tradeoff is M8's, not this slice's).
   `resume_from()` reproduce the tail of an uninterrupted run exactly, the
   cursor/resume property `experiments/plans/M2.md` section 7 names.
 
+## Slice 10 addendum: pacing modes (AEGIS-054..057)
+
+### Context
+
+Slice 9 built the engine that drains a validated stream through a virtual
+clock with no automatic timing at all. The four approved pacing modes
+(AEGIS-054 original speed, AEGIS-055 accelerated, AEGIS-056 fixed rate,
+AEGIS-057 step) all describe *when* a caller might act on an event, never
+*which* events or in *what order* -- so the natural design question is
+where that "when" computation lives without letting it leak into what the
+engine already guarantees deterministic.
+
+### Decision
+
+**Pacing computes a virtual wait; it never sleeps, and the engine never
+sleeps on its behalf.** `PacingPolicy::wait_before(previous, current)`
+returns a `common::Duration` -- a pure computation over two already-fixed
+events. `ReplayEngine::next_with_pacing` pairs the next emitted event with
+that computed wait and returns both to the caller, who decides (in a
+future CLI, not built in M2) whether to act on it. This is what keeps
+"deterministic test paths free from real sleeping or scheduler dependence"
+true by construction: there is no code path in this module that could
+introduce a real delay, so a test asserting on wait values never becomes
+flaky no matter how it's run.
+
+**The first emission from an engine instance always has zero wait,
+regardless of policy.** There is no predecessor to compute a gap from, and
+inventing one (e.g. treating the stream's own start as a synthetic
+"previous" event) would be a guess this ADR declines to make. A caller
+that wants a specific pre-roll delay before the first event states it
+explicitly, outside this mechanism.
+
+**Four concrete policies, one shared interface, no fifth "auto-detect"
+mode.** `OriginalSpeedPacing` returns the real gap; `AcceleratedPacing`
+divides it by a caller-supplied multiplier (constructor-validated strictly
+positive -- zero or negative has no "speed" meaning); `FixedRatePacing`
+ignores the gap entirely and returns a constant configured interval
+(validated non-negative); `StepPacing` always returns zero, because
+AEGIS-057's "one event or one timestamp group at a time" is already fully
+satisfied by `ReplayEngine::next`/`next_group` (slice 9) doing the
+advancing -- `StepPacing` exists so the pacing interface has a uniform
+fourth member, not because it computes anything itself.
+
+**Pacing cannot change the event sequence -- proven, not assumed.** Since
+`wait_before` never touches `events_`, `position_` or the clock's
+advancement logic (that stays in `next()`), no pacing policy can reorder,
+duplicate or drop a record; `next_with_pacing` still calls the same
+`next()` internally. The test suite asserts this property directly (all
+four modes run over the same input produce the identical `record_index`
+sequence) rather than relying on the implementation argument alone.
+
+### Alternatives considered
+
+- **Having the engine actually sleep for the computed duration** --
+  rejected: it would make every pacing test's runtime depend on wall-clock
+  behavior, exactly what "free from real sleeping or scheduler dependence"
+  forbids, for no benefit M2 needs (no CLI consumes the wait yet).
+- **Synthesizing a "virtual predecessor" for the first event** -- rejected
+  as an invented fact; see Decision.
+- **A single parameterized pacing class with a mode enum instead of four
+  policy classes** -- rejected: the existing `PacingPolicy`/`RollPolicy`
+  (M2 slice 6) pattern of one small class per behavior keeps each mode's
+  validation (multiplier > 0, interval >= 0) next to the mode it belongs
+  to, rather than in a shared branch that has to remember which validation
+  applies to which enum value.
+
+### Consequences
+
+- Slices 11-12 (fault injection) do not touch `pacing.hpp/.cpp` at all --
+  fault injection and pacing are orthogonal concerns over the same
+  validated stream, confirmed by neither slice needing to import the
+  other's header.
+- A future CLI (M2 slice 14 or later) that wants to actually pace replay
+  in real time wraps `next_with_pacing`'s returned duration in its own
+  sleep call; that wrapper is explicitly out of scope for this ADR and
+  this milestone.
+
+### Verification
+
+- `tests/cpp/unit/test_pacing.cpp` -- each policy's `wait_before` formula
+  in isolation (including constructor validation for `AcceleratedPacing`/
+  `FixedRatePacing`), the first-emission-is-always-zero rule, `next_with_pacing`
+  exhaustion, and the shared invariant that all four modes emit the
+  identical canonical `record_index` sequence for the same input.
+
 ## Owner approval
 
-Authorized as part of M2 slice 9 under the owner-approved M2 plan of
-record (`experiments/plans/M2.md`, rev. 4) and the owner's slice 8-13
-build-first continuous-execution prompt, 2026-08-10.
+Authorized as part of M2 slice 9 (replay core, AEGIS-058) and M2 slice 10
+(this addendum: pacing modes, AEGIS-054..057), both under the
+owner-approved M2 plan of record (`experiments/plans/M2.md`, rev. 4) and
+the owner's slice 8-13 build-first continuous-execution prompt,
+2026-08-10.

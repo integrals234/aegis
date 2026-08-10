@@ -2,10 +2,16 @@
 
 #include <cstddef>
 #include <optional>
+#include <utility>
 #include <vector>
 
+#include "cpp/common/time.hpp"
 #include "cpp/replay/replay_event.hpp"
 #include "cpp/replay/virtual_clock.hpp"
+
+namespace aegis::replay {
+class PacingPolicy;  // pacing.hpp -- forward-declared, only a reference is needed here
+}  // namespace aegis::replay
 
 /// Drives a validated, canonically-ordered replay stream through a
 /// VirtualClock, one record (or one timestamp group) at a time, with
@@ -37,6 +43,15 @@ class ReplayEngine {
   /// next one, as a single step (AEGIS-057's "one timestamp group").
   /// Returns an empty vector once every record has been emitted.
   [[nodiscard]] std::vector<ReplayEvent> next_group();
+
+  /// Emit the next record together with the virtual wait `policy` computes
+  /// before it, relative to the previously emitted record. The very first
+  /// emission from this engine has no predecessor to compute a gap from, so
+  /// its wait is always zero regardless of `policy` (AEGIS-054..057). The
+  /// emitted event sequence is identical to plain `next()` -- pacing only
+  /// changes the paired wait duration, never the event or its order.
+  [[nodiscard]] std::optional<std::pair<ReplayEvent, common::Duration>> next_with_pacing(
+      const PacingPolicy& policy);
 
   /// The record_index of the last emitted record, or nullopt if nothing has
   /// been emitted yet from this engine instance.
