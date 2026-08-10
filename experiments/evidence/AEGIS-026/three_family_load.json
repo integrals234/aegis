@@ -19,7 +19,7 @@
   "record_index_contiguous": true,
   "rejection_count": 0,
   "repeated_ingestion_matches": true,
-  "repository_commit": "32443586dbfaca2839c2489f25e1242a62580b86",
+  "repository_commit": "ede8a35729aa136b0178153e88ad6d3ad1d38df6",
   "requirement": "AEGIS-026",
   "sample_record": {
     "close_ticks": 7001,

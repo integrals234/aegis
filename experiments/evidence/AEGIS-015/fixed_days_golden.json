@@ -7,7 +7,7 @@
   "policy_parameters": {
     "days_before_expiry": 5
   },
-  "repository_commit": "4b3d4aff663cc2f45348128c5485179f245760cd",
+  "repository_commit": "ede8a35729aa136b0178153e88ad6d3ad1d38df6",
   "requirement": "AEGIS-015",
   "rolls": [
     {
