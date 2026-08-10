@@ -15,6 +15,20 @@ std::string describe(FaultKind kind) {
       return "duplicated";
     case FaultKind::kSequenceGap:
       return "sequence_gap";
+    case FaultKind::kSpreadWidening:
+      return "spread_widening";
+    case FaultKind::kVolatilitySpike:
+      return "volatility_spike";
+    case FaultKind::kLiquidityVanish:
+      return "liquidity_vanish";
+    case FaultKind::kRejection:
+      return "rejection";
+    case FaultKind::kLatencySpike:
+      return "latency_spike";
+    case FaultKind::kPartialFill:
+      return "partial_fill";
+    case FaultKind::kBackpressure:
+      return "backpressure";
   }
   return "unknown_fault_kind";  // pragma: exhaustive enum above
 }
@@ -51,18 +65,28 @@ FaultInjectionResult DeterministicFaultInjector::apply(const std::vector<ReplayE
         break;
       case FaultKind::kDuplicated:
         result.events.emplace_back(event, std::nullopt);
-        result.events.emplace_back(
-            event, FaultAnnotation{.kind = FaultKind::kDuplicated, .delay = {}, .magnitude = 0});
+        result.events.emplace_back(event, FaultAnnotation{.kind = FaultKind::kDuplicated,
+                                                          .delay = rule.delay,
+                                                          .magnitude = rule.magnitude});
         break;
+      // Every other kind is a pure annotation: the record survives,
+      // untouched, with the rule's own parameters attached verbatim. This
+      // covers AEGIS-060/061's kDelayed/kSequenceGap and AEGIS-062/063's
+      // seven market/execution stress kinds identically -- none of them
+      // interprets its own parameters, they are just carried through for a
+      // later milestone's consumer to read.
       case FaultKind::kDelayed:
+      case FaultKind::kSequenceGap:
+      case FaultKind::kSpreadWidening:
+      case FaultKind::kVolatilitySpike:
+      case FaultKind::kLiquidityVanish:
+      case FaultKind::kRejection:
+      case FaultKind::kLatencySpike:
+      case FaultKind::kPartialFill:
+      case FaultKind::kBackpressure:
         result.events.emplace_back(
             event,
-            FaultAnnotation{.kind = FaultKind::kDelayed, .delay = rule.delay, .magnitude = 0});
-        break;
-      case FaultKind::kSequenceGap:
-        result.events.emplace_back(
-            event, FaultAnnotation{
-                       .kind = FaultKind::kSequenceGap, .delay = {}, .magnitude = rule.magnitude});
+            FaultAnnotation{.kind = rule.kind, .delay = rule.delay, .magnitude = rule.magnitude});
         break;
     }
   }

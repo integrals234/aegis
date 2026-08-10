@@ -36,12 +36,30 @@ namespace aegis::replay {
 
 /// AEGIS-060/061 (slice 11): kDelayed, kMissing, kDuplicated, kSequenceGap.
 /// AEGIS-062/063 (slice 12) extend this same enum rather than introducing a
-/// second injector -- one mechanism, more kinds.
+/// second injector -- one mechanism, more kinds. Every slice-12 kind is,
+/// like `kSequenceGap`, a pure annotation: cpp-replay has no market-data
+/// payload to compute an actual spread or fill from (`ReplayEvent` is
+/// identity/ordering only, by design -- slice 1), and no OMS/risk layer
+/// exists before M5 to interpret one even if it did. `magnitude` carries
+/// each stress kind's caller-defined severity as a scaled integer (never a
+/// float, matching this milestone's exactness discipline); `kLatencySpike`
+/// reuses `delay` instead, since "how much extra latency" is already a
+/// duration.
 enum class FaultKind : std::uint8_t {
   kDelayed,
   kMissing,
   kDuplicated,
   kSequenceGap,
+  // AEGIS-062: market stress. Response is the registered M5 residual.
+  kSpreadWidening,
+  kVolatilitySpike,
+  kLiquidityVanish,
+  // AEGIS-063: execution stress. OMS/risk integration is the registered M5
+  // residual.
+  kRejection,
+  kLatencySpike,
+  kPartialFill,
+  kBackpressure,
 };
 
 [[nodiscard]] std::string describe(FaultKind kind);

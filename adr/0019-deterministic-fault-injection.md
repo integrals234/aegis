@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-08-10
-- Requirement IDs: AEGIS-060, AEGIS-061
+- Requirement IDs: AEGIS-060, AEGIS-061, AEGIS-062, AEGIS-063
 - Milestone: M2
 
 ## Context
@@ -119,8 +119,99 @@ the exact record it affects, deterministically.
   whole mechanism is deterministic across repeated calls with the same
   input.
 
+## Slice 12 addendum: market and execution stress (AEGIS-062, AEGIS-063)
+
+### Context
+
+AEGIS-062 asks for "spread widening, volatility spikes, and disappearing
+liquidity"; AEGIS-063 asks for "rejection, latency, partial-fill, and
+output-backpressure events." All seven sound like they need real
+market-data or order-lifecycle semantics to mean anything -- a "widened
+spread" implies a bid and an ask, a "partial fill" implies an order and a
+quantity. `cpp-replay` has neither: `ReplayEvent` (slice 1) is identity and
+ordering only, deliberately with no price/quantity payload, and no
+OMS/risk layer exists before M5 to receive a fill or a rejection. The
+question this addendum answers is what these seven kinds can honestly mean
+at the layer M2 actually owns.
+
+### Decision
+
+**Same mechanism as slice 11, same `FaultKind` enum, no new type.** All
+seven new kinds are added as enumerators; `DeterministicFaultInjector::apply`'s
+`switch` gains no new *branches* for them -- they fall into the same
+"annotate and pass through" case `kDelayed`/`kSequenceGap` already used,
+proving by construction that market/execution stress needs nothing
+different from a plain timing/sequence fault at this layer. Only
+`kMissing` and `kDuplicated` (slice 11) ever change which records are
+emitted; every stress kind, like `kSequenceGap`, is a label attached to an
+untouched record.
+
+**`magnitude` is the shared severity parameter; `kLatencySpike` reuses
+`delay` instead.** Six of the seven kinds carry a caller-defined, scaled-
+integer severity in `magnitude` (a widening factor, a spike size, a vanish
+severity, a rejection-reason code, a fill-ratio numerator, a queue depth --
+each kind documents its own units in the header, since there is no shared
+unit across "spread" and "fill ratio"). `kLatencySpike` is the one
+exception: "how much extra latency" is already exactly what `delay`
+(a `common::Duration`) represents, so it reuses that field rather than
+encoding a duration as an integer count of some implicit unit in
+`magnitude`.
+
+**Response stays entirely out of scope, for both requirements' full
+acceptance text.** AEGIS-062's "risk responses are reproducible" and
+AEGIS-063's "OMS/risk integration tests cover each fault" both name
+subsystems `configs/architecture_rules.yaml` dates to M5
+(`cpp-participant-risk`, `cpp-participant-oms`). What M2 delivers is the
+half that can be honest before M5 exists: the fault signal itself,
+attached to an exact record, deterministically -- so that whenever the
+risk/OMS layers do exist, they have a fixed, already-proven-deterministic
+input to write their response tests against, rather than needing to build
+their own fault generator at the same time as their own response logic.
+
+### Alternatives considered
+
+- **A second injector class for stress kinds** -- rejected: the whole
+  point demonstrated by putting them in the same `switch` case as
+  `kSequenceGap` is that they need no different mechanism, only different
+  labels; a second class would suggest a difference that does not exist.
+- **Giving each stress kind its own typed parameter (a `Spread` type, a
+  `FillRatio` type, ...)** -- rejected: none of these kinds has real
+  market semantics at this layer (see Context), so a strongly-typed
+  parameter would imply a precision this milestone cannot honestly claim.
+  A documented, scaled integer is exactly as meaningful as the fault is at
+  this layer, and no more.
+- **Deferring AEGIS-062/063 entirely to M5** -- rejected: the owner's plan
+  of record scopes the *injection mechanism* to M2 explicitly (the M2
+  requirement coverage table lists both), with only the *response* residual
+  to M5; deferring the mechanism too would leave M5 building both the
+  fault generator and the response simultaneously, coupling two
+  independently testable things.
+
+### Consequences
+
+- A future M5 risk/OMS consumer reads exactly the same
+  `FaultInjectionResult` shape slice 11 defined; this addendum adds no new
+  consumer-facing type.
+- If a future milestone finds one of these seven kinds genuinely needs
+  richer parameters than a scaled integer or a duration, that is a new ADR
+  extending `FaultAnnotation`, not a silent repurposing of `magnitude`.
+
+### Verification
+
+- `tests/cpp/unit/test_market_stress_faults.cpp` -- a parameterized test
+  proves the six `magnitude`-based kinds (`kSpreadWidening`,
+  `kVolatilitySpike`, `kLiquidityVanish`, `kRejection`, `kPartialFill`,
+  `kBackpressure`) all survive annotated with their configured magnitude
+  and never drop a record; a dedicated test proves `kLatencySpike` carries
+  its value in `delay`, not `magnitude`; a composition test proves stress
+  and core (slice 11) fault kinds apply independently over different
+  records in one call; and a determinism test proves repeated calls with
+  the same rules agree.
+
 ## Owner approval
 
-Authorized as part of M2 slice 11 under the owner-approved M2 plan of
-record (`experiments/plans/M2.md`, rev. 4) and the owner's slice 8-13
-build-first continuous-execution prompt, 2026-08-10.
+Authorized as part of M2 slice 11 (delayed/missing/duplicated/sequence-gap
+faults, AEGIS-060/061) and M2 slice 12 (this addendum: market/execution
+stress, AEGIS-062/063), both under the owner-approved M2 plan of record
+(`experiments/plans/M2.md`, rev. 4) and the owner's slice 8-13 build-first
+continuous-execution prompt, 2026-08-10.

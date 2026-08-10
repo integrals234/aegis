@@ -930,18 +930,28 @@
       "notes": "M2 slice 11. DeterministicFaultInjector's kMissing (removed from output, accounted for in FaultInjectionResult::dropped, never silently lost), kDuplicated (the record appears twice consecutively, only the injected copy annotated) and kSequenceGap (an annotation declaring a source-sequence-numbering gap, never a mutation of the record's own source_sequence -- canonical order is never put at risk) faults. Mechanism only -- feed RECOVERY is the registered M3 residual, unchanged from the owner-confirmed M2 plan of record. See ADR-0019. Not yet 'verified'."
     },
     "AEGIS-062": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/replay/fault_injection.hpp",
+        "cpp/replay/fault_injection.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_market_stress_faults.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "M2 slice 12. FaultKind extended with kSpreadWidening/kVolatilitySpike/kLiquidityVanish -- same DeterministicFaultInjector mechanism as slice 11's kSequenceGap: a pure annotation (magnitude carries the caller-defined severity), never interpreted, never dropping or reordering a record. cpp-replay has no market-data payload to compute an actual spread from (ReplayEvent is identity/ordering only, by design), so nothing here could compute one even if it wanted to. Risk RESPONSE is the registered M5 residual, unchanged from the owner-confirmed M2 plan of record. See ADR-0019's slice 12 addendum. Not yet 'verified'."
     },
     "AEGIS-063": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/replay/fault_injection.hpp",
+        "cpp/replay/fault_injection.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_market_stress_faults.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "M2 slice 12. FaultKind extended with kRejection/kLatencySpike/kPartialFill/kBackpressure -- same mechanism, kLatencySpike reusing the existing delay field (Duration) rather than encoding a duration into the generic magnitude integer. OMS/risk INTEGRATION is the registered M5 residual, unchanged from the owner-confirmed M2 plan of record; no OMS or risk code is implemented here. See ADR-0019's slice 12 addendum. Not yet 'verified'."
     },
     "AEGIS-064": {
       "status": "not_started",
