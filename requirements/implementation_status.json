@@ -280,32 +280,64 @@
       "notes": "M2 slices 4-5, complete. Ingestion (slice 4) validates volume/open_interest shape: optional non-negative integers or null, never coerced to zero. python/futures/quality.py (slice 5) completes the data-quality-report half: run_quality_checks identifies missing_volume, missing_open_interest, stale_observation (repeated zero-volume OHLC) and contradictory values (duplicate_observation, contradictory_ohlc) over normalized records, deterministically ordered, with severity. Evidence proves zero false positives on the three committed clean bar families. See ADR-0016's slice 5 addendum, which also records why a conditional 'contradictory volume/OI' category was deliberately not implemented (no frozen criterion requires it, and it would duplicate a check already enforced at ingestion). Not yet 'verified': independent spec-auditor review is at M2 closure."
     },
     "AEGIS-015": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "python/futures/roll/policy.py",
+        "python/futures/roll/fixed_days.py"
+      ],
+      "tests": [
+        "tests/unit/test_roll_fixed_days.py",
+        "tests/property/test_roll_invariants.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-015/fixed_days_golden.json"
+      ],
+      "notes": "M2 slice 6. FixedDaysPolicy rolls to the next listed contract once the current front is within N calendar days (inclusive) of its own expiry -- one uniform rule, including the N=0 edge case (rolls exactly on expiry day itself). Calendar days, not trading/session days, chosen to avoid coupling the roll layer to a specific product's AEGIS-013 calendar template. Golden fixtures against the real committed EQX chain assert the exact roll date. See ADR-0017. Not yet 'verified': independent spec-auditor review is at M2 closure."
     },
     "AEGIS-016": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "python/futures/roll/policy.py",
+        "python/futures/roll/volume_crossover.py"
+      ],
+      "tests": [
+        "tests/unit/test_roll_volume_crossover.py",
+        "tests/property/test_roll_invariants.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-016/volume_crossover_golden.json"
+      ],
+      "notes": "M2 slice 6. VolumeCrossoverPolicy rolls once the deferred contract's volume has exceeded the front's for a configurable number of consecutive OBSERVED sessions (crossover_confirmed, shared with AEGIS-017): missing volume on either side is skipped, never treated as zero, and a reversal before the persistence threshold resets the count rather than pausing it. Golden fixture: crossover, sub-threshold, and reversal cases against the real committed EQX chain. See ADR-0017. Not yet 'verified': independent spec-auditor review is at M2 closure."
     },
     "AEGIS-017": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "python/futures/roll/policy.py",
+        "python/futures/roll/oi_crossover.py"
+      ],
+      "tests": [
+        "tests/unit/test_roll_oi_crossover.py",
+        "tests/property/test_roll_invariants.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-017/oi_crossover_golden.json"
+      ],
+      "notes": "M2 slice 6. OpenInterestCrossoverPolicy shares AEGIS-016's persistence mechanism (crossover_confirmed) over open interest; missing OI is skipped, never substituted with volume. Golden fixture and a dedicated test proving volume never substitutes for missing OI. See ADR-0017. Not yet 'verified': independent spec-auditor review is at M2 closure."
     },
     "AEGIS-018": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "python/futures/roll/policy.py",
+        "python/futures/roll/liquidity_score.py"
+      ],
+      "tests": [
+        "tests/unit/test_roll_liquidity_score.py",
+        "tests/property/test_roll_invariants.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-018/liquidity_score_golden.json"
+      ],
+      "notes": "M2 slice 6. LiquidityScorePolicy composite score = volume_weight * normalized-volume-share + open_interest_weight * normalized-open-interest-share, Decimal arithmetic throughout (never float, since the score decides the selection itself). Missing metric contributes zero, not an error. score_breakdown exposes every component per contract for audit. Ties broken by chronological order via Python max()'s own first-maximal-element behaviour over the already-ordered listed sequence -- no separate tie-break rule. See ADR-0017. Not yet 'verified': independent spec-auditor review is at M2 closure."
     },
     "AEGIS-019": {
       "status": "not_started",

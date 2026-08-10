@@ -1,0 +1,42 @@
+{
+  "artifact": "fixed_days_golden",
+  "chain": "data_samples/futures/eqx.json",
+  "claim": "FixedDaysPolicy(days_before_expiry=5) run against the committed EQX contract chain rolls from SYNX:EQX:2026H to SYNX:EQX:2026M exactly at the inclusive 5-calendar-day boundary (2026-03-15), staying on the front contract through 2026-03-14 and remaining rolled thereafter -- computed by the real production policy, not asserted.",
+  "dirty": true,
+  "generated_on": "2026-08-10",
+  "policy_parameters": {
+    "days_before_expiry": 5
+  },
+  "repository_commit": "4b3d4aff663cc2f45348128c5485179f245760cd",
+  "requirement": "AEGIS-015",
+  "rolls": [
+    {
+      "as_of": "2026-03-10",
+      "front_contract": "SYNX:EQX:2026H"
+    },
+    {
+      "as_of": "2026-03-13",
+      "front_contract": "SYNX:EQX:2026H"
+    },
+    {
+      "as_of": "2026-03-14",
+      "front_contract": "SYNX:EQX:2026H"
+    },
+    {
+      "as_of": "2026-03-15",
+      "front_contract": "SYNX:EQX:2026M"
+    },
+    {
+      "as_of": "2026-03-16",
+      "front_contract": "SYNX:EQX:2026M"
+    },
+    {
+      "as_of": "2026-03-19",
+      "front_contract": "SYNX:EQX:2026M"
+    },
+    {
+      "as_of": "2026-03-20",
+      "front_contract": "SYNX:EQX:2026M"
+    }
+  ]
+}

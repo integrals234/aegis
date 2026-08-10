@@ -1,0 +1,64 @@
+{
+  "artifact": "oi_crossover_golden",
+  "chain": "data_samples/futures/eqx.json",
+  "claim": "OpenInterestCrossoverPolicy(persistence_days=2) against a declining-front/rising-deferred synthetic open-interest series rolls at the second consecutive day of crossover -- computed by the real production policy.",
+  "deferred_contract_id": "SYNX:EQX:2026M",
+  "dirty": true,
+  "front_contract_id": "SYNX:EQX:2026H",
+  "generated_on": "2026-08-10",
+  "policy_parameters": {
+    "persistence_days": 2
+  },
+  "repository_commit": "4b3d4aff663cc2f45348128c5485179f245760cd",
+  "requirement": "AEGIS-017",
+  "rolls": [
+    {
+      "as_of": "2026-01-01",
+      "deferred_open_interest": 1000,
+      "front_contract": "SYNX:EQX:2026H",
+      "front_open_interest": 5000
+    },
+    {
+      "as_of": "2026-01-02",
+      "deferred_open_interest": 1700,
+      "front_contract": "SYNX:EQX:2026H",
+      "front_open_interest": 4700
+    },
+    {
+      "as_of": "2026-01-03",
+      "deferred_open_interest": 2400,
+      "front_contract": "SYNX:EQX:2026H",
+      "front_open_interest": 4400
+    },
+    {
+      "as_of": "2026-01-04",
+      "deferred_open_interest": 3100,
+      "front_contract": "SYNX:EQX:2026H",
+      "front_open_interest": 4100
+    },
+    {
+      "as_of": "2026-01-05",
+      "deferred_open_interest": 3800,
+      "front_contract": "SYNX:EQX:2026H",
+      "front_open_interest": 3800
+    },
+    {
+      "as_of": "2026-01-06",
+      "deferred_open_interest": 4500,
+      "front_contract": "SYNX:EQX:2026H",
+      "front_open_interest": 3500
+    },
+    {
+      "as_of": "2026-01-07",
+      "deferred_open_interest": 5200,
+      "front_contract": "SYNX:EQX:2026M",
+      "front_open_interest": 3200
+    },
+    {
+      "as_of": "2026-01-08",
+      "deferred_open_interest": 5900,
+      "front_contract": "SYNX:EQX:2026M",
+      "front_open_interest": 2900
+    }
+  ]
+}

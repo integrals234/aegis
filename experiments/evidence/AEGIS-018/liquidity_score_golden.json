@@ -1,0 +1,33 @@
+{
+  "artifact": "liquidity_score_golden",
+  "as_of": "2026-01-10",
+  "breakdown": [
+    {
+      "contract_id": "SYNX:EQX:2026H",
+      "open_interest": 2000,
+      "open_interest_component": "0.6666666666666666666666666667",
+      "score": "0.3750000000000000000000000000",
+      "volume": 1000,
+      "volume_component": "0.25"
+    },
+    {
+      "contract_id": "SYNX:EQX:2026M",
+      "open_interest": 1000,
+      "open_interest_component": "0.3333333333333333333333333333",
+      "score": "0.6250000000000000000000000000",
+      "volume": 3000,
+      "volume_component": "0.75"
+    }
+  ],
+  "chain": "data_samples/futures/eqx.json",
+  "claim": "LiquidityScorePolicy(volume_weight=0.7, open_interest_weight=0.3) against a synthetic two-contract observation selects the higher-combined-score contract, with every component of the score (normalized volume share, normalized open-interest share, weighted sum) exposed and exactly reproducible via Decimal arithmetic -- computed by the real production policy.",
+  "dirty": true,
+  "generated_on": "2026-08-10",
+  "policy_parameters": {
+    "open_interest_weight": "0.3",
+    "volume_weight": "0.7"
+  },
+  "repository_commit": "4b3d4aff663cc2f45348128c5485179f245760cd",
+  "requirement": "AEGIS-018",
+  "selected_front_contract": "SYNX:EQX:2026M"
+}
