@@ -25,7 +25,7 @@ policy_version: 1
 # tools/audit_requirements.py read docs/BUILD_STATE.md, which mirrors this
 # value; the authoritative gate requires the two to agree, so a branch cannot
 # grant itself a wider scope by editing the mirror.
-active_milestone: M1
+active_milestone: M2
 
 # Paths that decide who is allowed to change what. A pull request touching any
 # of these needs an explicit approval below, because changing them changes the
@@ -65,4 +65,26 @@ self_path: configs/governance/policy.yaml
 #       why the milestone's declared scope genuinely cannot cover this
 #     granted_on: YYYY-MM-DD
 #     granted_by_pr: <number>
-approvals: []
+approvals:
+  - id: m2-build-and-gate
+    milestone: M2
+    paths:
+      - cpp/CMakeLists.txt
+      - scripts/ci_local.sh
+      - .github/workflows/ci.yml
+    reason: >
+      cpp/replay cannot build without a subdirectory entry, and the milestone
+      gate is hardcoded to M1 in both the local script and the workflow.
+    granted_on: 2026-08-10
+    granted_by_pr: 5
+
+  - id: m2-columnar-dependencies
+    milestone: M2
+    paths:
+      - requirements/python-requirements.in
+      - requirements/requirements.lock
+      - pyproject.toml
+    reason: >
+      AEGIS-230 requires pyarrow/duckdb; AEGIS-013 requires pinned tzdata.
+    granted_on: 2026-08-10
+    granted_by_pr: 5
