@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-08-10
-- Requirement IDs: AEGIS-015, AEGIS-016, AEGIS-017, AEGIS-018
+- Requirement IDs: AEGIS-015, AEGIS-016, AEGIS-017, AEGIS-018, AEGIS-019, AEGIS-020, AEGIS-021, AEGIS-022
 - Milestone: M2
 
 ## Context
@@ -147,8 +147,138 @@ tie-break rule is written or needed.
   calling the real production policy against the committed EQX chain and a
   documented, fixed synthetic observation series.
 
+## Slice 7 addendum: continuous series and adjustment methods (AEGIS-019..022)
+
+### Context
+
+Slice 6 built four ways to pick a front contract on a date; this slice
+consumes a fixed sequence of those picks to build a continuous price series
+and two back-adjustment conventions over it. AEGIS-020/021's frozen
+acceptance both name a "return/price-change preservation property" without
+saying precisely which one, and getting this wrong is easy: the most
+naive back-adjustment formula (using only the two *front* prices adjacent
+to a roll) produces a series that is perfectly continuous in level but
+silently invents a zero return on every roll day, which is a real, if
+subtle, fabrication of market history -- exactly the class of thing
+CLAUDE.md's "never fabricate data" rule and DATA_AND_RESEARCH_POLICY exist
+to prevent, even though nothing about it looks like fabrication at a
+glance.
+
+### Decision
+
+**Explicit roll selections in, not a roll policy call.** `series.py`
+takes a caller-supplied `Mapping[date, ContractId]` naming the front
+contract per date -- it does not import `futures.roll` or call a
+`RollPolicy` itself. Roll *selection* (slice 6) and roll *consumption*
+(this slice) stay separate: a roll audit (a later slice) can replay a fixed
+selection sequence exactly, and series construction is testable without
+re-running policy logic for every case.
+
+**Same-day dual quote at every roll -- the only convention that actually
+reconciles returns.** At a roll from old contract to new, both
+`build_additive_adjusted_series` and `build_ratio_adjusted_series` require
+the *old* contract's own price *on the roll date itself* (not the day
+before) to compute the gap/ratio. This is what makes AEGIS-022's
+reconciliation property hold exactly, proven algebraically and by test:
+**the adjusted return across a roll boundary equals the outgoing
+contract's own realized return for that specific day** -- not zero, and
+not the incoming contract's return. A same-day dual quote is not an extra
+burden invented for this ADR's convenience: real futures markets always
+trade the outgoing and incoming contracts simultaneously around a roll
+(that overlap is what makes a roll possible at all), so the data this
+convention needs is data that genuinely exists.
+
+The rejected alternative -- gap computed from the two adjacent *front*
+prices only (old contract's day-before price, new contract's roll-day
+price) -- makes the series perfectly continuous at the splice (zero jump
+in level), which sounds like the more conservative choice. It is not: it
+replaces the real, realized price movement of the outgoing contract on the
+roll day with an invented zero, which is the actual "artificial roll jump"
+AEGIS-022 asks to avoid. Preserving the real return, even though it makes
+the level itself discontinuous by that amount, is what "avoiding" an
+artificial jump means under this ADR's reading.
+
+**`Decimal` throughout; missing/invalid roll data raises, never guesses.**
+Matching the slice 2 and slice 6 precedent: an adjustment factor or offset
+changes every downstream price, so it must be exactly reproducible. A
+missing same-day dual quote raises `InvalidAdjustment` (additive) or the
+same (ratio); a non-positive price where a ratio needs one raises rather
+than dividing by zero or substituting a value. `build_unadjusted_series`
+raises `MissingPrice` (a distinct, narrower exception) when a selected
+front contract has no price at all on a date it was selected for -- a
+different failure than a missing roll-date dual quote, so it is not
+conflated with `InvalidAdjustment`.
+
+**No synthetic index.** The M2 plan of record marks it optional, and no
+AEGIS-019..022 acceptance criterion names one; building it would be
+unrequested scope.
+
+**`build_return_stream` is the ratio convention's natural return
+measure.** Its output is the simple (proportional) return
+`adjusted[t]/adjusted[t-1] - 1`, which is exactly comparable across the
+ratio-adjusted series. The additive convention's own reconciliation
+property is a price *difference*, not a proportional return, and is
+checked directly against `adjusted_price` deltas
+(`tests/unit/test_series_reconciliation.py`) rather than forced through
+the same function.
+
+### Alternatives considered
+
+- **Adjacent-front-price gap (forced continuity)** -- rejected; see
+  Decision. This was the first design considered and was caught by the
+  reconciliation test itself failing against a hand-derived expectation,
+  which is exactly the kind of thing a "known roll-gap fixture" is for.
+- **Calling a `RollPolicy` from inside `series.py`** -- rejected: it would
+  couple series construction to one specific selection mechanism and make
+  it untestable independent of policy logic; see Decision.
+- **A single "return" abstraction for both additive and ratio** --
+  rejected: the two conventions preserve different quantities (absolute
+  difference vs. proportional return), and forcing one function to serve
+  both would obscure which one a given return value actually means.
+- **A synthetic index** -- rejected as out of scope; see Decision.
+- **Silently treating a missing roll-date dual quote as "no adjustment
+  needed"** -- rejected: it would silently under-adjust every earlier
+  observation, which is a wrong answer presented as a complete one.
+
+### Consequences
+
+- The M2 plan of record's canonical replay order and any later roll-audit
+  report (AEGIS-023, M2 slice 8) can rely on every continuous-series stage
+  -- unadjusted, additive, ratio, return stream -- carrying `contract_id`
+  provenance on every observation, with no stage that erases it.
+- A caller wanting a different adjustment convention (e.g. adjacent-front
+  continuity, for some other legitimate purpose) would need a new function
+  in this module, not a parameter to the existing ones -- the two
+  documented conventions are not configurable variants of one algorithm,
+  they are different algorithms with different reconciliation properties.
+
+### Verification
+
+- `tests/unit/test_series_unadjusted.py` -- provenance, `is_roll_point`
+  boundaries, sort-order independence from mapping order, `MissingPrice`
+  on a selected front contract with no price, and that a price for a
+  non-front contract never leaks into the series.
+- `tests/unit/test_series_additive.py` / `test_series_ratio.py` -- a known
+  roll-gap golden fixture with the documented offset/ratio, multiple
+  sequential rolls each applying their own gap/ratio, a genuine cross-year
+  roll, and `InvalidAdjustment` on a missing/non-positive roll-date price.
+- `tests/unit/test_series_reconciliation.py` -- the reconciliation property
+  proven across *every* roll in a multi-roll fixture at once (not one
+  hand-picked day), for both conventions, plus end-to-end provenance
+  through every stage including the return stream.
+- `tests/property/test_adjustment_invariants.py` -- determinism,
+  independence from the `prices` list's insertion order, and provenance
+  presence, across arbitrary valid roll schedules (up to two rolls, three
+  contracts, 2-9 days).
+- `experiments/evidence/AEGIS-01{9},02{0,1,2}/continuous_series_and_adjustments.json`
+  -- a genuine cross-year, two-roll fixture built through the real
+  production pipeline, with both reconciliation checks verified
+  programmatically (the generator raises rather than writing an
+  unsupported claim).
+
 ## Owner approval
 
-Authorized as part of M2 slice 6 under the owner-approved M2 plan of record
-(`experiments/plans/M2.md`, rev. 4) and the owner's slice 3-7
-continuous-execution prompt, 2026-08-10.
+Authorized as part of M2 slice 6 (roll policies, AEGIS-015..018) and M2
+slice 7 (this addendum: continuous series and adjustments, AEGIS-019..022),
+both under the owner-approved M2 plan of record (`experiments/plans/M2.md`,
+rev. 4) and the owner's slice 3-7 continuous-execution prompt, 2026-08-10.

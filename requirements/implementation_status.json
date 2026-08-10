@@ -340,32 +340,62 @@
       "notes": "M2 slice 6. LiquidityScorePolicy composite score = volume_weight * normalized-volume-share + open_interest_weight * normalized-open-interest-share, Decimal arithmetic throughout (never float, since the score decides the selection itself). Missing metric contributes zero, not an error. score_breakdown exposes every component per contract for audit. Ties broken by chronological order via Python max()'s own first-maximal-element behaviour over the already-ordered listed sequence -- no separate tie-break rule. See ADR-0017. Not yet 'verified': independent spec-auditor review is at M2 closure."
     },
     "AEGIS-019": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "python/futures/series.py"
+      ],
+      "tests": [
+        "tests/unit/test_series_unadjusted.py",
+        "tests/property/test_adjustment_invariants.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-019/continuous_series_and_adjustments.json"
+      ],
+      "notes": "M2 slice 7. build_unadjusted_series builds the continuous series from explicit roll selections (a caller-supplied front-contract-per-date mapping, not a live RollPolicy call) plus per-contract price observations. Every observation carries contract_id provenance; a selected front contract with no matching price raises MissingPrice rather than silently skipping the date. See ADR-0017's slice 7 addendum. Not yet 'verified': independent spec-auditor review is at M2 closure."
     },
     "AEGIS-020": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "python/futures/series.py"
+      ],
+      "tests": [
+        "tests/unit/test_series_additive.py",
+        "tests/unit/test_series_reconciliation.py",
+        "tests/property/test_adjustment_invariants.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-020/continuous_series_and_adjustments.json"
+      ],
+      "notes": "M2 slice 7. build_additive_adjusted_series implements difference back-adjustment using a same-day dual quote at each roll (the outgoing contract's own price on the roll date itself, not a day-before proxy) -- the only convention under which the roll-day adjusted return equals the outgoing contract's own realized return rather than an invented zero (ADR-0017's slice 7 addendum explains why the adjacent-front-price alternative, which forces level continuity, is the actual artificial jump). Direction documented explicitly: the most recent segment is the unadjusted reference, every earlier segment carries the cumulative offset. Known roll-gap golden fixtures, multiple sequential rolls, and a genuine cross-year roll are tested. Not yet 'verified': independent spec-auditor review is at M2 closure."
     },
     "AEGIS-021": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "python/futures/series.py"
+      ],
+      "tests": [
+        "tests/unit/test_series_ratio.py",
+        "tests/unit/test_series_reconciliation.py",
+        "tests/property/test_adjustment_invariants.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-021/continuous_series_and_adjustments.json"
+      ],
+      "notes": "M2 slice 7. build_ratio_adjusted_series implements the multiplicative equivalent of AEGIS-020's convention (same-day dual quote, cumulative product of ratios), preserving proportional returns across every roll. InvalidAdjustment is raised explicitly on a missing roll-date price, a zero price, or a negative price -- never a silent divide-by-zero or a substituted value. See ADR-0017's slice 7 addendum. Not yet 'verified': independent spec-auditor review is at M2 closure."
     },
     "AEGIS-022": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "python/futures/series.py"
+      ],
+      "tests": [
+        "tests/unit/test_series_reconciliation.py",
+        "tests/property/test_adjustment_invariants.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-022/continuous_series_and_adjustments.json"
+      ],
+      "notes": "M2 slice 7. build_return_stream computes simple (proportional) returns from a ratio-adjusted series. Reconciliation is proven across every roll in a multi-roll fixture, not one hand-picked day: on a non-roll day the adjusted return equals the raw same-contract return exactly; on a roll day it equals the outgoing contract's own realized return that day (never an artificial zero -- see ADR-0017's slice 7 addendum for why that would itself be the fabrication AEGIS-022 warns against). No synthetic index is built: optional per the M2 plan of record, and no frozen acceptance criterion names one. Not yet 'verified': independent spec-auditor review is at M2 closure."
     },
     "AEGIS-023": {
       "status": "not_started",
