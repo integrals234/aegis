@@ -238,11 +238,27 @@
       "notes": "M2 slice 2. Contract identity reuses ContractId from M2 slice 1 (python/futures/identifiers.py); this slice adds first/last trade dates, expiry, settlement type (cash/physical) and the five approved lifecycle states (ADR-0015). lifecycle_state(contract, as_of) is a pure function with no wall-clock dependency and no stored mutable state, checked as a chain that resolves the last_trade_date == expiry boundary to LastTradingDay rather than skipping to Settled. ContractChain provides lookup and chronological ordering only -- it deliberately has no 'front contract' method; that is the roll policy's decision (M2 slice 6), not identity's. Property-tested: identity round-trips through parse()/canonical for arbitrary inputs, lifecycle index is monotonic non-decreasing as as_of increases for arbitrary valid contracts, and chain iteration order is invariant to insertion order. Nine committed contract fixtures across the three AEGIS-011 product families exercise both the zero-width Expired case (cash settlement) and the non-zero-width case (physical settlement). Not yet 'verified': that requires an independent spec-auditor review, which happens at M2 closure."
     },
     "AEGIS-013": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "python/futures/calendars.py",
+        "configs/schemas/futures_calendar_template.v1.json",
+        "configs/schemas/futures_calendar.v1.json",
+        "configs/calendars/templates/synx_equity_index_rth.yaml",
+        "configs/calendars/templates/synx_energy_extended.yaml",
+        "configs/calendars/templates/synx_rates_globex.yaml",
+        "configs/calendars/generated/synx_equity_index_rth.json",
+        "configs/calendars/generated/synx_energy_extended.json",
+        "configs/calendars/generated/synx_rates_globex.json",
+        "tools/generate_calendars.py"
+      ],
+      "tests": [
+        "tests/unit/test_futures_calendars.py",
+        "tests/property/test_session_classification.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-013/session_classification.json"
+      ],
+      "notes": "M2 slice 3. Trading-session calendars: hand-authored local-time templates (configs/calendars/templates) expanded offline by tools/generate_calendars.py (the only code path that imports zoneinfo) into committed, schema-validated, normalized UTC intervals (configs/calendars/generated). python/futures/calendars.py's CalendarRegistry reads only that generated artifact at runtime -- no wall clock, no host tzdata dependency, no locale dependency. classify() is a pure half-open-interval lookup returning REGULAR/OVERNIGHT/MAINTENANCE/CLOSED. Three synthetic templates match the session_template names already committed on the Slice-2 product catalog (synx_equity_index_rth, synx_energy_extended, synx_rates_globex), each cross-checked against the live product catalog. Validation is fail-closed at both layers: illegal overlaps, duplicate/contradictory intervals, zero-length blocks, unknown templates and unsupported/malformed schema versions are all rejected, never silently repaired. DST is covered two ways: a committed-artifact check that the same local session time shifts by exactly one UTC hour across both 2026 transitions, and a generator-level check with a purpose-built block that genuinely spans a transition instant (22h/24h instead of 23h). Property-tested: classification agrees with an independent brute-force scan, is pure/repeatable, and never yields two contradictory session states for one instant. See ADR-0015's slice 3 addendum. Not yet 'verified': that requires an independent spec-auditor review at M2 closure."
     },
     "AEGIS-014": {
       "status": "not_started",

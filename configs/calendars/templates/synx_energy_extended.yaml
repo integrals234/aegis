@@ -1,0 +1,41 @@
+schema_version: 1
+
+# AEGIS-013 -- synx_energy_extended: a near-24h Globex-style session with a
+# daily one-hour maintenance break.
+#
+# Referenced by configs/futures/products.yaml's CLX family (M2 slice 2).
+# Synthetic (DATA_AND_RESEARCH_POLICY) -- not a claim about any real venue.
+#
+# The two blocks tile with zero gap and zero overlap: each day's overnight
+# session ends exactly where that day's maintenance block begins, and each
+# maintenance block ends exactly where the next overnight session begins.
+# overnight's days_of_week deliberately excludes "fri": the session that
+# starts Thursday evening runs through Friday's maintenance and then the
+# product is CLOSED for the weekend until Sunday's overnight session opens.
+#
+# Expanded to committed UTC intervals by tools/generate_calendars.py; nothing
+# at runtime reads this file or interprets America/New_York.
+
+template: synx_energy_extended
+timezone: America/New_York
+
+blocks:
+  # Starts 18:00 local and wraps past midnight, ending 17:00 local the next
+  # calendar day (~23h).
+  - name: overnight
+    type: overnight
+    local_start: "18:00:00"
+    local_end: "17:00:00"
+    days_of_week: [sun, mon, tue, wed, thu]
+
+  # One-hour daily break, no wrap.
+  - name: maintenance
+    type: maintenance
+    local_start: "17:00:00"
+    local_end: "18:00:00"
+    days_of_week: [mon, tue, wed, thu, fri]
+
+holidays:
+  - "2026-01-01"
+  - "2026-11-26"
+  - "2027-01-01"

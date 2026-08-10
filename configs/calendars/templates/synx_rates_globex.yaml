@@ -1,0 +1,33 @@
+schema_version: 1
+
+# AEGIS-013 -- synx_rates_globex: a near-24h Globex-style session with a
+# daily one-hour maintenance break, structurally identical in shape to
+# synx_energy_extended but with different local times and timezone -- so the
+# two templates are not accidentally identical after UTC generation.
+#
+# Referenced by configs/futures/products.yaml's SRX family (M2 slice 2).
+# Synthetic (DATA_AND_RESEARCH_POLICY) -- not a claim about any real venue.
+#
+# Expanded to committed UTC intervals by tools/generate_calendars.py; nothing
+# at runtime reads this file or interprets America/Chicago.
+
+template: synx_rates_globex
+timezone: America/Chicago
+
+blocks:
+  - name: overnight
+    type: overnight
+    local_start: "17:00:00"
+    local_end: "16:00:00"
+    days_of_week: [sun, mon, tue, wed, thu]
+
+  - name: maintenance
+    type: maintenance
+    local_start: "16:00:00"
+    local_end: "17:00:00"
+    days_of_week: [mon, tue, wed, thu, fri]
+
+holidays:
+  - "2026-01-01"
+  - "2026-11-26"
+  - "2027-01-01"

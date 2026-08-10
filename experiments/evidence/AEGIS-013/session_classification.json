@@ -1,0 +1,184 @@
+{
+  "artifact": "session_classification",
+  "case_count": 21,
+  "cases": [
+    {
+      "as_of_ns": 1773151200000000000,
+      "as_of_utc": "2026-03-10T14:00:00+00:00",
+      "case": "normal_regular_session",
+      "session_name": "regular",
+      "state": "regular",
+      "template": "synx_equity_index_rth"
+    },
+    {
+      "as_of_ns": 1773111600000000000,
+      "as_of_utc": "2026-03-10T03:00:00+00:00",
+      "case": "normal_closed_overnight_gap",
+      "session_name": null,
+      "state": "closed",
+      "template": "synx_equity_index_rth"
+    },
+    {
+      "as_of_ns": 1767279600000000000,
+      "as_of_utc": "2026-01-01T15:00:00+00:00",
+      "case": "holiday_closed",
+      "session_name": null,
+      "state": "closed",
+      "template": "synx_equity_index_rth"
+    },
+    {
+      "as_of_ns": 1767366000000000000,
+      "as_of_utc": "2026-01-02T15:00:00+00:00",
+      "case": "day_after_holiday_normal",
+      "session_name": "regular",
+      "state": "regular",
+      "template": "synx_equity_index_rth"
+    },
+    {
+      "as_of_ns": 1773187200000000000,
+      "as_of_utc": "2026-03-11T00:00:00+00:00",
+      "case": "overnight_session",
+      "session_name": "overnight",
+      "state": "overnight",
+      "template": "synx_energy_extended"
+    },
+    {
+      "as_of_ns": 1773178200000000000,
+      "as_of_utc": "2026-03-10T21:30:00+00:00",
+      "case": "maintenance_window",
+      "session_name": "maintenance",
+      "state": "maintenance",
+      "template": "synx_energy_extended"
+    },
+    {
+      "as_of_ns": 1773504000000000000,
+      "as_of_utc": "2026-03-14T16:00:00+00:00",
+      "case": "weekend_closed",
+      "session_name": null,
+      "state": "closed",
+      "template": "synx_energy_extended"
+    },
+    {
+      "as_of_ns": 1772809200000000000,
+      "as_of_utc": "2026-03-06T15:00:00+00:00",
+      "case": "dst_spring_forward_before",
+      "session_name": "regular",
+      "state": "regular",
+      "template": "synx_equity_index_rth"
+    },
+    {
+      "as_of_ns": 1773064800000000000,
+      "as_of_utc": "2026-03-09T14:00:00+00:00",
+      "case": "dst_spring_forward_after",
+      "session_name": "regular",
+      "state": "regular",
+      "template": "synx_equity_index_rth"
+    },
+    {
+      "as_of_ns": 1793368800000000000,
+      "as_of_utc": "2026-10-30T14:00:00+00:00",
+      "case": "dst_fall_back_before",
+      "session_name": "regular",
+      "state": "regular",
+      "template": "synx_equity_index_rth"
+    },
+    {
+      "as_of_ns": 1793631600000000000,
+      "as_of_utc": "2026-11-02T15:00:00+00:00",
+      "case": "dst_fall_back_after",
+      "session_name": "regular",
+      "state": "regular",
+      "template": "synx_equity_index_rth"
+    },
+    {
+      "as_of_ns": 1772809200000000000,
+      "as_of_utc": "2026-03-06T15:00:00+00:00",
+      "case": "dst_spring_forward_before",
+      "session_name": "overnight",
+      "state": "overnight",
+      "template": "synx_rates_globex"
+    },
+    {
+      "as_of_ns": 1773064800000000000,
+      "as_of_utc": "2026-03-09T14:00:00+00:00",
+      "case": "dst_spring_forward_after",
+      "session_name": "overnight",
+      "state": "overnight",
+      "template": "synx_rates_globex"
+    },
+    {
+      "as_of_ns": 1793368800000000000,
+      "as_of_utc": "2026-10-30T14:00:00+00:00",
+      "case": "dst_fall_back_before",
+      "session_name": "overnight",
+      "state": "overnight",
+      "template": "synx_rates_globex"
+    },
+    {
+      "as_of_ns": 1793631600000000000,
+      "as_of_utc": "2026-11-02T15:00:00+00:00",
+      "case": "dst_fall_back_after",
+      "session_name": "overnight",
+      "state": "overnight",
+      "template": "synx_rates_globex"
+    },
+    {
+      "as_of_ns": 1772805600000000000,
+      "as_of_utc": "2026-03-06T14:00:00+00:00",
+      "case": "dst_spring_forward_before",
+      "session_name": "overnight",
+      "state": "overnight",
+      "template": "synx_energy_extended"
+    },
+    {
+      "as_of_ns": 1773061200000000000,
+      "as_of_utc": "2026-03-09T13:00:00+00:00",
+      "case": "dst_spring_forward_after",
+      "session_name": "overnight",
+      "state": "overnight",
+      "template": "synx_energy_extended"
+    },
+    {
+      "as_of_ns": 1793365200000000000,
+      "as_of_utc": "2026-10-30T13:00:00+00:00",
+      "case": "dst_fall_back_before",
+      "session_name": "overnight",
+      "state": "overnight",
+      "template": "synx_energy_extended"
+    },
+    {
+      "as_of_ns": 1793628000000000000,
+      "as_of_utc": "2026-11-02T14:00:00+00:00",
+      "case": "dst_fall_back_after",
+      "session_name": "overnight",
+      "state": "overnight",
+      "template": "synx_energy_extended"
+    },
+    {
+      "as_of_ns": 1735741800000000000,
+      "as_of_utc": "2025-01-01T14:30:00+00:00",
+      "case": "exactly_open",
+      "session_name": "regular",
+      "state": "regular",
+      "template": "synx_equity_index_rth"
+    },
+    {
+      "as_of_ns": 1735766100000000000,
+      "as_of_utc": "2025-01-01T21:15:00+00:00",
+      "case": "exactly_close",
+      "session_name": null,
+      "state": "closed",
+      "template": "synx_equity_index_rth"
+    }
+  ],
+  "claim": "21 boundary timestamps were classified through the real CalendarRegistry.classify() production path (no reimplementation), covering normal, holiday, overnight, maintenance, weekend-closed, exactly-open, exactly-close and both 2026 US DST transitions (spring-forward 2026-03-08, fall-back 2026-11-01) across all three committed synthetic templates. All data is synthetic (DATA_AND_RESEARCH_POLICY); no claim is made about any real exchange calendar.",
+  "dirty": true,
+  "generated_on": "2026-08-10",
+  "repository_commit": "4609b56015c3a83869653864472576451d04133a",
+  "requirement": "AEGIS-013",
+  "templates": [
+    "synx_energy_extended",
+    "synx_equity_index_rth",
+    "synx_rates_globex"
+  ]
+}

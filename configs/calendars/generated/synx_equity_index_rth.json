@@ -1,0 +1,4689 @@
+{
+  "generated_from": "configs/calendars/templates/synx_equity_index_rth.yaml",
+  "intervals": [
+    {
+      "end_ns": 1735766100000000000,
+      "name": "regular",
+      "start_ns": 1735741800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1735852500000000000,
+      "name": "regular",
+      "start_ns": 1735828200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1735938900000000000,
+      "name": "regular",
+      "start_ns": 1735914600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1736198100000000000,
+      "name": "regular",
+      "start_ns": 1736173800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1736284500000000000,
+      "name": "regular",
+      "start_ns": 1736260200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1736370900000000000,
+      "name": "regular",
+      "start_ns": 1736346600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1736457300000000000,
+      "name": "regular",
+      "start_ns": 1736433000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1736543700000000000,
+      "name": "regular",
+      "start_ns": 1736519400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1736802900000000000,
+      "name": "regular",
+      "start_ns": 1736778600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1736889300000000000,
+      "name": "regular",
+      "start_ns": 1736865000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1736975700000000000,
+      "name": "regular",
+      "start_ns": 1736951400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1737062100000000000,
+      "name": "regular",
+      "start_ns": 1737037800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1737148500000000000,
+      "name": "regular",
+      "start_ns": 1737124200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1737407700000000000,
+      "name": "regular",
+      "start_ns": 1737383400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1737494100000000000,
+      "name": "regular",
+      "start_ns": 1737469800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1737580500000000000,
+      "name": "regular",
+      "start_ns": 1737556200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1737666900000000000,
+      "name": "regular",
+      "start_ns": 1737642600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1737753300000000000,
+      "name": "regular",
+      "start_ns": 1737729000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1738012500000000000,
+      "name": "regular",
+      "start_ns": 1737988200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1738098900000000000,
+      "name": "regular",
+      "start_ns": 1738074600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1738185300000000000,
+      "name": "regular",
+      "start_ns": 1738161000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1738271700000000000,
+      "name": "regular",
+      "start_ns": 1738247400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1738358100000000000,
+      "name": "regular",
+      "start_ns": 1738333800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1738617300000000000,
+      "name": "regular",
+      "start_ns": 1738593000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1738703700000000000,
+      "name": "regular",
+      "start_ns": 1738679400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1738790100000000000,
+      "name": "regular",
+      "start_ns": 1738765800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1738876500000000000,
+      "name": "regular",
+      "start_ns": 1738852200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1738962900000000000,
+      "name": "regular",
+      "start_ns": 1738938600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1739222100000000000,
+      "name": "regular",
+      "start_ns": 1739197800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1739308500000000000,
+      "name": "regular",
+      "start_ns": 1739284200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1739394900000000000,
+      "name": "regular",
+      "start_ns": 1739370600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1739481300000000000,
+      "name": "regular",
+      "start_ns": 1739457000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1739567700000000000,
+      "name": "regular",
+      "start_ns": 1739543400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1739826900000000000,
+      "name": "regular",
+      "start_ns": 1739802600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1739913300000000000,
+      "name": "regular",
+      "start_ns": 1739889000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1739999700000000000,
+      "name": "regular",
+      "start_ns": 1739975400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1740086100000000000,
+      "name": "regular",
+      "start_ns": 1740061800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1740172500000000000,
+      "name": "regular",
+      "start_ns": 1740148200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1740431700000000000,
+      "name": "regular",
+      "start_ns": 1740407400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1740518100000000000,
+      "name": "regular",
+      "start_ns": 1740493800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1740604500000000000,
+      "name": "regular",
+      "start_ns": 1740580200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1740690900000000000,
+      "name": "regular",
+      "start_ns": 1740666600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1740777300000000000,
+      "name": "regular",
+      "start_ns": 1740753000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1741036500000000000,
+      "name": "regular",
+      "start_ns": 1741012200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1741122900000000000,
+      "name": "regular",
+      "start_ns": 1741098600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1741209300000000000,
+      "name": "regular",
+      "start_ns": 1741185000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1741295700000000000,
+      "name": "regular",
+      "start_ns": 1741271400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1741382100000000000,
+      "name": "regular",
+      "start_ns": 1741357800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1741637700000000000,
+      "name": "regular",
+      "start_ns": 1741613400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1741724100000000000,
+      "name": "regular",
+      "start_ns": 1741699800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1741810500000000000,
+      "name": "regular",
+      "start_ns": 1741786200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1741896900000000000,
+      "name": "regular",
+      "start_ns": 1741872600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1741983300000000000,
+      "name": "regular",
+      "start_ns": 1741959000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1742242500000000000,
+      "name": "regular",
+      "start_ns": 1742218200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1742328900000000000,
+      "name": "regular",
+      "start_ns": 1742304600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1742415300000000000,
+      "name": "regular",
+      "start_ns": 1742391000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1742501700000000000,
+      "name": "regular",
+      "start_ns": 1742477400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1742588100000000000,
+      "name": "regular",
+      "start_ns": 1742563800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1742847300000000000,
+      "name": "regular",
+      "start_ns": 1742823000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1742933700000000000,
+      "name": "regular",
+      "start_ns": 1742909400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1743020100000000000,
+      "name": "regular",
+      "start_ns": 1742995800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1743106500000000000,
+      "name": "regular",
+      "start_ns": 1743082200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1743192900000000000,
+      "name": "regular",
+      "start_ns": 1743168600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1743452100000000000,
+      "name": "regular",
+      "start_ns": 1743427800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1743538500000000000,
+      "name": "regular",
+      "start_ns": 1743514200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1743624900000000000,
+      "name": "regular",
+      "start_ns": 1743600600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1743711300000000000,
+      "name": "regular",
+      "start_ns": 1743687000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1743797700000000000,
+      "name": "regular",
+      "start_ns": 1743773400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1744056900000000000,
+      "name": "regular",
+      "start_ns": 1744032600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1744143300000000000,
+      "name": "regular",
+      "start_ns": 1744119000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1744229700000000000,
+      "name": "regular",
+      "start_ns": 1744205400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1744316100000000000,
+      "name": "regular",
+      "start_ns": 1744291800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1744402500000000000,
+      "name": "regular",
+      "start_ns": 1744378200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1744661700000000000,
+      "name": "regular",
+      "start_ns": 1744637400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1744748100000000000,
+      "name": "regular",
+      "start_ns": 1744723800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1744834500000000000,
+      "name": "regular",
+      "start_ns": 1744810200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1744920900000000000,
+      "name": "regular",
+      "start_ns": 1744896600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1745007300000000000,
+      "name": "regular",
+      "start_ns": 1744983000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1745266500000000000,
+      "name": "regular",
+      "start_ns": 1745242200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1745352900000000000,
+      "name": "regular",
+      "start_ns": 1745328600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1745439300000000000,
+      "name": "regular",
+      "start_ns": 1745415000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1745525700000000000,
+      "name": "regular",
+      "start_ns": 1745501400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1745612100000000000,
+      "name": "regular",
+      "start_ns": 1745587800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1745871300000000000,
+      "name": "regular",
+      "start_ns": 1745847000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1745957700000000000,
+      "name": "regular",
+      "start_ns": 1745933400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1746044100000000000,
+      "name": "regular",
+      "start_ns": 1746019800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1746130500000000000,
+      "name": "regular",
+      "start_ns": 1746106200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1746216900000000000,
+      "name": "regular",
+      "start_ns": 1746192600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1746476100000000000,
+      "name": "regular",
+      "start_ns": 1746451800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1746562500000000000,
+      "name": "regular",
+      "start_ns": 1746538200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1746648900000000000,
+      "name": "regular",
+      "start_ns": 1746624600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1746735300000000000,
+      "name": "regular",
+      "start_ns": 1746711000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1746821700000000000,
+      "name": "regular",
+      "start_ns": 1746797400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1747080900000000000,
+      "name": "regular",
+      "start_ns": 1747056600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1747167300000000000,
+      "name": "regular",
+      "start_ns": 1747143000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1747253700000000000,
+      "name": "regular",
+      "start_ns": 1747229400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1747340100000000000,
+      "name": "regular",
+      "start_ns": 1747315800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1747426500000000000,
+      "name": "regular",
+      "start_ns": 1747402200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1747685700000000000,
+      "name": "regular",
+      "start_ns": 1747661400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1747772100000000000,
+      "name": "regular",
+      "start_ns": 1747747800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1747858500000000000,
+      "name": "regular",
+      "start_ns": 1747834200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1747944900000000000,
+      "name": "regular",
+      "start_ns": 1747920600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1748031300000000000,
+      "name": "regular",
+      "start_ns": 1748007000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1748290500000000000,
+      "name": "regular",
+      "start_ns": 1748266200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1748376900000000000,
+      "name": "regular",
+      "start_ns": 1748352600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1748463300000000000,
+      "name": "regular",
+      "start_ns": 1748439000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1748549700000000000,
+      "name": "regular",
+      "start_ns": 1748525400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1748636100000000000,
+      "name": "regular",
+      "start_ns": 1748611800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1748895300000000000,
+      "name": "regular",
+      "start_ns": 1748871000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1748981700000000000,
+      "name": "regular",
+      "start_ns": 1748957400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1749068100000000000,
+      "name": "regular",
+      "start_ns": 1749043800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1749154500000000000,
+      "name": "regular",
+      "start_ns": 1749130200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1749240900000000000,
+      "name": "regular",
+      "start_ns": 1749216600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1749500100000000000,
+      "name": "regular",
+      "start_ns": 1749475800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1749586500000000000,
+      "name": "regular",
+      "start_ns": 1749562200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1749672900000000000,
+      "name": "regular",
+      "start_ns": 1749648600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1749759300000000000,
+      "name": "regular",
+      "start_ns": 1749735000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1749845700000000000,
+      "name": "regular",
+      "start_ns": 1749821400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1750104900000000000,
+      "name": "regular",
+      "start_ns": 1750080600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1750191300000000000,
+      "name": "regular",
+      "start_ns": 1750167000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1750277700000000000,
+      "name": "regular",
+      "start_ns": 1750253400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1750364100000000000,
+      "name": "regular",
+      "start_ns": 1750339800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1750450500000000000,
+      "name": "regular",
+      "start_ns": 1750426200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1750709700000000000,
+      "name": "regular",
+      "start_ns": 1750685400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1750796100000000000,
+      "name": "regular",
+      "start_ns": 1750771800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1750882500000000000,
+      "name": "regular",
+      "start_ns": 1750858200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1750968900000000000,
+      "name": "regular",
+      "start_ns": 1750944600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1751055300000000000,
+      "name": "regular",
+      "start_ns": 1751031000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1751314500000000000,
+      "name": "regular",
+      "start_ns": 1751290200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1751400900000000000,
+      "name": "regular",
+      "start_ns": 1751376600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1751487300000000000,
+      "name": "regular",
+      "start_ns": 1751463000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1751573700000000000,
+      "name": "regular",
+      "start_ns": 1751549400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1751660100000000000,
+      "name": "regular",
+      "start_ns": 1751635800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1751919300000000000,
+      "name": "regular",
+      "start_ns": 1751895000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1752005700000000000,
+      "name": "regular",
+      "start_ns": 1751981400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1752092100000000000,
+      "name": "regular",
+      "start_ns": 1752067800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1752178500000000000,
+      "name": "regular",
+      "start_ns": 1752154200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1752264900000000000,
+      "name": "regular",
+      "start_ns": 1752240600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1752524100000000000,
+      "name": "regular",
+      "start_ns": 1752499800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1752610500000000000,
+      "name": "regular",
+      "start_ns": 1752586200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1752696900000000000,
+      "name": "regular",
+      "start_ns": 1752672600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1752783300000000000,
+      "name": "regular",
+      "start_ns": 1752759000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1752869700000000000,
+      "name": "regular",
+      "start_ns": 1752845400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1753128900000000000,
+      "name": "regular",
+      "start_ns": 1753104600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1753215300000000000,
+      "name": "regular",
+      "start_ns": 1753191000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1753301700000000000,
+      "name": "regular",
+      "start_ns": 1753277400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1753388100000000000,
+      "name": "regular",
+      "start_ns": 1753363800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1753474500000000000,
+      "name": "regular",
+      "start_ns": 1753450200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1753733700000000000,
+      "name": "regular",
+      "start_ns": 1753709400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1753820100000000000,
+      "name": "regular",
+      "start_ns": 1753795800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1753906500000000000,
+      "name": "regular",
+      "start_ns": 1753882200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1753992900000000000,
+      "name": "regular",
+      "start_ns": 1753968600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1754079300000000000,
+      "name": "regular",
+      "start_ns": 1754055000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1754338500000000000,
+      "name": "regular",
+      "start_ns": 1754314200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1754424900000000000,
+      "name": "regular",
+      "start_ns": 1754400600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1754511300000000000,
+      "name": "regular",
+      "start_ns": 1754487000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1754597700000000000,
+      "name": "regular",
+      "start_ns": 1754573400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1754684100000000000,
+      "name": "regular",
+      "start_ns": 1754659800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1754943300000000000,
+      "name": "regular",
+      "start_ns": 1754919000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1755029700000000000,
+      "name": "regular",
+      "start_ns": 1755005400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1755116100000000000,
+      "name": "regular",
+      "start_ns": 1755091800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1755202500000000000,
+      "name": "regular",
+      "start_ns": 1755178200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1755288900000000000,
+      "name": "regular",
+      "start_ns": 1755264600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1755548100000000000,
+      "name": "regular",
+      "start_ns": 1755523800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1755634500000000000,
+      "name": "regular",
+      "start_ns": 1755610200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1755720900000000000,
+      "name": "regular",
+      "start_ns": 1755696600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1755807300000000000,
+      "name": "regular",
+      "start_ns": 1755783000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1755893700000000000,
+      "name": "regular",
+      "start_ns": 1755869400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1756152900000000000,
+      "name": "regular",
+      "start_ns": 1756128600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1756239300000000000,
+      "name": "regular",
+      "start_ns": 1756215000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1756325700000000000,
+      "name": "regular",
+      "start_ns": 1756301400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1756412100000000000,
+      "name": "regular",
+      "start_ns": 1756387800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1756498500000000000,
+      "name": "regular",
+      "start_ns": 1756474200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1756757700000000000,
+      "name": "regular",
+      "start_ns": 1756733400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1756844100000000000,
+      "name": "regular",
+      "start_ns": 1756819800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1756930500000000000,
+      "name": "regular",
+      "start_ns": 1756906200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1757016900000000000,
+      "name": "regular",
+      "start_ns": 1756992600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1757103300000000000,
+      "name": "regular",
+      "start_ns": 1757079000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1757362500000000000,
+      "name": "regular",
+      "start_ns": 1757338200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1757448900000000000,
+      "name": "regular",
+      "start_ns": 1757424600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1757535300000000000,
+      "name": "regular",
+      "start_ns": 1757511000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1757621700000000000,
+      "name": "regular",
+      "start_ns": 1757597400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1757708100000000000,
+      "name": "regular",
+      "start_ns": 1757683800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1757967300000000000,
+      "name": "regular",
+      "start_ns": 1757943000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1758053700000000000,
+      "name": "regular",
+      "start_ns": 1758029400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1758140100000000000,
+      "name": "regular",
+      "start_ns": 1758115800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1758226500000000000,
+      "name": "regular",
+      "start_ns": 1758202200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1758312900000000000,
+      "name": "regular",
+      "start_ns": 1758288600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1758572100000000000,
+      "name": "regular",
+      "start_ns": 1758547800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1758658500000000000,
+      "name": "regular",
+      "start_ns": 1758634200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1758744900000000000,
+      "name": "regular",
+      "start_ns": 1758720600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1758831300000000000,
+      "name": "regular",
+      "start_ns": 1758807000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1758917700000000000,
+      "name": "regular",
+      "start_ns": 1758893400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1759176900000000000,
+      "name": "regular",
+      "start_ns": 1759152600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1759263300000000000,
+      "name": "regular",
+      "start_ns": 1759239000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1759349700000000000,
+      "name": "regular",
+      "start_ns": 1759325400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1759436100000000000,
+      "name": "regular",
+      "start_ns": 1759411800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1759522500000000000,
+      "name": "regular",
+      "start_ns": 1759498200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1759781700000000000,
+      "name": "regular",
+      "start_ns": 1759757400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1759868100000000000,
+      "name": "regular",
+      "start_ns": 1759843800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1759954500000000000,
+      "name": "regular",
+      "start_ns": 1759930200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1760040900000000000,
+      "name": "regular",
+      "start_ns": 1760016600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1760127300000000000,
+      "name": "regular",
+      "start_ns": 1760103000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1760386500000000000,
+      "name": "regular",
+      "start_ns": 1760362200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1760472900000000000,
+      "name": "regular",
+      "start_ns": 1760448600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1760559300000000000,
+      "name": "regular",
+      "start_ns": 1760535000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1760645700000000000,
+      "name": "regular",
+      "start_ns": 1760621400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1760732100000000000,
+      "name": "regular",
+      "start_ns": 1760707800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1760991300000000000,
+      "name": "regular",
+      "start_ns": 1760967000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1761077700000000000,
+      "name": "regular",
+      "start_ns": 1761053400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1761164100000000000,
+      "name": "regular",
+      "start_ns": 1761139800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1761250500000000000,
+      "name": "regular",
+      "start_ns": 1761226200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1761336900000000000,
+      "name": "regular",
+      "start_ns": 1761312600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1761596100000000000,
+      "name": "regular",
+      "start_ns": 1761571800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1761682500000000000,
+      "name": "regular",
+      "start_ns": 1761658200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1761768900000000000,
+      "name": "regular",
+      "start_ns": 1761744600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1761855300000000000,
+      "name": "regular",
+      "start_ns": 1761831000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1761941700000000000,
+      "name": "regular",
+      "start_ns": 1761917400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1762204500000000000,
+      "name": "regular",
+      "start_ns": 1762180200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1762290900000000000,
+      "name": "regular",
+      "start_ns": 1762266600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1762377300000000000,
+      "name": "regular",
+      "start_ns": 1762353000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1762463700000000000,
+      "name": "regular",
+      "start_ns": 1762439400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1762550100000000000,
+      "name": "regular",
+      "start_ns": 1762525800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1762809300000000000,
+      "name": "regular",
+      "start_ns": 1762785000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1762895700000000000,
+      "name": "regular",
+      "start_ns": 1762871400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1762982100000000000,
+      "name": "regular",
+      "start_ns": 1762957800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1763068500000000000,
+      "name": "regular",
+      "start_ns": 1763044200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1763154900000000000,
+      "name": "regular",
+      "start_ns": 1763130600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1763414100000000000,
+      "name": "regular",
+      "start_ns": 1763389800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1763500500000000000,
+      "name": "regular",
+      "start_ns": 1763476200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1763586900000000000,
+      "name": "regular",
+      "start_ns": 1763562600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1763673300000000000,
+      "name": "regular",
+      "start_ns": 1763649000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1763759700000000000,
+      "name": "regular",
+      "start_ns": 1763735400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1764018900000000000,
+      "name": "regular",
+      "start_ns": 1763994600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1764105300000000000,
+      "name": "regular",
+      "start_ns": 1764081000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1764191700000000000,
+      "name": "regular",
+      "start_ns": 1764167400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1764278100000000000,
+      "name": "regular",
+      "start_ns": 1764253800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1764364500000000000,
+      "name": "regular",
+      "start_ns": 1764340200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1764623700000000000,
+      "name": "regular",
+      "start_ns": 1764599400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1764710100000000000,
+      "name": "regular",
+      "start_ns": 1764685800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1764796500000000000,
+      "name": "regular",
+      "start_ns": 1764772200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1764882900000000000,
+      "name": "regular",
+      "start_ns": 1764858600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1764969300000000000,
+      "name": "regular",
+      "start_ns": 1764945000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1765228500000000000,
+      "name": "regular",
+      "start_ns": 1765204200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1765314900000000000,
+      "name": "regular",
+      "start_ns": 1765290600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1765401300000000000,
+      "name": "regular",
+      "start_ns": 1765377000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1765487700000000000,
+      "name": "regular",
+      "start_ns": 1765463400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1765574100000000000,
+      "name": "regular",
+      "start_ns": 1765549800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1765833300000000000,
+      "name": "regular",
+      "start_ns": 1765809000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1765919700000000000,
+      "name": "regular",
+      "start_ns": 1765895400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1766006100000000000,
+      "name": "regular",
+      "start_ns": 1765981800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1766092500000000000,
+      "name": "regular",
+      "start_ns": 1766068200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1766178900000000000,
+      "name": "regular",
+      "start_ns": 1766154600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1766438100000000000,
+      "name": "regular",
+      "start_ns": 1766413800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1766524500000000000,
+      "name": "regular",
+      "start_ns": 1766500200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1766610900000000000,
+      "name": "regular",
+      "start_ns": 1766586600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1766697300000000000,
+      "name": "regular",
+      "start_ns": 1766673000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1766783700000000000,
+      "name": "regular",
+      "start_ns": 1766759400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1767042900000000000,
+      "name": "regular",
+      "start_ns": 1767018600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1767129300000000000,
+      "name": "regular",
+      "start_ns": 1767105000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1767215700000000000,
+      "name": "regular",
+      "start_ns": 1767191400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1767388500000000000,
+      "name": "regular",
+      "start_ns": 1767364200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1767647700000000000,
+      "name": "regular",
+      "start_ns": 1767623400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1767734100000000000,
+      "name": "regular",
+      "start_ns": 1767709800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1767820500000000000,
+      "name": "regular",
+      "start_ns": 1767796200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1767906900000000000,
+      "name": "regular",
+      "start_ns": 1767882600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1767993300000000000,
+      "name": "regular",
+      "start_ns": 1767969000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1768252500000000000,
+      "name": "regular",
+      "start_ns": 1768228200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1768338900000000000,
+      "name": "regular",
+      "start_ns": 1768314600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1768425300000000000,
+      "name": "regular",
+      "start_ns": 1768401000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1768511700000000000,
+      "name": "regular",
+      "start_ns": 1768487400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1768598100000000000,
+      "name": "regular",
+      "start_ns": 1768573800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1768857300000000000,
+      "name": "regular",
+      "start_ns": 1768833000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1768943700000000000,
+      "name": "regular",
+      "start_ns": 1768919400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1769030100000000000,
+      "name": "regular",
+      "start_ns": 1769005800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1769116500000000000,
+      "name": "regular",
+      "start_ns": 1769092200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1769202900000000000,
+      "name": "regular",
+      "start_ns": 1769178600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1769462100000000000,
+      "name": "regular",
+      "start_ns": 1769437800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1769548500000000000,
+      "name": "regular",
+      "start_ns": 1769524200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1769634900000000000,
+      "name": "regular",
+      "start_ns": 1769610600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1769721300000000000,
+      "name": "regular",
+      "start_ns": 1769697000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1769807700000000000,
+      "name": "regular",
+      "start_ns": 1769783400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1770066900000000000,
+      "name": "regular",
+      "start_ns": 1770042600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1770153300000000000,
+      "name": "regular",
+      "start_ns": 1770129000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1770239700000000000,
+      "name": "regular",
+      "start_ns": 1770215400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1770326100000000000,
+      "name": "regular",
+      "start_ns": 1770301800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1770412500000000000,
+      "name": "regular",
+      "start_ns": 1770388200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1770671700000000000,
+      "name": "regular",
+      "start_ns": 1770647400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1770758100000000000,
+      "name": "regular",
+      "start_ns": 1770733800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1770844500000000000,
+      "name": "regular",
+      "start_ns": 1770820200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1770930900000000000,
+      "name": "regular",
+      "start_ns": 1770906600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1771017300000000000,
+      "name": "regular",
+      "start_ns": 1770993000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1771276500000000000,
+      "name": "regular",
+      "start_ns": 1771252200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1771362900000000000,
+      "name": "regular",
+      "start_ns": 1771338600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1771449300000000000,
+      "name": "regular",
+      "start_ns": 1771425000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1771535700000000000,
+      "name": "regular",
+      "start_ns": 1771511400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1771622100000000000,
+      "name": "regular",
+      "start_ns": 1771597800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1771881300000000000,
+      "name": "regular",
+      "start_ns": 1771857000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1771967700000000000,
+      "name": "regular",
+      "start_ns": 1771943400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1772054100000000000,
+      "name": "regular",
+      "start_ns": 1772029800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1772140500000000000,
+      "name": "regular",
+      "start_ns": 1772116200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1772226900000000000,
+      "name": "regular",
+      "start_ns": 1772202600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1772486100000000000,
+      "name": "regular",
+      "start_ns": 1772461800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1772572500000000000,
+      "name": "regular",
+      "start_ns": 1772548200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1772658900000000000,
+      "name": "regular",
+      "start_ns": 1772634600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1772745300000000000,
+      "name": "regular",
+      "start_ns": 1772721000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1772831700000000000,
+      "name": "regular",
+      "start_ns": 1772807400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1773087300000000000,
+      "name": "regular",
+      "start_ns": 1773063000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1773173700000000000,
+      "name": "regular",
+      "start_ns": 1773149400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1773260100000000000,
+      "name": "regular",
+      "start_ns": 1773235800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1773346500000000000,
+      "name": "regular",
+      "start_ns": 1773322200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1773432900000000000,
+      "name": "regular",
+      "start_ns": 1773408600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1773692100000000000,
+      "name": "regular",
+      "start_ns": 1773667800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1773778500000000000,
+      "name": "regular",
+      "start_ns": 1773754200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1773864900000000000,
+      "name": "regular",
+      "start_ns": 1773840600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1773951300000000000,
+      "name": "regular",
+      "start_ns": 1773927000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1774037700000000000,
+      "name": "regular",
+      "start_ns": 1774013400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1774296900000000000,
+      "name": "regular",
+      "start_ns": 1774272600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1774383300000000000,
+      "name": "regular",
+      "start_ns": 1774359000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1774469700000000000,
+      "name": "regular",
+      "start_ns": 1774445400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1774556100000000000,
+      "name": "regular",
+      "start_ns": 1774531800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1774642500000000000,
+      "name": "regular",
+      "start_ns": 1774618200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1774901700000000000,
+      "name": "regular",
+      "start_ns": 1774877400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1774988100000000000,
+      "name": "regular",
+      "start_ns": 1774963800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1775074500000000000,
+      "name": "regular",
+      "start_ns": 1775050200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1775160900000000000,
+      "name": "regular",
+      "start_ns": 1775136600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1775247300000000000,
+      "name": "regular",
+      "start_ns": 1775223000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1775506500000000000,
+      "name": "regular",
+      "start_ns": 1775482200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1775592900000000000,
+      "name": "regular",
+      "start_ns": 1775568600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1775679300000000000,
+      "name": "regular",
+      "start_ns": 1775655000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1775765700000000000,
+      "name": "regular",
+      "start_ns": 1775741400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1775852100000000000,
+      "name": "regular",
+      "start_ns": 1775827800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1776111300000000000,
+      "name": "regular",
+      "start_ns": 1776087000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1776197700000000000,
+      "name": "regular",
+      "start_ns": 1776173400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1776284100000000000,
+      "name": "regular",
+      "start_ns": 1776259800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1776370500000000000,
+      "name": "regular",
+      "start_ns": 1776346200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1776456900000000000,
+      "name": "regular",
+      "start_ns": 1776432600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1776716100000000000,
+      "name": "regular",
+      "start_ns": 1776691800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1776802500000000000,
+      "name": "regular",
+      "start_ns": 1776778200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1776888900000000000,
+      "name": "regular",
+      "start_ns": 1776864600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1776975300000000000,
+      "name": "regular",
+      "start_ns": 1776951000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1777061700000000000,
+      "name": "regular",
+      "start_ns": 1777037400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1777320900000000000,
+      "name": "regular",
+      "start_ns": 1777296600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1777407300000000000,
+      "name": "regular",
+      "start_ns": 1777383000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1777493700000000000,
+      "name": "regular",
+      "start_ns": 1777469400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1777580100000000000,
+      "name": "regular",
+      "start_ns": 1777555800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1777666500000000000,
+      "name": "regular",
+      "start_ns": 1777642200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1777925700000000000,
+      "name": "regular",
+      "start_ns": 1777901400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1778012100000000000,
+      "name": "regular",
+      "start_ns": 1777987800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1778098500000000000,
+      "name": "regular",
+      "start_ns": 1778074200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1778184900000000000,
+      "name": "regular",
+      "start_ns": 1778160600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1778271300000000000,
+      "name": "regular",
+      "start_ns": 1778247000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1778530500000000000,
+      "name": "regular",
+      "start_ns": 1778506200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1778616900000000000,
+      "name": "regular",
+      "start_ns": 1778592600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1778703300000000000,
+      "name": "regular",
+      "start_ns": 1778679000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1778789700000000000,
+      "name": "regular",
+      "start_ns": 1778765400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1778876100000000000,
+      "name": "regular",
+      "start_ns": 1778851800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1779135300000000000,
+      "name": "regular",
+      "start_ns": 1779111000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1779221700000000000,
+      "name": "regular",
+      "start_ns": 1779197400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1779308100000000000,
+      "name": "regular",
+      "start_ns": 1779283800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1779394500000000000,
+      "name": "regular",
+      "start_ns": 1779370200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1779480900000000000,
+      "name": "regular",
+      "start_ns": 1779456600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1779740100000000000,
+      "name": "regular",
+      "start_ns": 1779715800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1779826500000000000,
+      "name": "regular",
+      "start_ns": 1779802200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1779912900000000000,
+      "name": "regular",
+      "start_ns": 1779888600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1779999300000000000,
+      "name": "regular",
+      "start_ns": 1779975000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1780085700000000000,
+      "name": "regular",
+      "start_ns": 1780061400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1780344900000000000,
+      "name": "regular",
+      "start_ns": 1780320600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1780431300000000000,
+      "name": "regular",
+      "start_ns": 1780407000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1780517700000000000,
+      "name": "regular",
+      "start_ns": 1780493400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1780604100000000000,
+      "name": "regular",
+      "start_ns": 1780579800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1780690500000000000,
+      "name": "regular",
+      "start_ns": 1780666200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1780949700000000000,
+      "name": "regular",
+      "start_ns": 1780925400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1781036100000000000,
+      "name": "regular",
+      "start_ns": 1781011800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1781122500000000000,
+      "name": "regular",
+      "start_ns": 1781098200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1781208900000000000,
+      "name": "regular",
+      "start_ns": 1781184600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1781295300000000000,
+      "name": "regular",
+      "start_ns": 1781271000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1781554500000000000,
+      "name": "regular",
+      "start_ns": 1781530200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1781640900000000000,
+      "name": "regular",
+      "start_ns": 1781616600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1781727300000000000,
+      "name": "regular",
+      "start_ns": 1781703000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1781813700000000000,
+      "name": "regular",
+      "start_ns": 1781789400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1781900100000000000,
+      "name": "regular",
+      "start_ns": 1781875800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1782159300000000000,
+      "name": "regular",
+      "start_ns": 1782135000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1782245700000000000,
+      "name": "regular",
+      "start_ns": 1782221400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1782332100000000000,
+      "name": "regular",
+      "start_ns": 1782307800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1782418500000000000,
+      "name": "regular",
+      "start_ns": 1782394200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1782504900000000000,
+      "name": "regular",
+      "start_ns": 1782480600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1782764100000000000,
+      "name": "regular",
+      "start_ns": 1782739800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1782850500000000000,
+      "name": "regular",
+      "start_ns": 1782826200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1782936900000000000,
+      "name": "regular",
+      "start_ns": 1782912600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1783023300000000000,
+      "name": "regular",
+      "start_ns": 1782999000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1783368900000000000,
+      "name": "regular",
+      "start_ns": 1783344600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1783455300000000000,
+      "name": "regular",
+      "start_ns": 1783431000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1783541700000000000,
+      "name": "regular",
+      "start_ns": 1783517400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1783628100000000000,
+      "name": "regular",
+      "start_ns": 1783603800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1783714500000000000,
+      "name": "regular",
+      "start_ns": 1783690200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1783973700000000000,
+      "name": "regular",
+      "start_ns": 1783949400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1784060100000000000,
+      "name": "regular",
+      "start_ns": 1784035800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1784146500000000000,
+      "name": "regular",
+      "start_ns": 1784122200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1784232900000000000,
+      "name": "regular",
+      "start_ns": 1784208600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1784319300000000000,
+      "name": "regular",
+      "start_ns": 1784295000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1784578500000000000,
+      "name": "regular",
+      "start_ns": 1784554200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1784664900000000000,
+      "name": "regular",
+      "start_ns": 1784640600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1784751300000000000,
+      "name": "regular",
+      "start_ns": 1784727000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1784837700000000000,
+      "name": "regular",
+      "start_ns": 1784813400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1784924100000000000,
+      "name": "regular",
+      "start_ns": 1784899800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1785183300000000000,
+      "name": "regular",
+      "start_ns": 1785159000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1785269700000000000,
+      "name": "regular",
+      "start_ns": 1785245400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1785356100000000000,
+      "name": "regular",
+      "start_ns": 1785331800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1785442500000000000,
+      "name": "regular",
+      "start_ns": 1785418200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1785528900000000000,
+      "name": "regular",
+      "start_ns": 1785504600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1785788100000000000,
+      "name": "regular",
+      "start_ns": 1785763800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1785874500000000000,
+      "name": "regular",
+      "start_ns": 1785850200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1785960900000000000,
+      "name": "regular",
+      "start_ns": 1785936600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1786047300000000000,
+      "name": "regular",
+      "start_ns": 1786023000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1786133700000000000,
+      "name": "regular",
+      "start_ns": 1786109400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1786392900000000000,
+      "name": "regular",
+      "start_ns": 1786368600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1786479300000000000,
+      "name": "regular",
+      "start_ns": 1786455000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1786565700000000000,
+      "name": "regular",
+      "start_ns": 1786541400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1786652100000000000,
+      "name": "regular",
+      "start_ns": 1786627800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1786738500000000000,
+      "name": "regular",
+      "start_ns": 1786714200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1786997700000000000,
+      "name": "regular",
+      "start_ns": 1786973400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1787084100000000000,
+      "name": "regular",
+      "start_ns": 1787059800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1787170500000000000,
+      "name": "regular",
+      "start_ns": 1787146200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1787256900000000000,
+      "name": "regular",
+      "start_ns": 1787232600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1787343300000000000,
+      "name": "regular",
+      "start_ns": 1787319000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1787602500000000000,
+      "name": "regular",
+      "start_ns": 1787578200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1787688900000000000,
+      "name": "regular",
+      "start_ns": 1787664600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1787775300000000000,
+      "name": "regular",
+      "start_ns": 1787751000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1787861700000000000,
+      "name": "regular",
+      "start_ns": 1787837400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1787948100000000000,
+      "name": "regular",
+      "start_ns": 1787923800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1788207300000000000,
+      "name": "regular",
+      "start_ns": 1788183000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1788293700000000000,
+      "name": "regular",
+      "start_ns": 1788269400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1788380100000000000,
+      "name": "regular",
+      "start_ns": 1788355800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1788466500000000000,
+      "name": "regular",
+      "start_ns": 1788442200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1788552900000000000,
+      "name": "regular",
+      "start_ns": 1788528600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1788812100000000000,
+      "name": "regular",
+      "start_ns": 1788787800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1788898500000000000,
+      "name": "regular",
+      "start_ns": 1788874200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1788984900000000000,
+      "name": "regular",
+      "start_ns": 1788960600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1789071300000000000,
+      "name": "regular",
+      "start_ns": 1789047000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1789157700000000000,
+      "name": "regular",
+      "start_ns": 1789133400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1789416900000000000,
+      "name": "regular",
+      "start_ns": 1789392600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1789503300000000000,
+      "name": "regular",
+      "start_ns": 1789479000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1789589700000000000,
+      "name": "regular",
+      "start_ns": 1789565400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1789676100000000000,
+      "name": "regular",
+      "start_ns": 1789651800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1789762500000000000,
+      "name": "regular",
+      "start_ns": 1789738200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1790021700000000000,
+      "name": "regular",
+      "start_ns": 1789997400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1790108100000000000,
+      "name": "regular",
+      "start_ns": 1790083800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1790194500000000000,
+      "name": "regular",
+      "start_ns": 1790170200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1790280900000000000,
+      "name": "regular",
+      "start_ns": 1790256600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1790367300000000000,
+      "name": "regular",
+      "start_ns": 1790343000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1790626500000000000,
+      "name": "regular",
+      "start_ns": 1790602200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1790712900000000000,
+      "name": "regular",
+      "start_ns": 1790688600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1790799300000000000,
+      "name": "regular",
+      "start_ns": 1790775000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1790885700000000000,
+      "name": "regular",
+      "start_ns": 1790861400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1790972100000000000,
+      "name": "regular",
+      "start_ns": 1790947800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1791231300000000000,
+      "name": "regular",
+      "start_ns": 1791207000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1791317700000000000,
+      "name": "regular",
+      "start_ns": 1791293400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1791404100000000000,
+      "name": "regular",
+      "start_ns": 1791379800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1791490500000000000,
+      "name": "regular",
+      "start_ns": 1791466200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1791576900000000000,
+      "name": "regular",
+      "start_ns": 1791552600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1791836100000000000,
+      "name": "regular",
+      "start_ns": 1791811800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1791922500000000000,
+      "name": "regular",
+      "start_ns": 1791898200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1792008900000000000,
+      "name": "regular",
+      "start_ns": 1791984600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1792095300000000000,
+      "name": "regular",
+      "start_ns": 1792071000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1792181700000000000,
+      "name": "regular",
+      "start_ns": 1792157400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1792440900000000000,
+      "name": "regular",
+      "start_ns": 1792416600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1792527300000000000,
+      "name": "regular",
+      "start_ns": 1792503000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1792613700000000000,
+      "name": "regular",
+      "start_ns": 1792589400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1792700100000000000,
+      "name": "regular",
+      "start_ns": 1792675800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1792786500000000000,
+      "name": "regular",
+      "start_ns": 1792762200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1793045700000000000,
+      "name": "regular",
+      "start_ns": 1793021400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1793132100000000000,
+      "name": "regular",
+      "start_ns": 1793107800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1793218500000000000,
+      "name": "regular",
+      "start_ns": 1793194200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1793304900000000000,
+      "name": "regular",
+      "start_ns": 1793280600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1793391300000000000,
+      "name": "regular",
+      "start_ns": 1793367000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1793654100000000000,
+      "name": "regular",
+      "start_ns": 1793629800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1793740500000000000,
+      "name": "regular",
+      "start_ns": 1793716200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1793826900000000000,
+      "name": "regular",
+      "start_ns": 1793802600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1793913300000000000,
+      "name": "regular",
+      "start_ns": 1793889000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1793999700000000000,
+      "name": "regular",
+      "start_ns": 1793975400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1794258900000000000,
+      "name": "regular",
+      "start_ns": 1794234600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1794345300000000000,
+      "name": "regular",
+      "start_ns": 1794321000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1794431700000000000,
+      "name": "regular",
+      "start_ns": 1794407400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1794518100000000000,
+      "name": "regular",
+      "start_ns": 1794493800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1794604500000000000,
+      "name": "regular",
+      "start_ns": 1794580200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1794863700000000000,
+      "name": "regular",
+      "start_ns": 1794839400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1794950100000000000,
+      "name": "regular",
+      "start_ns": 1794925800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1795036500000000000,
+      "name": "regular",
+      "start_ns": 1795012200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1795122900000000000,
+      "name": "regular",
+      "start_ns": 1795098600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1795209300000000000,
+      "name": "regular",
+      "start_ns": 1795185000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1795468500000000000,
+      "name": "regular",
+      "start_ns": 1795444200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1795554900000000000,
+      "name": "regular",
+      "start_ns": 1795530600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1795641300000000000,
+      "name": "regular",
+      "start_ns": 1795617000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1795727700000000000,
+      "name": "regular",
+      "start_ns": 1795703400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1795814100000000000,
+      "name": "regular",
+      "start_ns": 1795789800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1796073300000000000,
+      "name": "regular",
+      "start_ns": 1796049000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1796159700000000000,
+      "name": "regular",
+      "start_ns": 1796135400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1796246100000000000,
+      "name": "regular",
+      "start_ns": 1796221800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1796332500000000000,
+      "name": "regular",
+      "start_ns": 1796308200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1796418900000000000,
+      "name": "regular",
+      "start_ns": 1796394600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1796678100000000000,
+      "name": "regular",
+      "start_ns": 1796653800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1796764500000000000,
+      "name": "regular",
+      "start_ns": 1796740200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1796850900000000000,
+      "name": "regular",
+      "start_ns": 1796826600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1796937300000000000,
+      "name": "regular",
+      "start_ns": 1796913000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1797023700000000000,
+      "name": "regular",
+      "start_ns": 1796999400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1797282900000000000,
+      "name": "regular",
+      "start_ns": 1797258600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1797369300000000000,
+      "name": "regular",
+      "start_ns": 1797345000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1797455700000000000,
+      "name": "regular",
+      "start_ns": 1797431400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1797542100000000000,
+      "name": "regular",
+      "start_ns": 1797517800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1797628500000000000,
+      "name": "regular",
+      "start_ns": 1797604200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1797887700000000000,
+      "name": "regular",
+      "start_ns": 1797863400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1797974100000000000,
+      "name": "regular",
+      "start_ns": 1797949800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1798060500000000000,
+      "name": "regular",
+      "start_ns": 1798036200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1798146900000000000,
+      "name": "regular",
+      "start_ns": 1798122600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1798233300000000000,
+      "name": "regular",
+      "start_ns": 1798209000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1798492500000000000,
+      "name": "regular",
+      "start_ns": 1798468200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1798578900000000000,
+      "name": "regular",
+      "start_ns": 1798554600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1798665300000000000,
+      "name": "regular",
+      "start_ns": 1798641000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1798751700000000000,
+      "name": "regular",
+      "start_ns": 1798727400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1799097300000000000,
+      "name": "regular",
+      "start_ns": 1799073000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1799183700000000000,
+      "name": "regular",
+      "start_ns": 1799159400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1799270100000000000,
+      "name": "regular",
+      "start_ns": 1799245800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1799356500000000000,
+      "name": "regular",
+      "start_ns": 1799332200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1799442900000000000,
+      "name": "regular",
+      "start_ns": 1799418600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1799702100000000000,
+      "name": "regular",
+      "start_ns": 1799677800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1799788500000000000,
+      "name": "regular",
+      "start_ns": 1799764200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1799874900000000000,
+      "name": "regular",
+      "start_ns": 1799850600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1799961300000000000,
+      "name": "regular",
+      "start_ns": 1799937000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1800047700000000000,
+      "name": "regular",
+      "start_ns": 1800023400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1800306900000000000,
+      "name": "regular",
+      "start_ns": 1800282600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1800393300000000000,
+      "name": "regular",
+      "start_ns": 1800369000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1800479700000000000,
+      "name": "regular",
+      "start_ns": 1800455400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1800566100000000000,
+      "name": "regular",
+      "start_ns": 1800541800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1800652500000000000,
+      "name": "regular",
+      "start_ns": 1800628200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1800911700000000000,
+      "name": "regular",
+      "start_ns": 1800887400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1800998100000000000,
+      "name": "regular",
+      "start_ns": 1800973800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1801084500000000000,
+      "name": "regular",
+      "start_ns": 1801060200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1801170900000000000,
+      "name": "regular",
+      "start_ns": 1801146600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1801257300000000000,
+      "name": "regular",
+      "start_ns": 1801233000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1801516500000000000,
+      "name": "regular",
+      "start_ns": 1801492200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1801602900000000000,
+      "name": "regular",
+      "start_ns": 1801578600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1801689300000000000,
+      "name": "regular",
+      "start_ns": 1801665000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1801775700000000000,
+      "name": "regular",
+      "start_ns": 1801751400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1801862100000000000,
+      "name": "regular",
+      "start_ns": 1801837800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1802121300000000000,
+      "name": "regular",
+      "start_ns": 1802097000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1802207700000000000,
+      "name": "regular",
+      "start_ns": 1802183400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1802294100000000000,
+      "name": "regular",
+      "start_ns": 1802269800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1802380500000000000,
+      "name": "regular",
+      "start_ns": 1802356200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1802466900000000000,
+      "name": "regular",
+      "start_ns": 1802442600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1802726100000000000,
+      "name": "regular",
+      "start_ns": 1802701800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1802812500000000000,
+      "name": "regular",
+      "start_ns": 1802788200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1802898900000000000,
+      "name": "regular",
+      "start_ns": 1802874600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1802985300000000000,
+      "name": "regular",
+      "start_ns": 1802961000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1803071700000000000,
+      "name": "regular",
+      "start_ns": 1803047400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1803330900000000000,
+      "name": "regular",
+      "start_ns": 1803306600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1803417300000000000,
+      "name": "regular",
+      "start_ns": 1803393000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1803503700000000000,
+      "name": "regular",
+      "start_ns": 1803479400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1803590100000000000,
+      "name": "regular",
+      "start_ns": 1803565800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1803676500000000000,
+      "name": "regular",
+      "start_ns": 1803652200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1803935700000000000,
+      "name": "regular",
+      "start_ns": 1803911400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1804022100000000000,
+      "name": "regular",
+      "start_ns": 1803997800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1804108500000000000,
+      "name": "regular",
+      "start_ns": 1804084200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1804194900000000000,
+      "name": "regular",
+      "start_ns": 1804170600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1804281300000000000,
+      "name": "regular",
+      "start_ns": 1804257000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1804540500000000000,
+      "name": "regular",
+      "start_ns": 1804516200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1804626900000000000,
+      "name": "regular",
+      "start_ns": 1804602600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1804713300000000000,
+      "name": "regular",
+      "start_ns": 1804689000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1804799700000000000,
+      "name": "regular",
+      "start_ns": 1804775400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1804886100000000000,
+      "name": "regular",
+      "start_ns": 1804861800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1805141700000000000,
+      "name": "regular",
+      "start_ns": 1805117400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1805228100000000000,
+      "name": "regular",
+      "start_ns": 1805203800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1805314500000000000,
+      "name": "regular",
+      "start_ns": 1805290200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1805400900000000000,
+      "name": "regular",
+      "start_ns": 1805376600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1805487300000000000,
+      "name": "regular",
+      "start_ns": 1805463000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1805746500000000000,
+      "name": "regular",
+      "start_ns": 1805722200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1805832900000000000,
+      "name": "regular",
+      "start_ns": 1805808600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1805919300000000000,
+      "name": "regular",
+      "start_ns": 1805895000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1806005700000000000,
+      "name": "regular",
+      "start_ns": 1805981400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1806092100000000000,
+      "name": "regular",
+      "start_ns": 1806067800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1806351300000000000,
+      "name": "regular",
+      "start_ns": 1806327000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1806437700000000000,
+      "name": "regular",
+      "start_ns": 1806413400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1806524100000000000,
+      "name": "regular",
+      "start_ns": 1806499800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1806610500000000000,
+      "name": "regular",
+      "start_ns": 1806586200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1806696900000000000,
+      "name": "regular",
+      "start_ns": 1806672600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1806956100000000000,
+      "name": "regular",
+      "start_ns": 1806931800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1807042500000000000,
+      "name": "regular",
+      "start_ns": 1807018200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1807128900000000000,
+      "name": "regular",
+      "start_ns": 1807104600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1807215300000000000,
+      "name": "regular",
+      "start_ns": 1807191000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1807301700000000000,
+      "name": "regular",
+      "start_ns": 1807277400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1807560900000000000,
+      "name": "regular",
+      "start_ns": 1807536600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1807647300000000000,
+      "name": "regular",
+      "start_ns": 1807623000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1807733700000000000,
+      "name": "regular",
+      "start_ns": 1807709400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1807820100000000000,
+      "name": "regular",
+      "start_ns": 1807795800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1807906500000000000,
+      "name": "regular",
+      "start_ns": 1807882200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1808165700000000000,
+      "name": "regular",
+      "start_ns": 1808141400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1808252100000000000,
+      "name": "regular",
+      "start_ns": 1808227800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1808338500000000000,
+      "name": "regular",
+      "start_ns": 1808314200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1808424900000000000,
+      "name": "regular",
+      "start_ns": 1808400600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1808511300000000000,
+      "name": "regular",
+      "start_ns": 1808487000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1808770500000000000,
+      "name": "regular",
+      "start_ns": 1808746200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1808856900000000000,
+      "name": "regular",
+      "start_ns": 1808832600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1808943300000000000,
+      "name": "regular",
+      "start_ns": 1808919000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1809029700000000000,
+      "name": "regular",
+      "start_ns": 1809005400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1809116100000000000,
+      "name": "regular",
+      "start_ns": 1809091800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1809375300000000000,
+      "name": "regular",
+      "start_ns": 1809351000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1809461700000000000,
+      "name": "regular",
+      "start_ns": 1809437400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1809548100000000000,
+      "name": "regular",
+      "start_ns": 1809523800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1809634500000000000,
+      "name": "regular",
+      "start_ns": 1809610200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1809720900000000000,
+      "name": "regular",
+      "start_ns": 1809696600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1809980100000000000,
+      "name": "regular",
+      "start_ns": 1809955800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1810066500000000000,
+      "name": "regular",
+      "start_ns": 1810042200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1810152900000000000,
+      "name": "regular",
+      "start_ns": 1810128600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1810239300000000000,
+      "name": "regular",
+      "start_ns": 1810215000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1810325700000000000,
+      "name": "regular",
+      "start_ns": 1810301400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1810584900000000000,
+      "name": "regular",
+      "start_ns": 1810560600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1810671300000000000,
+      "name": "regular",
+      "start_ns": 1810647000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1810757700000000000,
+      "name": "regular",
+      "start_ns": 1810733400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1810844100000000000,
+      "name": "regular",
+      "start_ns": 1810819800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1810930500000000000,
+      "name": "regular",
+      "start_ns": 1810906200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1811189700000000000,
+      "name": "regular",
+      "start_ns": 1811165400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1811276100000000000,
+      "name": "regular",
+      "start_ns": 1811251800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1811362500000000000,
+      "name": "regular",
+      "start_ns": 1811338200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1811448900000000000,
+      "name": "regular",
+      "start_ns": 1811424600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1811535300000000000,
+      "name": "regular",
+      "start_ns": 1811511000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1811794500000000000,
+      "name": "regular",
+      "start_ns": 1811770200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1811880900000000000,
+      "name": "regular",
+      "start_ns": 1811856600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1811967300000000000,
+      "name": "regular",
+      "start_ns": 1811943000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1812053700000000000,
+      "name": "regular",
+      "start_ns": 1812029400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1812140100000000000,
+      "name": "regular",
+      "start_ns": 1812115800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1812399300000000000,
+      "name": "regular",
+      "start_ns": 1812375000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1812485700000000000,
+      "name": "regular",
+      "start_ns": 1812461400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1812572100000000000,
+      "name": "regular",
+      "start_ns": 1812547800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1812658500000000000,
+      "name": "regular",
+      "start_ns": 1812634200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1812744900000000000,
+      "name": "regular",
+      "start_ns": 1812720600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1813004100000000000,
+      "name": "regular",
+      "start_ns": 1812979800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1813090500000000000,
+      "name": "regular",
+      "start_ns": 1813066200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1813176900000000000,
+      "name": "regular",
+      "start_ns": 1813152600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1813263300000000000,
+      "name": "regular",
+      "start_ns": 1813239000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1813349700000000000,
+      "name": "regular",
+      "start_ns": 1813325400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1813608900000000000,
+      "name": "regular",
+      "start_ns": 1813584600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1813695300000000000,
+      "name": "regular",
+      "start_ns": 1813671000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1813781700000000000,
+      "name": "regular",
+      "start_ns": 1813757400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1813868100000000000,
+      "name": "regular",
+      "start_ns": 1813843800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1813954500000000000,
+      "name": "regular",
+      "start_ns": 1813930200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1814213700000000000,
+      "name": "regular",
+      "start_ns": 1814189400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1814300100000000000,
+      "name": "regular",
+      "start_ns": 1814275800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1814386500000000000,
+      "name": "regular",
+      "start_ns": 1814362200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1814472900000000000,
+      "name": "regular",
+      "start_ns": 1814448600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1814559300000000000,
+      "name": "regular",
+      "start_ns": 1814535000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1814818500000000000,
+      "name": "regular",
+      "start_ns": 1814794200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1814904900000000000,
+      "name": "regular",
+      "start_ns": 1814880600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1814991300000000000,
+      "name": "regular",
+      "start_ns": 1814967000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1815077700000000000,
+      "name": "regular",
+      "start_ns": 1815053400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1815164100000000000,
+      "name": "regular",
+      "start_ns": 1815139800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1815423300000000000,
+      "name": "regular",
+      "start_ns": 1815399000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1815509700000000000,
+      "name": "regular",
+      "start_ns": 1815485400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1815596100000000000,
+      "name": "regular",
+      "start_ns": 1815571800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1815682500000000000,
+      "name": "regular",
+      "start_ns": 1815658200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1815768900000000000,
+      "name": "regular",
+      "start_ns": 1815744600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1816028100000000000,
+      "name": "regular",
+      "start_ns": 1816003800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1816114500000000000,
+      "name": "regular",
+      "start_ns": 1816090200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1816200900000000000,
+      "name": "regular",
+      "start_ns": 1816176600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1816287300000000000,
+      "name": "regular",
+      "start_ns": 1816263000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1816373700000000000,
+      "name": "regular",
+      "start_ns": 1816349400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1816632900000000000,
+      "name": "regular",
+      "start_ns": 1816608600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1816719300000000000,
+      "name": "regular",
+      "start_ns": 1816695000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1816805700000000000,
+      "name": "regular",
+      "start_ns": 1816781400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1816892100000000000,
+      "name": "regular",
+      "start_ns": 1816867800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1816978500000000000,
+      "name": "regular",
+      "start_ns": 1816954200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1817237700000000000,
+      "name": "regular",
+      "start_ns": 1817213400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1817324100000000000,
+      "name": "regular",
+      "start_ns": 1817299800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1817410500000000000,
+      "name": "regular",
+      "start_ns": 1817386200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1817496900000000000,
+      "name": "regular",
+      "start_ns": 1817472600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1817583300000000000,
+      "name": "regular",
+      "start_ns": 1817559000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1817842500000000000,
+      "name": "regular",
+      "start_ns": 1817818200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1817928900000000000,
+      "name": "regular",
+      "start_ns": 1817904600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1818015300000000000,
+      "name": "regular",
+      "start_ns": 1817991000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1818101700000000000,
+      "name": "regular",
+      "start_ns": 1818077400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1818188100000000000,
+      "name": "regular",
+      "start_ns": 1818163800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1818447300000000000,
+      "name": "regular",
+      "start_ns": 1818423000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1818533700000000000,
+      "name": "regular",
+      "start_ns": 1818509400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1818620100000000000,
+      "name": "regular",
+      "start_ns": 1818595800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1818706500000000000,
+      "name": "regular",
+      "start_ns": 1818682200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1818792900000000000,
+      "name": "regular",
+      "start_ns": 1818768600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1819052100000000000,
+      "name": "regular",
+      "start_ns": 1819027800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1819138500000000000,
+      "name": "regular",
+      "start_ns": 1819114200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1819224900000000000,
+      "name": "regular",
+      "start_ns": 1819200600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1819311300000000000,
+      "name": "regular",
+      "start_ns": 1819287000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1819397700000000000,
+      "name": "regular",
+      "start_ns": 1819373400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1819656900000000000,
+      "name": "regular",
+      "start_ns": 1819632600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1819743300000000000,
+      "name": "regular",
+      "start_ns": 1819719000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1819829700000000000,
+      "name": "regular",
+      "start_ns": 1819805400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1819916100000000000,
+      "name": "regular",
+      "start_ns": 1819891800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1820002500000000000,
+      "name": "regular",
+      "start_ns": 1819978200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1820261700000000000,
+      "name": "regular",
+      "start_ns": 1820237400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1820348100000000000,
+      "name": "regular",
+      "start_ns": 1820323800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1820434500000000000,
+      "name": "regular",
+      "start_ns": 1820410200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1820520900000000000,
+      "name": "regular",
+      "start_ns": 1820496600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1820607300000000000,
+      "name": "regular",
+      "start_ns": 1820583000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1820866500000000000,
+      "name": "regular",
+      "start_ns": 1820842200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1820952900000000000,
+      "name": "regular",
+      "start_ns": 1820928600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1821039300000000000,
+      "name": "regular",
+      "start_ns": 1821015000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1821125700000000000,
+      "name": "regular",
+      "start_ns": 1821101400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1821212100000000000,
+      "name": "regular",
+      "start_ns": 1821187800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1821471300000000000,
+      "name": "regular",
+      "start_ns": 1821447000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1821557700000000000,
+      "name": "regular",
+      "start_ns": 1821533400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1821644100000000000,
+      "name": "regular",
+      "start_ns": 1821619800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1821730500000000000,
+      "name": "regular",
+      "start_ns": 1821706200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1821816900000000000,
+      "name": "regular",
+      "start_ns": 1821792600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1822076100000000000,
+      "name": "regular",
+      "start_ns": 1822051800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1822162500000000000,
+      "name": "regular",
+      "start_ns": 1822138200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1822248900000000000,
+      "name": "regular",
+      "start_ns": 1822224600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1822335300000000000,
+      "name": "regular",
+      "start_ns": 1822311000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1822421700000000000,
+      "name": "regular",
+      "start_ns": 1822397400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1822680900000000000,
+      "name": "regular",
+      "start_ns": 1822656600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1822767300000000000,
+      "name": "regular",
+      "start_ns": 1822743000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1822853700000000000,
+      "name": "regular",
+      "start_ns": 1822829400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1822940100000000000,
+      "name": "regular",
+      "start_ns": 1822915800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1823026500000000000,
+      "name": "regular",
+      "start_ns": 1823002200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1823285700000000000,
+      "name": "regular",
+      "start_ns": 1823261400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1823372100000000000,
+      "name": "regular",
+      "start_ns": 1823347800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1823458500000000000,
+      "name": "regular",
+      "start_ns": 1823434200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1823544900000000000,
+      "name": "regular",
+      "start_ns": 1823520600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1823631300000000000,
+      "name": "regular",
+      "start_ns": 1823607000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1823890500000000000,
+      "name": "regular",
+      "start_ns": 1823866200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1823976900000000000,
+      "name": "regular",
+      "start_ns": 1823952600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1824063300000000000,
+      "name": "regular",
+      "start_ns": 1824039000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1824149700000000000,
+      "name": "regular",
+      "start_ns": 1824125400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1824236100000000000,
+      "name": "regular",
+      "start_ns": 1824211800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1824495300000000000,
+      "name": "regular",
+      "start_ns": 1824471000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1824581700000000000,
+      "name": "regular",
+      "start_ns": 1824557400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1824668100000000000,
+      "name": "regular",
+      "start_ns": 1824643800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1824754500000000000,
+      "name": "regular",
+      "start_ns": 1824730200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1824840900000000000,
+      "name": "regular",
+      "start_ns": 1824816600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1825100100000000000,
+      "name": "regular",
+      "start_ns": 1825075800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1825186500000000000,
+      "name": "regular",
+      "start_ns": 1825162200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1825272900000000000,
+      "name": "regular",
+      "start_ns": 1825248600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1825359300000000000,
+      "name": "regular",
+      "start_ns": 1825335000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1825445700000000000,
+      "name": "regular",
+      "start_ns": 1825421400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1825708500000000000,
+      "name": "regular",
+      "start_ns": 1825684200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1825794900000000000,
+      "name": "regular",
+      "start_ns": 1825770600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1825881300000000000,
+      "name": "regular",
+      "start_ns": 1825857000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1825967700000000000,
+      "name": "regular",
+      "start_ns": 1825943400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1826054100000000000,
+      "name": "regular",
+      "start_ns": 1826029800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1826313300000000000,
+      "name": "regular",
+      "start_ns": 1826289000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1826399700000000000,
+      "name": "regular",
+      "start_ns": 1826375400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1826486100000000000,
+      "name": "regular",
+      "start_ns": 1826461800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1826572500000000000,
+      "name": "regular",
+      "start_ns": 1826548200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1826658900000000000,
+      "name": "regular",
+      "start_ns": 1826634600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1826918100000000000,
+      "name": "regular",
+      "start_ns": 1826893800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1827004500000000000,
+      "name": "regular",
+      "start_ns": 1826980200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1827090900000000000,
+      "name": "regular",
+      "start_ns": 1827066600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1827177300000000000,
+      "name": "regular",
+      "start_ns": 1827153000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1827263700000000000,
+      "name": "regular",
+      "start_ns": 1827239400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1827522900000000000,
+      "name": "regular",
+      "start_ns": 1827498600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1827609300000000000,
+      "name": "regular",
+      "start_ns": 1827585000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1827695700000000000,
+      "name": "regular",
+      "start_ns": 1827671400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1827782100000000000,
+      "name": "regular",
+      "start_ns": 1827757800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1827868500000000000,
+      "name": "regular",
+      "start_ns": 1827844200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1828127700000000000,
+      "name": "regular",
+      "start_ns": 1828103400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1828214100000000000,
+      "name": "regular",
+      "start_ns": 1828189800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1828300500000000000,
+      "name": "regular",
+      "start_ns": 1828276200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1828386900000000000,
+      "name": "regular",
+      "start_ns": 1828362600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1828473300000000000,
+      "name": "regular",
+      "start_ns": 1828449000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1828732500000000000,
+      "name": "regular",
+      "start_ns": 1828708200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1828818900000000000,
+      "name": "regular",
+      "start_ns": 1828794600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1828905300000000000,
+      "name": "regular",
+      "start_ns": 1828881000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1828991700000000000,
+      "name": "regular",
+      "start_ns": 1828967400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1829078100000000000,
+      "name": "regular",
+      "start_ns": 1829053800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1829337300000000000,
+      "name": "regular",
+      "start_ns": 1829313000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1829423700000000000,
+      "name": "regular",
+      "start_ns": 1829399400000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1829510100000000000,
+      "name": "regular",
+      "start_ns": 1829485800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1829596500000000000,
+      "name": "regular",
+      "start_ns": 1829572200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1829682900000000000,
+      "name": "regular",
+      "start_ns": 1829658600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1829942100000000000,
+      "name": "regular",
+      "start_ns": 1829917800000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1830028500000000000,
+      "name": "regular",
+      "start_ns": 1830004200000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1830114900000000000,
+      "name": "regular",
+      "start_ns": 1830090600000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1830201300000000000,
+      "name": "regular",
+      "start_ns": 1830177000000000000,
+      "type": "regular"
+    },
+    {
+      "end_ns": 1830287700000000000,
+      "name": "regular",
+      "start_ns": 1830263400000000000,
+      "type": "regular"
+    }
+  ],
+  "schema_version": 1,
+  "template": "synx_equity_index_rth",
+  "window_end": "2028-01-01",
+  "window_start": "2025-01-01"
+}

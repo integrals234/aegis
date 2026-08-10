@@ -1,0 +1,31 @@
+schema_version: 1
+
+# AEGIS-013 -- synx_equity_index_rth: a regular-hours-only session template.
+#
+# Referenced by configs/futures/products.yaml's EQX family (M2 slice 2). All
+# dates and times are synthetic (DATA_AND_RESEARCH_POLICY): this is not a
+# claim about any real exchange's actual trading hours or holiday calendar.
+#
+# Expanded to committed UTC intervals by tools/generate_calendars.py --
+# nothing at runtime reads this file or interprets America/Chicago; see
+# configs/calendars/generated/synx_equity_index_rth.json.
+
+template: synx_equity_index_rth
+timezone: America/Chicago
+
+blocks:
+  # Single regular session, weekdays only. No overnight or maintenance block
+  # for this template -- outside 08:30-15:15 local on a listed weekday, or on
+  # a holiday, the product is simply CLOSED.
+  - name: regular
+    type: regular
+    local_start: "08:30:00"
+    local_end: "15:15:00"
+    days_of_week: [mon, tue, wed, thu, fri]
+
+# Arbitrary fixture holiday dates -- chosen to exercise the holiday case
+# across the generation window, not to model any real exchange calendar.
+holidays:
+  - "2026-01-01"
+  - "2026-07-03"
+  - "2027-01-01"

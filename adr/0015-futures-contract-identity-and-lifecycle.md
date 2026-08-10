@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-08-10
-- Requirement IDs: AEGIS-011, AEGIS-012
+- Requirement IDs: AEGIS-011, AEGIS-012, AEGIS-013
 - Milestone: M2
 
 ## Context
@@ -136,7 +136,128 @@ into the identity layer everything else depends on.
   across arbitrary date ranges; chain iteration order is invariant to
   insertion order.
 
+## Slice 3 addendum: trading-session calendars (AEGIS-013)
+
+### Context
+
+`session_template` on `Product` (slice 2) was left deliberately opaque: "the
+calendar half -- trading-session calendars, holidays, DST -- is AEGIS-013 (M2
+slice 3) and is out of scope here." This addendum is that half. The frozen
+acceptance is narrow -- "session classification tests cover normal, holiday,
+overnight, and DST cases" -- but does not specify a data model, so the two
+failure modes to design against are the ones this ADR's main decision already
+established a pattern for: more than one way to classify the same instant
+(a partial order pretending to be total), and a dependency on something that
+differs between machines (there, guessing an ambiguous contract year; here,
+the host's own tz database version).
+
+### Decision
+
+**Two layers: hand-authored local time, offline-generated UTC.**
+`configs/calendars/templates/*.yaml` (schema
+`configs/schemas/futures_calendar_template.v1.json`) is a human-authored
+session template: named blocks (`regular` / `overnight` / `maintenance`) with
+a local start/end time-of-day, the weekdays each starts on, and an explicit
+full-day holiday date list. `tools/generate_calendars.py` is the **only**
+code path in AEGIS that imports `zoneinfo` for this purpose; it expands every
+template over a fixed, committed window (2025-01-01..2028-01-01, chosen to
+cover the slice-2 contract fixtures with a year of margin and both daylight-saving
+transitions that occur in 2026) into concrete half-open `[start_ns, end_ns)` UTC intervals,
+validated for no-overlap, and writes the committed, schema-validated result
+(`configs/calendars/generated/*.json`, `configs/schemas/futures_calendar.v1.json`).
+
+**Runtime classification never touches a timezone database.**
+`python/futures/calendars.py`'s `CalendarRegistry` reads only the generated
+JSON. `classify(as_of_ns, template)` is a pure function -- no wall clock, no
+`zoneinfo` import, no locale, no hash-order dependency -- doing a binary
+search over sorted, validated-non-overlapping intervals and returning a
+`SessionState` (`REGULAR` / `OVERNIGHT` / `MAINTENANCE` / `CLOSED`) plus the
+session name. Two machines with different system tzdata versions classify
+identically, because neither one's classification depends on tzdata at all;
+only the offline generation step does, pinned by the `tzdata` package
+(`requirements/python-requirements.in`) so even that step is reproducible.
+
+**Half-open intervals; holiday suppression keyed by a block's own start
+date.** `as_of_ns == start_ns` classifies into the session (exactly-open);
+`as_of_ns == end_ns` does not (exactly-close falls through). A holiday
+suppresses only the block instance that *starts* on that date -- an
+overnight block that runs into the next calendar day is not affected by that
+next day being a holiday, only by the day it began on being one.
+
+**Three synthetic templates, matching the slice-2 `session_template` names
+exactly:** `synx_equity_index_rth` (regular-hours only, America/Chicago),
+`synx_energy_extended` and `synx_rates_globex` (near-24h Globex-style,
+America/New_York and America/Chicago respectively, each with a daily
+one-hour maintenance block and a weekend closure). All holiday dates are
+arbitrary fixture dates (DATA_AND_RESEARCH_POLICY) -- no claim is made about
+any real exchange's actual holiday calendar or trading hours.
+
+**Validation is fail-closed at both layers.** The generator refuses to write
+a calendar whose generated intervals overlap or contain a zero/negative-length
+result -- a template that produces a contradiction is a configuration error,
+never silently repaired. `CalendarRegistry` re-validates the same invariant
+on load rather than trusting a hand-edited generated file, and raises on an
+unknown template name or an unsupported/missing `schema_version` at either
+layer.
+
+### Alternatives considered
+
+- **Calling `zoneinfo` at classification time** -- rejected: makes runtime
+  behaviour depend on the host's tz database version, which is exactly the
+  kind of environment-sensitivity `requirements/python-requirements.in`'s own
+  comment on pinning `tzdata` warns against reproducing.
+- **Carving maintenance windows out of the overnight block** rather than
+  making `maintenance` its own block type -- rejected: a carve-out needs an
+  interval-subtraction algorithm this design does not otherwise need, and a
+  first-class block is directly and separately testable.
+- **Partial early-close holidays** -- rejected: no frozen acceptance
+  criterion asks for anything short of full-day closure, and modelling it
+  would require an interval-splitting rule this milestone does not need.
+- **Deriving the generation window from the current date** -- rejected: a
+  wall-clock-relative window would make the committed artifact change on
+  every regeneration for no configuration reason, which is exactly the kind
+  of hidden nondeterminism CLAUDE.md prohibits. The window is fixed and
+  covers what M2's fixtures need.
+
+### Consequences
+
+- `Product.session_template` now resolves through `CalendarRegistry` --
+  ingestion (slice 4), quality (slice 5) and any later participant-side book
+  builder classify against the same committed data, never a second copy.
+- Trading-day-based roll counting *could* now be built on top of this
+  calendar, since session data exists -- but the M2 slice 6 roll-policy work
+  deliberately does not couple the roll layer to it; see that slice's own
+  ADR for the alternatives it considered.
+- The 2025-2028 generation window is a real limit: a timestamp outside it has
+  no defined classification and `CalendarRegistry.classify` returns `CLOSED`
+  for it exactly as it would for a genuine gap, because there is no interval
+  there for it to fall into. Extending the window is a `tools/generate_calendars.py`
+  regeneration, not a runtime code change.
+
+### Verification
+
+- `tests/unit/test_futures_calendars.py` -- normal, holiday, day-after-holiday,
+  overnight, maintenance, weekend-closed, exactly-open, exactly-close,
+  one-nanosecond-before-close, unknown template, missing generated directory,
+  malformed/unsupported-version template schema, zero-length block rejection,
+  unknown-weekday rejection, overlapping/duplicate-start interval rejection,
+  every committed `Product.session_template` resolving, and two DST checks: a
+  committed-artifact check (the same local start time shifts by exactly one
+  hour in UTC across each 2026 transition, derived independently via
+  `zoneinfo` in the test) and a generator-level check (a purpose-built block
+  that genuinely spans the transition instant loses/gains the transitional
+  hour -- 22h/24h instead of the usual 23h).
+- `tests/property/test_session_classification.py` -- for arbitrary UTC
+  instants across the generation window and any committed template:
+  `CalendarRegistry.classify` agrees with an independent brute-force linear
+  scan; classification is pure and repeatable; at most one interval ever
+  contains a given instant; committed intervals are sorted and non-overlapping;
+  the internal bisect agrees with a manually re-derived one.
+
 ## Owner approval
 
-Authorized as part of M2 slice 2 under the owner-approved M2 plan of record
-(`experiments/plans/M2.md`, rev. 4), 2026-08-10.
+Authorized as part of M2 slice 2 (identity and lifecycle, AEGIS-011/012) and
+M2 slice 3 (this addendum: calendars, AEGIS-013), both under the
+owner-approved M2 plan of record (`experiments/plans/M2.md`, rev. 4); slice 3
+additionally under the owner's slice 3-7 continuous-execution prompt,
+2026-08-10.
