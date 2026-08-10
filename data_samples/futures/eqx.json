@@ -1,0 +1,27 @@
+{
+  "contracts": [
+    {
+      "contract_id": "SYNX:EQX:2026H",
+      "expiry": "2026-03-20",
+      "first_trade_date": "2025-03-20",
+      "last_trade_date": "2026-03-20",
+      "settlement_type": "cash"
+    },
+    {
+      "contract_id": "SYNX:EQX:2026M",
+      "expiry": "2026-06-20",
+      "first_trade_date": "2025-06-20",
+      "last_trade_date": "2026-06-20",
+      "settlement_type": "cash"
+    },
+    {
+      "contract_id": "SYNX:EQX:2027H",
+      "expiry": "2027-03-20",
+      "first_trade_date": "2026-03-20",
+      "last_trade_date": "2027-03-20",
+      "settlement_type": "cash"
+    }
+  ],
+  "product_root": "EQX",
+  "venue": "SYNX"
+}

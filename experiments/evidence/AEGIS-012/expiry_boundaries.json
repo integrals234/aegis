@@ -1,0 +1,356 @@
+{
+  "artifact": "expiry_boundaries",
+  "claim": "All 9 committed contract fixtures across 3 product families were looked up by exact identity through a real ContractChain (lookup_succeeded: true throughout), and lifecycle_state was evaluated at every day surrounding each of first_trade_date, last_trade_date and expiry. The lifecycle sequence recorded at each contract's transitions is exactly PreListing -> Active -> LastTradingDay -> [Expired ->] Settled, in that order, with no state skipped and none repeated out of order.",
+  "dirty": true,
+  "families": [
+    {
+      "chain_length": 3,
+      "chain_order": [
+        "SYNX:EQX:2026H",
+        "SYNX:EQX:2026M",
+        "SYNX:EQX:2027H"
+      ],
+      "contracts": [
+        {
+          "contract_id": "SYNX:EQX:2026H",
+          "expiry": "2026-03-20",
+          "first_trade_date": "2025-03-20",
+          "last_trade_date": "2026-03-20",
+          "lifecycle_boundary_transitions": [
+            {
+              "as_of": "2025-03-19",
+              "state": "pre_listing"
+            },
+            {
+              "as_of": "2025-03-20",
+              "state": "active"
+            },
+            {
+              "as_of": "2026-03-19",
+              "state": "active"
+            },
+            {
+              "as_of": "2026-03-20",
+              "state": "last_trading_day"
+            },
+            {
+              "as_of": "2026-03-21",
+              "state": "settled"
+            }
+          ],
+          "lookup_succeeded": true,
+          "settlement_type": "cash"
+        },
+        {
+          "contract_id": "SYNX:EQX:2026M",
+          "expiry": "2026-06-20",
+          "first_trade_date": "2025-06-20",
+          "last_trade_date": "2026-06-20",
+          "lifecycle_boundary_transitions": [
+            {
+              "as_of": "2025-06-19",
+              "state": "pre_listing"
+            },
+            {
+              "as_of": "2025-06-20",
+              "state": "active"
+            },
+            {
+              "as_of": "2026-06-19",
+              "state": "active"
+            },
+            {
+              "as_of": "2026-06-20",
+              "state": "last_trading_day"
+            },
+            {
+              "as_of": "2026-06-21",
+              "state": "settled"
+            }
+          ],
+          "lookup_succeeded": true,
+          "settlement_type": "cash"
+        },
+        {
+          "contract_id": "SYNX:EQX:2027H",
+          "expiry": "2027-03-20",
+          "first_trade_date": "2026-03-20",
+          "last_trade_date": "2027-03-20",
+          "lifecycle_boundary_transitions": [
+            {
+              "as_of": "2026-03-19",
+              "state": "pre_listing"
+            },
+            {
+              "as_of": "2026-03-20",
+              "state": "active"
+            },
+            {
+              "as_of": "2027-03-19",
+              "state": "active"
+            },
+            {
+              "as_of": "2027-03-20",
+              "state": "last_trading_day"
+            },
+            {
+              "as_of": "2027-03-21",
+              "state": "settled"
+            }
+          ],
+          "lookup_succeeded": true,
+          "settlement_type": "cash"
+        }
+      ],
+      "fixture": "data_samples/futures/eqx.json",
+      "product_root": "EQX",
+      "venue": "SYNX"
+    },
+    {
+      "chain_length": 3,
+      "chain_order": [
+        "SYNX:CLX:2026F",
+        "SYNX:CLX:2026H",
+        "SYNX:CLX:2026N"
+      ],
+      "contracts": [
+        {
+          "contract_id": "SYNX:CLX:2026F",
+          "expiry": "2026-01-20",
+          "first_trade_date": "2025-03-26",
+          "last_trade_date": "2026-01-17",
+          "lifecycle_boundary_transitions": [
+            {
+              "as_of": "2025-03-25",
+              "state": "pre_listing"
+            },
+            {
+              "as_of": "2025-03-26",
+              "state": "active"
+            },
+            {
+              "as_of": "2026-01-16",
+              "state": "active"
+            },
+            {
+              "as_of": "2026-01-17",
+              "state": "last_trading_day"
+            },
+            {
+              "as_of": "2026-01-18",
+              "state": "expired"
+            },
+            {
+              "as_of": "2026-01-19",
+              "state": "expired"
+            },
+            {
+              "as_of": "2026-01-20",
+              "state": "settled"
+            },
+            {
+              "as_of": "2026-01-21",
+              "state": "settled"
+            }
+          ],
+          "lookup_succeeded": true,
+          "settlement_type": "physical"
+        },
+        {
+          "contract_id": "SYNX:CLX:2026H",
+          "expiry": "2026-03-20",
+          "first_trade_date": "2025-05-24",
+          "last_trade_date": "2026-03-17",
+          "lifecycle_boundary_transitions": [
+            {
+              "as_of": "2025-05-23",
+              "state": "pre_listing"
+            },
+            {
+              "as_of": "2025-05-24",
+              "state": "active"
+            },
+            {
+              "as_of": "2026-03-16",
+              "state": "active"
+            },
+            {
+              "as_of": "2026-03-17",
+              "state": "last_trading_day"
+            },
+            {
+              "as_of": "2026-03-18",
+              "state": "expired"
+            },
+            {
+              "as_of": "2026-03-19",
+              "state": "expired"
+            },
+            {
+              "as_of": "2026-03-20",
+              "state": "settled"
+            },
+            {
+              "as_of": "2026-03-21",
+              "state": "settled"
+            }
+          ],
+          "lookup_succeeded": true,
+          "settlement_type": "physical"
+        },
+        {
+          "contract_id": "SYNX:CLX:2026N",
+          "expiry": "2026-07-20",
+          "first_trade_date": "2025-09-23",
+          "last_trade_date": "2026-07-17",
+          "lifecycle_boundary_transitions": [
+            {
+              "as_of": "2025-09-22",
+              "state": "pre_listing"
+            },
+            {
+              "as_of": "2025-09-23",
+              "state": "active"
+            },
+            {
+              "as_of": "2026-07-16",
+              "state": "active"
+            },
+            {
+              "as_of": "2026-07-17",
+              "state": "last_trading_day"
+            },
+            {
+              "as_of": "2026-07-18",
+              "state": "expired"
+            },
+            {
+              "as_of": "2026-07-19",
+              "state": "expired"
+            },
+            {
+              "as_of": "2026-07-20",
+              "state": "settled"
+            },
+            {
+              "as_of": "2026-07-21",
+              "state": "settled"
+            }
+          ],
+          "lookup_succeeded": true,
+          "settlement_type": "physical"
+        }
+      ],
+      "fixture": "data_samples/futures/clx.json",
+      "product_root": "CLX",
+      "venue": "SYNX"
+    },
+    {
+      "chain_length": 3,
+      "chain_order": [
+        "SYNX:SRX:2026M",
+        "SYNX:SRX:2026Z",
+        "SYNX:SRX:2027M"
+      ],
+      "contracts": [
+        {
+          "contract_id": "SYNX:SRX:2026M",
+          "expiry": "2026-06-20",
+          "first_trade_date": "2025-02-05",
+          "last_trade_date": "2026-06-20",
+          "lifecycle_boundary_transitions": [
+            {
+              "as_of": "2025-02-04",
+              "state": "pre_listing"
+            },
+            {
+              "as_of": "2025-02-05",
+              "state": "active"
+            },
+            {
+              "as_of": "2026-06-19",
+              "state": "active"
+            },
+            {
+              "as_of": "2026-06-20",
+              "state": "last_trading_day"
+            },
+            {
+              "as_of": "2026-06-21",
+              "state": "settled"
+            }
+          ],
+          "lookup_succeeded": true,
+          "settlement_type": "cash"
+        },
+        {
+          "contract_id": "SYNX:SRX:2026Z",
+          "expiry": "2026-12-20",
+          "first_trade_date": "2025-08-07",
+          "last_trade_date": "2026-12-20",
+          "lifecycle_boundary_transitions": [
+            {
+              "as_of": "2025-08-06",
+              "state": "pre_listing"
+            },
+            {
+              "as_of": "2025-08-07",
+              "state": "active"
+            },
+            {
+              "as_of": "2026-12-19",
+              "state": "active"
+            },
+            {
+              "as_of": "2026-12-20",
+              "state": "last_trading_day"
+            },
+            {
+              "as_of": "2026-12-21",
+              "state": "settled"
+            }
+          ],
+          "lookup_succeeded": true,
+          "settlement_type": "cash"
+        },
+        {
+          "contract_id": "SYNX:SRX:2027M",
+          "expiry": "2027-06-20",
+          "first_trade_date": "2026-02-05",
+          "last_trade_date": "2027-06-20",
+          "lifecycle_boundary_transitions": [
+            {
+              "as_of": "2026-02-04",
+              "state": "pre_listing"
+            },
+            {
+              "as_of": "2026-02-05",
+              "state": "active"
+            },
+            {
+              "as_of": "2027-06-19",
+              "state": "active"
+            },
+            {
+              "as_of": "2027-06-20",
+              "state": "last_trading_day"
+            },
+            {
+              "as_of": "2027-06-21",
+              "state": "settled"
+            }
+          ],
+          "lookup_succeeded": true,
+          "settlement_type": "cash"
+        }
+      ],
+      "fixture": "data_samples/futures/srx.json",
+      "product_root": "SRX",
+      "venue": "SYNX"
+    }
+  ],
+  "generated_on": "2026-08-10",
+  "repository_commit": "0cd9533dde5828e992d25cced4f66768d7424bb2",
+  "requirement": "AEGIS-012",
+  "total_contracts": 9
+}

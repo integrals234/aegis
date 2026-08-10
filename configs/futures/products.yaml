@@ -1,0 +1,58 @@
+schema_version: 1
+
+# AEGIS-011 — exchange, product and instrument metadata.
+#
+# Every product here is synthetic (DATA_AND_RESEARCH_POLICY): venue "SYNX" does
+# not exist, and no field describes a real market. That is deliberate, not a
+# placeholder to fill in later — AEGIS-011's acceptance is schema validation and
+# fixture coverage across at least three distinct product families, which this
+# file exists to satisfy without making any claim about a real venue or product.
+#
+# tick_size and multiplier are decimal strings, not YAML/JSON numbers: a float
+# loses exactness on values like 0.1, and these are the values every price and
+# every notional calculation is a multiple of. See
+# configs/schemas/futures_product.v1.json.
+#
+# session_template is an opaque name. Trading-session calendars are AEGIS-013
+# (M2 slice 3) and do not exist yet — nothing here or in python/futures may
+# interpret this field beyond passing it through.
+
+products:
+  # Family 1: equity index.
+  - venue: SYNX
+    product_root: EQX
+    description: >
+      Synthetic quarterly equity index future. Describes no real instrument,
+      venue or trading day.
+    tick_size: "0.25"
+    lot_size: 1
+    multiplier: "50"
+    currency: USD
+    timezone: America/Chicago
+    session_template: synx_equity_index_rth
+
+  # Family 2: energy.
+  - venue: SYNX
+    product_root: CLX
+    description: >
+      Synthetic monthly energy future. Describes no real instrument, venue or
+      trading day.
+    tick_size: "0.01"
+    lot_size: 1
+    multiplier: "1000"
+    currency: USD
+    timezone: America/New_York
+    session_template: synx_energy_extended
+
+  # Family 3: short-rate.
+  - venue: SYNX
+    product_root: SRX
+    description: >
+      Synthetic quarterly short-term interest-rate future. Describes no real
+      instrument, venue or trading day.
+    tick_size: "0.005"
+    lot_size: 1
+    multiplier: "2500"
+    currency: USD
+    timezone: America/Chicago
+    session_template: synx_rates_globex

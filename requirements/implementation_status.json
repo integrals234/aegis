@@ -207,18 +207,35 @@
       }
     },
     "AEGIS-011": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "python/futures/instruments.py",
+        "configs/schemas/futures_product.v1.json",
+        "configs/futures/products.yaml"
+      ],
+      "tests": [
+        "tests/unit/test_futures_instruments.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-011/product_families.json"
+      ],
+      "notes": "M2 slice 2. Product/instrument metadata (venue, product root, tick size, lot size, multiplier, currency, timezone, session-template reference) validated against configs/schemas/futures_product.v1.json, following the same mandatory-enumerated-version discipline as python/common/config.py (AEGIS-231). tick_size/multiplier are Decimal, parsed from schema-enforced decimal strings, never JSON/YAML floats. configs/futures/products.yaml covers three distinct synthetic product families (EQX equity index, CLX energy, SRX short-rate; venue SYNX is fictional), meeting the 'at least three' floor. session_template is an opaque reference only -- AEGIS-013 calendars do not exist yet. Not yet 'verified': that requires an independent spec-auditor review, which happens at M2 closure."
     },
     "AEGIS-012": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "python/futures/contracts.py",
+        "python/futures/chain.py"
+      ],
+      "tests": [
+        "tests/unit/test_futures_contracts.py",
+        "tests/unit/test_futures_chain.py",
+        "tests/property/test_contract_identity.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-012/expiry_boundaries.json"
+      ],
+      "notes": "M2 slice 2. Contract identity reuses ContractId from M2 slice 1 (python/futures/identifiers.py); this slice adds first/last trade dates, expiry, settlement type (cash/physical) and the five approved lifecycle states (ADR-0015). lifecycle_state(contract, as_of) is a pure function with no wall-clock dependency and no stored mutable state, checked as a chain that resolves the last_trade_date == expiry boundary to LastTradingDay rather than skipping to Settled. ContractChain provides lookup and chronological ordering only -- it deliberately has no 'front contract' method; that is the roll policy's decision (M2 slice 6), not identity's. Property-tested: identity round-trips through parse()/canonical for arbitrary inputs, lifecycle index is monotonic non-decreasing as as_of increases for arbitrary valid contracts, and chain iteration order is invariant to insertion order. Nine committed contract fixtures across the three AEGIS-011 product families exercise both the zero-width Expired case (cash settlement) and the non-zero-width case (physical settlement). Not yet 'verified': that requires an independent spec-auditor review, which happens at M2 closure."
     },
     "AEGIS-013": {
       "status": "not_started",
