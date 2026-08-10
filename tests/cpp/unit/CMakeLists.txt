@@ -8,6 +8,7 @@ aegis_add_test(aegis_unit_tests unit
   test_exchange_messages.cpp
   test_exchange_node.cpp
   test_exchange_types.cpp
+  test_fault_injection.cpp
   test_full_fills.cpp
   test_instrument_grid.cpp
   test_level_index.cpp

@@ -906,18 +906,28 @@
       "notes": ""
     },
     "AEGIS-060": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/replay/fault_injection.hpp",
+        "cpp/replay/fault_injection.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_fault_injection.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "M2 slice 11. DeterministicFaultInjector's kDelayed fault: an explicit, committed FaultRule (record_index + delay), never randomness, annotates the targeted record with FaultAnnotation{kind, delay} while leaving it in the emitted sequence and its canonical-order fields untouched. This is the injection mechanism only -- the stale-data RESPONSE the acceptance criterion names needs a participant-side consumer that does not exist before M3; that residual is unchanged from the owner-confirmed M2 plan of record. See ADR-0019. Not yet 'verified'."
     },
     "AEGIS-061": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/replay/fault_injection.hpp",
+        "cpp/replay/fault_injection.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_fault_injection.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "M2 slice 11. DeterministicFaultInjector's kMissing (removed from output, accounted for in FaultInjectionResult::dropped, never silently lost), kDuplicated (the record appears twice consecutively, only the injected copy annotated) and kSequenceGap (an annotation declaring a source-sequence-numbering gap, never a mutation of the record's own source_sequence -- canonical order is never put at risk) faults. Mechanism only -- feed RECOVERY is the registered M3 residual, unchanged from the owner-confirmed M2 plan of record. See ADR-0019. Not yet 'verified'."
     },
     "AEGIS-062": {
       "status": "not_started",

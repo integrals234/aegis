@@ -27,7 +27,9 @@ add_library(aegis_replay
   replay_engine.cpp
   replay_engine.hpp
   pacing.cpp
-  pacing.hpp)
+  pacing.hpp
+  fault_injection.cpp
+  fault_injection.hpp)
 
 target_include_directories(aegis_replay PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(aegis_replay
