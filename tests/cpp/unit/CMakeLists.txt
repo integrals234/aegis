@@ -18,6 +18,7 @@ aegis_add_test(aegis_unit_tests unit
   test_matching_policy_interface.cpp
   test_modify_semantics.cpp
   test_reject_matrix.cpp
+  test_replay_event.cpp
   test_sequencer.cpp
   test_snapshot_roundtrip.cpp
   test_time.cpp
@@ -25,7 +26,8 @@ aegis_add_test(aegis_unit_tests unit
 target_link_libraries(aegis_unit_tests PRIVATE
   aegis_common aegis_events
   aegis_exchange_order_book aegis_exchange_sequencer aegis_exchange_matching
-  aegis_exchange_state aegis_exchange_app)
+  aegis_exchange_state aegis_exchange_app
+  aegis_replay)
 
 # The config tests read the schema and corpus from the source tree at runtime;
 # the exchange-message golden fixture and the exchange determinism lint do too.

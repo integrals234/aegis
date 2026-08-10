@@ -7,12 +7,37 @@
 #   bash scripts/lock_python.sh
 clang-format==22.1.8
 clang-tidy==22.1.8
+duckdb==1.5.5
 hypothesis==6.165.1
 jsonschema==4.26.0
 mypy==2.3.0
+pyarrow==25.0.0
 pybind11==3.0.4
 pytest==9.1.1
 PyYAML==6.0.3
 ruff==0.16.1
 types-jsonschema==4.26.0.20260518
 types-PyYAML==6.0.12.20260724
+tzdata==2026.3
+
+# Added at M2 slice 1 under the owner's `m2-columnar-dependencies` approval
+# (configs/governance/policy.yaml, granted in PR #5):
+#
+#   pyarrow, duckdb  AEGIS-230's obligation, due this milestone: Parquet/Arrow
+#                    round trips over the AEGIS-026 normalized futures schema,
+#                    with DuckDB querying the same Parquet. Implemented in
+#                    slice 5; pinned here because the milestone's dependency
+#                    surface is settled once, at activation, rather than drifting
+#                    slice by slice.
+#
+#   tzdata           AEGIS-013 names DST cases. zoneinfo otherwise reads the
+#                    host's tz database, whose version differs between this
+#                    machine and the ubuntu-24.04 runner -- so a DST test would
+#                    be environment-sensitive, which is exactly what
+#                    deterministic replay must exclude. Session calendars are
+#                    committed as explicit UTC intervals; this pin is what makes
+#                    *generating* those fixtures reproducible.
+#
+# tools/probe_dependencies.py confirmed wheels exist for all three on both
+# Python 3.12 and 3.14 before this change; CI tests both, so an sdist-only
+# release on either would break the matrix rather than fail quietly.

@@ -1,33 +1,37 @@
 # Build State
 
-- Active milestone: M1
+- Active milestone: M2
 - M0 status: **CLOSED** 2026-08-06 (owner-approved fast-track closure)
-- M1 status: **VERIFIED, AWAITING MERGE**. Started 2026-08-07 per
-  `experiments/plans/M1.md` (approved plan of record, revised after nine owner
-  corrections). All 15 M1 requirements (AEGIS-027..041) are `verified` as of
-  2026-08-09, on an independent `/audit-milestone M1` against the final tree
+- M1 status: **CLOSED** 2026-08-09. All 15 M1 requirements (AEGIS-027..041) are
+  `verified` on an independent `/audit-milestone M1` against the final tree
   `2747ea6` — 15 PASS, 0 FAIL, no blocking finding. Every obligation due at M1
-  is paid, so `--check-deferred M1` passes. What remains is merging PR #2; the
-  milestone is not closed until it lands on `main`.
-- Active branch: `chore/m1-closure` (PR #2 into `main`); the implementation
-  branch `milestone/m1-exchange-core` merged as PR #1.
-- Owner-approved scope changes: `scripts/ci_local.sh`, `.github/workflows/ci.yml`, `.github/workflows/governance.yml`, `scripts/governance_preflight.sh`
-  — **the final use of this channel, which the same change retires.**
-  (All four paths are on one line deliberately: `tools/check_scope.py` parses
-  this line by prefix, so a wrapped continuation is silently not read — a
-  brittleness worth noting given the line is now retired anyway.)
-  R8 is remediated by ADR-0014: owner approvals now live in
-  `configs/governance/policy.yaml` on protected `main`, and this line grants
-  nothing once that mechanism is on `main`. The bootstrap pull request that
-  installs it must nevertheless pass the *old* gate, and `.github/**` and
-  `scripts/**` are not in M1's `allowed` list, so the retired channel is used
-  once to introduce its own replacement. This is not Claude self-authorising:
-  the R8 remediation was authorised by the owner in the M2 planning session on
-  2026-08-09, and the owner ratifies it by approving the bootstrap pull request,
-  which cannot merge without their review.
-  The historical M1 entry this replaces read: `scripts/ci_local.sh`,
-  `.github/workflows/ci.yml` — retargeting the hardcoded `--milestone M0` gate
-  to M1 (`experiments/plans/M1.md` §2 gap 3, §5 slice 0).
+  was paid, so `--check-deferred M1` passes. PR #2 merged; canonical main
+  `55ed162`.
+- M2 status: **IN PROGRESS**, started 2026-08-10 per `experiments/plans/M2.md`
+  (approved plan of record, rev. 4 — revised four times after the owner found
+  the signed-anchor circularity, the credential gap, the fine-grained-PAT
+  incompatibility and the `record_index` wording). Slice 1 of 14 is this
+  change: M2 activation and layer foundations.
+- Active branch: `milestone/m2-futures-replay`, based on `f3118b6`.
+- Owner-approved scope changes: `cpp/CMakeLists.txt`, `scripts/ci_local.sh`, `.github/workflows/ci.yml`, `requirements/python-requirements.in`, `requirements/requirements.lock`, `pyproject.toml`
+  — **a MIRROR, not the authority.** Since ADR-0014 (R8, PR #3) this line
+  **grants nothing**: approvals live in `configs/governance/policy.yaml` on
+  protected `main`, where an agent cannot put them, and
+  `tools/governance/authoritative_check.py` runs from `main` under
+  `pull_request_target` reading this branch only as data. The six paths above
+  are transcribed from the owner's `m2-build-and-gate` and
+  `m2-columnar-dependencies` approvals, granted in PR #5.
+  The mirror exists so `tools/check_scope.py` — retained as a fast advisory
+  check, which still parses this line — agrees with the authoritative gate
+  instead of contradicting it. If the two ever disagree, **the gate is right
+  and this line is stale**: editing it changes nothing about what may merge,
+  which is the whole point of R8.
+  Historical record: M1 approved `scripts/ci_local.sh` and
+  `.github/workflows/ci.yml` here to retarget the hardcoded `--milestone M0`
+  gate (`experiments/plans/M1.md` §2 gap 3, §5 slice 0); the R8 bootstrap
+  approved those two plus `.github/workflows/governance.yml` and
+  `scripts/governance_preflight.sh` in the final use of this channel, which the
+  same change retired.
 - Last audit: **independent `/audit-milestone M1`, 2026-08-09, against the
   final tree `2747ea6` — 15 PASS, 0 FAIL, no blocking finding.** This is the
   audit of record behind the promotions; it supersedes the 2026-08-08 audit of
@@ -35,7 +39,8 @@
   changed after it (R1–R7 remediation, CI remediation, and the AEGIS-009 /
   227 / 233 / 234 discharges). R1–R7 were confirmed present in the audited
   tree; R8 — the owner-approval channel living in this agent-writable file —
-  remains deliberately open and is the one governance item M1 does not close.
+  was left deliberately open at M1 and is **remediated 2026-08-09 by ADR-0014**
+  (PR #3), before any M2 implementation depended on it.
   Three non-blocking observations were recorded: the benchmark artefacts were
   captured from a dirty worktree at `b33ca67`, the `kMalformedMessage`
   reject-matrix row proves a codec precondition rather than an emitted reject,
@@ -47,22 +52,54 @@
   [31286449399](https://github.com/integrals234/aegis/actions/runs/31286449399)
   passed all nine jobs on `main`. `main` is protected by repository ruleset
   "Protect main" (id 20596537, active, `bypass_actors: []`, cannot be
-  bypassed): pull request required, and **all ten** AEGIS CI job contexts are
+  bypassed): pull request required, and **all eleven** AEGIS CI job contexts are
   required status checks with strict up-to-date enforcement. The tenth,
   `Clean-machine reproducibility (AEGIS-009)`, was added on 2026-08-09 so the
   job that produces AEGIS-009's evidence cannot regress on `main` without
-  blocking a merge.
+  blocking a merge. The eleventh, `Authoritative governance gate (R8)`, was
+  added by the owner on 2026-08-10 after it had been observed both passing a
+  legitimate pull request (#3) and failing a deliberately tampered one (#4).
+  The ruleset also requires one approving review, dismisses stale approvals on
+  push and requires approval of the most recent push, so no commit reaches
+  `main` without a fresh review from the owner identity — an identity the
+  agent's GitHub App credential cannot produce (ADR-0014).
 - Current blockers: none. **`--check-deferred M1` passes**: every obligation
   due at M1 is paid. AEGIS-227, AEGIS-233 and AEGIS-234 were discharged on
   2026-08-09 from the first real CI runs, and AEGIS-009 the same day from
   run 31295058007, whose `reproducibility` job executed
   `docs/ENVIRONMENT.md`'s canonical procedure verbatim on a clean
-  `ubuntu-24.04` runner. All 15 M1 requirements are now `verified` on the
-  2026-08-09 final-tree audit, so the only step left is merging PR #2.
+  `ubuntu-24.04` runner.
 - Deferred verification obligations: 5 open, listed in
   `docs/DEFERRED_VERIFICATION.md`; due M2=2, M3=1, M4=1, M5=1 — **none at M1**.
   Discharged: AEGIS-005 (exchange determinism), AEGIS-227, AEGIS-233,
   AEGIS-234 (first real CI runs) and AEGIS-009 (clean-machine reproducibility).
+  **Two are due at M2**: AEGIS-229 (C++/Python bindings) and AEGIS-230
+  (columnar interchange). Both must be paid before M2 closes, or
+  `--check-deferred M2` fails the milestone.
+
+## M2 state
+
+Slice 1 of 14 (`experiments/plans/M2.md` §8) — activation and layer
+foundations — is complete. It flips the milestone mirrors, retargets the
+milestone-aware gates from M1 to M2 under the `m2-build-and-gate` approval, and
+populates the two layers `configs/architecture_rules.yaml` dates to M2.
+
+Populating both layers in the same commit as the flip is required, not
+stylistic: `check_layer_population` makes emptiness a checked fact in both
+directions, so `cpp-replay` and `python-futures` must be non-empty the moment
+the active milestone reads M2. They carry genuine, tested code rather than
+placeholders — `cpp/replay/replay_event.{hpp,cpp}` (the canonical replay record
+and its total-order comparator, including the `record_index` tie-breaker that
+the replay-core ADR will formalise at slice 9) and `python/futures/identifiers.py` (contract
+identity and its canonical string form).
+
+The `m2-columnar-dependencies` approval is consumed to pin `pyarrow`, `duckdb`
+and `tzdata`, after `tools/probe_dependencies.py` confirmed wheels exist for
+both Python 3.12 and 3.14. Nothing consumes them yet; AEGIS-230's round trips
+are Slice 5.
+
+No M2 requirement is claimed as `implemented` or `verified` by this slice.
+AEGIS-011..026 and AEGIS-054..063 all remain `not_started`.
 
 ## M1 state
 
