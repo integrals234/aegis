@@ -1,0 +1,44 @@
+{
+  "artifact": "replay_determinism",
+  "binary": "build/debug/cpp/replay/aegis_replay_run",
+  "claim": "aegis_replay_run produced byte-identical output across independent process invocations over the same input, under accelerated pacing with two committed fault rules; and a run resumed from a cursor in a fresh process reproduced exactly the tail of an uninterrupted run. This is AEGIS-058's 'repeated runs produce identical outputs', shown across processes rather than across two calls in one binary.",
+  "determinism": {
+    "byte_identical": true,
+    "debug_release_agreement": {
+      "compared": false,
+      "why": "no release build present at generation time; the C++ release preset is exercised by scripts/ci_local.sh and by the CI 'C++ release' job"
+    },
+    "repeated_process_output_sha256": "a0370e9991bd9a9d60f0593e2f1332574ab6fdfc226ebb9d5a2a07a3fa38cbee",
+    "resume_after_record_index": 9,
+    "resume_reproduces_uninterrupted_tail": true,
+    "resumed_tail_record_indices": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "runs_compared": 2
+  },
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-10",
+  "input_stream": {
+    "derived_from": "the committed data_samples/futures/bars/* files, through the real futures.ingest pipeline (tools/make_replay_fixture.py); record_index is ingestion's own assignment, read by replay and never recomputed",
+    "label": "futures_canonical_stream.v1",
+    "path": "tests/unit/fixtures/replay/futures_canonical_stream.jsonl",
+    "record_count": 18,
+    "sha256": "b4b0008ac0354b619a5e0f74cba2dcfd7c69d5910c097186af078bd478056f38"
+  },
+  "not_evidence_for": [
+    "any performance or benchmark claim: this artifact records output equality only, never timing"
+  ],
+  "producer": "tools/generate_replay_evidence.py",
+  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
+  "requirements": [
+    "AEGIS-058"
+  ]
+}

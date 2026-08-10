@@ -1,0 +1,141 @@
+{
+  "artifact": "replay_pacing_modes",
+  "binary": "build/debug/cpp/replay/aegis_replay_run",
+  "claim": "The four approved pacing modes were each driven through the real ReplayEngine over the committed canonical stream. Their computed waits are recorded and are genuinely distinct; all four emit the identical canonical record_index sequence. No mode sleeps: every wait is a computed virtual duration (ADR-0018), so these figures are not timing measurements and are not a performance claim.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-10",
+  "input_stream": {
+    "derived_from": "the committed data_samples/futures/bars/* files, through the real futures.ingest pipeline (tools/make_replay_fixture.py); record_index is ingestion's own assignment, read by replay and never recomputed",
+    "label": "futures_canonical_stream.v1",
+    "path": "tests/unit/fixtures/replay/futures_canonical_stream.jsonl",
+    "record_count": 18,
+    "sha256": "b4b0008ac0354b619a5e0f74cba2dcfd7c69d5910c097186af078bd478056f38"
+  },
+  "not_evidence_for": [
+    "any latency or throughput claim: no wall-clock time is measured here"
+  ],
+  "pacing": {
+    "accelerated_x4_AEGIS_055": {
+      "record_count": 18,
+      "waits_nanos": [
+        0,
+        21600000000000,
+        21600000000000,
+        21600000000000,
+        21600000000000,
+        21600000000000,
+        1274400000000000,
+        21600000000000,
+        21600000000000,
+        21600000000000,
+        21600000000000,
+        21600000000000,
+        1836000000000000,
+        21600000000000,
+        21600000000000,
+        21600000000000,
+        21600000000000,
+        21600000000000
+      ]
+    },
+    "fixed_rate_1000ns_AEGIS_056": {
+      "record_count": 18,
+      "waits_nanos": [
+        0,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000,
+        1000
+      ]
+    },
+    "invariant": "all four pacing modes emit the identical canonical record_index sequence; only the computed wait differs (verified above, not asserted)",
+    "original_speed_AEGIS_054": {
+      "record_count": 18,
+      "waits_nanos": [
+        0,
+        86400000000000,
+        86400000000000,
+        86400000000000,
+        86400000000000,
+        86400000000000,
+        5097600000000000,
+        86400000000000,
+        86400000000000,
+        86400000000000,
+        86400000000000,
+        86400000000000,
+        7344000000000000,
+        86400000000000,
+        86400000000000,
+        86400000000000,
+        86400000000000,
+        86400000000000
+      ]
+    },
+    "shared_canonical_sequence": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "step_AEGIS_057": {
+      "record_count": 18,
+      "waits_nanos": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "producer": "tools/generate_replay_evidence.py",
+  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
+  "requirements": [
+    "AEGIS-054",
+    "AEGIS-055",
+    "AEGIS-056",
+    "AEGIS-057"
+  ]
+}

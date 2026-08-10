@@ -23,7 +23,9 @@ from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
+sys.path.insert(0, str(ROOT / "tools"))
 
+from evidence_provenance import provenance
 from futures.calendars import CalendarRegistry, load_calendar_registry
 
 
@@ -32,12 +34,6 @@ def _git(*args: str) -> str:
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
-def _provenance() -> dict[str, Any]:
-    return {
-        "generated_on": datetime.now(UTC).strftime("%Y-%m-%d"),
-        "repository_commit": _git("rev-parse", "HEAD"),
-        "dirty": bool(_git("status", "--porcelain")),
-    }
 
 
 def _ns(dt: datetime) -> int:
@@ -128,7 +124,7 @@ def main(argv: list[str] | None = None) -> int:
     payload = {
         "artifact": "session_classification",
         "requirement": "AEGIS-013",
-        **_provenance(),
+        **provenance(),
         "templates": registry.templates(),
         "case_count": len(cases),
         "cases": cases,

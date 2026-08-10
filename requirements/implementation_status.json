@@ -403,9 +403,12 @@
         "python/futures/roll_audit.py"
       ],
       "tests": [
-        "tests/unit/test_roll_audit.py"
+        "tests/unit/test_roll_audit.py",
+        "tests/integration/test_futures_stack_end_to_end.py"
       ],
-      "reports": [],
+      "reports": [
+        "experiments/evidence/AEGIS-023/roll_audit_and_sensitivity.json"
+      ],
       "notes": "M2 slice 8. build_roll_audit walks explicit dates through a real RollPolicy (M2 slice 6), detecting front-contract transitions via the real build_unadjusted_series (M2 slice 7), and fills each RollAuditRecord (old/new contract, prices, raw_gap, ratio_at_roll, trigger) via the same same-day-dual-quote roll_boundary_prices lookup series.py's own adjustment builders use -- no roll or adjustment logic re-derived. to_machine_readable/render_human_readable are two views over the same record list. Evidence/full acceptance proof deferred to Slice 14 closure per the owner's build-first-mode instructions; not yet 'verified'."
     },
     "AEGIS-024": {
@@ -416,7 +419,9 @@
       "tests": [
         "tests/unit/test_roll_sensitivity.py"
       ],
-      "reports": [],
+      "reports": [
+        "experiments/evidence/AEGIS-024/roll_audit_and_sensitivity.json"
+      ],
       "notes": "M2 slice 8, M2-owned portion only. compare_roll_methods quantifies differences between roll POLICIES (roll dates chosen, max/mean absolute deviation between additive-adjusted price paths) -- not strategy P&L, which needs a strategy that does not exist before M4. The M4 residual (strategy-level comparison) is unchanged from the owner-confirmed M2 plan of record coverage table ('024 | 8 | implemented -> M4 owner'); this is not a new deferral. Built entirely on real roll_audit.py/series.py production code. Not yet 'verified'.",
       "verification_blocked_until": "M4",
       "residual": "The frozen acceptance names an experiment report that quantifies STRATEGY differences caused by roll choices. No strategy exists: configs/architecture_rules.yaml dates cpp-participant-strategy and python-research to M4. M2 delivers the roll-method comparison itself (roll dates chosen and additive-adjusted price-path deviation between every pair of policies); attributing those differences to strategy P&L is M4's.",
@@ -840,36 +845,50 @@
         "cpp/replay/pacing.hpp",
         "cpp/replay/pacing.cpp",
         "cpp/replay/replay_engine.hpp",
-        "cpp/replay/replay_engine.cpp"
+        "cpp/replay/replay_engine.cpp",
+        "cpp/replay/replay_run_main.cpp"
       ],
       "tests": [
-        "tests/cpp/unit/test_pacing.cpp"
+        "tests/cpp/unit/test_pacing.cpp",
+        "tests/cpp/unit/test_replay_full_stack_integration.cpp",
+        "tests/replay/test_futures_replay_determinism.py"
       ],
-      "reports": [],
+      "reports": [
+        "experiments/evidence/AEGIS-054/replay_pacing_modes.json"
+      ],
       "notes": "M2 slice 10. OriginalSpeedPacing::wait_before returns the exact original gap between two events' own timestamps. ReplayEngine::next_with_pacing pairs the next emitted event with the policy-computed wait; never sleeps. See ADR-0018's slice 10 addendum. Not yet 'verified'."
     },
     "AEGIS-055": {
       "status": "implemented",
       "implementation": [
         "cpp/replay/pacing.hpp",
-        "cpp/replay/pacing.cpp"
+        "cpp/replay/pacing.cpp",
+        "cpp/replay/replay_run_main.cpp"
       ],
       "tests": [
-        "tests/cpp/unit/test_pacing.cpp"
+        "tests/cpp/unit/test_pacing.cpp",
+        "tests/cpp/unit/test_replay_full_stack_integration.cpp",
+        "tests/replay/test_futures_replay_determinism.py"
       ],
-      "reports": [],
+      "reports": [
+        "experiments/evidence/AEGIS-055/replay_pacing_modes.json"
+      ],
       "notes": "M2 slice 10. AcceleratedPacing::wait_before divides the original gap by a caller-supplied multiplier (constructor-validated strictly positive). See ADR-0018's slice 10 addendum. Not yet 'verified'."
     },
     "AEGIS-056": {
       "status": "implemented",
       "implementation": [
         "cpp/replay/pacing.hpp",
-        "cpp/replay/pacing.cpp"
+        "cpp/replay/pacing.cpp",
+        "cpp/replay/replay_run_main.cpp"
       ],
       "tests": [
-        "tests/cpp/unit/test_pacing.cpp"
+        "tests/cpp/unit/test_pacing.cpp",
+        "tests/replay/test_futures_replay_determinism.py"
       ],
-      "reports": [],
+      "reports": [
+        "experiments/evidence/AEGIS-056/replay_pacing_modes.json"
+      ],
       "notes": "M2 slice 10. FixedRatePacing::wait_before returns a constant configured interval (constructor-validated non-negative) independent of the original gap. See ADR-0018's slice 10 addendum. Not yet 'verified'."
     },
     "AEGIS-057": {
@@ -878,13 +897,17 @@
         "cpp/replay/pacing.hpp",
         "cpp/replay/pacing.cpp",
         "cpp/replay/replay_engine.hpp",
-        "cpp/replay/replay_engine.cpp"
+        "cpp/replay/replay_engine.cpp",
+        "cpp/replay/replay_run_main.cpp"
       ],
       "tests": [
         "tests/cpp/unit/test_pacing.cpp",
-        "tests/cpp/unit/test_replay_engine.cpp"
+        "tests/cpp/unit/test_replay_engine.cpp",
+        "tests/replay/test_futures_replay_determinism.py"
       ],
-      "reports": [],
+      "reports": [
+        "experiments/evidence/AEGIS-057/replay_pacing_modes.json"
+      ],
       "notes": "M2 slice 10. StepPacing::wait_before is always zero; advancing one event at a time is ReplayEngine::next (slice 9), and one timestamp group at a time is ReplayEngine::next_group (slice 9). See ADR-0018's slice 10 addendum. Not yet 'verified'."
     },
     "AEGIS-058": {
@@ -897,15 +920,20 @@
         "cpp/replay/replay_manifest.hpp",
         "cpp/replay/replay_manifest.cpp",
         "cpp/replay/replay_engine.hpp",
-        "cpp/replay/replay_engine.cpp"
+        "cpp/replay/replay_engine.cpp",
+        "cpp/replay/replay_run_main.cpp"
       ],
       "tests": [
         "tests/cpp/unit/test_replay_stream.cpp",
         "tests/cpp/unit/test_virtual_clock.cpp",
         "tests/cpp/unit/test_replay_manifest.cpp",
-        "tests/cpp/unit/test_replay_engine.cpp"
+        "tests/cpp/unit/test_replay_engine.cpp",
+        "tests/replay/test_futures_replay_determinism.py",
+        "tests/cpp/unit/test_replay_full_stack_integration.cpp"
       ],
-      "reports": [],
+      "reports": [
+        "experiments/evidence/AEGIS-058/replay_determinism.json"
+      ],
       "notes": "M2 slice 9. cpp/replay/ gains load_replay_stream (reads/validates a canonical JSON-Lines input, record_index read never recomputed, rejects out-of-order/duplicate-key input via the real canonical_compare from slice 1), VirtualClock (a WallClock whose only mutator is advance_to -- structurally never reads the system clock or sleeps), compute_manifest (FNV-1a 64-bit reproducibility digest, not cryptographic), and ReplayEngine (next/next_group/cursor/resume_from). cpp-replay still has no edge to any cpp-exchange-* layer. Deterministic benchmark mode is draining next() in a loop with no pacing delay. See ADR-0018. Not yet 'verified'; full evidence/acceptance proof is Slice 14 closure per the owner's build-first-mode instructions."
     },
     "AEGIS-059": {
@@ -916,9 +944,12 @@
       ],
       "tests": [
         "tests/unit/test_historical_replay_feed.py",
-        "tests/integration/test_bindings_roundtrip.py"
+        "tests/integration/test_bindings_roundtrip.py",
+        "tests/integration/test_futures_stack_end_to_end.py"
       ],
-      "reports": [],
+      "reports": [
+        "experiments/evidence/AEGIS-059/feed_and_binding_symmetry.json"
+      ],
       "notes": "M2-owned portion (per experiments/plans/M2.md rev. 4, slice 13 row and coverage table '059 | 13 | implemented -> M9'): the Feed protocol and its one concrete implementation, HistoricalReplayFeed (python/futures/replay.py), sorting already-ingested futures_bar.v1 records into the canonical (event_time_ns, source_sequence, contract_symbol, record_index) replay order and iterating them with cursor()/resume_from() mirroring cpp::replay::ReplayEngine (adr/0018's slice 13 addendum). AEGIS-059's full acceptance ('contract tests run one strategy against multiple feed implementations') needs a strategy (M4, configs/architecture_rules.yaml dates cpp-participant-strategy to M4) and live/paper feed implementations (M9) that do not exist yet.",
       "verification_blocked_until": "M9",
       "residual": "Contract tests running one strategy against multiple feed implementations (live, paper, historical) require a strategy (M4) and live/paper feed adapters (M9), neither of which exists yet. M2 delivers the Feed protocol and HistoricalReplayFeed only.",
@@ -935,12 +966,17 @@
       "status": "implemented",
       "implementation": [
         "cpp/replay/fault_injection.hpp",
-        "cpp/replay/fault_injection.cpp"
+        "cpp/replay/fault_injection.cpp",
+        "cpp/replay/replay_run_main.cpp"
       ],
       "tests": [
-        "tests/cpp/unit/test_fault_injection.cpp"
+        "tests/cpp/unit/test_fault_injection.cpp",
+        "tests/cpp/unit/test_replay_full_stack_integration.cpp",
+        "tests/replay/test_futures_replay_determinism.py"
       ],
-      "reports": [],
+      "reports": [
+        "experiments/evidence/AEGIS-060/replay_fault_injection.json"
+      ],
       "notes": "M2 slice 11. DeterministicFaultInjector's kDelayed fault: an explicit, committed FaultRule (record_index + delay), never randomness, annotates the targeted record with FaultAnnotation{kind, delay} while leaving it in the emitted sequence and its canonical-order fields untouched. This is the injection mechanism only -- the stale-data RESPONSE the acceptance criterion names needs a participant-side consumer that does not exist before M3; that residual is unchanged from the owner-confirmed M2 plan of record. See ADR-0019. Not yet 'verified'.",
       "verification_blocked_until": "M3",
       "residual": "The frozen acceptance names delayed observations AND stale-data responses. M2 delivers the injection mechanism (kDelayed annotation attached deterministically to an exact record, cpp/replay/fault_injection.*); a stale-data RESPONSE needs a participant-side consumer, and configs/architecture_rules.yaml dates cpp-participant-feed-handler to M3.",
@@ -957,12 +993,17 @@
       "status": "implemented",
       "implementation": [
         "cpp/replay/fault_injection.hpp",
-        "cpp/replay/fault_injection.cpp"
+        "cpp/replay/fault_injection.cpp",
+        "cpp/replay/replay_run_main.cpp"
       ],
       "tests": [
-        "tests/cpp/unit/test_fault_injection.cpp"
+        "tests/cpp/unit/test_fault_injection.cpp",
+        "tests/cpp/unit/test_replay_full_stack_integration.cpp",
+        "tests/replay/test_futures_replay_determinism.py"
       ],
-      "reports": [],
+      "reports": [
+        "experiments/evidence/AEGIS-061/replay_fault_injection.json"
+      ],
       "notes": "M2 slice 11. DeterministicFaultInjector's kMissing (removed from output, accounted for in FaultInjectionResult::dropped, never silently lost), kDuplicated (the record appears twice consecutively, only the injected copy annotated) and kSequenceGap (an annotation declaring a source-sequence-numbering gap, never a mutation of the record's own source_sequence -- canonical order is never put at risk) faults. Mechanism only -- feed RECOVERY is the registered M3 residual, unchanged from the owner-confirmed M2 plan of record. See ADR-0019. Not yet 'verified'.",
       "verification_blocked_until": "M3",
       "residual": "The frozen acceptance names feed RECOVERY tests covering each fault. M2 delivers deterministic missing/duplicate/sequence-gap injection with full accounting (nothing is silently lost); recovery is a participant-side behaviour and configs/architecture_rules.yaml dates cpp-participant-feed-handler to M3.",
@@ -979,12 +1020,16 @@
       "status": "implemented",
       "implementation": [
         "cpp/replay/fault_injection.hpp",
-        "cpp/replay/fault_injection.cpp"
+        "cpp/replay/fault_injection.cpp",
+        "cpp/replay/replay_run_main.cpp"
       ],
       "tests": [
-        "tests/cpp/unit/test_market_stress_faults.cpp"
+        "tests/cpp/unit/test_market_stress_faults.cpp",
+        "tests/cpp/unit/test_replay_full_stack_integration.cpp"
       ],
-      "reports": [],
+      "reports": [
+        "experiments/evidence/AEGIS-062/replay_fault_injection.json"
+      ],
       "notes": "M2 slice 12. FaultKind extended with kSpreadWidening/kVolatilitySpike/kLiquidityVanish -- same DeterministicFaultInjector mechanism as slice 11's kSequenceGap: a pure annotation (magnitude carries the caller-defined severity), never interpreted, never dropping or reordering a record. cpp-replay has no market-data payload to compute an actual spread from (ReplayEvent is identity/ordering only, by design), so nothing here could compute one even if it wanted to. Risk RESPONSE is the registered M5 residual, unchanged from the owner-confirmed M2 plan of record. See ADR-0019's slice 12 addendum. Not yet 'verified'.",
       "verification_blocked_until": "M5",
       "residual": "The frozen acceptance names scenario results AND risk responses being reproducible. M2 delivers reproducible scenario results (kSpreadWidening/kVolatilitySpike/kLiquidityVanish injected deterministically from committed rule data); a RISK response needs the risk engine, which configs/architecture_rules.yaml dates cpp-participant-risk to M5.",
@@ -1001,12 +1046,16 @@
       "status": "implemented",
       "implementation": [
         "cpp/replay/fault_injection.hpp",
-        "cpp/replay/fault_injection.cpp"
+        "cpp/replay/fault_injection.cpp",
+        "cpp/replay/replay_run_main.cpp"
       ],
       "tests": [
-        "tests/cpp/unit/test_market_stress_faults.cpp"
+        "tests/cpp/unit/test_market_stress_faults.cpp",
+        "tests/cpp/unit/test_replay_full_stack_integration.cpp"
       ],
-      "reports": [],
+      "reports": [
+        "experiments/evidence/AEGIS-063/replay_fault_injection.json"
+      ],
       "notes": "M2 slice 12. FaultKind extended with kRejection/kLatencySpike/kPartialFill/kBackpressure -- same mechanism, kLatencySpike reusing the existing delay field (Duration) rather than encoding a duration into the generic magnitude integer. OMS/risk INTEGRATION is the registered M5 residual, unchanged from the owner-confirmed M2 plan of record; no OMS or risk code is implemented here. See ADR-0019's slice 12 addendum. Not yet 'verified'.",
       "verification_blocked_until": "M5",
       "residual": "The frozen acceptance names OMS/risk INTEGRATION tests covering each fault. M2 delivers the execution-stress injection kinds (kRejection, kLatencySpike, kPartialFill, kBackpressure) deterministically; there is no OMS or risk layer to integrate with, and configs/architecture_rules.yaml dates cpp-participant-oms and cpp-participant-risk to M3 and M5 respectively.",
@@ -2206,9 +2255,12 @@
       ],
       "tests": [
         "tests/integration/test_bindings_roundtrip.py",
-        "tests/unit/test_historical_replay_feed.py"
+        "tests/unit/test_historical_replay_feed.py",
+        "tests/integration/test_futures_stack_end_to_end.py"
       ],
-      "reports": [],
+      "reports": [
+        "experiments/evidence/AEGIS-229/feed_and_binding_symmetry.json"
+      ],
       "notes": "M2 obligation discharged at slice 13 (was blocked_until M2, registered 2026-08-06 while closing M0, residual: 'no engine exists to bind'). cpp/bindings/aegis_module.cpp now also exposes sort_canonical(list[dict]) -> list[dict] (M2 slice 13): constructs real replay::ReplayEvent objects from Slice 1's four canonical fields, sorts via the real canonical_less, returns sorted dicts -- a genuine round trip over the replay core's own ordering, not a stub. tests/integration/test_bindings_roundtrip.py::test_bindings_expose_no_mutable_engine_state asserts the six-function surface; a dedicated symmetry suite proves the C++ binding agrees with the Python peer (futures.replay.sort_canonical) on empty/single/tied/pre-epoch/scrambled inputs. See adr/0005's slice 13 addendum."
     },
     "AEGIS-230": {

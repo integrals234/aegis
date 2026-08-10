@@ -4,12 +4,13 @@
   "claim": "OpenInterestCrossoverPolicy(persistence_days=2) against a declining-front/rising-deferred synthetic open-interest series rolls at the second consecutive day of crossover -- computed by the real production policy.",
   "deferred_contract_id": "SYNX:EQX:2026M",
   "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "front_contract_id": "SYNX:EQX:2026H",
   "generated_on": "2026-08-10",
   "policy_parameters": {
     "persistence_days": 2
   },
-  "repository_commit": "ede8a35729aa136b0178153e88ad6d3ad1d38df6",
+  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
   "requirement": "AEGIS-017",
   "rolls": [
     {

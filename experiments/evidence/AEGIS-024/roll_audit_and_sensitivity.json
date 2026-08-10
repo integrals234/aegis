@@ -1,0 +1,85 @@
+{
+  "artifact": "roll_audit_and_sensitivity",
+  "claim": "AEGIS-023: one roll audit was produced by the real build_roll_audit over the committed EQX chain and a synthetic volume-crossover scenario, and rendered both machine-readably and human-readably from the same records. This generator checks row-for-row that the two renderings describe the same rolls and raises rather than writing a claim it cannot support. AEGIS-024 (M2-owned half): three roll policies were compared pairwise by the real compare_roll_methods, recording the roll dates each chose and the maximum/mean absolute deviation between their additive-adjusted price paths; at least one pair genuinely diverges, or this generator raises.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-10",
+  "human_readable_report": "as_of       old_contract        new_contract             raw_gap       ratio  trigger\n2026-01-07  SYNX:EQX:2026H      SYNX:EQX:2026M                50  1.471698113207547169811320755  VolumeCrossoverPolicy\n",
+  "machine_readable_report": [
+    {
+      "as_of": "2026-01-07",
+      "new_contract": "SYNX:EQX:2026M",
+      "new_price_at_roll": "156",
+      "old_contract": "SYNX:EQX:2026H",
+      "old_price_at_roll": "106",
+      "ratio_at_roll": "1.471698113207547169811320755",
+      "raw_gap": "50",
+      "trigger": "VolumeCrossoverPolicy"
+    }
+  ],
+  "not_evidence_for": [
+    "AEGIS-024's full acceptance: quantifying STRATEGY differences needs a strategy, which configs/architecture_rules.yaml dates to M4. The M4 residual is registered in docs/DEFERRED_VERIFICATION.md and is NOT discharged by this artifact.",
+    "any claim about real markets: every price, volume and open-interest figure here is synthetic."
+  ],
+  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
+  "requirements": [
+    "AEGIS-023",
+    "AEGIS-024"
+  ],
+  "roll_method_comparisons": [
+    {
+      "max_abs_price_deviation": "50",
+      "mean_abs_price_deviation": "50",
+      "policy_a": "fixed_days_10",
+      "policy_b": "oi_crossover_2d",
+      "roll_dates_a": [],
+      "roll_dates_b": [
+        "2026-01-08"
+      ],
+      "roll_dates_differ": true
+    },
+    {
+      "max_abs_price_deviation": "50",
+      "mean_abs_price_deviation": "50",
+      "policy_a": "fixed_days_10",
+      "policy_b": "volume_crossover_2d",
+      "roll_dates_a": [],
+      "roll_dates_b": [
+        "2026-01-07"
+      ],
+      "roll_dates_differ": true
+    },
+    {
+      "max_abs_price_deviation": "0",
+      "mean_abs_price_deviation": "0",
+      "policy_a": "oi_crossover_2d",
+      "policy_b": "volume_crossover_2d",
+      "roll_dates_a": [
+        "2026-01-08"
+      ],
+      "roll_dates_b": [
+        "2026-01-07"
+      ],
+      "roll_dates_differ": true
+    }
+  ],
+  "scenario": {
+    "chain": [
+      "SYNX:EQX:2026H",
+      "SYNX:EQX:2026M"
+    ],
+    "description": "Front-month volume and open interest decay while the deferred contract's grow, so the two cross and the crossover persists. All data is synthetic (DATA_AND_RESEARCH_POLICY).",
+    "sessions": [
+      "2026-01-01",
+      "2026-01-02",
+      "2026-01-03",
+      "2026-01-04",
+      "2026-01-05",
+      "2026-01-06",
+      "2026-01-07",
+      "2026-01-08",
+      "2026-01-09",
+      "2026-01-10"
+    ]
+  }
+}

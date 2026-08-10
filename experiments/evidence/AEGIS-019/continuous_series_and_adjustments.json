@@ -96,6 +96,7 @@
   "artifact": "continuous_series_and_adjustments",
   "claim": "Two sequential, cross-year rolls (2026-12 into 2027-01, contracts SYNX:EQX:2026H -> SYNX:EQX:2026M -> SYNX:EQX:2026U) were built through the real production pipeline (build_unadjusted_series -> build_additive_adjusted_series / build_ratio_adjusted_series -> build_return_stream). Every observation at every stage carries its source contract_id (AEGIS-019). For both rolls, the additive adjusted price delta and the ratio adjusted proportional return across the roll boundary were checked programmatically against the outgoing contract's own same-day-dual-quote realized price change and return (AEGIS-020, AEGIS-021, AEGIS-022) -- verified true for both rolls; this generator raises rather than writing a claim it cannot support. All data is synthetic (DATA_AND_RESEARCH_POLICY); no claim is made about any real market.",
   "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-10",
   "ratio_adjusted_series": [
     {
@@ -191,7 +192,7 @@
       "raw_price": "190"
     }
   ],
-  "repository_commit": "ede8a35729aa136b0178153e88ad6d3ad1d38df6",
+  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
   "requirements": [
     "AEGIS-019",
     "AEGIS-020",

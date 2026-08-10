@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
 sys.path.insert(0, str(ROOT / "tools"))
 
+from evidence_provenance import provenance
 from futures.chain import ContractChain
 from futures.roll.fixed_days import FixedDaysPolicy
 from futures.roll.liquidity_score import LiquidityScorePolicy
@@ -38,14 +39,6 @@ def _git(*args: str) -> str:
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
-def _provenance() -> dict[str, Any]:
-    from datetime import UTC, datetime
-
-    return {
-        "generated_on": datetime.now(UTC).strftime("%Y-%m-%d"),
-        "repository_commit": _git("rev-parse", "HEAD"),
-        "dirty": bool(_git("status", "--porcelain")),
-    }
 
 
 def _eqx_chain() -> ContractChain:
@@ -68,7 +61,7 @@ def generate_aegis_015() -> dict[str, Any]:
     return {
         "artifact": "fixed_days_golden",
         "requirement": "AEGIS-015",
-        **_provenance(),
+        **provenance(),
         "policy_parameters": {"days_before_expiry": policy.days_before_expiry},
         "chain": "data_samples/futures/eqx.json",
         "rolls": rolls,
@@ -106,7 +99,7 @@ def generate_aegis_016() -> dict[str, Any]:
     return {
         "artifact": "volume_crossover_golden",
         "requirement": "AEGIS-016",
-        **_provenance(),
+        **provenance(),
         "policy_parameters": {"persistence_days": policy.persistence_days},
         "chain": "data_samples/futures/eqx.json",
         "front_contract_id": front_id.canonical,
@@ -147,7 +140,7 @@ def generate_aegis_017() -> dict[str, Any]:
     return {
         "artifact": "oi_crossover_golden",
         "requirement": "AEGIS-017",
-        **_provenance(),
+        **provenance(),
         "policy_parameters": {"persistence_days": policy.persistence_days},
         "chain": "data_samples/futures/eqx.json",
         "front_contract_id": front_id.canonical,
@@ -177,7 +170,7 @@ def generate_aegis_018() -> dict[str, Any]:
     return {
         "artifact": "liquidity_score_golden",
         "requirement": "AEGIS-018",
-        **_provenance(),
+        **provenance(),
         "policy_parameters": {
             "volume_weight": str(policy.volume_weight),
             "open_interest_weight": str(policy.open_interest_weight),

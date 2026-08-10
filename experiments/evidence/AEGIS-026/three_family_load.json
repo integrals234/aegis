@@ -2,6 +2,7 @@
   "artifact": "three_family_load",
   "claim": "3 distinct product families (CLX, EQX, SRX) loaded 18 records through the single futures.ingest.ingest() production interface, meeting AEGIS-026's 'at least three product fixtures load through one interface' floor. Every normalized record validates against the committed futures_bar.v1 schema (SchemaRegistry, real production call, not a parallel check). record_index is contiguous from zero. Ingesting the same input paths in reverse argument order and ingesting the same input twice both produce byte-identical results, proving the caller's path order and repetition do not affect the outcome. All data is synthetic (DATA_AND_RESEARCH_POLICY); no claim is made about any real market.",
   "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "families": [
     "CLX",
     "EQX",
@@ -19,7 +20,7 @@
   "record_index_contiguous": true,
   "rejection_count": 0,
   "repeated_ingestion_matches": true,
-  "repository_commit": "ede8a35729aa136b0178153e88ad6d3ad1d38df6",
+  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
   "requirement": "AEGIS-026",
   "sample_record": {
     "close_ticks": 7001,

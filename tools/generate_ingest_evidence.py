@@ -17,13 +17,13 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
+sys.path.insert(0, str(ROOT / "tools"))
 
+from evidence_provenance import provenance
 from futures.ingest import ingest
 from futures.instruments import DEFAULT_CATALOG_PATH, load_catalog
 from futures.schema import SCHEMA_NAME, build_registry
@@ -40,12 +40,6 @@ def _git(*args: str) -> str:
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
-def _provenance() -> dict[str, Any]:
-    return {
-        "generated_on": datetime.now(UTC).strftime("%Y-%m-%d"),
-        "repository_commit": _git("rev-parse", "HEAD"),
-        "dirty": bool(_git("status", "--porcelain")),
-    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -66,7 +60,7 @@ def main(argv: list[str] | None = None) -> int:
     payload = {
         "artifact": "three_family_load",
         "requirement": "AEGIS-026",
-        **_provenance(),
+        **provenance(),
         "input_paths": list(BAR_PATHS),
         "families": families,
         "family_count": len(families),

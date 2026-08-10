@@ -24,7 +24,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +32,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
 sys.path.insert(0, str(ROOT / "tools"))
 
+from evidence_provenance import provenance
 from futures.chain import ContractChain
 from futures.contracts import lifecycle_state
 from futures.instruments import DEFAULT_CATALOG_PATH, load_catalog
@@ -45,12 +46,6 @@ def _git(*args: str) -> str:
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
-def _provenance() -> dict[str, Any]:
-    return {
-        "generated_on": datetime.now(UTC).strftime("%Y-%m-%d"),
-        "repository_commit": _git("rev-parse", "HEAD"),
-        "dirty": bool(_git("status", "--porcelain")),
-    }
 
 
 def generate_aegis_011() -> dict[str, Any]:
@@ -72,7 +67,7 @@ def generate_aegis_011() -> dict[str, Any]:
     return {
         "artifact": "product_families",
         "requirement": "AEGIS-011",
-        **_provenance(),
+        **provenance(),
         "schema": "configs/schemas/futures_product.v1.json",
         "catalog": DEFAULT_CATALOG_PATH,
         "product_family_count": len(families),
@@ -153,7 +148,7 @@ def generate_aegis_012() -> dict[str, Any]:
     return {
         "artifact": "expiry_boundaries",
         "requirement": "AEGIS-012",
-        **_provenance(),
+        **provenance(),
         "families": families_evidence,
         "total_contracts": total_contracts,
         "claim": (

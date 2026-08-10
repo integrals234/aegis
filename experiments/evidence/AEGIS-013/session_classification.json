@@ -172,9 +172,10 @@
     }
   ],
   "claim": "21 boundary timestamps were classified through the real CalendarRegistry.classify() production path (no reimplementation), covering normal, holiday, overnight, maintenance, weekend-closed, exactly-open, exactly-close and both 2026 US DST transitions (spring-forward 2026-03-08, fall-back 2026-11-01) across all three committed synthetic templates. All data is synthetic (DATA_AND_RESEARCH_POLICY); no claim is made about any real exchange calendar.",
-  "dirty": false,
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-10",
-  "repository_commit": "ede8a35729aa136b0178153e88ad6d3ad1d38df6",
+  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
   "requirement": "AEGIS-013",
   "templates": [
     "synx_energy_extended",

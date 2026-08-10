@@ -3,11 +3,12 @@
   "chain": "data_samples/futures/eqx.json",
   "claim": "FixedDaysPolicy(days_before_expiry=5) run against the committed EQX contract chain rolls from SYNX:EQX:2026H to SYNX:EQX:2026M exactly at the inclusive 5-calendar-day boundary (2026-03-15), staying on the front contract through 2026-03-14 and remaining rolled thereafter -- computed by the real production policy, not asserted.",
   "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-10",
   "policy_parameters": {
     "days_before_expiry": 5
   },
-  "repository_commit": "ede8a35729aa136b0178153e88ad6d3ad1d38df6",
+  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
   "requirement": "AEGIS-015",
   "rolls": [
     {

@@ -16,14 +16,15 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
-from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
+sys.path.insert(0, str(ROOT / "tools"))
 
+from evidence_provenance import provenance
 from futures.identifiers import ContractId
 from futures.series import (
     PriceObservation,
@@ -43,12 +44,6 @@ def _git(*args: str) -> str:
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
-def _provenance() -> dict[str, Any]:
-    return {
-        "generated_on": datetime.now(UTC).strftime("%Y-%m-%d"),
-        "repository_commit": _git("rev-parse", "HEAD"),
-        "dirty": bool(_git("status", "--porcelain")),
-    }
 
 
 def _days() -> list[date]:
@@ -164,7 +159,7 @@ def main(argv: list[str] | None = None) -> int:
     payload = {
         "artifact": "continuous_series_and_adjustments",
         "requirements": ["AEGIS-019", "AEGIS-020", "AEGIS-021", "AEGIS-022"],
-        **_provenance(),
+        **provenance(),
         "additive_unadjusted_series": [
             {
                 "as_of": o.as_of.isoformat(),

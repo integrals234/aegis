@@ -1,0 +1,88 @@
+{
+  "artifact": "feed_and_binding_symmetry",
+  "binary": "build/debug/cpp/replay/aegis_replay_run",
+  "claim": "The production HistoricalReplayFeed and the compiled C++ binding's sort_canonical were given the same deliberately scrambled records and returned the identical canonical order -- neither returned its input unchanged. AEGIS-229's round trip therefore runs against the real engine ordering, and the Python and C++ halves of M2 are shown to agree rather than assumed to.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "feed_and_binding": {
+    "binding_build_info": "aegis 0.1.0; compiler Clang 21.1.8; std c++20; build Debug; assertions on; sanitizers off",
+    "cpp_binding_order": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "orders_agree": true,
+    "python_feed_order": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "scrambled_input_record_indices": [
+      2,
+      1,
+      0,
+      17,
+      16,
+      15,
+      14,
+      13,
+      12,
+      11,
+      10,
+      9,
+      8,
+      7,
+      6,
+      5,
+      4,
+      3
+    ]
+  },
+  "generated_on": "2026-08-10",
+  "input_stream": {
+    "derived_from": "the committed data_samples/futures/bars/* files, through the real futures.ingest pipeline (tools/make_replay_fixture.py); record_index is ingestion's own assignment, read by replay and never recomputed",
+    "label": "futures_canonical_stream.v1",
+    "path": "tests/unit/fixtures/replay/futures_canonical_stream.jsonl",
+    "record_count": 18,
+    "sha256": "b4b0008ac0354b619a5e0f74cba2dcfd7c69d5910c097186af078bd478056f38"
+  },
+  "not_evidence_for": [
+    "AEGIS-059's full acceptance: contract tests running one strategy against multiple feed implementations need a strategy (M4) and live/paper feeds (M9). The M9 residual remains registered and is NOT discharged here."
+  ],
+  "producer": "tools/generate_replay_evidence.py",
+  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
+  "requirements": [
+    "AEGIS-059",
+    "AEGIS-229"
+  ]
+}

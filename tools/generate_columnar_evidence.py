@@ -15,13 +15,13 @@ import json
 import subprocess
 import sys
 import tempfile
-from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
+sys.path.insert(0, str(ROOT / "tools"))
 
+from evidence_provenance import provenance
 from futures.columnar import query_duckdb, read_parquet, table_to_records, to_arrow_table, write_parquet
 from futures.ingest import ingest
 from futures.instruments import DEFAULT_CATALOG_PATH, load_catalog
@@ -39,12 +39,6 @@ def _git(*args: str) -> str:
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
-def _provenance() -> dict[str, Any]:
-    return {
-        "generated_on": datetime.now(UTC).strftime("%Y-%m-%d"),
-        "repository_commit": _git("rev-parse", "HEAD"),
-        "dirty": bool(_git("status", "--porcelain")),
-    }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -92,7 +86,7 @@ def main(argv: list[str] | None = None) -> int:
     payload = {
         "artifact": "columnar_roundtrip",
         "requirement": "AEGIS-230",
-        **_provenance(),
+        **provenance(),
         "input_paths": list(BAR_PATHS),
         "record_count": len(records),
         "parquet_bytes": parquet_size,

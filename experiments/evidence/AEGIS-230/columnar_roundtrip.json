@@ -13,6 +13,7 @@
   },
   "claim": "18 normalized futures_bar.v1 records (three synthetic product families) were written through the real production path -- to_arrow_table -> write_parquet -> read_parquet -> table_to_records, plus a DuckDB query over the identical Parquet file -- and every round-trip invariant AEGIS-230 requires was checked programmatically (row count, byte-identical values including exact integer tick prices, record_index, event_time_ns, contract identity, deterministic column order, schema_version carried in Parquet metadata, and DuckDB's row count agreeing with Arrow's). This generator raises rather than writing a claim it cannot support. All data is synthetic (DATA_AND_RESEARCH_POLICY); no claim is made about any real market.",
   "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "duckdb_family_counts": [
     [
       "CLX",
@@ -35,6 +36,6 @@
   ],
   "parquet_bytes": 5519,
   "record_count": 18,
-  "repository_commit": "ede8a35729aa136b0178153e88ad6d3ad1d38df6",
+  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
   "requirement": "AEGIS-230"
 }

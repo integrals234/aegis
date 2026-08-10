@@ -2,6 +2,7 @@
   "artifact": "expiry_boundaries",
   "claim": "All 9 committed contract fixtures across 3 product families were looked up by exact identity through a real ContractChain (lookup_succeeded: true throughout), and lifecycle_state was evaluated at every day surrounding each of first_trade_date, last_trade_date and expiry. The lifecycle sequence recorded at each contract's transitions is exactly PreListing -> Active -> LastTradingDay -> [Expired ->] Settled, in that order, with no state skipped and none repeated out of order.",
   "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "families": [
     {
       "chain_length": 3,
@@ -350,7 +351,7 @@
     }
   ],
   "generated_on": "2026-08-10",
-  "repository_commit": "0cd9533dde5828e992d25cced4f66768d7424bb2",
+  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
   "requirement": "AEGIS-012",
   "total_contracts": 9
 }

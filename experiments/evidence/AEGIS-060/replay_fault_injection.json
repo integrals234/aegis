@@ -1,0 +1,151 @@
+{
+  "artifact": "replay_fault_injection",
+  "binary": "build/debug/cpp/replay/aegis_replay_run",
+  "claim": "All eleven fault kinds were injected deterministically at explicit, committed record positions -- never sampled (ADR-0019). For every kind, the emitted records plus the accounted-for dropped records reconstruct the input set exactly and the survivors remain in canonical order. This is the injection MECHANISM only.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "faults": {
+    "invariant": "no fault kind mutates a canonical-order field: every survivor stays in canonical order, and emitted + dropped reconstructs the input set exactly",
+    "per_kind": {
+      "backpressure": {
+        "annotated_record_indices": [
+          4
+        ],
+        "canonical_order_preserved": true,
+        "dropped_record_indices": [],
+        "emitted_record_count": 18,
+        "records_dropped": 0
+      },
+      "delayed": {
+        "annotated_record_indices": [
+          4
+        ],
+        "canonical_order_preserved": true,
+        "dropped_record_indices": [],
+        "emitted_record_count": 18,
+        "records_dropped": 0
+      },
+      "duplicated": {
+        "annotated_record_indices": [
+          4
+        ],
+        "canonical_order_preserved": true,
+        "dropped_record_indices": [],
+        "emitted_record_count": 19,
+        "records_dropped": 0
+      },
+      "latency_spike": {
+        "annotated_record_indices": [
+          4
+        ],
+        "canonical_order_preserved": true,
+        "dropped_record_indices": [],
+        "emitted_record_count": 18,
+        "records_dropped": 0
+      },
+      "liquidity_vanish": {
+        "annotated_record_indices": [
+          4
+        ],
+        "canonical_order_preserved": true,
+        "dropped_record_indices": [],
+        "emitted_record_count": 18,
+        "records_dropped": 0
+      },
+      "missing": {
+        "annotated_record_indices": [],
+        "canonical_order_preserved": true,
+        "dropped_record_indices": [
+          4
+        ],
+        "emitted_record_count": 17,
+        "records_dropped": 1
+      },
+      "partial_fill": {
+        "annotated_record_indices": [
+          4
+        ],
+        "canonical_order_preserved": true,
+        "dropped_record_indices": [],
+        "emitted_record_count": 18,
+        "records_dropped": 0
+      },
+      "rejection": {
+        "annotated_record_indices": [
+          4
+        ],
+        "canonical_order_preserved": true,
+        "dropped_record_indices": [],
+        "emitted_record_count": 18,
+        "records_dropped": 0
+      },
+      "sequence_gap": {
+        "annotated_record_indices": [
+          4
+        ],
+        "canonical_order_preserved": true,
+        "dropped_record_indices": [],
+        "emitted_record_count": 18,
+        "records_dropped": 0
+      },
+      "spread_widening": {
+        "annotated_record_indices": [
+          4
+        ],
+        "canonical_order_preserved": true,
+        "dropped_record_indices": [],
+        "emitted_record_count": 18,
+        "records_dropped": 0
+      },
+      "volatility_spike": {
+        "annotated_record_indices": [
+          4
+        ],
+        "canonical_order_preserved": true,
+        "dropped_record_indices": [],
+        "emitted_record_count": 18,
+        "records_dropped": 0
+      }
+    },
+    "unfaulted_record_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ]
+  },
+  "generated_on": "2026-08-10",
+  "input_stream": {
+    "derived_from": "the committed data_samples/futures/bars/* files, through the real futures.ingest pipeline (tools/make_replay_fixture.py); record_index is ingestion's own assignment, read by replay and never recomputed",
+    "label": "futures_canonical_stream.v1",
+    "path": "tests/unit/fixtures/replay/futures_canonical_stream.jsonl",
+    "record_count": 18,
+    "sha256": "b4b0008ac0354b619a5e0f74cba2dcfd7c69d5910c097186af078bd478056f38"
+  },
+  "not_evidence_for": [
+    "AEGIS-060's stale-data response and AEGIS-061's feed recovery: both need the participant feed handler, which architecture rules date to M3. The M3 residuals remain registered in docs/DEFERRED_VERIFICATION.md.",
+    "AEGIS-062's risk responses and AEGIS-063's OMS/risk integration: both need layers architecture rules date to M5. The M5 residuals remain registered and are NOT discharged here."
+  ],
+  "producer": "tools/generate_replay_evidence.py",
+  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
+  "requirements": [
+    "AEGIS-060",
+    "AEGIS-061",
+    "AEGIS-062",
+    "AEGIS-063"
+  ]
+}

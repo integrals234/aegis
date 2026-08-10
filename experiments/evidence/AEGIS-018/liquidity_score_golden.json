@@ -22,12 +22,13 @@
   "chain": "data_samples/futures/eqx.json",
   "claim": "LiquidityScorePolicy(volume_weight=0.7, open_interest_weight=0.3) against a synthetic two-contract observation selects the higher-combined-score contract, with every component of the score (normalized volume share, normalized open-interest share, weighted sum) exposed and exactly reproducible via Decimal arithmetic -- computed by the real production policy.",
   "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-10",
   "policy_parameters": {
     "open_interest_weight": "0.3",
     "volume_weight": "0.7"
   },
-  "repository_commit": "ede8a35729aa136b0178153e88ad6d3ad1d38df6",
+  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
   "requirement": "AEGIS-018",
   "selected_front_contract": "SYNX:EQX:2026M"
 }
