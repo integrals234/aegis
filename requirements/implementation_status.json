@@ -853,11 +853,25 @@
       "notes": ""
     },
     "AEGIS-058": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "cpp/replay/replay_stream.hpp",
+        "cpp/replay/replay_stream.cpp",
+        "cpp/replay/virtual_clock.hpp",
+        "cpp/replay/virtual_clock.cpp",
+        "cpp/replay/replay_manifest.hpp",
+        "cpp/replay/replay_manifest.cpp",
+        "cpp/replay/replay_engine.hpp",
+        "cpp/replay/replay_engine.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_replay_stream.cpp",
+        "tests/cpp/unit/test_virtual_clock.cpp",
+        "tests/cpp/unit/test_replay_manifest.cpp",
+        "tests/cpp/unit/test_replay_engine.cpp"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "M2 slice 9. cpp/replay/ gains load_replay_stream (reads/validates a canonical JSON-Lines input, record_index read never recomputed, rejects out-of-order/duplicate-key input via the real canonical_compare from slice 1), VirtualClock (a WallClock whose only mutator is advance_to -- structurally never reads the system clock or sleeps), compute_manifest (FNV-1a 64-bit reproducibility digest, not cryptographic), and ReplayEngine (next/next_group/cursor/resume_from). cpp-replay still has no edge to any cpp-exchange-* layer. Deterministic benchmark mode is draining next() in a loop with no pacing delay. See ADR-0018. Not yet 'verified'; full evidence/acceptance proof is Slice 14 closure per the owner's build-first-mode instructions."
     },
     "AEGIS-059": {
       "status": "not_started",

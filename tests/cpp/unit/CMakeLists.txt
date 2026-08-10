@@ -18,11 +18,15 @@ aegis_add_test(aegis_unit_tests unit
   test_matching_policy_interface.cpp
   test_modify_semantics.cpp
   test_reject_matrix.cpp
+  test_replay_engine.cpp
   test_replay_event.cpp
+  test_replay_manifest.cpp
+  test_replay_stream.cpp
   test_sequencer.cpp
   test_snapshot_roundtrip.cpp
   test_time.cpp
-  test_version.cpp)
+  test_version.cpp
+  test_virtual_clock.cpp)
 target_link_libraries(aegis_unit_tests PRIVATE
   aegis_common aegis_events
   aegis_exchange_order_book aegis_exchange_sequencer aegis_exchange_matching
