@@ -417,7 +417,17 @@
         "tests/unit/test_roll_sensitivity.py"
       ],
       "reports": [],
-      "notes": "M2 slice 8, M2-owned portion only. compare_roll_methods quantifies differences between roll POLICIES (roll dates chosen, max/mean absolute deviation between additive-adjusted price paths) -- not strategy P&L, which needs a strategy that does not exist before M4. The M4 residual (strategy-level comparison) is unchanged from the owner-confirmed M2 plan of record coverage table ('024 | 8 | implemented -> M4 owner'); this is not a new deferral. Built entirely on real roll_audit.py/series.py production code. Not yet 'verified'."
+      "notes": "M2 slice 8, M2-owned portion only. compare_roll_methods quantifies differences between roll POLICIES (roll dates chosen, max/mean absolute deviation between additive-adjusted price paths) -- not strategy P&L, which needs a strategy that does not exist before M4. The M4 residual (strategy-level comparison) is unchanged from the owner-confirmed M2 plan of record coverage table ('024 | 8 | implemented -> M4 owner'); this is not a new deferral. Built entirely on real roll_audit.py/series.py production code. Not yet 'verified'.",
+      "verification_blocked_until": "M4",
+      "residual": "The frozen acceptance names an experiment report that quantifies STRATEGY differences caused by roll choices. No strategy exists: configs/architecture_rules.yaml dates cpp-participant-strategy and python-research to M4. M2 delivers the roll-method comparison itself (roll dates chosen and additive-adjusted price-path deviation between every pair of policies); attributing those differences to strategy P&L is M4's.",
+      "deferral_history": [
+        {
+          "blocked_until": "M4",
+          "recorded_at": "M2",
+          "date": "2026-08-10",
+          "reason": "Registered while closing M2: the M2-owned half (policy-vs-policy roll-date and adjusted-price-path comparison) is implemented and tested, but the acceptance's 'strategy differences' needs a strategy, which architecture rules date to M4. Owner-approved residual 024 -> M4 in experiments/plans/M2.md rev. 4."
+        }
+      ]
     },
     "AEGIS-025": {
       "status": "implemented",
@@ -931,7 +941,17 @@
         "tests/cpp/unit/test_fault_injection.cpp"
       ],
       "reports": [],
-      "notes": "M2 slice 11. DeterministicFaultInjector's kDelayed fault: an explicit, committed FaultRule (record_index + delay), never randomness, annotates the targeted record with FaultAnnotation{kind, delay} while leaving it in the emitted sequence and its canonical-order fields untouched. This is the injection mechanism only -- the stale-data RESPONSE the acceptance criterion names needs a participant-side consumer that does not exist before M3; that residual is unchanged from the owner-confirmed M2 plan of record. See ADR-0019. Not yet 'verified'."
+      "notes": "M2 slice 11. DeterministicFaultInjector's kDelayed fault: an explicit, committed FaultRule (record_index + delay), never randomness, annotates the targeted record with FaultAnnotation{kind, delay} while leaving it in the emitted sequence and its canonical-order fields untouched. This is the injection mechanism only -- the stale-data RESPONSE the acceptance criterion names needs a participant-side consumer that does not exist before M3; that residual is unchanged from the owner-confirmed M2 plan of record. See ADR-0019. Not yet 'verified'.",
+      "verification_blocked_until": "M3",
+      "residual": "The frozen acceptance names delayed observations AND stale-data responses. M2 delivers the injection mechanism (kDelayed annotation attached deterministically to an exact record, cpp/replay/fault_injection.*); a stale-data RESPONSE needs a participant-side consumer, and configs/architecture_rules.yaml dates cpp-participant-feed-handler to M3.",
+      "deferral_history": [
+        {
+          "blocked_until": "M3",
+          "recorded_at": "M2",
+          "date": "2026-08-10",
+          "reason": "Registered while closing M2: the deterministic delayed-data injection mechanism is implemented and tested, but responding to stale data requires the M3 participant feed handler. Owner-approved residual 060 -> M3 in experiments/plans/M2.md rev. 4."
+        }
+      ]
     },
     "AEGIS-061": {
       "status": "implemented",
@@ -943,7 +963,17 @@
         "tests/cpp/unit/test_fault_injection.cpp"
       ],
       "reports": [],
-      "notes": "M2 slice 11. DeterministicFaultInjector's kMissing (removed from output, accounted for in FaultInjectionResult::dropped, never silently lost), kDuplicated (the record appears twice consecutively, only the injected copy annotated) and kSequenceGap (an annotation declaring a source-sequence-numbering gap, never a mutation of the record's own source_sequence -- canonical order is never put at risk) faults. Mechanism only -- feed RECOVERY is the registered M3 residual, unchanged from the owner-confirmed M2 plan of record. See ADR-0019. Not yet 'verified'."
+      "notes": "M2 slice 11. DeterministicFaultInjector's kMissing (removed from output, accounted for in FaultInjectionResult::dropped, never silently lost), kDuplicated (the record appears twice consecutively, only the injected copy annotated) and kSequenceGap (an annotation declaring a source-sequence-numbering gap, never a mutation of the record's own source_sequence -- canonical order is never put at risk) faults. Mechanism only -- feed RECOVERY is the registered M3 residual, unchanged from the owner-confirmed M2 plan of record. See ADR-0019. Not yet 'verified'.",
+      "verification_blocked_until": "M3",
+      "residual": "The frozen acceptance names feed RECOVERY tests covering each fault. M2 delivers deterministic missing/duplicate/sequence-gap injection with full accounting (nothing is silently lost); recovery is a participant-side behaviour and configs/architecture_rules.yaml dates cpp-participant-feed-handler to M3.",
+      "deferral_history": [
+        {
+          "blocked_until": "M3",
+          "recorded_at": "M2",
+          "date": "2026-08-10",
+          "reason": "Registered while closing M2: missing, duplicated and sequence-gap injection is implemented and tested, but feed recovery requires the M3 participant feed handler. Owner-approved residual 061 -> M3 in experiments/plans/M2.md rev. 4."
+        }
+      ]
     },
     "AEGIS-062": {
       "status": "implemented",
@@ -955,7 +985,17 @@
         "tests/cpp/unit/test_market_stress_faults.cpp"
       ],
       "reports": [],
-      "notes": "M2 slice 12. FaultKind extended with kSpreadWidening/kVolatilitySpike/kLiquidityVanish -- same DeterministicFaultInjector mechanism as slice 11's kSequenceGap: a pure annotation (magnitude carries the caller-defined severity), never interpreted, never dropping or reordering a record. cpp-replay has no market-data payload to compute an actual spread from (ReplayEvent is identity/ordering only, by design), so nothing here could compute one even if it wanted to. Risk RESPONSE is the registered M5 residual, unchanged from the owner-confirmed M2 plan of record. See ADR-0019's slice 12 addendum. Not yet 'verified'."
+      "notes": "M2 slice 12. FaultKind extended with kSpreadWidening/kVolatilitySpike/kLiquidityVanish -- same DeterministicFaultInjector mechanism as slice 11's kSequenceGap: a pure annotation (magnitude carries the caller-defined severity), never interpreted, never dropping or reordering a record. cpp-replay has no market-data payload to compute an actual spread from (ReplayEvent is identity/ordering only, by design), so nothing here could compute one even if it wanted to. Risk RESPONSE is the registered M5 residual, unchanged from the owner-confirmed M2 plan of record. See ADR-0019's slice 12 addendum. Not yet 'verified'.",
+      "verification_blocked_until": "M5",
+      "residual": "The frozen acceptance names scenario results AND risk responses being reproducible. M2 delivers reproducible scenario results (kSpreadWidening/kVolatilitySpike/kLiquidityVanish injected deterministically from committed rule data); a RISK response needs the risk engine, which configs/architecture_rules.yaml dates cpp-participant-risk to M5.",
+      "deferral_history": [
+        {
+          "blocked_until": "M5",
+          "recorded_at": "M2",
+          "date": "2026-08-10",
+          "reason": "Registered while closing M2: market-stress injection is implemented, deterministic and tested, but reproducible risk responses require the M5 risk engine. Owner-approved residual 062 -> M5 in experiments/plans/M2.md rev. 4."
+        }
+      ]
     },
     "AEGIS-063": {
       "status": "implemented",
@@ -967,7 +1007,17 @@
         "tests/cpp/unit/test_market_stress_faults.cpp"
       ],
       "reports": [],
-      "notes": "M2 slice 12. FaultKind extended with kRejection/kLatencySpike/kPartialFill/kBackpressure -- same mechanism, kLatencySpike reusing the existing delay field (Duration) rather than encoding a duration into the generic magnitude integer. OMS/risk INTEGRATION is the registered M5 residual, unchanged from the owner-confirmed M2 plan of record; no OMS or risk code is implemented here. See ADR-0019's slice 12 addendum. Not yet 'verified'."
+      "notes": "M2 slice 12. FaultKind extended with kRejection/kLatencySpike/kPartialFill/kBackpressure -- same mechanism, kLatencySpike reusing the existing delay field (Duration) rather than encoding a duration into the generic magnitude integer. OMS/risk INTEGRATION is the registered M5 residual, unchanged from the owner-confirmed M2 plan of record; no OMS or risk code is implemented here. See ADR-0019's slice 12 addendum. Not yet 'verified'.",
+      "verification_blocked_until": "M5",
+      "residual": "The frozen acceptance names OMS/risk INTEGRATION tests covering each fault. M2 delivers the execution-stress injection kinds (kRejection, kLatencySpike, kPartialFill, kBackpressure) deterministically; there is no OMS or risk layer to integrate with, and configs/architecture_rules.yaml dates cpp-participant-oms and cpp-participant-risk to M3 and M5 respectively.",
+      "deferral_history": [
+        {
+          "blocked_until": "M5",
+          "recorded_at": "M2",
+          "date": "2026-08-10",
+          "reason": "Registered while closing M2: execution-stress injection is implemented, deterministic and tested, but OMS/risk integration tests require those layers, the last of which architecture rules date to M5. Owner-approved residual 063 -> M5 in experiments/plans/M2.md rev. 4."
+        }
+      ]
     },
     "AEGIS-064": {
       "status": "not_started",

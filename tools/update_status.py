@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -82,6 +83,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--residual", help="what is still missing; required with --blocked-until")
     parser.add_argument(
+        "--recorded-at", choices=sorted(VALID_MILESTONES),
+        help="milestone doing the recording; required with --blocked-until",
+    )
+    parser.add_argument(
+        "--deferral-reason",
+        help="why the obligation is dated there; required with --blocked-until",
+    )
+    parser.add_argument(
+        "--deferral-date", help="ISO date of the deferral record (defaults to today, UTC)"
+    )
+    parser.add_argument(
         "--clear-obligation", action="store_true",
         help="remove a registered verification obligation",
     )
@@ -122,8 +134,38 @@ def main(argv: list[str] | None = None) -> int:
         if not args.residual:
             print("ERROR: --blocked-until requires --residual", file=sys.stderr)
             return 2
+        # audit_requirements.py requires an obligation to carry an append-only
+        # ledger whose head agrees with the live field: "moving a debt is
+        # itself a recorded act". Writing the live field without the ledger
+        # entry produced a catalogue the auditor then rejected, so the tool
+        # that refuses unsupportable claims was itself authoring one. The
+        # ledger entry is written here rather than left to the caller.
+        if not args.recorded_at or not args.deferral_reason:
+            print(
+                "ERROR: --blocked-until requires --recorded-at and --deferral-reason "
+                "so the deferral ledger records who dated the obligation, when and why",
+                file=sys.stderr,
+            )
+            return 2
+        deferral_date = args.deferral_date or datetime.now(UTC).strftime("%Y-%m-%d")
+        history = list(entry.get("deferral_history") or [])
+        head = history[-1] if history else None
+        # Re-recording the same milestone is a no-op on the ledger: the ledger
+        # exists to record *moves*, and appending an identical row for an
+        # unchanged obligation would inflate "times re-dated" with events that
+        # never happened.
+        if head is None or head.get("blocked_until") != args.blocked_until:
+            history.append(
+                {
+                    "blocked_until": args.blocked_until,
+                    "recorded_at": args.recorded_at,
+                    "date": deferral_date,
+                    "reason": args.deferral_reason,
+                }
+            )
         entry["verification_blocked_until"] = args.blocked_until
         entry["residual"] = args.residual
+        entry["deferral_history"] = history
 
     errors = _validate(args.requirement_id, entry, root)
     if errors:

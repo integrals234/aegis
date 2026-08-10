@@ -104,9 +104,9 @@ TEST(ReplayEngine, CursorTracksTheLastEmittedRecordIndex) {
   ReplayEngine engine(sample(), clock);
   [[maybe_unused]] const auto step1 = engine.next();
   [[maybe_unused]] const auto step2 = engine.next();
-  ASSERT_TRUE(engine.cursor().has_value());
-  EXPECT_EQ(engine.cursor()->value(),
-            1U);  // NOLINT(bugprone-unchecked-optional-access) - guarded above
+  const auto cursor = engine.cursor();
+  ASSERT_TRUE(cursor.has_value());
+  EXPECT_EQ(cursor->value(), 1U);  // NOLINT(bugprone-unchecked-optional-access) - guarded above
 }
 
 TEST(ReplayEngine, ResumeFromReproducesTheTailOfAnUninterruptedRun) {

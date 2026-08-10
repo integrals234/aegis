@@ -35,3 +35,13 @@ target_include_directories(aegis_replay PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(aegis_replay
   PUBLIC aegis_common
   PRIVATE aegis_warnings nlohmann_json::nlohmann_json)
+
+# aegis_replay_run: this layer's CLI entry point (M2 slice 14), the replay-core
+# counterpart to aegis_exchange_replay. It exists so "repeated runs produce
+# identical outputs" (AEGIS-058) can be shown across separate OS *processes*
+# rather than across two calls inside one test binary — the distinction
+# tools/determinism_check.py and python/common/determinism.py already treat as
+# load-bearing for AEGIS-005, and which applies no less to this core.
+add_executable(aegis_replay_run replay_run_main.cpp)
+target_link_libraries(aegis_replay_run
+  PRIVATE aegis_replay nlohmann_json::nlohmann_json aegis_warnings)

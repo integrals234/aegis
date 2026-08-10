@@ -98,7 +98,10 @@ def test_every_line_is_already_in_canonical_form(repo_root):
 
 
 def test_producers_are_registered_by_name():
-    assert set(PRODUCERS) == {"platform", "nondeterministic", "exchange"}
+    # Pinned deliberately: a producer added without a registered CLAIMS entry in
+    # tools/determinism_check.py would silently emit evidence carrying the
+    # generic fallback claim, so adding one has to break this test first.
+    assert set(PRODUCERS) == {"platform", "nondeterministic", "exchange", "futures_replay"}
 
 
 def test_unknown_producer_is_reported_clearly():
