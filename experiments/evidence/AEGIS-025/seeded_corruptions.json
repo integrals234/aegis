@@ -12,7 +12,7 @@
     "missing_volume": 1,
     "stale_observation": 1
   },
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-10",
   "issue_types_covered": [
@@ -161,7 +161,7 @@
       "severity": "error"
     }
   ],
-  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
+  "repository_commit": "fb01ecf295e19d195ede2f04fe1a1bb63589b497",
   "requirement": "AEGIS-025",
   "seeded_record_count": 15,
   "total_issues": 11

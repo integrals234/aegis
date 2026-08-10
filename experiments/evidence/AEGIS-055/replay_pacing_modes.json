@@ -2,7 +2,7 @@
   "artifact": "replay_pacing_modes",
   "binary": "build/debug/cpp/replay/aegis_replay_run",
   "claim": "The four approved pacing modes were each driven through the real ReplayEngine over the committed canonical stream. Their computed waits are recorded and are genuinely distinct; all four emit the identical canonical record_index sequence. No mode sleeps: every wait is a computed virtual duration (ADR-0018), so these figures are not timing measurements and are not a performance claim.",
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-10",
   "input_stream": {
@@ -131,7 +131,7 @@
     }
   },
   "producer": "tools/generate_replay_evidence.py",
-  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
+  "repository_commit": "fb01ecf295e19d195ede2f04fe1a1bb63589b497",
   "requirements": [
     "AEGIS-054",
     "AEGIS-055",

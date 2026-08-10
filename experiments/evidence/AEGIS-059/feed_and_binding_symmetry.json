@@ -2,7 +2,7 @@
   "artifact": "feed_and_binding_symmetry",
   "binary": "build/debug/cpp/replay/aegis_replay_run",
   "claim": "The production HistoricalReplayFeed and the compiled C++ binding's sort_canonical were given the same deliberately scrambled records and returned the identical canonical order -- neither returned its input unchanged. AEGIS-229's round trip therefore runs against the real engine ordering, and the Python and C++ halves of M2 are shown to agree rather than assumed to.",
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "feed_and_binding": {
     "binding_build_info": "aegis 0.1.0; compiler Clang 21.1.8; std c++20; build Debug; assertions on; sanitizers off",
@@ -80,7 +80,7 @@
     "AEGIS-059's full acceptance: contract tests running one strategy against multiple feed implementations need a strategy (M4) and live/paper feeds (M9). The M9 residual remains registered and is NOT discharged here."
   ],
   "producer": "tools/generate_replay_evidence.py",
-  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
+  "repository_commit": "fb01ecf295e19d195ede2f04fe1a1bb63589b497",
   "requirements": [
     "AEGIS-059",
     "AEGIS-229"

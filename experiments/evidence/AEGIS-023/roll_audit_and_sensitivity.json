@@ -1,7 +1,7 @@
 {
   "artifact": "roll_audit_and_sensitivity",
   "claim": "AEGIS-023: one roll audit was produced by the real build_roll_audit over the committed EQX chain and a synthetic volume-crossover scenario, and rendered both machine-readably and human-readably from the same records. This generator checks row-for-row that the two renderings describe the same rolls and raises rather than writing a claim it cannot support. AEGIS-024 (M2-owned half): three roll policies were compared pairwise by the real compare_roll_methods, recording the roll dates each chose and the maximum/mean absolute deviation between their additive-adjusted price paths; at least one pair genuinely diverges, or this generator raises.",
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-10",
   "human_readable_report": "as_of       old_contract        new_contract             raw_gap       ratio  trigger\n2026-01-07  SYNX:EQX:2026H      SYNX:EQX:2026M                50  1.471698113207547169811320755  VolumeCrossoverPolicy\n",
@@ -21,7 +21,7 @@
     "AEGIS-024's full acceptance: quantifying STRATEGY differences needs a strategy, which configs/architecture_rules.yaml dates to M4. The M4 residual is registered in docs/DEFERRED_VERIFICATION.md and is NOT discharged by this artifact.",
     "any claim about real markets: every price, volume and open-interest figure here is synthetic."
   ],
-  "repository_commit": "7e31074a4677eb9d958bb21334e7c43d4b0ac7e2",
+  "repository_commit": "fb01ecf295e19d195ede2f04fe1a1bb63589b497",
   "requirements": [
     "AEGIS-023",
     "AEGIS-024"
