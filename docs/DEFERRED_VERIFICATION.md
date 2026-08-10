@@ -17,7 +17,7 @@ append-only ledger below; the audit requires the live `verification_blocked_unti
 to equal the head of that ledger, so moving a debt is itself a recorded act.
 
 
-**5 outstanding obligation(s).**
+**4 outstanding obligation(s).**
 
 3 of them has been re-dated at least once since first registered; each move is listed under its requirement below.
 
@@ -25,7 +25,6 @@ to equal the head of that ledger, so moving a debt is itself a recorded act.
 |---|---|---|---|---|---|
 | AEGIS-004 | Exchange/participant separation | implemented | M4 | 1 | Architecture rules declare the full participant pipeline, but configs/architecture_rules.yaml dates cpp/participant/strategy to M4, so the rule that strategy code cannot reach the exchange book is declared and unexercised until then. The exchange book itself arrives at M1. |
 | AEGIS-229 | C++/Python bindings | implemented | M2 | 0 | The acceptance names 'selected engine APIs'; no engine exists. Config, metrics and replay surfaces are M2 work, where the roadmap places the bindings needed for data and replay. |
-| AEGIS-230 | Columnar data interchange | implemented | M2 | 0 | Parquet, Arrow and DuckDB round trips are not implemented. M0 has no columnar data to interchange, and building them now would require inventing the futures schema AEGIS-026 owns. |
 | AEGIS-237 | Failure recovery | implemented | M3 | 1 | The acceptance names recovery tests for exchange and participant state. Exchange-state recovery is paid at M1: sequencer position and book state survive a snapshot/restore cycle, verified by round trip and by continuation equality across a process boundary (docs/RECOVERY_CONTRACT.md M1 row, ADR-0013). Participant-state recovery still requires the OMS and portfolio layers, which configs/architecture_rules.yaml dates M3. |
 | AEGIS-238 | Observability | implemented | M5 | 1 | queue depth and dropped/backpressured events arrive with M1's bounded queues and execution latency with M3's execution path, but risk status has no producer until the risk engine, which configs/architecture_rules.yaml dates M5. Full metric coverage cannot be shown before M5. |
 
@@ -37,13 +36,6 @@ to equal the head of that ledger, so moving a debt is itself a recorded act.
 - **Residual:** The acceptance names 'selected engine APIs'; no engine exists. Config, metrics and replay surfaces are M2 work, where the roadmap places the bindings needed for data and replay.
 - **Deferral ledger:**
   - 2026-08-06 — dated **M2** while closing M0: Registered while closing M0: the acceptance names selected engine APIs, and no engine exists to bind.
-
-### AEGIS-230 — Columnar data interchange
-
-- **Frozen acceptance criterion:** Schema and round-trip tests pass.
-- **Residual:** Parquet, Arrow and DuckDB round trips are not implemented. M0 has no columnar data to interchange, and building them now would require inventing the futures schema AEGIS-026 owns.
-- **Deferral ledger:**
-  - 2026-08-06 — dated **M2** while closing M0: Registered while closing M0: there is no columnar data to interchange, and the futures schema AEGIS-026 owns does not exist yet.
 
 ## Due at M3
 

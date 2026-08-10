@@ -261,18 +261,23 @@
       "notes": "M2 slice 3. Trading-session calendars: hand-authored local-time templates (configs/calendars/templates) expanded offline by tools/generate_calendars.py (the only code path that imports zoneinfo) into committed, schema-validated, normalized UTC intervals (configs/calendars/generated). python/futures/calendars.py's CalendarRegistry reads only that generated artifact at runtime -- no wall clock, no host tzdata dependency, no locale dependency. classify() is a pure half-open-interval lookup returning REGULAR/OVERNIGHT/MAINTENANCE/CLOSED. Three synthetic templates match the session_template names already committed on the Slice-2 product catalog (synx_equity_index_rth, synx_energy_extended, synx_rates_globex), each cross-checked against the live product catalog. Validation is fail-closed at both layers: illegal overlaps, duplicate/contradictory intervals, zero-length blocks, unknown templates and unsupported/malformed schema versions are all rejected, never silently repaired. DST is covered two ways: a committed-artifact check that the same local session time shifts by exactly one UTC hour across both 2026 transitions, and a generator-level check with a purpose-built block that genuinely spans a transition instant (22h/24h instead of 23h). Property-tested: classification agrees with an independent brute-force scan, is pure/repeatable, and never yields two contradictory session states for one instant. See ADR-0015's slice 3 addendum. Not yet 'verified': that requires an independent spec-auditor review at M2 closure."
     },
     "AEGIS-014": {
-      "status": "in_progress",
+      "status": "implemented",
       "implementation": [
         "python/futures/schema.py",
         "python/futures/ingest.py",
-        "configs/schemas/futures_bar.v1.json"
+        "configs/schemas/futures_bar.v1.json",
+        "python/futures/quality.py"
       ],
       "tests": [
         "tests/unit/test_futures_ingest.py",
-        "tests/integration/test_three_family_load.py"
+        "tests/integration/test_three_family_load.py",
+        "tests/unit/test_futures_quality.py",
+        "tests/property/test_quality_detectors.py"
       ],
-      "reports": [],
-      "notes": "M2 slice 4 (ingestion half only). Volume/open-interest fields are ingested and shape-validated: python/futures/ingest.py accepts optional volume/open_interest as non-negative integers or null (never coerced from missing to zero), on the futures_bar.v1 schema. The data-quality-report half of this requirement -- identifying missing/stale/contradictory values -- is M2 slice 5 (python/futures/quality.py), not built yet. Status remains in_progress until slice 5 completes it."
+      "reports": [
+        "experiments/evidence/AEGIS-014/data_quality.json"
+      ],
+      "notes": "M2 slices 4-5, complete. Ingestion (slice 4) validates volume/open_interest shape: optional non-negative integers or null, never coerced to zero. python/futures/quality.py (slice 5) completes the data-quality-report half: run_quality_checks identifies missing_volume, missing_open_interest, stale_observation (repeated zero-volume OHLC) and contradictory values (duplicate_observation, contradictory_ohlc) over normalized records, deterministically ordered, with severity. Evidence proves zero false positives on the three committed clean bar families. See ADR-0016's slice 5 addendum, which also records why a conditional 'contradictory volume/OI' category was deliberately not implemented (no frozen criterion requires it, and it would duplicate a check already enforced at ingestion). Not yet 'verified': independent spec-auditor review is at M2 closure."
     },
     "AEGIS-015": {
       "status": "not_started",
@@ -345,11 +350,19 @@
       "notes": ""
     },
     "AEGIS-025": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "python/futures/quality.py",
+        "tools/seeded_quality_corruptions.py"
+      ],
+      "tests": [
+        "tests/unit/test_futures_quality.py",
+        "tests/property/test_quality_detectors.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-025/seeded_corruptions.json"
+      ],
+      "notes": "M2 slice 5. python/futures/quality.py detects duplicates (duplicate_observation, a business-key (contract_symbol, event_time_ns) identity distinct from ingestion's (contract_symbol, source_sequence) check), gaps (opt-in, explicit expected interval, never inferred), invalid prices, contradictory OHLC relationships, impossible timestamps (outside the contract's own listed window via ContractChain), and contract metadata conflicts (unresolvable product or unlisted contract month). The seeded corruption suite (tools/seeded_quality_corruptions.py, shared by tests and the evidence generator) proves every one of the nine detector categories is actually triggered by the production function -- the evidence generator itself raises rather than writing an unsupported claim. See ADR-0016's slice 5 addendum for why a tenth, volume/OI-cross-field category is deliberately out of scope. Not yet 'verified': independent spec-auditor review is at M2 closure."
     },
     "AEGIS-026": {
       "status": "implemented",
@@ -2015,23 +2028,17 @@
       "status": "implemented",
       "implementation": [
         "python/data/schema_registry.py",
-        "configs/schemas/experiment_manifest.v1.json"
+        "configs/schemas/experiment_manifest.v1.json",
+        "python/futures/columnar.py"
       ],
       "tests": [
-        "tests/unit/test_schema_registry.py"
+        "tests/unit/test_schema_registry.py",
+        "tests/integration/test_columnar_roundtrip.py"
       ],
-      "reports": [],
-      "notes": "Versioned schema registry with unknown-version rejection, coexisting versions, recorded compatibility, and JSON Lines and CSV codecs with fixed ordering.",
-      "verification_blocked_until": "M2",
-      "residual": "Parquet, Arrow and DuckDB round trips are not implemented. M0 has no columnar data to interchange, and building them now would require inventing the futures schema AEGIS-026 owns.",
-      "deferral_history": [
-        {
-          "blocked_until": "M2",
-          "recorded_at": "M0",
-          "date": "2026-08-06",
-          "reason": "Registered while closing M0: there is no columnar data to interchange, and the futures schema AEGIS-026 owns does not exist yet."
-        }
-      ]
+      "reports": [
+        "experiments/evidence/AEGIS-230/columnar_roundtrip.json"
+      ],
+      "notes": "M2 obligation discharged at slice 5 (was blocked_until M2, registered 2026-08-06 while closing M0, residual: 'building them now would require inventing the futures schema AEGIS-026 owns'). That schema (futures_bar.v1) now exists (M2 slice 4); python/futures/columnar.py implements the full round trip over it: normalized records -> Arrow (to_arrow_table, fixed NORMALIZED_COLUMNS order, schema name/version embedded in table metadata) -> Parquet (write_parquet; pyarrow carries the metadata into the file footer) -> Arrow/readback (read_parquet, rejects unknown/missing schema version) -> DuckDB query over the identical Parquet file (query_duckdb). Round-trip invariants proven: row count, byte-identical values including exact integer tick prices, record_index, event_time_ns, contract identity, volume/OI nullability, deterministic column order, schema version in Parquet metadata, DuckDB row count agreeing with Arrow's. See ADR-0016's slice 5 addendum. This discharges the M2 obligation only; AEGIS-230's own catalogue status (implemented/verified) is unaffected -- that promotion belongs to M2 closure, per docs/DEFERRED_VERIFICATION.md's mechanism."
     },
     "AEGIS-231": {
       "status": "verified",

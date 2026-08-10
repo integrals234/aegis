@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-08-10
-- Requirement IDs: AEGIS-026, AEGIS-014
+- Requirement IDs: AEGIS-026, AEGIS-014, AEGIS-025, AEGIS-230
 - Milestone: M2
 
 ## Context
@@ -159,8 +159,156 @@ never recomputed by any downstream reader -- replay (a later slice) reads it.
   record validates, tick conversion is exact and `record_index` is
   contiguous.
 
+## Slice 5 addendum: data quality and columnar interchange (AEGIS-025, AEGIS-014 completion, AEGIS-230)
+
+### Context
+
+Slice 4 drew a boundary and deferred one side of it: ingestion judges
+*shape* (can this be parsed onto the tick grid, is the timestamp explicit),
+quality judges *validity* (is this well-formed record actually believable).
+AEGIS-014's acceptance -- "identifies missing, stale, and contradictory
+values" -- and AEGIS-025's -- "duplicates, gaps, invalid prices, impossible
+timestamps, and contract metadata conflicts" -- both describe the second
+kind of judgement, over data ingestion already accepted. AEGIS-230
+(columnar interchange) was registered as an M0 deferred-verification
+obligation, blocked on exactly the schema this slice's predecessor built.
+
+### Decision
+
+**Nine detector categories, matching the frozen wording, no invented tenth.**
+`python/futures/quality.py`'s `run_quality_checks` implements exactly the
+categories AEGIS-014 and AEGIS-025's acceptance text names:
+`duplicate_observation` (a `(contract_symbol, event_time_ns)` repeat --
+deliberately a *different* identity than ingestion's
+`(contract_symbol, source_sequence)` duplicate check, because two records
+can share a source-sequence-distinct identity while still claiming to
+observe the same instant, which is exactly the kind of contradiction a
+shape-only check cannot see), `gap`, `invalid_price` (non-positive), a
+`contradictory_ohlc` category split out from `invalid_price` because the
+M2 prompt names it as its own bullet, `impossible_timestamp` (outside the
+contract's own `first_trade_date`..`expiry` window, `python/futures/chain.py`
+providing the lookup), `contract_metadata_conflict`, `missing_volume`,
+`missing_open_interest`, and `stale_observation` (an identical, zero-volume
+OHLC shape repeated at or past a configurable threshold).
+
+The prompt names a *tenth*, conditional category -- "contradictory
+volume/OI values **where frozen criterion requires**" -- and it is
+deliberately **not implemented**. Neither AEGIS-014's nor AEGIS-025's frozen
+acceptance text names a specific cross-field volume/open-interest rule, and
+inventing one here would be exactly the kind of unrequested economic
+assertion this same milestone's roll-policy guidance warns against
+elsewhere ("do not assert economically false... properties merely because
+they are easy"). The one volume/OI constraint that does exist --
+non-negativity -- already lives at ingestion (shape), not here (quality);
+duplicating it as a "quality" finding would mean the detector can never
+fire on any record that reached this module, which is dead code presented
+as a control.
+
+**Detection runs on data that skipped, or survived, ingestion -- not
+necessarily normalized-and-clean data.** The seeded corruption fixture
+(`tools/seeded_quality_corruptions.py`, shared by the evidence generator and
+the test suite so there is exactly one claim, not two that could drift)
+builds records directly rather than through `ingest()`, because the
+categories under test -- a non-positive price, an internally contradictory
+OHLC relationship, a timestamp outside the contract's window -- are
+precisely the well-formed-but-wrong values ingestion's shape checks do not
+reject.
+
+**Gap detection is opt-in, with an explicit expected interval.** Guessing a
+series' cadence from the data itself (e.g. the median delta) would make the
+detector's sensitivity depend on how much bad data was already present --
+circular. The caller states the expected spacing explicitly (as every roll
+policy in slice 6 states its own parameters explicitly); without it, no
+`GAP` issues are produced at all, which is itself observable in the report
+rather than a silent zero.
+
+**Severity is two-valued: `ERROR` for a genuinely contradictory or
+unresolvable record, `WARNING` for an absence or a statistical anomaly** --
+missing volume/OI, a gap, a stale run. Nothing in AEGIS-014/025's frozen
+text asks for more granularity, and a third level would be a judgement call
+with no acceptance criterion to anchor it.
+
+**Columnar interchange: one schema throughout, no second Arrow-specific
+shape.** `python/futures/columnar.py`'s `to_arrow_table` writes exactly
+`futures.schema.NORMALIZED_COLUMNS`, in that fixed order, with the schema
+name and version embedded in the Arrow table's own metadata --
+`pyarrow.parquet.write_table` carries Arrow schema metadata into the Parquet
+file's footer automatically, so nothing bespoke is needed to make the
+version travel with the file. `read_parquet` refuses a file whose declared
+name/version this build does not recognize, matching every other AEGIS
+schema's "reject, never reinterpret" rule. `query_duckdb` runs SQL directly
+against the same Parquet file through a DuckDB view -- no separate DuckDB-
+native copy, so there is exactly one persisted representation of the data
+to trust.
+
+**AEGIS-230's obligation is discharged, not the broader requirement
+over-promoted.** The M0-registered obligation named a concrete residual --
+"Parquet, Arrow and DuckDB round trips are not implemented... building them
+now would require inventing the futures schema AEGIS-026 owns." That schema
+now exists (slice 4) and the round trip is built and proven (this slice), so
+the obligation is cleared via `tools/update_status.py --clear-obligation`.
+AEGIS-230's catalogue status is otherwise unaffected by this milestone --
+paying the M2 obligation is not the same act as promoting the requirement
+to `verified`, which remains M2 closure's decision.
+
+### Alternatives considered
+
+- **A single "bad price" category covering both non-positive values and
+  internal OHLC contradictions** -- rejected: the M2 prompt lists
+  "invalid prices" and "contradictory OHLC relationships" as separate
+  bullets, and a record can be wrong in exactly one of the two ways (a
+  positive but internally-inconsistent bar; a non-positive but internally
+  self-consistent one), which is worth reporting distinctly.
+- **Inferring an expected gap interval from the data** -- rejected as
+  circular; see Decision.
+- **A negative-volume/negative-open-interest "contradictory" quality
+  category** -- rejected as unreachable dead code once ingestion's own
+  shape check already excludes it; see Decision.
+- **A DuckDB-native table as the columnar store, with Parquet as an
+  export format** -- rejected: it would create two persisted
+  representations of the same data with no single source of truth, and
+  AEGIS-230's acceptance is a round trip over one schema, not two storage
+  engines.
+- **Storing schema version only as a Parquet key-value pair added by hand**
+  (bypassing Arrow table metadata) -- rejected: `pyarrow` already carries
+  Arrow schema metadata into Parquet automatically, so a hand-rolled path
+  would be a second, redundant mechanism for the same fact.
+
+### Consequences
+
+- Every later M2 slice (roll policies, continuous series) that wants a
+  quality-checked view of the data calls `run_quality_checks` explicitly;
+  none of them run it implicitly, so a caller that skips quality checking
+  is visible in its own code, not hidden inside `ingest()`.
+- The nine-category list is now the frozen surface other slices build
+  audit/reporting tooling against (e.g. a later roll-audit report, AEGIS-023,
+  M2 slice 8) -- adding a tenth category later is an ADR-worthy decision,
+  not a quiet addition.
+- AEGIS-229 (C++/Python bindings), the other M2-due deferred obligation, is
+  untouched by this slice -- it belongs to slice 13.
+
+### Verification
+
+- `tests/unit/test_futures_quality.py` -- one or more dedicated tests per
+  detector category (including both `CONTRADICTORY_OHLC` violation shapes,
+  the `STALE_OBSERVATION` threshold boundary, gap enabled/disabled), a
+  determinism-of-ordering check, and the seeded-corruption suite proving all
+  nine categories are actually caught by the production function.
+- `tests/property/test_quality_detectors.py` -- no false positives on
+  arbitrary well-formed unique records; deterministic and order-independent
+  results; every reported identifier names a record that was actually
+  supplied.
+- `tests/integration/test_columnar_roundtrip.py` -- the full round trip
+  over the three committed families: row count, byte-identical values,
+  exact integer ticks, `record_index`, `event_time_ns`, contract identity,
+  nullability, deterministic column order, schema-version metadata,
+  rejection of an unknown/missing schema version, and a DuckDB query
+  agreeing with Arrow's own row count.
+
 ## Owner approval
 
-Authorized as part of M2 slice 4 under the owner-approved M2 plan of record
-(`experiments/plans/M2.md`, rev. 4) and the owner's slice 3-7
-continuous-execution prompt, 2026-08-10.
+Authorized as part of M2 slice 4 (schema and ingestion, AEGIS-026 and
+AEGIS-014's ingestion half) and M2 slice 5 (this addendum: quality and
+columnar interchange, AEGIS-025, AEGIS-014's completion, AEGIS-230), both
+under the owner-approved M2 plan of record (`experiments/plans/M2.md`,
+rev. 4) and the owner's slice 3-7 continuous-execution prompt, 2026-08-10.

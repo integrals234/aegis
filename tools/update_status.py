@@ -112,6 +112,12 @@ def main(argv: list[str] | None = None) -> int:
     if args.clear_obligation:
         entry.pop("verification_blocked_until", None)
         entry.pop("residual", None)
+        # audit_requirements.py requires deferral_history and
+        # verification_blocked_until to travel together (a ledger with no
+        # live obligation to explain is a dangling record); a genuinely
+        # discharged obligation drops both, matching AEGIS-227/233/234/009's
+        # precedent from the M0->M1 discharges.
+        entry.pop("deferral_history", None)
     if args.blocked_until:
         if not args.residual:
             print("ERROR: --blocked-until requires --residual", file=sys.stderr)

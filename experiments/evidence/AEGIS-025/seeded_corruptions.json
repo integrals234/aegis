@@ -1,0 +1,167 @@
+{
+  "artifact": "seeded_corruptions",
+  "claim": "All 9 quality-detector categories (contract_metadata_conflict, contradictory_ohlc, duplicate_observation, gap, impossible_timestamp, invalid_price, missing_open_interest, missing_volume, stale_observation) were each triggered at least once by tools/seeded_quality_corruptions.build_seeded_corruptions() run through the real futures.quality.run_quality_checks production function -- verified programmatically in this generator (it raises rather than writing a claim it cannot support) and independently asserted in tests/unit/test_futures_quality.py::test_seeded_corruption_suite_catches_every_issue_type. All data is synthetic (DATA_AND_RESEARCH_POLICY); no claim is made about any real market.",
+  "counts_by_type": {
+    "contract_metadata_conflict": 1,
+    "contradictory_ohlc": 1,
+    "duplicate_observation": 1,
+    "gap": 3,
+    "impossible_timestamp": 1,
+    "invalid_price": 1,
+    "missing_open_interest": 1,
+    "missing_volume": 1,
+    "stale_observation": 1
+  },
+  "dirty": true,
+  "generated_on": "2026-08-10",
+  "issue_types_covered": [
+    "contract_metadata_conflict",
+    "contradictory_ohlc",
+    "duplicate_observation",
+    "gap",
+    "impossible_timestamp",
+    "invalid_price",
+    "missing_open_interest",
+    "missing_volume",
+    "stale_observation"
+  ],
+  "issues": [
+    {
+      "contract_symbol": "SYNX:EQX:2026H",
+      "event_time_ns": 1735689600000000000,
+      "fields": [
+        "event_time_ns"
+      ],
+      "issue_type": "impossible_timestamp",
+      "reason": "2025-01-01 is outside SYNX:EQX:2026H's listed window [2025-03-20, 2026-03-20]",
+      "record_index": 13,
+      "severity": "error"
+    },
+    {
+      "contract_symbol": "SYNX:EQX:2026H",
+      "event_time_ns": 1772323200000000000,
+      "fields": [
+        "event_time_ns"
+      ],
+      "issue_type": "gap",
+      "reason": "gap of 36633600000000000ns since the previous observation exceeds the 129600000000000ns tolerance (86400000000000ns expected x1.5)",
+      "record_index": 0,
+      "severity": "warning"
+    },
+    {
+      "contract_symbol": "SYNX:EQX:2026H",
+      "event_time_ns": 1772668800000000000,
+      "fields": [
+        "event_time_ns"
+      ],
+      "issue_type": "gap",
+      "reason": "gap of 172800000000000ns since the previous observation exceeds the 129600000000000ns tolerance (86400000000000ns expected x1.5)",
+      "record_index": 3,
+      "severity": "warning"
+    },
+    {
+      "contract_symbol": "SYNX:EQX:2026H",
+      "event_time_ns": 1772668800000000000,
+      "fields": [
+        "contract_symbol",
+        "event_time_ns"
+      ],
+      "issue_type": "duplicate_observation",
+      "reason": "another surviving record already reports an observation for SYNX:EQX:2026H at event_time_ns 1772668800000000000",
+      "record_index": 4,
+      "severity": "error"
+    },
+    {
+      "contract_symbol": "SYNX:EQX:2026H",
+      "event_time_ns": 1772755200000000000,
+      "fields": [
+        "open_ticks",
+        "high_ticks",
+        "low_ticks",
+        "close_ticks"
+      ],
+      "issue_type": "contradictory_ohlc",
+      "reason": "high (19995) must be >= max(open, low, close) (20050) and low (20050) must be <= min(open, high, close) (19995)",
+      "record_index": 5,
+      "severity": "error"
+    },
+    {
+      "contract_symbol": "SYNX:EQX:2026H",
+      "event_time_ns": 1772841600000000000,
+      "fields": [
+        "open_ticks",
+        "high_ticks",
+        "low_ticks",
+        "close_ticks",
+        "settlement_price_ticks"
+      ],
+      "issue_type": "invalid_price",
+      "reason": "open_ticks, high_ticks, low_ticks, close_ticks, settlement_price_ticks must be strictly positive, got [-5, -5, -5, -5, -5]",
+      "record_index": 6,
+      "severity": "error"
+    },
+    {
+      "contract_symbol": "SYNX:EQX:2026H",
+      "event_time_ns": 1772928000000000000,
+      "fields": [
+        "volume"
+      ],
+      "issue_type": "missing_volume",
+      "reason": "volume is null",
+      "record_index": 7,
+      "severity": "warning"
+    },
+    {
+      "contract_symbol": "SYNX:EQX:2026H",
+      "event_time_ns": 1773014400000000000,
+      "fields": [
+        "open_interest"
+      ],
+      "issue_type": "missing_open_interest",
+      "reason": "open_interest is null",
+      "record_index": 8,
+      "severity": "warning"
+    },
+    {
+      "contract_symbol": "SYNX:EQX:2026H",
+      "event_time_ns": 1773273600000000000,
+      "fields": [
+        "open_ticks",
+        "high_ticks",
+        "low_ticks",
+        "close_ticks",
+        "volume"
+      ],
+      "issue_type": "stale_observation",
+      "reason": "identical zero-volume OHLC repeated for 3 consecutive observations (threshold 3)",
+      "record_index": 11,
+      "severity": "warning"
+    },
+    {
+      "contract_symbol": "SYNX:EQX:2026H",
+      "event_time_ns": 1773964800000000000,
+      "fields": [
+        "event_time_ns"
+      ],
+      "issue_type": "gap",
+      "reason": "gap of 691200000000000ns since the previous observation exceeds the 129600000000000ns tolerance (86400000000000ns expected x1.5)",
+      "record_index": 12,
+      "severity": "warning"
+    },
+    {
+      "contract_symbol": "SYNX:EQX:2030Z",
+      "event_time_ns": 1773532800000000000,
+      "fields": [
+        "contract_symbol"
+      ],
+      "issue_type": "contract_metadata_conflict",
+      "reason": "'no contract SYNX:EQX:2030Z in SYNX:EQX'",
+      "record_index": 14,
+      "severity": "error"
+    }
+  ],
+  "repository_commit": "a2ffc0a246a6fda2fad8721e0d57d578ae683ce1",
+  "requirement": "AEGIS-025",
+  "seeded_record_count": 15,
+  "total_issues": 11
+}

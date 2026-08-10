@@ -51,3 +51,10 @@ exclude = ["^build/", "^tests/unit/fixtures/"]
 [[tool.mypy.overrides]]
 module = ["aegis_bindings", "aegis_bindings.*"]
 ignore_missing_imports = true
+
+# pyarrow ships no py.typed marker / stub package as of the pinned 25.0.0
+# (AEGIS-230, M2 slice 5). duckdb's own stubs are picked up normally and need
+# no override.
+[[tool.mypy.overrides]]
+module = ["pyarrow", "pyarrow.*"]
+ignore_missing_imports = true
