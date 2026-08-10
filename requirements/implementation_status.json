@@ -261,11 +261,18 @@
       "notes": "M2 slice 3. Trading-session calendars: hand-authored local-time templates (configs/calendars/templates) expanded offline by tools/generate_calendars.py (the only code path that imports zoneinfo) into committed, schema-validated, normalized UTC intervals (configs/calendars/generated). python/futures/calendars.py's CalendarRegistry reads only that generated artifact at runtime -- no wall clock, no host tzdata dependency, no locale dependency. classify() is a pure half-open-interval lookup returning REGULAR/OVERNIGHT/MAINTENANCE/CLOSED. Three synthetic templates match the session_template names already committed on the Slice-2 product catalog (synx_equity_index_rth, synx_energy_extended, synx_rates_globex), each cross-checked against the live product catalog. Validation is fail-closed at both layers: illegal overlaps, duplicate/contradictory intervals, zero-length blocks, unknown templates and unsupported/malformed schema versions are all rejected, never silently repaired. DST is covered two ways: a committed-artifact check that the same local session time shifts by exactly one UTC hour across both 2026 transitions, and a generator-level check with a purpose-built block that genuinely spans a transition instant (22h/24h instead of 23h). Property-tested: classification agrees with an independent brute-force scan, is pure/repeatable, and never yields two contradictory session states for one instant. See ADR-0015's slice 3 addendum. Not yet 'verified': that requires an independent spec-auditor review at M2 closure."
     },
     "AEGIS-014": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "in_progress",
+      "implementation": [
+        "python/futures/schema.py",
+        "python/futures/ingest.py",
+        "configs/schemas/futures_bar.v1.json"
+      ],
+      "tests": [
+        "tests/unit/test_futures_ingest.py",
+        "tests/integration/test_three_family_load.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "M2 slice 4 (ingestion half only). Volume/open-interest fields are ingested and shape-validated: python/futures/ingest.py accepts optional volume/open_interest as non-negative integers or null (never coerced from missing to zero), on the futures_bar.v1 schema. The data-quality-report half of this requirement -- identifying missing/stale/contradictory values -- is M2 slice 5 (python/futures/quality.py), not built yet. Status remains in_progress until slice 5 completes it."
     },
     "AEGIS-015": {
       "status": "not_started",
@@ -345,11 +352,25 @@
       "notes": ""
     },
     "AEGIS-026": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "python/futures/schema.py",
+        "python/futures/ingest.py",
+        "configs/schemas/futures_bar.v1.json",
+        "data_samples/futures/bars/eqx.csv",
+        "data_samples/futures/bars/clx.jsonl",
+        "data_samples/futures/bars/srx.csv"
+      ],
+      "tests": [
+        "tests/unit/test_futures_schema.py",
+        "tests/unit/test_futures_ingest.py",
+        "tests/integration/test_three_family_load.py",
+        "tests/property/test_normalization_idempotence.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-026/three_family_load.json"
+      ],
+      "notes": "M2 slice 4. One normalized schema, futures_bar.v1 (configs/schemas/futures_bar.v1.json), registered through the existing python/data/schema_registry.SchemaRegistry rather than a second validator. python/futures/ingest.py normalizes CSV/JSONL rows from any product family into it: integer tick prices via exact division against the product's Decimal tick_size (never rounded), explicit-UTC-integer event_time_ns only (no timestamp parsing/inference), canonical contract_symbol only. record_index is assigned exactly per the M2 plan of record section 7: paths made repo-relative POSIX, deduplicated, sorted lexicographically, record_index assigned contiguously from zero over surviving records in (source_file, physical_position) order, persisted and never recomputed downstream. Malformed/duplicate policy is STRICT (raise on first rejection, default) or REPORT (collect all); out-of-order source data is recorded, never silently resorted. The three committed synthetic bar fixtures (EQX/CLX/SRX, one CSV + one JSONL to cover both supported formats) load through this one interface, meeting the >=3-family floor. See ADR-0016. Not yet 'verified': independent spec-auditor review is at M2 closure."
     },
     "AEGIS-027": {
       "status": "verified",

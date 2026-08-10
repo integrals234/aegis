@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aegis.local/schemas/futures_bar.v1.json",
+  "x-aegis-schema-name": "futures_bar",
+  "x-aegis-schema-version": 1,
+  "title": "AEGIS normalized multi-market futures bar, version 1",
+  "description": "The single normalized interchange schema every futures market loads through (AEGIS-026). No floating-point prices: OHLC and settlement are integer tick counts, converted from decimal input by exact division against the product's tick_size (python/futures/ingest.py). record_index is assigned by ingestion and never recomputed downstream (M2 plan of record section 7). Registered through python/data/schema_registry.SchemaRegistry, not a second, parallel validator.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "venue",
+    "product_root",
+    "contract_symbol",
+    "event_time_ns",
+    "open_ticks",
+    "high_ticks",
+    "low_ticks",
+    "close_ticks",
+    "volume",
+    "open_interest",
+    "settlement_price_ticks",
+    "source_sequence",
+    "record_index"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Mandatory and enumerated, like every other AEGIS config schema: a record written against a future schema is rejected rather than silently reinterpreted.",
+      "type": "integer",
+      "enum": [1]
+    },
+    "venue": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]{1,12}$"
+    },
+    "product_root": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]{1,12}$"
+    },
+    "contract_symbol": {
+      "description": "The canonical ContractId string (python/futures/identifiers.py). Only this spelling is accepted at ingestion -- vendor-specific alternate symbol formats are out of scope for M2.",
+      "type": "string",
+      "pattern": "^[A-Z0-9]{1,12}:[A-Z0-9]{1,12}:[0-9]{4}[A-Z]$"
+    },
+    "event_time_ns": {
+      "description": "UTC integer nanoseconds. Ingestion requires this explicitly on every input record; it never parses or infers a timestamp.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "open_ticks": { "type": "integer" },
+    "high_ticks": { "type": "integer" },
+    "low_ticks": { "type": "integer" },
+    "close_ticks": { "type": "integer" },
+    "volume": {
+      "description": "Nullable: absent on the input record means null here, never zero.",
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "open_interest": {
+      "description": "Nullable: absent on the input record means null here, never zero.",
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "settlement_price_ticks": {
+      "type": ["integer", "null"]
+    },
+    "source_sequence": {
+      "description": "The sequence number as it appeared in the source dataset. Part of the (contract_symbol, source_sequence) duplicate-detection identity.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "record_index": {
+      "description": "Zero-based ordinal of this record within the canonical ingestion result, assigned once by ingestion over surviving records in (source_file, physical_position) order. Never recomputed by any downstream reader.",
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

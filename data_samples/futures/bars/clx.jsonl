@@ -1,0 +1,6 @@
+{"close":"70.01","contract_symbol":"SYNX:CLX:2026F","event_time_ns":1767614400000000000,"high":"70.04","low":"69.98","open":"70.00","open_interest":5000,"settlement_price":"70.01","source_sequence":0,"volume":1000}
+{"close":"70.02","contract_symbol":"SYNX:CLX:2026F","event_time_ns":1767700800000000000,"high":"70.05","low":"69.99","open":"70.01","open_interest":5005,"settlement_price":"70.02","source_sequence":1,"volume":1010}
+{"close":"70.03","contract_symbol":"SYNX:CLX:2026F","event_time_ns":1767787200000000000,"high":"70.06","low":"70.00","open":"70.02","open_interest":5010,"settlement_price":"70.03","source_sequence":2,"volume":1020}
+{"close":"70.04","contract_symbol":"SYNX:CLX:2026F","event_time_ns":1767873600000000000,"high":"70.07","low":"70.01","open":"70.03","open_interest":5015,"settlement_price":"70.04","source_sequence":3,"volume":1030}
+{"close":"70.05","contract_symbol":"SYNX:CLX:2026F","event_time_ns":1767960000000000000,"high":"70.08","low":"70.02","open":"70.04","open_interest":5020,"settlement_price":"70.05","source_sequence":4,"volume":1040}
+{"close":"70.06","contract_symbol":"SYNX:CLX:2026F","event_time_ns":1768046400000000000,"high":"70.09","low":"70.03","open":"70.05","open_interest":5025,"settlement_price":"70.06","source_sequence":5,"volume":1050}
