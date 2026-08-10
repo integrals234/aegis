@@ -899,11 +899,27 @@
       "notes": "M2 slice 9. cpp/replay/ gains load_replay_stream (reads/validates a canonical JSON-Lines input, record_index read never recomputed, rejects out-of-order/duplicate-key input via the real canonical_compare from slice 1), VirtualClock (a WallClock whose only mutator is advance_to -- structurally never reads the system clock or sleeps), compute_manifest (FNV-1a 64-bit reproducibility digest, not cryptographic), and ReplayEngine (next/next_group/cursor/resume_from). cpp-replay still has no edge to any cpp-exchange-* layer. Deterministic benchmark mode is draining next() in a loop with no pacing delay. See ADR-0018. Not yet 'verified'; full evidence/acceptance proof is Slice 14 closure per the owner's build-first-mode instructions."
     },
     "AEGIS-059": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "python/futures/replay.py",
+        "cpp/bindings/aegis_module.cpp"
+      ],
+      "tests": [
+        "tests/unit/test_historical_replay_feed.py",
+        "tests/integration/test_bindings_roundtrip.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "M2-owned portion (per experiments/plans/M2.md rev. 4, slice 13 row and coverage table '059 | 13 | implemented -> M9'): the Feed protocol and its one concrete implementation, HistoricalReplayFeed (python/futures/replay.py), sorting already-ingested futures_bar.v1 records into the canonical (event_time_ns, source_sequence, contract_symbol, record_index) replay order and iterating them with cursor()/resume_from() mirroring cpp::replay::ReplayEngine (adr/0018's slice 13 addendum). AEGIS-059's full acceptance ('contract tests run one strategy against multiple feed implementations') needs a strategy (M4, configs/architecture_rules.yaml dates cpp-participant-strategy to M4) and live/paper feed implementations (M9) that do not exist yet.",
+      "verification_blocked_until": "M9",
+      "residual": "Contract tests running one strategy against multiple feed implementations (live, paper, historical) require a strategy (M4) and live/paper feed adapters (M9), neither of which exists yet. M2 delivers the Feed protocol and HistoricalReplayFeed only.",
+      "deferral_history": [
+        {
+          "blocked_until": "M9",
+          "recorded_at": "M2",
+          "date": "2026-08-10",
+          "reason": "Registered while closing M2 slice 13: AEGIS-059's full acceptance (contract tests running one strategy against multiple feed implementations) needs a strategy (M4) and live/paper feed adapters (M9), neither of which exists yet. M2 delivers the Feed protocol and HistoricalReplayFeed only."
+        }
+      ]
     },
     "AEGIS-060": {
       "status": "implemented",
@@ -2135,23 +2151,15 @@
       "status": "implemented",
       "implementation": [
         "cpp/bindings/aegis_module.cpp",
-        "cpp/bindings/CMakeLists.txt"
+        "cpp/bindings/CMakeLists.txt",
+        "python/futures/replay.py"
       ],
       "tests": [
-        "tests/integration/test_bindings_roundtrip.py"
+        "tests/integration/test_bindings_roundtrip.py",
+        "tests/unit/test_historical_replay_feed.py"
       ],
       "reports": [],
-      "notes": "pybind11 module confined to cpp/bindings by the architecture checker, exposing five pure functions. Round trips compare the C++ and Python encoders live and assert the loaded module is the compiled extension. The widened surface (envelope encode/decode beyond the planned version/build_info) is an owner-ratified deviation recorded in adr/0005.",
-      "verification_blocked_until": "M2",
-      "residual": "The acceptance names 'selected engine APIs'; no engine exists. Config, metrics and replay surfaces are M2 work, where the roadmap places the bindings needed for data and replay.",
-      "deferral_history": [
-        {
-          "blocked_until": "M2",
-          "recorded_at": "M0",
-          "date": "2026-08-06",
-          "reason": "Registered while closing M0: the acceptance names selected engine APIs, and no engine exists to bind."
-        }
-      ]
+      "notes": "M2 obligation discharged at slice 13 (was blocked_until M2, registered 2026-08-06 while closing M0, residual: 'no engine exists to bind'). cpp/bindings/aegis_module.cpp now also exposes sort_canonical(list[dict]) -> list[dict] (M2 slice 13): constructs real replay::ReplayEvent objects from Slice 1's four canonical fields, sorts via the real canonical_less, returns sorted dicts -- a genuine round trip over the replay core's own ordering, not a stub. tests/integration/test_bindings_roundtrip.py::test_bindings_expose_no_mutable_engine_state asserts the six-function surface; a dedicated symmetry suite proves the C++ binding agrees with the Python peer (futures.replay.sort_canonical) on empty/single/tied/pre-epoch/scrambled inputs. See adr/0005's slice 13 addendum."
     },
     "AEGIS-230": {
       "status": "implemented",

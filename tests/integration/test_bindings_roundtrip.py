@@ -27,6 +27,7 @@ from pathlib import Path
 import pytest
 from common.clock import EventTime
 from common.envelope import ENVELOPE_SCHEMA_VERSION, Envelope, MessageType, decode, encode
+from futures.replay import sort_canonical
 
 pytestmark = pytest.mark.integration
 
@@ -175,8 +176,8 @@ def test_cpp_decoder_reports_why_a_message_was_rejected(bindings):
 def test_bindings_expose_no_mutable_engine_state(bindings):
     """ADR-0005: no binding may mutate engine internals or run on the hot path.
 
-    Enforced structurally at M0 by there being nothing else to expose — the
-    surface is four pure functions — and asserted here so an addition that
+    Enforced structurally by there being nothing else to expose — the
+    surface is pure functions only — and asserted here so an addition that
     breaks the policy has to break a test first.
     """
     public = {name for name in dir(bindings) if not name.startswith("_")}
@@ -186,4 +187,56 @@ def test_bindings_expose_no_mutable_engine_state(bindings):
         "envelope_schema_version",
         "encode_envelope",
         "decode_envelope",
+        "sort_canonical",
     }
+
+
+# ---------------------------------------------------------------------------
+# M2 slice 13 -- sort_canonical (AEGIS-229): the compiled binding sorts real
+# ReplayEvent-shaped dicts via the real C++ canonical_less. The Python peer
+# (futures.replay.sort_canonical) must agree with it on the same input --
+# "keep Python/C++ semantics symmetric" as a tested property, not an
+# assumption (M2 plan of record, slice 13).
+# ---------------------------------------------------------------------------
+
+REPLAY_CASES = [
+    pytest.param([], id="empty"),
+    pytest.param(
+        [{"event_time_ns": 100, "source_sequence": 0, "contract_symbol": "A", "record_index": 0}],
+        id="single",
+    ),
+    pytest.param(
+        [
+            {"event_time_ns": 200, "source_sequence": 1, "contract_symbol": "B", "record_index": 3},
+            {"event_time_ns": 100, "source_sequence": 5, "contract_symbol": "A", "record_index": 1},
+            {"event_time_ns": 100, "source_sequence": 5, "contract_symbol": "B", "record_index": 2},
+            {"event_time_ns": 100, "source_sequence": 2, "contract_symbol": "Z", "record_index": 0},
+        ],
+        id="ties-on-time-and-sequence",
+    ),
+    pytest.param(
+        [
+            {"event_time_ns": -1, "source_sequence": 0, "contract_symbol": "A", "record_index": 1},
+            {"event_time_ns": -1, "source_sequence": 0, "contract_symbol": "A", "record_index": 0},
+        ],
+        id="pre-epoch-and-record-index-tiebreak",
+    ),
+]
+
+
+@pytest.mark.parametrize("records", REPLAY_CASES)
+def test_cpp_sort_canonical_matches_the_python_peer(bindings, records):
+    assert bindings.sort_canonical(records) == sort_canonical(records)
+
+
+def test_cpp_sort_canonical_is_a_real_sort_not_the_identity(bindings):
+    """A binding that silently returned its input unchanged would pass a
+    trivial round-trip test while proving nothing about canonical_less."""
+    scrambled = [
+        {"event_time_ns": 3, "source_sequence": 0, "contract_symbol": "A", "record_index": 2},
+        {"event_time_ns": 1, "source_sequence": 0, "contract_symbol": "A", "record_index": 0},
+        {"event_time_ns": 2, "source_sequence": 0, "contract_symbol": "A", "record_index": 1},
+    ]
+    result = bindings.sort_canonical(scrambled)
+    assert result != scrambled
+    assert [record["record_index"] for record in result] == [0, 1, 2]

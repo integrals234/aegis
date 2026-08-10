@@ -216,10 +216,79 @@ sequence) rather than relying on the implementation argument alone.
   exhaustion, and the shared invariant that all four modes emit the
   identical canonical `record_index` sequence for the same input.
 
+## Slice 13 addendum: the unified feed boundary (AEGIS-059)
+
+### Context
+
+AEGIS-059 asks for a feed abstraction and a historical implementation.
+The C++ binding side of slice 13 (exposing `canonical_less` to Python as
+`sort_canonical`) is documented in ADR-0005's own slice 13 addendum, not
+repeated here. What this addendum covers is the Python-side consumer of
+canonical order: `python/futures/replay.py`'s `Feed` protocol and
+`HistoricalReplayFeed`, which take already-ingested `futures_bar.v1`
+records (`python/futures/ingest.py`, file order, not replay order) and
+impose the actual replay order on them.
+
+### Decision
+
+**`HistoricalReplayFeed`'s `cursor()`/`resume_from()` mirror
+`ReplayEngine::cursor()`/`resume_from()` (this ADR's main Decision) in
+Python terms, deliberately.** `cursor()` reports the `record_index` of
+the most recently emitted record (`None` before the first); `resume_from`
+seeks to the position immediately after a given `record_index`, never
+re-emitting it or anything before it -- the identical contract, so a
+future consumer that understands the C++ engine's resume semantics
+already understands the Python feed's.
+
+**The canonical sort is native Python (`sort_canonical`,
+`python/futures/replay.py`), not a call through the compiled bindings.**
+A feed that only works when `aegis_bindings` is built would make the
+whole `python/futures` layer conditionally functional on a C++ toolchain
+being present, which no other module in this layer requires. The
+bindings' own `sort_canonical` (ADR-0005 addendum) exists to *prove* the
+two agree, not to be a required dependency of this one.
+
+**Sorting happens once, at construction, not lazily per iteration.** The
+feed's records are fixed the moment `HistoricalReplayFeed.__init__` runs;
+nothing about iteration re-sorts or re-derives order, matching this ADR's
+existing separation between "load and validate" and "drive" (Decision,
+above) in Python terms.
+
+### Alternatives considered
+
+- **Routing the Python feed's sort through the compiled binding** --
+  rejected: see Decision. Revisited only if a future milestone finds the
+  native Python sort is a genuine performance bottleneck, which CLAUDE.md's
+  quality order (performance after correctness, determinism, reproducibility)
+  does not justify addressing now.
+- **Giving `HistoricalReplayFeed` its own record_index-assignment logic**
+  -- rejected: `record_index` is ingestion's responsibility
+  (`python/futures/ingest.py`, unchanged since slice 4); this feed reads
+  it, exactly as the C++ engine does.
+
+### Consequences
+
+- A future M9 live/paper feed implements the same `Feed` protocol; nothing
+  about `HistoricalReplayFeed`'s internals needs to change for that to be
+  possible, since the protocol only requires `__iter__`.
+- A future M4 strategy or M3 participant pipeline consumes
+  `HistoricalReplayFeed` (or a live feed built against the same protocol)
+  without needing to know whether the records came from disk or a
+  compiled engine underneath.
+
+### Verification
+
+- `tests/unit/test_historical_replay_feed.py` -- canonical ordering from
+  scrambled input, protocol conformance, exhaustion, `cursor()`/
+  `resume_from()` semantics (including the unknown-`record_index` and
+  resume-at-last-record edge cases), and the empty-feed case.
+- `tests/integration/test_bindings_roundtrip.py` -- the Python/C++
+  `sort_canonical` symmetry tests (see ADR-0005's slice 13 addendum).
+
 ## Owner approval
 
-Authorized as part of M2 slice 9 (replay core, AEGIS-058) and M2 slice 10
-(this addendum: pacing modes, AEGIS-054..057), both under the
-owner-approved M2 plan of record (`experiments/plans/M2.md`, rev. 4) and
-the owner's slice 8-13 build-first continuous-execution prompt,
-2026-08-10.
+Authorized as part of M2 slice 9 (replay core, AEGIS-058), M2 slice 10
+(pacing modes addendum, AEGIS-054..057) and M2 slice 13 (this addendum:
+unified feed boundary, AEGIS-059), all under the owner-approved M2 plan of
+record (`experiments/plans/M2.md`, rev. 4) and the owner's slice 8-13
+build-first continuous-execution prompt, 2026-08-10.

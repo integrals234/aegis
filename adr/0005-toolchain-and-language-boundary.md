@@ -114,8 +114,60 @@ engine that does not exist would be building M1 early.
   permitted functions.
 - Evidence: `experiments/evidence/AEGIS-228/`, `experiments/evidence/AEGIS-009/`.
 
+## Slice 13 addendum: `sort_canonical` and the `cpp-replay` dependency edge (AEGIS-229, AEGIS-059)
+
+### Context
+
+M2 slice 13 is the first time the bindings layer needs to reach past
+`cpp-common`/`cpp-events`. AEGIS-229's acceptance calls for round-trip
+integration tests over "selected engine APIs"; slice 9's replay core
+(`cpp/replay/replay_event.hpp`) is the first M2 API worth exercising that
+way, since it is a pure function of plain data (sort records into the
+canonical order) with no engine state to protect.
+
+### Decision
+
+**`configs/architecture_rules.yaml` gains one edge: `cpp-bindings` may now
+depend on `cpp-replay`, and only `cpp-replay`.** No `cpp-exchange-*` or
+`cpp-participant-*` layer is added — the binding does not widen past what
+M2 actually needs bound, and the existing rule that `cpp-replay` itself
+has no edge to any exchange layer is untouched.
+
+**`sort_canonical(list[dict]) -> list[dict]`** constructs real
+`aegis::replay::ReplayEvent` objects from dicts shaped like slice 1's four
+canonical fields (`event_time_ns`, `source_sequence`, `contract_symbol`,
+`record_index`), sorts them with the real `canonical_less`, and returns
+sorted dicts. It mutates nothing — no `ReplayEngine`, `VirtualClock`,
+pacing or fault-injection state is bound, matching the policy above
+exactly: this is a pure function over plain data, not a stateful replay
+operation routed around risk/OMS.
+
+**The M0 surface of five pure functions (Decision, above) grows to six.**
+`tests/integration/test_bindings_roundtrip.py::test_bindings_expose_no_mutable_engine_state`
+now asserts the six-function set including `sort_canonical`; the addition
+had to break that test first, exactly as the original five did.
+
+**The Python peer (`python/futures/replay.py::sort_canonical`) is a
+separate, native implementation, not a wrapper around the binding.** A
+feed usable without a C++ toolchain is worth more than saving one
+`sorted()` call; a dedicated symmetry test
+(`test_cpp_sort_canonical_matches_the_python_peer`) proves the two agree
+on the same input rather than assuming it because one calls the other.
+
+### Verification
+
+- `tests/integration/test_bindings_roundtrip.py` — the six-function
+  surface assertion, `sort_canonical` agreement with the Python peer
+  across empty/single/tied/pre-epoch cases, and a real-sort-not-identity
+  check.
+- `tools/check_architecture.py` — passes with the new `cpp-bindings` →
+  `cpp-replay` edge and no other new edge.
+
 ## Owner approval
 
 Recorded in the approved M0 plan (`experiments/plans/M0.md`, P3 and Part 6). The
 widened binding surface was ratified separately by the owner on 2026-08-06,
-following the independent M0 audit; see the ratified deviation above.
+following the independent M0 audit; see the ratified deviation above. The
+slice 13 addendum above is authorized under the owner's M2 slice 8-13
+build-first continuous-execution prompt and the approved M2 plan of record
+(`experiments/plans/M2.md`, rev. 4), 2026-08-10.
