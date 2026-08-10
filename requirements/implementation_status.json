@@ -398,18 +398,26 @@
       "notes": "M2 slice 7. build_return_stream computes simple (proportional) returns from a ratio-adjusted series. Reconciliation is proven across every roll in a multi-roll fixture, not one hand-picked day: on a non-roll day the adjusted return equals the raw same-contract return exactly; on a roll day it equals the outgoing contract's own realized return that day (never an artificial zero -- see ADR-0017's slice 7 addendum for why that would itself be the fabrication AEGIS-022 warns against). No synthetic index is built: optional per the M2 plan of record, and no frozen acceptance criterion names one. Not yet 'verified': independent spec-auditor review is at M2 closure."
     },
     "AEGIS-023": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "python/futures/roll_audit.py"
+      ],
+      "tests": [
+        "tests/unit/test_roll_audit.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "M2 slice 8. build_roll_audit walks explicit dates through a real RollPolicy (M2 slice 6), detecting front-contract transitions via the real build_unadjusted_series (M2 slice 7), and fills each RollAuditRecord (old/new contract, prices, raw_gap, ratio_at_roll, trigger) via the same same-day-dual-quote roll_boundary_prices lookup series.py's own adjustment builders use -- no roll or adjustment logic re-derived. to_machine_readable/render_human_readable are two views over the same record list. Evidence/full acceptance proof deferred to Slice 14 closure per the owner's build-first-mode instructions; not yet 'verified'."
     },
     "AEGIS-024": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "implemented",
+      "implementation": [
+        "python/futures/roll_sensitivity.py"
+      ],
+      "tests": [
+        "tests/unit/test_roll_sensitivity.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "M2 slice 8, M2-owned portion only. compare_roll_methods quantifies differences between roll POLICIES (roll dates chosen, max/mean absolute deviation between additive-adjusted price paths) -- not strategy P&L, which needs a strategy that does not exist before M4. The M4 residual (strategy-level comparison) is unchanged from the owner-confirmed M2 plan of record coverage table ('024 | 8 | implemented -> M4 owner'); this is not a new deferral. Built entirely on real roll_audit.py/series.py production code. Not yet 'verified'."
     },
     "AEGIS-025": {
       "status": "implemented",

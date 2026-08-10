@@ -59,6 +59,7 @@ __all__ = [
     "build_ratio_adjusted_series",
     "build_return_stream",
     "build_unadjusted_series",
+    "roll_boundary_prices",
 ]
 
 
@@ -174,7 +175,7 @@ def build_unadjusted_series(
     return tuple(observations)
 
 
-def _roll_gap_or_ratio(
+def roll_boundary_prices(
     unadjusted: Sequence[ContinuousObservation],
     index: int,
     prices: Sequence[PriceObservation],
@@ -182,7 +183,9 @@ def _roll_gap_or_ratio(
     """Shared roll-boundary lookup for additive/ratio adjustment: the
     outgoing contract, the roll date, and (old, new) prices on that date --
     the new price from the already-built series, the old price from the raw
-    observations (the same-day dual quote adjustment needs)."""
+    observations (the same-day dual quote adjustment needs). Public because
+    `python/futures/roll_audit.py` (M2 slice 8) reuses the identical
+    same-day-dual-quote lookup rather than re-deriving it."""
     lookup = {(p.contract_id, p.session_date): p.price for p in prices}
     old_contract = unadjusted[index].contract_id
     roll_day = unadjusted[index + 1].as_of
@@ -217,7 +220,7 @@ def build_additive_adjusted_series(
     cumulative = Decimal(0)
     for index in range(count - 2, -1, -1):
         if unadjusted[index + 1].contract_id != unadjusted[index].contract_id:
-            _, _, old_price, new_price = _roll_gap_or_ratio(unadjusted, index, prices)
+            _, _, old_price, new_price = roll_boundary_prices(unadjusted, index, prices)
             cumulative += new_price - old_price
         offsets[index] = cumulative
     return tuple(
@@ -256,7 +259,7 @@ def build_ratio_adjusted_series(
     cumulative = Decimal(1)
     for index in range(count - 2, -1, -1):
         if unadjusted[index + 1].contract_id != unadjusted[index].contract_id:
-            old_contract, roll_day, old_price, new_price = _roll_gap_or_ratio(unadjusted, index, prices)
+            old_contract, roll_day, old_price, new_price = roll_boundary_prices(unadjusted, index, prices)
             if old_price <= 0:
                 raise InvalidAdjustment(
                     f"cannot compute a ratio against a non-positive price ({old_price}) for "
