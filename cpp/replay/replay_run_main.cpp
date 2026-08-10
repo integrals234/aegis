@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <exception>
 #include <iostream>
+#include <istream>
 #include <memory>
 #include <optional>
 #include <string>
@@ -69,6 +70,7 @@ struct Options {
   std::int64_t interval_nanos{0};
   std::optional<std::uint64_t> resume_after;
   std::vector<FaultRule> faults;
+  bool interactive{false};
 };
 
 /// The CLI spelling of every FaultKind -- one table to extend when the enum
@@ -153,6 +155,8 @@ bool parse_args(int argc, char** argv, Options& options, std::string& error) {
     } else if (flag == "--resume-after" && has_value) {
       options.resume_after = std::stoull(value);
       ++i;
+    } else if (flag == "--interactive") {
+      options.interactive = true;
     } else if (flag == "--fault" && has_value) {
       FaultRule rule;
       if (!parse_fault(value, rule)) {
@@ -173,6 +177,119 @@ bool parse_args(int argc, char** argv, Options& options, std::string& error) {
   return true;
 }
 
+std::unique_ptr<PacingPolicy> make_pacing(const Options& options) {
+  if (options.pacing == "original") {
+    return std::make_unique<OriginalSpeedPacing>();
+  }
+  if (options.pacing == "accelerated") {
+    return std::make_unique<AcceleratedPacing>(options.multiplier);
+  }
+  if (options.pacing == "fixed") {
+    return std::make_unique<FixedRatePacing>(Duration{options.interval_nanos});
+  }
+  if (options.pacing == "step") {
+    return std::make_unique<StepPacing>();
+  }
+  return nullptr;
+}
+
+/// Rate-control accounting (AEGIS-056), accumulated from the *scheduled* waits
+/// and never from a wall clock: this binary never sleeps, so an elapsed-time
+/// measurement would describe the host rather than the replay, and would not
+/// reproduce across processes.
+struct Metrics {
+  std::int64_t total_scheduled_wait{0};
+  std::int64_t total_pacing_wait{0};
+  std::int64_t total_fault_delay{0};
+  std::uint64_t emitted{0};
+
+  [[nodiscard]] Json to_json() const {
+    return Json{
+        {"type", "metrics"},
+        {"events_emitted", emitted},
+        {"total_pacing_wait_nanos", total_pacing_wait},
+        {"total_fault_delay_nanos", total_fault_delay},
+        {"total_scheduled_wait_nanos", total_scheduled_wait},
+        // Events per 10^9 nanoseconds of scheduled virtual time, as an
+        // integer: a float would make byte-identical cross-process comparison
+        // depend on formatting rather than on replay.
+        {"events_per_virtual_second_scaled",
+         total_scheduled_wait > 0
+             ? (static_cast<std::int64_t>(emitted) * 1'000'000'000) / total_scheduled_wait
+             : 0},
+    };
+  }
+};
+
+/// Emits one record and folds it into the metrics. `annotation` is the fault
+/// (if any) attached to this record by the injector.
+void emit_event(const ReplayEvent& event, Duration wait,
+                const std::optional<FaultAnnotation>& annotation, const VirtualClock& clock,
+                Metrics& metrics) {
+  // A kDelayed/kLatencySpike record's declared delay is realized here, in the
+  // schedule, rather than by moving the record: shifting it would perturb the
+  // canonical order three slices exist to protect (ADR-0019).
+  const auto fault_delay = annotation.has_value() ? annotation->delay : Duration{0};
+  const auto scheduled = Duration{wait.nanos() + fault_delay.nanos()};
+  const Json line{
+      {"type", "event"},
+      {"event_time_ns", event.event_time.nanos()},
+      {"source_sequence", event.source_sequence.value()},
+      {"contract_symbol", event.contract_symbol},
+      {"record_index", event.record_index.value()},
+      {"wait_nanos", wait.nanos()},
+      {"fault_delay_nanos", fault_delay.nanos()},
+      {"scheduled_wait_nanos", scheduled.nanos()},
+      {"clock_now_ns", clock.now_utc()},
+      {"fault", annotation.has_value() ? aegis::replay::describe(annotation->kind) : "none"},
+  };
+  std::cout << line.dump() << '\n';
+  metrics.total_pacing_wait += wait.nanos();
+  metrics.total_fault_delay += fault_delay.nanos();
+  metrics.total_scheduled_wait += scheduled.nanos();
+  ++metrics.emitted;
+}
+
+/// The whole replay, in whichever of the two drive modes was asked for.
+///
+/// `annotations` is parallel to the engine's own event vector, so `position`
+/// indexes both; it starts wherever `--resume-after` left the cursor.
+void drive(const Options& options, ReplayEngine& engine, const PacingPolicy& pacing,
+           const VirtualClock& clock,
+           const std::vector<std::optional<FaultAnnotation>>& annotations, std::size_t position,
+           Metrics& metrics) {
+  const auto annotation_at = [&](std::size_t index) {
+    return index < annotations.size() ? annotations[index] : std::optional<FaultAnnotation>{};
+  };
+
+  // Interactive mode (AEGIS-057): advancement is externally driven, one
+  // timestamp group per line read from stdin, rather than the caller receiving
+  // the whole stream in a single drain. The API half (ReplayEngine::next_group)
+  // already existed; this is the interactive half.
+  if (options.interactive) {
+    std::string command;
+    while (engine.has_next() && std::getline(std::cin, command)) {
+      if (command == "quit") {
+        break;
+      }
+      for (const auto& event : engine.next_group()) {
+        // next_group has already advanced the clock; a caller-driven step has
+        // no pacing wait of its own to compute.
+        emit_event(event, pacing.wait_before(event, event), annotation_at(position), clock,
+                   metrics);
+        ++position;
+      }
+      std::cout.flush();
+    }
+    return;
+  }
+
+  while (const auto emitted = engine.next_with_pacing(pacing)) {
+    emit_event(emitted->first, emitted->second, annotation_at(position), clock, metrics);
+    ++position;
+  }
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -181,6 +298,12 @@ int main(int argc, char** argv) {
     std::string error;
     if (!parse_args(argc, argv, options, error)) {
       std::cerr << "aegis_replay_run: " << error << '\n';
+      return 2;
+    }
+
+    const auto pacing = make_pacing(options);
+    if (pacing == nullptr) {
+      std::cerr << "aegis_replay_run: unknown pacing mode: " << options.pacing << '\n';
       return 2;
     }
 
@@ -206,20 +329,6 @@ int main(int argc, char** argv) {
     for (const auto& [event, annotation] : faulted.events) {
       events.push_back(event);
       annotations.push_back(annotation);
-    }
-
-    std::unique_ptr<PacingPolicy> pacing;
-    if (options.pacing == "original") {
-      pacing = std::make_unique<OriginalSpeedPacing>();
-    } else if (options.pacing == "accelerated") {
-      pacing = std::make_unique<AcceleratedPacing>(options.multiplier);
-    } else if (options.pacing == "fixed") {
-      pacing = std::make_unique<FixedRatePacing>(Duration{options.interval_nanos});
-    } else if (options.pacing == "step") {
-      pacing = std::make_unique<StepPacing>();
-    } else {
-      std::cerr << "aegis_replay_run: unknown pacing mode: " << options.pacing << '\n';
-      return 2;
     }
 
     VirtualClock clock;
@@ -251,23 +360,8 @@ int main(int argc, char** argv) {
     };
     std::cout << manifest_line.dump() << '\n';
 
-    while (const auto emitted = engine.next_with_pacing(*pacing)) {
-      const auto& [event, wait] = *emitted;
-      const auto& annotation =
-          position < annotations.size() ? annotations[position] : std::optional<FaultAnnotation>{};
-      const Json line{
-          {"type", "event"},
-          {"event_time_ns", event.event_time.nanos()},
-          {"source_sequence", event.source_sequence.value()},
-          {"contract_symbol", event.contract_symbol},
-          {"record_index", event.record_index.value()},
-          {"wait_nanos", wait.nanos()},
-          {"clock_now_ns", clock.now_utc()},
-          {"fault", annotation.has_value() ? aegis::replay::describe(annotation->kind) : "none"},
-      };
-      std::cout << line.dump() << '\n';
-      ++position;
-    }
+    Metrics metrics;
+    drive(options, engine, *pacing, clock, annotations, position, metrics);
 
     for (const auto& dropped : faulted.dropped) {
       const Json line{
@@ -277,6 +371,8 @@ int main(int argc, char** argv) {
       };
       std::cout << line.dump() << '\n';
     }
+
+    std::cout << metrics.to_json().dump() << '\n';
     return 0;
   } catch (const std::exception& exception) {
     std::cerr << "aegis_replay_run: " << exception.what() << '\n';

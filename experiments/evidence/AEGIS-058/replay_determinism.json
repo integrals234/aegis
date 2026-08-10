@@ -8,7 +8,7 @@
       "compared": false,
       "why": "no release build present at generation time; the C++ release preset is exercised by scripts/ci_local.sh and by the CI 'C++ release' job"
     },
-    "repeated_process_output_sha256": "a0370e9991bd9a9d60f0593e2f1332574ab6fdfc226ebb9d5a2a07a3fa38cbee",
+    "repeated_process_output_sha256": "6243401768222fb1c628af77c415435cae32fa051b328a7660ece978aaa11d1d",
     "resume_after_record_index": 9,
     "resume_reproduces_uninterrupted_tail": true,
     "resumed_tail_record_indices": [
@@ -23,7 +23,7 @@
     ],
     "runs_compared": 2
   },
-  "dirty": false,
+  "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-10",
   "input_stream": {
@@ -37,7 +37,7 @@
     "any performance or benchmark claim: this artifact records output equality only, never timing"
   ],
   "producer": "tools/generate_replay_evidence.py",
-  "repository_commit": "fb01ecf295e19d195ede2f04fe1a1bb63589b497",
+  "repository_commit": "4e643ae41be4fe799d0df555754e13dccb9cdd3e",
   "requirements": [
     "AEGIS-058"
   ]

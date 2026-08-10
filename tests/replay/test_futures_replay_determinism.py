@@ -175,6 +175,126 @@ def test_faults_never_perturb_the_canonical_order_of_survivors(repo_root):
     assert faulted == clean
 
 
+def test_fixed_rate_reports_a_rate_control_metric(repo_root):
+    """AEGIS-056's acceptance names rate-control tests *and metrics*.
+
+    The metric is computed from scheduled virtual time, never a wall clock --
+    this binary never sleeps, so an elapsed-time figure would describe the host
+    rather than the replay, and would not be reproducible across processes.
+    """
+    lines = _run(repo_root, "--pacing", "fixed", "--interval-ns", "1000")
+    metrics = lines[-1]
+    assert metrics["type"] == "metrics"
+
+    events = [line for line in lines if line["type"] == "event"]
+    assert metrics["events_emitted"] == len(events)
+    # One wait per event after the first, each the configured interval.
+    assert metrics["total_scheduled_wait_nanos"] == 1000 * (len(events) - 1)
+    # events per 10^9 ns of scheduled virtual time, as an integer.
+    expected = (len(events) * 1_000_000_000) // metrics["total_scheduled_wait_nanos"]
+    assert metrics["events_per_virtual_second_scaled"] == expected
+
+
+def test_rate_metric_tracks_the_configured_rate(repo_root):
+    """Halving the interval must double the achieved rate, or the metric is
+    not measuring rate control at all."""
+    slow = _run(repo_root, "--pacing", "fixed", "--interval-ns", "2000")[-1]
+    fast = _run(repo_root, "--pacing", "fixed", "--interval-ns", "1000")[-1]
+    # The metric is a scaled integer (a float would make byte-identical
+    # cross-process comparison depend on formatting), so the doubling is exact
+    # only up to one unit of floor-division truncation.
+    assert abs(fast["events_per_virtual_second_scaled"] - 2 * slow["events_per_virtual_second_scaled"]) <= 1
+    assert slow["total_scheduled_wait_nanos"] == 2 * fast["total_scheduled_wait_nanos"]
+
+
+def test_declared_delay_is_realized_in_the_schedule(repo_root):
+    """AEGIS-060: a delayed observation must actually be delayed.
+
+    The delay is applied to the record's scheduled wait, not to its position:
+    moving the record would perturb the canonical order (ADR-0019). So the
+    faulted record keeps its `record_index` and its place, and carries a
+    strictly larger scheduled wait than it would without the fault.
+    """
+    clean = {
+        line["record_index"]: line
+        for line in _run(repo_root, "--pacing", "step")
+        if line["type"] == "event"
+    }
+    faulted = {
+        line["record_index"]: line
+        for line in _run(repo_root, "--pacing", "step", "--fault", "3:delayed:500")
+        if line["type"] == "event"
+    }
+
+    assert faulted[3]["fault"] == "delayed"
+    assert faulted[3]["fault_delay_nanos"] == 500
+    assert faulted[3]["scheduled_wait_nanos"] == clean[3]["scheduled_wait_nanos"] + 500
+    # Position and identity are untouched.
+    assert list(faulted) == list(clean)
+    assert faulted[3]["event_time_ns"] == clean[3]["event_time_ns"]
+    # Only the targeted record is delayed.
+    assert all(faulted[i]["fault_delay_nanos"] == 0 for i in faulted if i != 3)
+
+
+def test_latency_spike_is_also_realized_in_the_schedule(repo_root):
+    """kLatencySpike carries its magnitude in `delay` (ADR-0019 slice 12)."""
+    faulted = [
+        line
+        for line in _run(repo_root, "--pacing", "step", "--fault", "2:latency_spike:750")
+        if line["type"] == "event" and line["record_index"] == 2
+    ]
+    assert faulted[0]["scheduled_wait_nanos"] == 750
+
+
+def test_interactive_mode_advances_one_timestamp_group_per_command(repo_root):
+    """AEGIS-057's interactive half: advancement is externally driven.
+
+    Two lines of input must yield two timestamp groups, not the whole stream --
+    the property that distinguishes a stepped consumer from a drain.
+    """
+    binary = resolve_replay_run_binary(repo_root)
+    result = subprocess.run(
+        [
+            str(binary),
+            "--input", str(repo_root / FUTURES_REPLAY_STREAM_RELATIVE_PATH),
+            "--label", FUTURES_REPLAY_STREAM_LABEL,
+            "--pacing", "step",
+            "--interactive",
+        ],
+        input="\n\n",
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    lines = [json.loads(line) for line in result.stdout.splitlines()]
+    stepped = _record_indices(lines)
+
+    full = _record_indices(_run(repo_root, "--pacing", "step"))
+    assert 0 < len(stepped) < len(full), "interactive mode must stop, not drain"
+    assert stepped == full[: len(stepped)]
+
+
+def test_interactive_mode_stops_on_quit(repo_root):
+    binary = resolve_replay_run_binary(repo_root)
+    result = subprocess.run(
+        [
+            str(binary),
+            "--input", str(repo_root / FUTURES_REPLAY_STREAM_RELATIVE_PATH),
+            "--label", FUTURES_REPLAY_STREAM_LABEL,
+            "--pacing", "step",
+            "--interactive",
+        ],
+        input="\nquit\n\n",
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    lines = [json.loads(line) for line in result.stdout.splitlines()]
+    assert len(_record_indices(lines)) == 1
+
+
 def test_missing_binary_raises_not_skips(repo_root, monkeypatch, tmp_path):
     """A missing binary must fail the check, never silently skip it."""
     monkeypatch.setenv("AEGIS_REPLAY_RUN", str(tmp_path / "does-not-exist"))

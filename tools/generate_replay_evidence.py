@@ -98,10 +98,23 @@ def _pacing_evidence(binary: Path) -> dict[str, Any]:
     for name, args in modes.items():
         lines = _lines(_run(binary, *args))
         events = [line for line in lines if line["type"] == "event"]
+        metrics = lines[-1]
+        if metrics["type"] != "metrics":
+            raise RuntimeError(f"{name}: no metrics line was emitted")
         sequences[name] = _indices(lines)
         results[name] = {
             "waits_nanos": [event["wait_nanos"] for event in events],
             "record_count": len(events),
+            # AEGIS-056's "metrics": rate control measured in scheduled virtual
+            # time, never wall clock -- this binary never sleeps.
+            "rate_metrics": {
+                key: metrics[key]
+                for key in (
+                    "events_emitted",
+                    "total_scheduled_wait_nanos",
+                    "events_per_virtual_second_scaled",
+                )
+            },
         }
 
     baseline = next(iter(sequences.values()))
@@ -115,6 +128,37 @@ def _pacing_evidence(binary: Path) -> dict[str, Any]:
             "the pacing modes' computed waits are not meaningfully distinct; the "
             "evidence would not show the modes doing anything"
         )
+
+    # AEGIS-057's interactive half: advancement driven one timestamp group per
+    # line of stdin, which must stop rather than drain.
+    interactive = subprocess.run(
+        [
+            str(binary),
+            "--input", str(ROOT / FUTURES_REPLAY_STREAM_RELATIVE_PATH),
+            "--label", FUTURES_REPLAY_STREAM_LABEL,
+            "--pacing", "step",
+            "--interactive",
+        ],
+        input="\n\n",
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if interactive.returncode != 0:
+        raise RuntimeError(f"interactive run failed: {interactive.stderr}")
+    stepped = _indices(_lines(interactive.stdout))
+    if not stepped or len(stepped) >= len(baseline):
+        raise RuntimeError(
+            "interactive mode drained the stream instead of stopping; it would not "
+            "demonstrate step-by-step replay"
+        )
+    results["interactive_AEGIS_057"] = {
+        "commands_sent": 2,
+        "record_indices_emitted": stepped,
+        "full_stream_record_count": len(baseline),
+        "stopped_before_the_end": True,
+        "prefix_of_full_run": stepped == baseline[: len(stepped)],
+    }
 
     results["shared_canonical_sequence"] = baseline
     results["invariant"] = (
@@ -282,9 +326,15 @@ def main(argv: list[str] | None = None) -> int:
                     "The four approved pacing modes were each driven through the real "
                     "ReplayEngine over the committed canonical stream. Their computed "
                     "waits are recorded and are genuinely distinct; all four emit the "
-                    "identical canonical record_index sequence. No mode sleeps: every "
-                    "wait is a computed virtual duration (ADR-0018), so these figures "
-                    "are not timing measurements and are not a performance claim."
+                    "identical canonical record_index sequence. Each run reports "
+                    "rate-control metrics (events emitted, total scheduled wait, and "
+                    "events per second of scheduled virtual time) -- AEGIS-056's "
+                    "'metrics'. Step-by-step replay was additionally driven "
+                    "interactively, one timestamp group per command, and stopped short "
+                    "of the stream's end rather than draining it -- AEGIS-057's "
+                    "'interactive'. No mode sleeps: every wait is a computed virtual "
+                    "duration (ADR-0018), so these figures are scheduling arithmetic, "
+                    "not timing measurements, and are not a performance claim."
                 ),
                 "not_evidence_for": [
                     "any latency or throughput claim: no wall-clock time is measured here",
