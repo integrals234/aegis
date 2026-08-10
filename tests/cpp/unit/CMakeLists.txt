@@ -23,6 +23,7 @@ aegis_add_test(aegis_unit_tests unit
   test_reject_matrix.cpp
   test_replay_engine.cpp
   test_replay_event.cpp
+  test_replay_full_stack_integration.cpp
   test_replay_manifest.cpp
   test_replay_stream.cpp
   test_sequencer.cpp
