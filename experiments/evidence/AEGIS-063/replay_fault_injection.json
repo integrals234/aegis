@@ -2,7 +2,7 @@
   "artifact": "replay_fault_injection",
   "binary": "build/debug/cpp/replay/aegis_replay_run",
   "claim": "All eleven fault kinds were injected deterministically at explicit, committed record positions -- never sampled (ADR-0019). For every kind, the emitted records plus the accounted-for dropped records reconstruct the input set exactly and the survivors remain in canonical order. This is the injection MECHANISM only.",
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "faults": {
     "invariant": "no fault kind mutates a canonical-order field: every survivor stays in canonical order, and emitted + dropped reconstructs the input set exactly",
@@ -128,7 +128,7 @@
       17
     ]
   },
-  "generated_on": "2026-08-10",
+  "generated_on": "2026-08-11",
   "input_stream": {
     "derived_from": "the committed data_samples/futures/bars/* files, through the real futures.ingest pipeline (tools/make_replay_fixture.py); record_index is ingestion's own assignment, read by replay and never recomputed",
     "label": "futures_canonical_stream.v1",
@@ -141,7 +141,7 @@
     "AEGIS-062's risk responses and AEGIS-063's OMS/risk integration: both need layers architecture rules date to M5. The M5 residuals remain registered and are NOT discharged here."
   ],
   "producer": "tools/generate_replay_evidence.py",
-  "repository_commit": "4e643ae41be4fe799d0df555754e13dccb9cdd3e",
+  "repository_commit": "d1805aa7b58697674ef3e4fcb94a8787af11f87f",
   "requirements": [
     "AEGIS-060",
     "AEGIS-061",
