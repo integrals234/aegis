@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aegis.local/schemas/futures_calendar_template.v1.json",
+  "title": "AEGIS trading-session calendar template, version 1",
+  "description": "Hand-authored, local-time session template consumed only by tools/generate_calendars.py (AEGIS-013). Not read at runtime -- python/futures/calendars.py never imports this schema or a timezone database; it reads the offline-generated UTC-interval artifact validated by futures_calendar.v1.json instead.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "template", "timezone", "blocks", "holidays"],
+  "properties": {
+    "schema_version": {
+      "description": "Mandatory and enumerated: a template written against a future schema is rejected rather than silently reinterpreted.",
+      "type": "integer",
+      "enum": [1]
+    },
+    "template": {
+      "description": "The session-template name a Product.session_template field references.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "timezone": {
+      "description": "IANA time zone key the block local times are interpreted in. Used only by the offline generator.",
+      "type": "string",
+      "minLength": 1
+    },
+    "blocks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/block" }
+    },
+    "holidays": {
+      "description": "ISO dates, in the template's timezone, on which every block is suppressed for the whole calendar day. Full-day closure only -- no partial early-close modelling.",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "local_start", "local_end", "days_of_week"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]{0,63}$"
+        },
+        "type": {
+          "description": "regular = primary trading-hours session; overnight = extended/Globex-style session that may wrap past local midnight; maintenance = a recurring closed interval, itself classified as MAINTENANCE rather than carved out of another block.",
+          "type": "string",
+          "enum": ["regular", "overnight", "maintenance"]
+        },
+        "local_start": {
+          "type": "string",
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$"
+        },
+        "local_end": {
+          "description": "If local_end < local_start, the block wraps past local midnight and ends on the following calendar day. local_end == local_start is rejected (ambiguous zero/24h length).",
+          "type": "string",
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$"
+        },
+        "days_of_week": {
+          "description": "Weekdays (in the template's timezone) the block STARTS on.",
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "enum": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] },
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

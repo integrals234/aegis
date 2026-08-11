@@ -1,0 +1,96 @@
+{
+  "artifact": "adversarial_gate_verification",
+  "requirement": "AEGIS-007",
+  "records": "R8 governance enforcement, demonstrated against live GitHub",
+  "not_evidence_for": [
+    "any futures or replay functional requirement (AEGIS-011..026, AEGIS-054..063)",
+    "test integrity: the gate governs scope, frozen-file and milestone authority only"
+  ],
+  "recorded_on": "2026-08-09",
+  "registered_on": "2026-08-10",
+  "registered_in": "M2 slice 1, deliberately excluded from the policy-only G1 pull request",
+
+  "why_this_exists": [
+    "A gate that cannot fail proves nothing. tests/unit/test_authoritative_governance.py",
+    "asserts attacks A-J against in-memory trees, and the governance_tampered fixture",
+    "asserts them through the CLI -- but neither exercises GitHub's own evaluation of",
+    "pull_request_target, the required-status-check wiring, or the fact that a candidate",
+    "branch cannot substitute its own checker. Only a real pull request can show that,",
+    "and only once: the branch was opened to be rejected and was never merged."
+  ],
+
+  "verification": {
+    "pull_request": 4,
+    "repository": "integrals234/aegis",
+    "run_id": 31332835962,
+    "run_url": "https://github.com/integrals234/aegis/actions/runs/31332835962",
+    "event": "pull_request_target",
+    "head_sha": "9b8589c",
+    "base_at_the_time": "31088d8",
+    "disposition": "closed unmerged; branch deleted"
+  },
+
+  "attacks_demonstrated": [
+    {
+      "id": "E",
+      "attack": "candidate branch neuters its own advisory scope checker",
+      "method": "tools/check_scope.py::check() rewritten to return [] unconditionally",
+      "expected": "no effect on the verdict -- the gate runs main's copy",
+      "observed": "no effect; the gate failed the branch"
+    },
+    {
+      "id": "F",
+      "attack": "candidate branch tampers with a governed path",
+      "method": "tools/check_scope.py is listed in policy governance_paths",
+      "expected": "rejected for lack of an owner approval on main",
+      "observed": "rejected"
+    },
+    {
+      "id": "scope",
+      "attack": "out-of-scope edit the neutered checker would wave through",
+      "method": "appended a line to scripts/ci_local.sh, not in M1's allowed list",
+      "expected": "rejected as outside the active milestone's scope",
+      "observed": "rejected"
+    }
+  ],
+
+  "the_decisive_observation": {
+    "claim": "the advisory checker was successfully deceived; the trust boundary was not",
+    "authoritative_check": {
+      "name": "Authoritative governance gate (R8)",
+      "runs": "main's tools/governance/authoritative_check.py",
+      "result": "FAILURE (required)"
+    },
+    "advisory_check": {
+      "name": "Governance and specification integrity",
+      "runs": "the candidate branch's own tools/check_scope.py",
+      "result": "SUCCESS"
+    },
+    "significance": [
+      "Two checks over the same commit disagreed, and the disagreement is the design.",
+      "An in-branch checker reports what the branch tells it to report. Only the check",
+      "executing main's copy is a control."
+    ]
+  },
+
+  "gate_output": [
+    "Candidate changes 2 path(s).",
+    "ERROR: tools/check_scope.py: changes who is allowed to change what, so it needs an owner approval naming this exact path in configs/governance/policy.yaml on main. Tampering with the local checkers does not affect this verdict - the gate runs main's copy.",
+    "ERROR: scripts/ci_local.sh: outside the permitted scope of M1. An owner approval naming this exact path must be merged into configs/governance/policy.yaml on main first.",
+    "Authoritative governance gate: FAILED"
+  ],
+
+  "corroboration": {
+    "local_preflight": "scripts/governance_preflight.sh produced byte-identical output before the push",
+    "significance": "the local preflight is a faithful proxy for the CI verdict, not an approximation"
+  },
+
+  "ruleset_state_when_recorded": {
+    "note": "the gate was made a REQUIRED check only after this failure was observed, so requiring it could not deadlock the pull request that created it",
+    "required_checks_at_recording": 10,
+    "required_checks_after_O6": 11,
+    "owner_confirmed_bypass_actors_empty": true,
+    "bypass_actors_visible_to_the_app": false,
+    "why_not_visible": "GitHub omits the field for callers without ruleset write access; Administration: Write is deliberately withheld, so the owner verifies it and this artifact records that attestation rather than asserting it"
+  }
+}

@@ -1,7 +1,8 @@
 # Layer cpp-bindings: the only place pybind11 and Python.h may appear
-# (configs/architecture_rules.yaml enforces it). Depends on cpp-common and
-# cpp-events; it has no access to exchange or participant code, so a binding
-# cannot route around the strategy -> risk -> OMS path.
+# (configs/architecture_rules.yaml enforces it). Depends on cpp-common,
+# cpp-events and (M2 slice 13) cpp-replay; it has no access to exchange or
+# participant code, so a binding cannot route around the strategy -> risk ->
+# OMS path.
 #
 # pybind11 comes from the pinned Python environment (requirements/requirements.lock)
 # rather than a second, separately versioned copy fetched here.
@@ -48,4 +49,4 @@ find_package(pybind11 CONFIG REQUIRED PATHS "${AEGIS_PYBIND11_CMAKEDIR}" NO_DEFA
 
 pybind11_add_module(aegis_bindings aegis_module.cpp)
 target_include_directories(aegis_bindings PRIVATE ${PROJECT_SOURCE_DIR})
-target_link_libraries(aegis_bindings PRIVATE aegis_common aegis_events)
+target_link_libraries(aegis_bindings PRIVATE aegis_common aegis_events aegis_replay)

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -9,6 +10,7 @@
 #include "cpp/common/time.hpp"
 #include "cpp/common/version.hpp"
 #include "cpp/events/envelope.hpp"
+#include "cpp/replay/replay_event.hpp"
 
 /// pybind11 bindings for selected engine APIs (AEGIS-229).
 ///
@@ -27,10 +29,14 @@
 /// * `encode_envelope()` / `decode_envelope()` — pure functions over the
 ///   canonical wire format, which let a test compare the C++ and Python
 ///   encoders directly rather than trusting that both match a golden file.
+/// * `sort_canonical()` (M2 slice 13) — sorts dicts shaped like
+///   `replay::ReplayEvent` into the real canonical replay order using the
+///   real `replay::canonical_less`, so a Python caller can prove its own
+///   sort agrees with the C++ engine's rather than assuming it does.
 ///
-/// Config, metrics and the replay surfaces are M2 work; the roadmap places
-/// "Python bindings needed for data/replay" there, and binding an engine that
-/// does not exist yet would be building M1 early.
+/// Config and metrics remain unbound; nothing here mutates replay state or
+/// runs the pacing/fault-injection state machine — this is one pure sort
+/// function over plain data, not a binding of the engine itself.
 namespace py = pybind11;
 
 namespace {
@@ -99,6 +105,34 @@ py::dict decode_envelope(const py::bytes& data) {
   return result;
 }
 
+py::list sort_canonical(const py::list& records) {
+  std::vector<aegis::replay::ReplayEvent> events;
+  events.reserve(records.size());
+  for (const auto& item : records) {
+    const auto record = item.cast<py::dict>();
+    aegis::replay::ReplayEvent event;
+    event.event_time = aegis::common::EventTime{record["event_time_ns"].cast<std::int64_t>()};
+    event.source_sequence =
+        aegis::replay::SourceSequence{record["source_sequence"].cast<std::uint64_t>()};
+    event.contract_symbol = record["contract_symbol"].cast<std::string>();
+    event.record_index = aegis::replay::RecordIndex{record["record_index"].cast<std::uint64_t>()};
+    events.push_back(std::move(event));
+  }
+
+  std::ranges::sort(events, aegis::replay::canonical_less);
+
+  py::list result;
+  for (const auto& event : events) {
+    py::dict out;
+    out["event_time_ns"] = event.event_time.nanos();
+    out["source_sequence"] = event.source_sequence.value();
+    out["contract_symbol"] = event.contract_symbol;
+    out["record_index"] = event.record_index.value();
+    result.append(out);
+  }
+  return result;
+}
+
 }  // namespace
 
 PYBIND11_MODULE(aegis_bindings, module) {
@@ -122,4 +156,7 @@ PYBIND11_MODULE(aegis_bindings, module) {
              "Encode an envelope with the C++ encoder and return its canonical bytes.");
   module.def("decode_envelope", &decode_envelope, py::arg("data"),
              "Decode canonical bytes with the C++ decoder; raises ValueError with the reason.");
+  module.def("sort_canonical", &sort_canonical, py::arg("records"),
+             "Sort dicts shaped like ReplayEvent (event_time_ns, source_sequence, "
+             "contract_symbol, record_index) into the real canonical replay order.");
 }

@@ -17,35 +17,37 @@ append-only ledger below; the audit requires the live `verification_blocked_unti
 to equal the head of that ledger, so moving a debt is itself a recorded act.
 
 
-**5 outstanding obligation(s).**
+**9 outstanding obligation(s).**
 
 3 of them has been re-dated at least once since first registered; each move is listed under its requirement below.
 
 | ID | Requirement | Status | Unblocks at | Times re-dated | What is still missing |
 |---|---|---|---|---|---|
 | AEGIS-004 | Exchange/participant separation | implemented | M4 | 1 | Architecture rules declare the full participant pipeline, but configs/architecture_rules.yaml dates cpp/participant/strategy to M4, so the rule that strategy code cannot reach the exchange book is declared and unexercised until then. The exchange book itself arrives at M1. |
-| AEGIS-229 | C++/Python bindings | implemented | M2 | 0 | The acceptance names 'selected engine APIs'; no engine exists. Config, metrics and replay surfaces are M2 work, where the roadmap places the bindings needed for data and replay. |
-| AEGIS-230 | Columnar data interchange | implemented | M2 | 0 | Parquet, Arrow and DuckDB round trips are not implemented. M0 has no columnar data to interchange, and building them now would require inventing the futures schema AEGIS-026 owns. |
+| AEGIS-024 | Roll-method sensitivity | implemented | M4 | 0 | The frozen acceptance names an experiment report that quantifies STRATEGY differences caused by roll choices. No strategy exists: configs/architecture_rules.yaml dates cpp-participant-strategy and python-research to M4. M2 delivers the roll-method comparison itself (roll dates chosen and additive-adjusted price-path deviation between every pair of policies); attributing those differences to strategy P&L is M4's. |
+| AEGIS-059 | Unified strategy interface | implemented | M9 | 0 | Contract tests running one strategy against multiple feed implementations (live, paper, historical) require a strategy (M4) and live/paper feed adapters (M9), neither of which exists yet. M2 delivers the Feed protocol and HistoricalReplayFeed only. |
+| AEGIS-060 | Fault injection: delayed data | implemented | M3 | 0 | The frozen acceptance names delayed observations AND stale-data responses. M2 delivers both halves of the observation: the kDelayed declaration attached deterministically to an exact record (cpp/replay/fault_injection.*), and its realization in the emitted schedule as fault_delay_nanos/scheduled_wait_nanos (cpp/replay/replay_run_main.cpp) -- the delay lengthens the record's scheduled wait rather than moving it, because moving it would perturb the canonical order (ADR-0019). What remains is the RESPONSE: detecting that data is stale and reacting needs a participant-side consumer, and configs/architecture_rules.yaml dates cpp-participant-feed-handler to M3. |
+| AEGIS-061 | Fault injection: missing/duplicate/gap | implemented | M3 | 0 | The frozen acceptance names feed RECOVERY tests covering each fault. M2 delivers deterministic missing/duplicate/sequence-gap injection with full accounting (nothing is silently lost); recovery is a participant-side behaviour and configs/architecture_rules.yaml dates cpp-participant-feed-handler to M3. |
+| AEGIS-062 | Fault injection: market stress | implemented | M5 | 0 | The frozen acceptance names scenario results AND risk responses being reproducible. M2 delivers reproducible scenario results (kSpreadWidening/kVolatilitySpike/kLiquidityVanish injected deterministically from committed rule data); a RISK response needs the risk engine, which configs/architecture_rules.yaml dates cpp-participant-risk to M5. |
+| AEGIS-063 | Fault injection: execution stress | implemented | M5 | 0 | The frozen acceptance names OMS/risk INTEGRATION tests covering each fault. M2 delivers the execution-stress injection kinds (kRejection, kLatencySpike, kPartialFill, kBackpressure) deterministically; there is no OMS or risk layer to integrate with, and configs/architecture_rules.yaml dates cpp-participant-oms and cpp-participant-risk to M3 and M5 respectively. |
 | AEGIS-237 | Failure recovery | implemented | M3 | 1 | The acceptance names recovery tests for exchange and participant state. Exchange-state recovery is paid at M1: sequencer position and book state survive a snapshot/restore cycle, verified by round trip and by continuation equality across a process boundary (docs/RECOVERY_CONTRACT.md M1 row, ADR-0013). Participant-state recovery still requires the OMS and portfolio layers, which configs/architecture_rules.yaml dates M3. |
 | AEGIS-238 | Observability | implemented | M5 | 1 | queue depth and dropped/backpressured events arrive with M1's bounded queues and execution latency with M3's execution path, but risk status has no producer until the risk engine, which configs/architecture_rules.yaml dates M5. Full metric coverage cannot be shown before M5. |
 
-## Due at M2
-
-### AEGIS-229 — C++/Python bindings
-
-- **Frozen acceptance criterion:** Round-trip integration tests pass.
-- **Residual:** The acceptance names 'selected engine APIs'; no engine exists. Config, metrics and replay surfaces are M2 work, where the roadmap places the bindings needed for data and replay.
-- **Deferral ledger:**
-  - 2026-08-06 — dated **M2** while closing M0: Registered while closing M0: the acceptance names selected engine APIs, and no engine exists to bind.
-
-### AEGIS-230 — Columnar data interchange
-
-- **Frozen acceptance criterion:** Schema and round-trip tests pass.
-- **Residual:** Parquet, Arrow and DuckDB round trips are not implemented. M0 has no columnar data to interchange, and building them now would require inventing the futures schema AEGIS-026 owns.
-- **Deferral ledger:**
-  - 2026-08-06 — dated **M2** while closing M0: Registered while closing M0: there is no columnar data to interchange, and the futures schema AEGIS-026 owns does not exist yet.
-
 ## Due at M3
+
+### AEGIS-060 — Fault injection: delayed data
+
+- **Frozen acceptance criterion:** Scenario fixtures verify delayed observations and stale-data responses.
+- **Residual:** The frozen acceptance names delayed observations AND stale-data responses. M2 delivers both halves of the observation: the kDelayed declaration attached deterministically to an exact record (cpp/replay/fault_injection.*), and its realization in the emitted schedule as fault_delay_nanos/scheduled_wait_nanos (cpp/replay/replay_run_main.cpp) -- the delay lengthens the record's scheduled wait rather than moving it, because moving it would perturb the canonical order (ADR-0019). What remains is the RESPONSE: detecting that data is stale and reacting needs a participant-side consumer, and configs/architecture_rules.yaml dates cpp-participant-feed-handler to M3.
+- **Deferral ledger:**
+  - 2026-08-10 — dated **M3** while closing M2: Registered while closing M2: the deterministic delayed-data injection mechanism is implemented and tested, but responding to stale data requires the M3 participant feed handler. Owner-approved residual 060 -> M3 in experiments/plans/M2.md rev. 4.
+
+### AEGIS-061 — Fault injection: missing/duplicate/gap
+
+- **Frozen acceptance criterion:** Feed recovery tests cover each fault.
+- **Residual:** The frozen acceptance names feed RECOVERY tests covering each fault. M2 delivers deterministic missing/duplicate/sequence-gap injection with full accounting (nothing is silently lost); recovery is a participant-side behaviour and configs/architecture_rules.yaml dates cpp-participant-feed-handler to M3.
+- **Deferral ledger:**
+  - 2026-08-10 — dated **M3** while closing M2: Registered while closing M2: missing, duplicated and sequence-gap injection is implemented and tested, but feed recovery requires the M3 participant feed handler. Owner-approved residual 061 -> M3 in experiments/plans/M2.md rev. 4.
 
 ### AEGIS-237 — Failure recovery
 
@@ -65,7 +67,28 @@ to equal the head of that ledger, so moving a debt is itself a recorded act.
   - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: the acceptance names participant strategy code, and no exchange book or participant pipeline existed for the rules to constrain.
   - 2026-08-06 — dated **M4** while closing M0: The independent M0 audit found the obligation dated M1 while its own acceptance names participant strategy code, which configs/architecture_rules.yaml dates M4. Re-dated to the milestone that can actually discharge it.
 
+### AEGIS-024 — Roll-method sensitivity
+
+- **Frozen acceptance criterion:** One experiment report quantifies strategy differences caused by roll choices.
+- **Residual:** The frozen acceptance names an experiment report that quantifies STRATEGY differences caused by roll choices. No strategy exists: configs/architecture_rules.yaml dates cpp-participant-strategy and python-research to M4. M2 delivers the roll-method comparison itself (roll dates chosen and additive-adjusted price-path deviation between every pair of policies); attributing those differences to strategy P&L is M4's.
+- **Deferral ledger:**
+  - 2026-08-10 — dated **M4** while closing M2: Registered while closing M2: the M2-owned half (policy-vs-policy roll-date and adjusted-price-path comparison) is implemented and tested, but the acceptance's 'strategy differences' needs a strategy, which architecture rules date to M4. Owner-approved residual 024 -> M4 in experiments/plans/M2.md rev. 4.
+
 ## Due at M5
+
+### AEGIS-062 — Fault injection: market stress
+
+- **Frozen acceptance criterion:** Scenario results and risk responses are reproducible.
+- **Residual:** The frozen acceptance names scenario results AND risk responses being reproducible. M2 delivers reproducible scenario results (kSpreadWidening/kVolatilitySpike/kLiquidityVanish injected deterministically from committed rule data); a RISK response needs the risk engine, which configs/architecture_rules.yaml dates cpp-participant-risk to M5.
+- **Deferral ledger:**
+  - 2026-08-10 — dated **M5** while closing M2: Registered while closing M2: market-stress injection is implemented, deterministic and tested, but reproducible risk responses require the M5 risk engine. Owner-approved residual 062 -> M5 in experiments/plans/M2.md rev. 4.
+
+### AEGIS-063 — Fault injection: execution stress
+
+- **Frozen acceptance criterion:** OMS/risk integration tests cover each fault.
+- **Residual:** The frozen acceptance names OMS/risk INTEGRATION tests covering each fault. M2 delivers the execution-stress injection kinds (kRejection, kLatencySpike, kPartialFill, kBackpressure) deterministically; there is no OMS or risk layer to integrate with, and configs/architecture_rules.yaml dates cpp-participant-oms and cpp-participant-risk to M3 and M5 respectively.
+- **Deferral ledger:**
+  - 2026-08-10 — dated **M5** while closing M2: Registered while closing M2: execution-stress injection is implemented, deterministic and tested, but OMS/risk integration tests require those layers, the last of which architecture rules date to M5. Owner-approved residual 063 -> M5 in experiments/plans/M2.md rev. 4.
 
 ### AEGIS-238 — Observability
 
@@ -74,3 +97,12 @@ to equal the head of that ledger, so moving a debt is itself a recorded act.
 - **Deferral ledger:**
   - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: queue depth, dropped/backpressured events, execution latency and risk status have no producers.
   - 2026-08-06 — dated **M5** while closing M0: The independent M0 audit found the obligation dated M1 while risk status has no producer until the risk engine, which configs/architecture_rules.yaml dates M5. Re-dated to the milestone that can actually discharge it.
+
+## Due at M9
+
+### AEGIS-059 — Unified strategy interface
+
+- **Frozen acceptance criterion:** Contract tests run one strategy against multiple feed implementations.
+- **Residual:** Contract tests running one strategy against multiple feed implementations (live, paper, historical) require a strategy (M4) and live/paper feed adapters (M9), neither of which exists yet. M2 delivers the Feed protocol and HistoricalReplayFeed only.
+- **Deferral ledger:**
+  - 2026-08-10 — dated **M9** while closing M2: Registered while closing M2 slice 13: AEGIS-059's full acceptance (contract tests running one strategy against multiple feed implementations) needs a strategy (M4) and live/paper feed adapters (M9), neither of which exists yet. M2 delivers the Feed protocol and HistoricalReplayFeed only.

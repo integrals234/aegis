@@ -1,0 +1,27 @@
+{
+  "contracts": [
+    {
+      "contract_id": "SYNX:SRX:2026M",
+      "expiry": "2026-06-20",
+      "first_trade_date": "2025-02-05",
+      "last_trade_date": "2026-06-20",
+      "settlement_type": "cash"
+    },
+    {
+      "contract_id": "SYNX:SRX:2026Z",
+      "expiry": "2026-12-20",
+      "first_trade_date": "2025-08-07",
+      "last_trade_date": "2026-12-20",
+      "settlement_type": "cash"
+    },
+    {
+      "contract_id": "SYNX:SRX:2027M",
+      "expiry": "2027-06-20",
+      "first_trade_date": "2026-02-05",
+      "last_trade_date": "2027-06-20",
+      "settlement_type": "cash"
+    }
+  ],
+  "product_root": "SRX",
+  "venue": "SYNX"
+}

@@ -1,0 +1,52 @@
+{
+  "artifact": "product_families",
+  "catalog": "configs/futures/products.yaml",
+  "claim": "The committed catalog at configs/futures/products.yaml validates against configs/schemas/futures_product.v1.json (jsonschema Draft202012Validator, reporting every problem rather than the first) and covers 3 distinct product families, meeting AEGIS-011's 'at least three futures product families' floor. All products are synthetic (venue SYNX does not exist); no claim is made about any real market.",
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "distinct_product_roots": [
+    "CLX",
+    "EQX",
+    "SRX"
+  ],
+  "families": [
+    {
+      "currency": "USD",
+      "description": "Synthetic monthly energy future. Describes no real instrument, venue or trading day.",
+      "lot_size": 1,
+      "multiplier": "1000",
+      "product_root": "CLX",
+      "session_template": "synx_energy_extended",
+      "tick_size": "0.01",
+      "timezone": "America/New_York",
+      "venue": "SYNX"
+    },
+    {
+      "currency": "USD",
+      "description": "Synthetic quarterly equity index future. Describes no real instrument, venue or trading day.",
+      "lot_size": 1,
+      "multiplier": "50",
+      "product_root": "EQX",
+      "session_template": "synx_equity_index_rth",
+      "tick_size": "0.25",
+      "timezone": "America/Chicago",
+      "venue": "SYNX"
+    },
+    {
+      "currency": "USD",
+      "description": "Synthetic quarterly short-term interest-rate future. Describes no real instrument, venue or trading day.",
+      "lot_size": 1,
+      "multiplier": "2500",
+      "product_root": "SRX",
+      "session_template": "synx_rates_globex",
+      "tick_size": "0.005",
+      "timezone": "America/Chicago",
+      "venue": "SYNX"
+    }
+  ],
+  "generated_on": "2026-08-10",
+  "product_family_count": 3,
+  "repository_commit": "fb01ecf295e19d195ede2f04fe1a1bb63589b497",
+  "requirement": "AEGIS-011",
+  "schema": "configs/schemas/futures_product.v1.json"
+}

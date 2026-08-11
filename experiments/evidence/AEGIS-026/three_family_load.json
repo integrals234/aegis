@@ -1,0 +1,42 @@
+{
+  "artifact": "three_family_load",
+  "claim": "3 distinct product families (CLX, EQX, SRX) loaded 18 records through the single futures.ingest.ingest() production interface, meeting AEGIS-026's 'at least three product fixtures load through one interface' floor. Every normalized record validates against the committed futures_bar.v1 schema (SchemaRegistry, real production call, not a parallel check). record_index is contiguous from zero. Ingesting the same input paths in reverse argument order and ingesting the same input twice both produce byte-identical results, proving the caller's path order and repetition do not affect the outcome. All data is synthetic (DATA_AND_RESEARCH_POLICY); no claim is made about any real market.",
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "families": [
+    "CLX",
+    "EQX",
+    "SRX"
+  ],
+  "family_count": 3,
+  "generated_on": "2026-08-10",
+  "input_paths": [
+    "data_samples/futures/bars/eqx.csv",
+    "data_samples/futures/bars/clx.jsonl",
+    "data_samples/futures/bars/srx.csv"
+  ],
+  "out_of_order_count": 0,
+  "record_count": 18,
+  "record_index_contiguous": true,
+  "rejection_count": 0,
+  "repeated_ingestion_matches": true,
+  "repository_commit": "fb01ecf295e19d195ede2f04fe1a1bb63589b497",
+  "requirement": "AEGIS-026",
+  "sample_record": {
+    "close_ticks": 7001,
+    "contract_symbol": "SYNX:CLX:2026F",
+    "event_time_ns": 1767614400000000000,
+    "high_ticks": 7004,
+    "low_ticks": 6998,
+    "open_interest": 5000,
+    "open_ticks": 7000,
+    "product_root": "CLX",
+    "record_index": 0,
+    "schema_version": 1,
+    "settlement_price_ticks": 7001,
+    "source_sequence": 0,
+    "venue": "SYNX",
+    "volume": 1000
+  },
+  "shuffled_path_order_matches": true
+}

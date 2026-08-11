@@ -16,6 +16,13 @@ output cannot demonstrate that it would notice nondeterministic output.
 ``exchange_producer`` (M1, ADR-0012) is the point at which this stops being
 narrow: it runs the actual matching engine (via ``aegis_exchange_replay``)
 and its canonical output is the AEGIS-005 discharge for the exchange core.
+
+``futures_replay_producer`` (M2 slice 14) does the same job for the *replay*
+core: it runs ``aegis_replay_run`` over the committed canonical stream, so
+AEGIS-058's "repeated runs produce identical outputs" is shown across separate
+OS processes rather than across two calls inside one test binary. The
+distinction is the whole reason this module spawns subprocesses at all, and it
+applies to the replay core exactly as it does to the exchange.
 """
 
 from __future__ import annotations
@@ -37,6 +44,21 @@ from common.metrics import MetricsRegistry
 # tests/cpp/unit/test_snapshot_roundtrip.cpp's ContinuationEqualityAcross...
 # case builds its command list to match).
 EXCHANGE_SCENARIO_RELATIVE_PATH = "tests/unit/fixtures/exchange/replay/basic_session.jsonl"
+
+# The committed canonical replay stream aegis_replay_run replays (M2 slice 14).
+# Derived from the committed bar samples by tools/make_replay_fixture.py using
+# the real ingestion pipeline; tests/replay/test_futures_replay_determinism.py
+# fails if the committed bytes ever drift from what that pipeline produces.
+# It is referenced by path rather than rebuilt here because this module lives in
+# layer python-common, which may not depend on python-futures
+# (configs/architecture_rules.yaml).
+FUTURES_REPLAY_STREAM_RELATIVE_PATH = "tests/unit/fixtures/replay/futures_canonical_stream.jsonl"
+
+# A stable logical name for the stream, used instead of the filesystem path in
+# the emitted manifest. Two runs over the same content must agree, and an
+# absolute path would make the output depend on where the repository is checked
+# out rather than on what was replayed.
+FUTURES_REPLAY_STREAM_LABEL = "futures_canonical_stream.v1"
 
 CANONICAL_FORMAT_VERSION = 1
 
@@ -173,10 +195,72 @@ def exchange_producer(seed: int, root: Path | None = None) -> str:
     return result.stdout
 
 
+def resolve_replay_run_binary(root: Path) -> Path:
+    """Locate ``aegis_replay_run``: ``AEGIS_REPLAY_RUN`` if set, else the debug
+    preset's default build output path.
+
+    A missing binary raises, never skips -- same rule as
+    :func:`resolve_exchange_replay_binary`, for the same reason: a determinism
+    check that skips is a green stub.
+    """
+    env_path = os.environ.get("AEGIS_REPLAY_RUN")
+    binary = Path(env_path) if env_path else root / "build/debug/cpp/replay/aegis_replay_run"
+    if not binary.exists():
+        raise FileNotFoundError(
+            f"aegis_replay_run not found at {binary}. Build it with "
+            "'cmake --build --preset debug', or set AEGIS_REPLAY_RUN to its path."
+        )
+    return binary
+
+
+def futures_replay_producer(seed: int, root: Path | None = None) -> str:
+    """Run ``aegis_replay_run`` over the committed canonical stream and return
+    its canonical stdout -- the cross-process half of AEGIS-058.
+
+    The run deliberately exercises more than a bare drain: accelerated pacing
+    (AEGIS-055) so a computed wait appears on every line, and two committed
+    fault rules (AEGIS-060/061) so an annotation and an accounted-for drop are
+    both in the compared output. Anything nondeterministic in ordering, pacing
+    arithmetic or fault application therefore surfaces as a byte difference.
+
+    ``seed`` is unused: replay reads no random source, and the fault rules are
+    explicit committed data rather than samples (ADR-0019). It is accepted only
+    to satisfy the shape every registered producer shares.
+    """
+    del seed
+    if root is None:
+        raise ValueError("futures_replay_producer requires root to locate the binary and fixture")
+    binary = resolve_replay_run_binary(root)
+    fixture = root / FUTURES_REPLAY_STREAM_RELATIVE_PATH
+    if not fixture.exists():
+        raise FileNotFoundError(
+            f"canonical replay stream fixture not found: {fixture}. "
+            "Regenerate it with 'python3 tools/make_replay_fixture.py'."
+        )
+    result = subprocess.run(
+        [
+            str(binary),
+            "--input", str(fixture),
+            "--label", FUTURES_REPLAY_STREAM_LABEL,
+            "--pacing", "accelerated",
+            "--multiplier", "2",
+            "--fault", "3:delayed:500",
+            "--fault", "5:missing",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"aegis_replay_run failed (exit {result.returncode}): {result.stderr}")
+    return result.stdout
+
+
 PRODUCERS: dict[str, Callable[[int, Path | None], str]] = {
     "platform": platform_producer,
     "nondeterministic": nondeterministic_producer,
     "exchange": exchange_producer,
+    "futures_replay": futures_replay_producer,
 }
 
 

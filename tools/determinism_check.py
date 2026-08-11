@@ -56,6 +56,16 @@ CLAIMS: dict[str, str] = {
         "discharge for the exchange core: identical event input produces "
         "byte-identical canonical output (ADR-0012)."
     ),
+    "futures_replay": (
+        "This run shows that aegis_replay_run produces byte-identical canonical "
+        "output across independent processes with different PYTHONHASHSEED, for "
+        "the committed canonical futures stream under accelerated pacing with "
+        "two committed fault rules. This is the M2 replay core's AEGIS-058 "
+        "evidence -- repeated runs produce identical outputs -- covering "
+        "canonical ordering, record_index stability, pacing arithmetic and "
+        "deterministic fault application together (ADR-0018, ADR-0019). It is "
+        "not a performance claim."
+    ),
 }
 
 

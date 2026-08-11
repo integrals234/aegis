@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aegis.local/schemas/futures_product.v1.json",
+  "title": "AEGIS futures product catalog, version 1",
+  "description": "Exchange, product and instrument metadata (AEGIS-011): venue, product root, tick size, lot size, multiplier, currency, timezone and session-template reference. Validated by python/futures/instruments.py, which is the only reader; there is no second copy of these rules to fall out of step with it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "products"],
+  "properties": {
+    "schema_version": {
+      "description": "Mandatory and enumerated, like configs/schemas/config.v1.json's config_version: a catalog written against a future schema is rejected rather than silently reinterpreted.",
+      "type": "integer",
+      "enum": [1]
+    },
+    "products": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/product" },
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "product": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "venue",
+        "product_root",
+        "description",
+        "tick_size",
+        "lot_size",
+        "multiplier",
+        "currency",
+        "timezone",
+        "session_template"
+      ],
+      "properties": {
+        "venue": {
+          "description": "Exchange/venue code.",
+          "type": "string",
+          "pattern": "^[A-Z0-9]{1,12}$"
+        },
+        "product_root": {
+          "description": "Product/root symbol shared by every contract in the chain.",
+          "type": "string",
+          "pattern": "^[A-Z0-9]{1,12}$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "tick_size": {
+          "description": "Minimum price increment. A decimal string, never a JSON number: a YAML/JSON float loses exactness on values like 0.1, and this is the value every price on the product's grid is a multiple of.",
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?$"
+        },
+        "lot_size": {
+          "description": "Minimum tradable quantity increment. An integer needs no decimal-string treatment: it round-trips exactly in JSON/YAML.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "multiplier": {
+          "description": "Contract multiplier (notional per point). Decimal string for the same reason as tick_size.",
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?$"
+        },
+        "currency": {
+          "description": "ISO-4217-shaped currency code. Structural only: this schema does not maintain a currency registry.",
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "timezone": {
+          "description": "IANA time zone key for the product's session. Checked against the installed tz database at load time (python/futures/instruments.py); this schema only enforces the shape.",
+          "type": "string",
+          "minLength": 1
+        },
+        "session_template": {
+          "description": "Opaque reference to a session template. Trading-session calendars are AEGIS-013 (M2 slice 3) and do not exist yet; this field is a name, not a definition.",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

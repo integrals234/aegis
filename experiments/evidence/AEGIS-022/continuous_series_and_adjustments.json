@@ -1,0 +1,234 @@
+{
+  "additive_adjusted_series": [
+    {
+      "adjusted_price": "296",
+      "adjustment_offset": "196",
+      "as_of": "2026-12-29",
+      "contract_id": "SYNX:EQX:2026H"
+    },
+    {
+      "adjusted_price": "297",
+      "adjustment_offset": "196",
+      "as_of": "2026-12-30",
+      "contract_id": "SYNX:EQX:2026H"
+    },
+    {
+      "adjusted_price": "299",
+      "adjustment_offset": "149",
+      "as_of": "2026-12-31",
+      "contract_id": "SYNX:EQX:2026M"
+    },
+    {
+      "adjusted_price": "297",
+      "adjustment_offset": "149",
+      "as_of": "2027-01-01",
+      "contract_id": "SYNX:EQX:2026M"
+    },
+    {
+      "adjusted_price": "300",
+      "adjustment_offset": "0",
+      "as_of": "2027-01-02",
+      "contract_id": "SYNX:EQX:2026U"
+    },
+    {
+      "adjusted_price": "305",
+      "adjustment_offset": "0",
+      "as_of": "2027-01-03",
+      "contract_id": "SYNX:EQX:2026U"
+    }
+  ],
+  "additive_reconciliation_checks": [
+    {
+      "additive_adjusted_delta_across_roll": "2",
+      "incoming_contract": "SYNX:EQX:2026M",
+      "outgoing_contract": "SYNX:EQX:2026H",
+      "outgoing_contracts_own_price_delta": "2",
+      "reconciles": true,
+      "roll_date": "2026-12-31"
+    },
+    {
+      "additive_adjusted_delta_across_roll": "3",
+      "incoming_contract": "SYNX:EQX:2026U",
+      "outgoing_contract": "SYNX:EQX:2026M",
+      "outgoing_contracts_own_price_delta": "3",
+      "reconciles": true,
+      "roll_date": "2027-01-02"
+    }
+  ],
+  "additive_unadjusted_series": [
+    {
+      "as_of": "2026-12-29",
+      "contract_id": "SYNX:EQX:2026H",
+      "is_roll_point": false,
+      "raw_price": "100"
+    },
+    {
+      "as_of": "2026-12-30",
+      "contract_id": "SYNX:EQX:2026H",
+      "is_roll_point": false,
+      "raw_price": "101"
+    },
+    {
+      "as_of": "2026-12-31",
+      "contract_id": "SYNX:EQX:2026M",
+      "is_roll_point": true,
+      "raw_price": "150"
+    },
+    {
+      "as_of": "2027-01-01",
+      "contract_id": "SYNX:EQX:2026M",
+      "is_roll_point": false,
+      "raw_price": "148"
+    },
+    {
+      "as_of": "2027-01-02",
+      "contract_id": "SYNX:EQX:2026U",
+      "is_roll_point": true,
+      "raw_price": "300"
+    },
+    {
+      "as_of": "2027-01-03",
+      "contract_id": "SYNX:EQX:2026U",
+      "is_roll_point": false,
+      "raw_price": "305"
+    }
+  ],
+  "artifact": "continuous_series_and_adjustments",
+  "claim": "Two sequential, cross-year rolls (2026-12 into 2027-01, contracts SYNX:EQX:2026H -> SYNX:EQX:2026M -> SYNX:EQX:2026U) were built through the real production pipeline (build_unadjusted_series -> build_additive_adjusted_series / build_ratio_adjusted_series -> build_return_stream). Every observation at every stage carries its source contract_id (AEGIS-019). For both rolls, the additive adjusted price delta and the ratio adjusted proportional return across the roll boundary were checked programmatically against the outgoing contract's own same-day-dual-quote realized price change and return (AEGIS-020, AEGIS-021, AEGIS-022) -- verified true for both rolls; this generator raises rather than writing a claim it cannot support. All data is synthetic (DATA_AND_RESEARCH_POLICY); no claim is made about any real market.",
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-10",
+  "ratio_adjusted_series": [
+    {
+      "adjusted_price": "168.000",
+      "adjustment_factor": "1.750",
+      "as_of": "2026-12-29",
+      "contract_id": "SYNX:EQX:2026H"
+    },
+    {
+      "adjusted_price": "171.500",
+      "adjustment_factor": "1.750",
+      "as_of": "2026-12-30",
+      "contract_id": "SYNX:EQX:2026H"
+    },
+    {
+      "adjusted_price": "175.0",
+      "adjustment_factor": "1.4",
+      "as_of": "2026-12-31",
+      "contract_id": "SYNX:EQX:2026M"
+    },
+    {
+      "adjusted_price": "179.2",
+      "adjustment_factor": "1.4",
+      "as_of": "2027-01-01",
+      "contract_id": "SYNX:EQX:2026M"
+    },
+    {
+      "adjusted_price": "182",
+      "adjustment_factor": "1",
+      "as_of": "2027-01-02",
+      "contract_id": "SYNX:EQX:2026U"
+    },
+    {
+      "adjusted_price": "190",
+      "adjustment_factor": "1",
+      "as_of": "2027-01-03",
+      "contract_id": "SYNX:EQX:2026U"
+    }
+  ],
+  "ratio_reconciliation_checks": [
+    {
+      "incoming_contract": "SYNX:EQX:2026M",
+      "outgoing_contract": "SYNX:EQX:2026H",
+      "outgoing_contracts_own_proportional_return": "0.020408163265306122448979592",
+      "ratio_adjusted_return_across_roll": "0.020408163265306122448979592",
+      "reconciles": true,
+      "roll_date": "2026-12-31"
+    },
+    {
+      "incoming_contract": "SYNX:EQX:2026U",
+      "outgoing_contract": "SYNX:EQX:2026M",
+      "outgoing_contracts_own_proportional_return": "0.015625",
+      "ratio_adjusted_return_across_roll": "0.015625",
+      "reconciles": true,
+      "roll_date": "2027-01-02"
+    }
+  ],
+  "ratio_unadjusted_series": [
+    {
+      "as_of": "2026-12-29",
+      "contract_id": "SYNX:EQX:2026H",
+      "is_roll_point": false,
+      "raw_price": "96"
+    },
+    {
+      "as_of": "2026-12-30",
+      "contract_id": "SYNX:EQX:2026H",
+      "is_roll_point": false,
+      "raw_price": "98"
+    },
+    {
+      "as_of": "2026-12-31",
+      "contract_id": "SYNX:EQX:2026M",
+      "is_roll_point": true,
+      "raw_price": "125"
+    },
+    {
+      "as_of": "2027-01-01",
+      "contract_id": "SYNX:EQX:2026M",
+      "is_roll_point": false,
+      "raw_price": "128"
+    },
+    {
+      "as_of": "2027-01-02",
+      "contract_id": "SYNX:EQX:2026U",
+      "is_roll_point": true,
+      "raw_price": "182"
+    },
+    {
+      "as_of": "2027-01-03",
+      "contract_id": "SYNX:EQX:2026U",
+      "is_roll_point": false,
+      "raw_price": "190"
+    }
+  ],
+  "repository_commit": "fb01ecf295e19d195ede2f04fe1a1bb63589b497",
+  "requirements": [
+    "AEGIS-019",
+    "AEGIS-020",
+    "AEGIS-021",
+    "AEGIS-022"
+  ],
+  "return_stream": [
+    {
+      "as_of": "2026-12-30",
+      "contract_id": "SYNX:EQX:2026H",
+      "is_roll_point": false,
+      "simple_return": "0.020833333333333333333333333"
+    },
+    {
+      "as_of": "2026-12-31",
+      "contract_id": "SYNX:EQX:2026M",
+      "is_roll_point": true,
+      "simple_return": "0.020408163265306122448979592"
+    },
+    {
+      "as_of": "2027-01-01",
+      "contract_id": "SYNX:EQX:2026M",
+      "is_roll_point": false,
+      "simple_return": "0.024"
+    },
+    {
+      "as_of": "2027-01-02",
+      "contract_id": "SYNX:EQX:2026U",
+      "is_roll_point": true,
+      "simple_return": "0.015625"
+    },
+    {
+      "as_of": "2027-01-03",
+      "contract_id": "SYNX:EQX:2026U",
+      "is_roll_point": false,
+      "simple_return": "0.043956043956043956043956044"
+    }
+  ]
+}

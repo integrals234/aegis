@@ -1,0 +1,41 @@
+{
+  "artifact": "columnar_roundtrip",
+  "checks": {
+    "column_order_deterministic": true,
+    "contract_identity_preserved": true,
+    "duckdb_row_count_matches_arrow": true,
+    "event_time_ns_preserved": true,
+    "integer_tick_prices_exact": true,
+    "record_index_preserved": true,
+    "row_count_preserved": true,
+    "schema_version_in_parquet_metadata": true,
+    "values_byte_identical": true
+  },
+  "claim": "18 normalized futures_bar.v1 records (three synthetic product families) were written through the real production path -- to_arrow_table -> write_parquet -> read_parquet -> table_to_records, plus a DuckDB query over the identical Parquet file -- and every round-trip invariant AEGIS-230 requires was checked programmatically (row count, byte-identical values including exact integer tick prices, record_index, event_time_ns, contract identity, deterministic column order, schema_version carried in Parquet metadata, and DuckDB's row count agreeing with Arrow's). This generator raises rather than writing a claim it cannot support. All data is synthetic (DATA_AND_RESEARCH_POLICY); no claim is made about any real market.",
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "duckdb_family_counts": [
+    [
+      "CLX",
+      6
+    ],
+    [
+      "EQX",
+      6
+    ],
+    [
+      "SRX",
+      6
+    ]
+  ],
+  "generated_on": "2026-08-10",
+  "input_paths": [
+    "data_samples/futures/bars/eqx.csv",
+    "data_samples/futures/bars/clx.jsonl",
+    "data_samples/futures/bars/srx.csv"
+  ],
+  "parquet_bytes": 5519,
+  "record_count": 18,
+  "repository_commit": "fb01ecf295e19d195ede2f04fe1a1bb63589b497",
+  "requirement": "AEGIS-230"
+}

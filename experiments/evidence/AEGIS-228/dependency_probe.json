@@ -25,6 +25,15 @@
       "error": null
     },
     {
+      "name": "duckdb",
+      "version": "1.5.5",
+      "per_target": {
+        "3.12": "wheel",
+        "3.14": "wheel"
+      },
+      "error": null
+    },
+    {
       "name": "hypothesis",
       "version": "6.165.1",
       "per_target": {
@@ -45,6 +54,15 @@
     {
       "name": "mypy",
       "version": "2.3.0",
+      "per_target": {
+        "3.12": "wheel",
+        "3.14": "wheel"
+      },
+      "error": null
+    },
+    {
+      "name": "pyarrow",
+      "version": "25.0.0",
       "per_target": {
         "3.12": "wheel",
         "3.14": "wheel"
@@ -99,6 +117,15 @@
     {
       "name": "types-PyYAML",
       "version": "6.0.12.20260724",
+      "per_target": {
+        "3.12": "wheel",
+        "3.14": "wheel"
+      },
+      "error": null
+    },
+    {
+      "name": "tzdata",
+      "version": "2026.3",
       "per_target": {
         "3.12": "wheel",
         "3.14": "wheel"

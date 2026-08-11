@@ -37,7 +37,11 @@ layers:
     paths: [cpp/bindings]
     language: cpp
     namespaces: [aegis::bindings]
-    may_depend_on: [cpp-common, cpp-events]
+    # cpp-replay added M2 slice 13 (AEGIS-229): the binding surface exposes
+    # the canonical replay order (ReplayEvent, canonical_less) to Python.
+    # No other cpp-exchange-* or cpp-participant-* layer is added here --
+    # the binding does not widen past what M2 actually needs bound.
+    may_depend_on: [cpp-common, cpp-events, cpp-replay]
     expect_sources_from_milestone: M0
     allows_python_headers: true
 
