@@ -207,7 +207,7 @@
       }
     },
     "AEGIS-011": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/futures/instruments.py",
         "configs/schemas/futures_product.v1.json",
@@ -219,10 +219,15 @@
       "reports": [
         "experiments/evidence/AEGIS-011/product_families.json"
       ],
-      "notes": "M2 slice 2. Product/instrument metadata (venue, product root, tick size, lot size, multiplier, currency, timezone, session-template reference) validated against configs/schemas/futures_product.v1.json, following the same mandatory-enumerated-version discipline as python/common/config.py (AEGIS-231). tick_size/multiplier are Decimal, parsed from schema-enforced decimal strings, never JSON/YAML floats. configs/futures/products.yaml covers three distinct synthetic product families (EQX equity index, CLX energy, SRX short-rate; venue SYNX is fictional), meeting the 'at least three' floor. session_template is an opaque reference only -- AEGIS-013 calendars do not exist yet. Not yet 'verified': that requires an independent spec-auditor review, which happens at M2 closure."
+      "notes": "M2 slice 2. Product/instrument metadata (venue, product root, tick size, lot size, multiplier, currency, timezone, session-template reference) validated against configs/schemas/futures_product.v1.json, following the same mandatory-enumerated-version discipline as python/common/config.py (AEGIS-231). tick_size/multiplier are Decimal, parsed from schema-enforced decimal strings, never JSON/YAML floats. configs/futures/products.yaml covers three distinct synthetic product families (EQX equity index, CLX energy, SRX short-rate; venue SYNX is fictional), meeting the 'at least three' floor. session_template is an opaque reference only -- AEGIS-013 calendars do not exist yet. Not yet 'verified': that requires an independent spec-auditor review, which happens at M2 closure.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-012": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/futures/contracts.py",
         "python/futures/chain.py"
@@ -235,10 +240,15 @@
       "reports": [
         "experiments/evidence/AEGIS-012/expiry_boundaries.json"
       ],
-      "notes": "M2 slice 2. Contract identity reuses ContractId from M2 slice 1 (python/futures/identifiers.py); this slice adds first/last trade dates, expiry, settlement type (cash/physical) and the five approved lifecycle states (ADR-0015). lifecycle_state(contract, as_of) is a pure function with no wall-clock dependency and no stored mutable state, checked as a chain that resolves the last_trade_date == expiry boundary to LastTradingDay rather than skipping to Settled. ContractChain provides lookup and chronological ordering only -- it deliberately has no 'front contract' method; that is the roll policy's decision (M2 slice 6), not identity's. Property-tested: identity round-trips through parse()/canonical for arbitrary inputs, lifecycle index is monotonic non-decreasing as as_of increases for arbitrary valid contracts, and chain iteration order is invariant to insertion order. Nine committed contract fixtures across the three AEGIS-011 product families exercise both the zero-width Expired case (cash settlement) and the non-zero-width case (physical settlement). Not yet 'verified': that requires an independent spec-auditor review, which happens at M2 closure."
+      "notes": "M2 slice 2. Contract identity reuses ContractId from M2 slice 1 (python/futures/identifiers.py); this slice adds first/last trade dates, expiry, settlement type (cash/physical) and the five approved lifecycle states (ADR-0015). lifecycle_state(contract, as_of) is a pure function with no wall-clock dependency and no stored mutable state, checked as a chain that resolves the last_trade_date == expiry boundary to LastTradingDay rather than skipping to Settled. ContractChain provides lookup and chronological ordering only -- it deliberately has no 'front contract' method; that is the roll policy's decision (M2 slice 6), not identity's. Property-tested: identity round-trips through parse()/canonical for arbitrary inputs, lifecycle index is monotonic non-decreasing as as_of increases for arbitrary valid contracts, and chain iteration order is invariant to insertion order. Nine committed contract fixtures across the three AEGIS-011 product families exercise both the zero-width Expired case (cash settlement) and the non-zero-width case (physical settlement). Not yet 'verified': that requires an independent spec-auditor review, which happens at M2 closure.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-013": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/futures/calendars.py",
         "configs/schemas/futures_calendar_template.v1.json",
@@ -258,10 +268,15 @@
       "reports": [
         "experiments/evidence/AEGIS-013/session_classification.json"
       ],
-      "notes": "M2 slice 3. Trading-session calendars: hand-authored local-time templates (configs/calendars/templates) expanded offline by tools/generate_calendars.py (the only code path that imports zoneinfo at calendar *generation* time (python/futures/instruments.py also imports it, to validate a product's declared timezone against zoneinfo.available_timezones() when the catalog loads)) into committed, schema-validated, normalized UTC intervals (configs/calendars/generated). python/futures/calendars.py's CalendarRegistry reads only that generated artifact at runtime -- no wall clock, no host tzdata dependency, no locale dependency. classify() is a pure half-open-interval lookup returning REGULAR/OVERNIGHT/MAINTENANCE/CLOSED. Three synthetic templates match the session_template names already committed on the Slice-2 product catalog (synx_equity_index_rth, synx_energy_extended, synx_rates_globex), each cross-checked against the live product catalog. Validation is fail-closed at both layers: illegal overlaps, duplicate/contradictory intervals, zero-length blocks, unknown templates and unsupported/malformed schema versions are all rejected, never silently repaired. DST is covered two ways: a committed-artifact check that the same local session time shifts by exactly one UTC hour across both 2026 transitions, and a generator-level check with a purpose-built block that genuinely spans a transition instant (22h/24h instead of 23h). Property-tested: classification agrees with an independent brute-force scan, is pure/repeatable, and never yields two contradictory session states for one instant. See ADR-0015's slice 3 addendum. Not yet 'verified': that requires an independent spec-auditor review at M2 closure."
+      "notes": "M2 slice 3. Trading-session calendars: hand-authored local-time templates (configs/calendars/templates) expanded offline by tools/generate_calendars.py (the only code path that imports zoneinfo at calendar *generation* time (python/futures/instruments.py also imports it, to validate a product's declared timezone against zoneinfo.available_timezones() when the catalog loads)) into committed, schema-validated, normalized UTC intervals (configs/calendars/generated). python/futures/calendars.py's CalendarRegistry reads only that generated artifact at runtime -- no wall clock, no host tzdata dependency, no locale dependency. classify() is a pure half-open-interval lookup returning REGULAR/OVERNIGHT/MAINTENANCE/CLOSED. Three synthetic templates match the session_template names already committed on the Slice-2 product catalog (synx_equity_index_rth, synx_energy_extended, synx_rates_globex), each cross-checked against the live product catalog. Validation is fail-closed at both layers: illegal overlaps, duplicate/contradictory intervals, zero-length blocks, unknown templates and unsupported/malformed schema versions are all rejected, never silently repaired. DST is covered two ways: a committed-artifact check that the same local session time shifts by exactly one UTC hour across both 2026 transitions, and a generator-level check with a purpose-built block that genuinely spans a transition instant (22h/24h instead of 23h). Property-tested: classification agrees with an independent brute-force scan, is pure/repeatable, and never yields two contradictory session states for one instant. See ADR-0015's slice 3 addendum. Not yet 'verified': that requires an independent spec-auditor review at M2 closure.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-014": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/futures/schema.py",
         "python/futures/ingest.py",
@@ -277,10 +292,15 @@
       "reports": [
         "experiments/evidence/AEGIS-014/data_quality.json"
       ],
-      "notes": "M2 slices 4-5, complete. Ingestion (slice 4) validates volume/open_interest shape: optional non-negative integers or null, never coerced to zero. python/futures/quality.py (slice 5) completes the data-quality-report half: run_quality_checks identifies missing_volume, missing_open_interest, stale_observation (repeated zero-volume OHLC) and contradictory values (duplicate_observation, contradictory_ohlc) over normalized records, deterministically ordered, with severity. Evidence proves zero false positives on the three committed clean bar families. See ADR-0016's slice 5 addendum, which also records why a conditional 'contradictory volume/OI' category was deliberately not implemented (no frozen criterion requires it, and it would duplicate a check already enforced at ingestion). Not yet 'verified': independent spec-auditor review is at M2 closure."
+      "notes": "M2 slices 4-5, complete. Ingestion (slice 4) validates volume/open_interest shape: optional non-negative integers or null, never coerced to zero. python/futures/quality.py (slice 5) completes the data-quality-report half: run_quality_checks identifies missing_volume, missing_open_interest, stale_observation (repeated zero-volume OHLC) and contradictory values (duplicate_observation, contradictory_ohlc) over normalized records, deterministically ordered, with severity. Evidence proves zero false positives on the three committed clean bar families. See ADR-0016's slice 5 addendum, which also records why a conditional 'contradictory volume/OI' category was deliberately not implemented (no frozen criterion requires it, and it would duplicate a check already enforced at ingestion). Not yet 'verified': independent spec-auditor review is at M2 closure.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-015": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/futures/roll/policy.py",
         "python/futures/roll/fixed_days.py"
@@ -292,10 +312,15 @@
       "reports": [
         "experiments/evidence/AEGIS-015/fixed_days_golden.json"
       ],
-      "notes": "M2 slice 6. FixedDaysPolicy rolls to the next listed contract once the current front is within N calendar days (inclusive) of its own expiry -- one uniform rule, including the N=0 edge case (rolls exactly on expiry day itself). Calendar days, not trading/session days, chosen to avoid coupling the roll layer to a specific product's AEGIS-013 calendar template. Golden fixtures against the real committed EQX chain assert the exact roll date. See ADR-0017. Not yet 'verified': independent spec-auditor review is at M2 closure."
+      "notes": "M2 slice 6. FixedDaysPolicy rolls to the next listed contract once the current front is within N calendar days (inclusive) of its own expiry -- one uniform rule, including the N=0 edge case (rolls exactly on expiry day itself). Calendar days, not trading/session days, chosen to avoid coupling the roll layer to a specific product's AEGIS-013 calendar template. Golden fixtures against the real committed EQX chain assert the exact roll date. See ADR-0017. Not yet 'verified': independent spec-auditor review is at M2 closure.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-016": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/futures/roll/policy.py",
         "python/futures/roll/volume_crossover.py"
@@ -307,10 +332,15 @@
       "reports": [
         "experiments/evidence/AEGIS-016/volume_crossover_golden.json"
       ],
-      "notes": "M2 slice 6. VolumeCrossoverPolicy rolls once the deferred contract's volume has exceeded the front's for a configurable number of consecutive OBSERVED sessions (crossover_confirmed, shared with AEGIS-017): missing volume on either side is skipped, never treated as zero, and a reversal before the persistence threshold resets the count rather than pausing it. Golden fixture: crossover, sub-threshold, and reversal cases against the real committed EQX chain. See ADR-0017. Not yet 'verified': independent spec-auditor review is at M2 closure."
+      "notes": "M2 slice 6. VolumeCrossoverPolicy rolls once the deferred contract's volume has exceeded the front's for a configurable number of consecutive OBSERVED sessions (crossover_confirmed, shared with AEGIS-017): missing volume on either side is skipped, never treated as zero, and a reversal before the persistence threshold resets the count rather than pausing it. Golden fixture: crossover, sub-threshold, and reversal cases against the real committed EQX chain. See ADR-0017. Not yet 'verified': independent spec-auditor review is at M2 closure.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-017": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/futures/roll/policy.py",
         "python/futures/roll/oi_crossover.py"
@@ -322,10 +352,15 @@
       "reports": [
         "experiments/evidence/AEGIS-017/oi_crossover_golden.json"
       ],
-      "notes": "M2 slice 6. OpenInterestCrossoverPolicy shares AEGIS-016's persistence mechanism (crossover_confirmed) over open interest; missing OI is skipped, never substituted with volume. Golden fixture and a dedicated test proving volume never substitutes for missing OI. See ADR-0017. Not yet 'verified': independent spec-auditor review is at M2 closure."
+      "notes": "M2 slice 6. OpenInterestCrossoverPolicy shares AEGIS-016's persistence mechanism (crossover_confirmed) over open interest; missing OI is skipped, never substituted with volume. Golden fixture and a dedicated test proving volume never substitutes for missing OI. See ADR-0017. Not yet 'verified': independent spec-auditor review is at M2 closure.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-018": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/futures/roll/policy.py",
         "python/futures/roll/liquidity_score.py"
@@ -337,10 +372,15 @@
       "reports": [
         "experiments/evidence/AEGIS-018/liquidity_score_golden.json"
       ],
-      "notes": "M2 slice 6. LiquidityScorePolicy composite score = volume_weight * normalized-volume-share + open_interest_weight * normalized-open-interest-share, Decimal arithmetic throughout (never float, since the score decides the selection itself). Missing metric contributes zero, not an error. score_breakdown exposes every component per contract for audit. Ties broken by chronological order via Python max()'s own first-maximal-element behaviour over the already-ordered listed sequence -- no separate tie-break rule. See ADR-0017. Not yet 'verified': independent spec-auditor review is at M2 closure."
+      "notes": "M2 slice 6. LiquidityScorePolicy composite score = volume_weight * normalized-volume-share + open_interest_weight * normalized-open-interest-share, Decimal arithmetic throughout (never float, since the score decides the selection itself). Missing metric contributes zero, not an error. score_breakdown exposes every component per contract for audit. Ties broken by chronological order via Python max()'s own first-maximal-element behaviour over the already-ordered listed sequence -- no separate tie-break rule. See ADR-0017. Not yet 'verified': independent spec-auditor review is at M2 closure.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-019": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/futures/series.py"
       ],
@@ -351,10 +391,15 @@
       "reports": [
         "experiments/evidence/AEGIS-019/continuous_series_and_adjustments.json"
       ],
-      "notes": "M2 slice 7. build_unadjusted_series builds the continuous series from explicit roll selections (a caller-supplied front-contract-per-date mapping, not a live RollPolicy call) plus per-contract price observations. Every observation carries contract_id provenance; a selected front contract with no matching price raises MissingPrice rather than silently skipping the date. See ADR-0017's slice 7 addendum. Not yet 'verified': independent spec-auditor review is at M2 closure."
+      "notes": "M2 slice 7. build_unadjusted_series builds the continuous series from explicit roll selections (a caller-supplied front-contract-per-date mapping, not a live RollPolicy call) plus per-contract price observations. Every observation carries contract_id provenance; a selected front contract with no matching price raises MissingPrice rather than silently skipping the date. See ADR-0017's slice 7 addendum. Not yet 'verified': independent spec-auditor review is at M2 closure.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-020": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/futures/series.py"
       ],
@@ -366,10 +411,15 @@
       "reports": [
         "experiments/evidence/AEGIS-020/continuous_series_and_adjustments.json"
       ],
-      "notes": "M2 slice 7. build_additive_adjusted_series implements difference back-adjustment using a same-day dual quote at each roll (the outgoing contract's own price on the roll date itself, not a day-before proxy) -- the only convention under which the roll-day adjusted return equals the outgoing contract's own realized return rather than an invented zero (ADR-0017's slice 7 addendum explains why the adjacent-front-price alternative, which forces level continuity, is the actual artificial jump). Direction documented explicitly: the most recent segment is the unadjusted reference, every earlier segment carries the cumulative offset. Known roll-gap golden fixtures, multiple sequential rolls, and a genuine cross-year roll are tested. Not yet 'verified': independent spec-auditor review is at M2 closure."
+      "notes": "M2 slice 7. build_additive_adjusted_series implements difference back-adjustment using a same-day dual quote at each roll (the outgoing contract's own price on the roll date itself, not a day-before proxy) -- the only convention under which the roll-day adjusted return equals the outgoing contract's own realized return rather than an invented zero (ADR-0017's slice 7 addendum explains why the adjacent-front-price alternative, which forces level continuity, is the actual artificial jump). Direction documented explicitly: the most recent segment is the unadjusted reference, every earlier segment carries the cumulative offset. Known roll-gap golden fixtures, multiple sequential rolls, and a genuine cross-year roll are tested. Not yet 'verified': independent spec-auditor review is at M2 closure.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-021": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/futures/series.py"
       ],
@@ -381,10 +431,15 @@
       "reports": [
         "experiments/evidence/AEGIS-021/continuous_series_and_adjustments.json"
       ],
-      "notes": "M2 slice 7. build_ratio_adjusted_series implements the multiplicative equivalent of AEGIS-020's convention (same-day dual quote, cumulative product of ratios), preserving proportional returns across every roll. InvalidAdjustment is raised explicitly on a missing roll-date price, a zero price, or a negative price -- never a silent divide-by-zero or a substituted value. See ADR-0017's slice 7 addendum. Not yet 'verified': independent spec-auditor review is at M2 closure."
+      "notes": "M2 slice 7. build_ratio_adjusted_series implements the multiplicative equivalent of AEGIS-020's convention (same-day dual quote, cumulative product of ratios), preserving proportional returns across every roll. InvalidAdjustment is raised explicitly on a missing roll-date price, a zero price, or a negative price -- never a silent divide-by-zero or a substituted value. See ADR-0017's slice 7 addendum. Not yet 'verified': independent spec-auditor review is at M2 closure.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-022": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/futures/series.py"
       ],
@@ -395,10 +450,15 @@
       "reports": [
         "experiments/evidence/AEGIS-022/continuous_series_and_adjustments.json"
       ],
-      "notes": "M2 slice 7. build_return_stream computes simple (proportional) returns from a ratio-adjusted series. Reconciliation is proven across every roll in a multi-roll fixture, not one hand-picked day: on a non-roll day the adjusted return equals the raw same-contract return exactly; on a roll day it equals the outgoing contract's own realized return that day (never an artificial zero -- see ADR-0017's slice 7 addendum for why that would itself be the fabrication AEGIS-022 warns against). No synthetic index is built: optional per the M2 plan of record, and no frozen acceptance criterion names one. Not yet 'verified': independent spec-auditor review is at M2 closure."
+      "notes": "M2 slice 7. build_return_stream computes simple (proportional) returns from a ratio-adjusted series. Reconciliation is proven across every roll in a multi-roll fixture, not one hand-picked day: on a non-roll day the adjusted return equals the raw same-contract return exactly; on a roll day it equals the outgoing contract's own realized return that day (never an artificial zero -- see ADR-0017's slice 7 addendum for why that would itself be the fabrication AEGIS-022 warns against). No synthetic index is built: optional per the M2 plan of record, and no frozen acceptance criterion names one. Not yet 'verified': independent spec-auditor review is at M2 closure.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-023": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/futures/roll_audit.py"
       ],
@@ -409,7 +469,12 @@
       "reports": [
         "experiments/evidence/AEGIS-023/roll_audit_and_sensitivity.json"
       ],
-      "notes": "M2 slice 8. build_roll_audit walks explicit dates through a real RollPolicy (M2 slice 6), detecting front-contract transitions via the real build_unadjusted_series (M2 slice 7), and fills each RollAuditRecord (old/new contract, prices, raw_gap, ratio_at_roll, trigger) via the same same-day-dual-quote roll_boundary_prices lookup series.py's own adjustment builders use -- no roll or adjustment logic re-derived. to_machine_readable/render_human_readable are two views over the same record list. Evidence/full acceptance proof deferred to Slice 14 closure per the owner's build-first-mode instructions; not yet 'verified'."
+      "notes": "M2 slice 8. build_roll_audit walks explicit dates through a real RollPolicy (M2 slice 6), detecting front-contract transitions via the real build_unadjusted_series (M2 slice 7), and fills each RollAuditRecord (old/new contract, prices, raw_gap, ratio_at_roll, trigger) via the same same-day-dual-quote roll_boundary_prices lookup series.py's own adjustment builders use -- no roll or adjustment logic re-derived. to_machine_readable/render_human_readable are two views over the same record list. Evidence/full acceptance proof deferred to Slice 14 closure per the owner's build-first-mode instructions; not yet 'verified'.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-024": {
       "status": "implemented",
@@ -435,7 +500,7 @@
       ]
     },
     "AEGIS-025": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/futures/quality.py",
         "tools/seeded_quality_corruptions.py"
@@ -447,10 +512,15 @@
       "reports": [
         "experiments/evidence/AEGIS-025/seeded_corruptions.json"
       ],
-      "notes": "M2 slice 5. python/futures/quality.py detects duplicates (duplicate_observation, a business-key (contract_symbol, event_time_ns) identity distinct from ingestion's (contract_symbol, source_sequence) check), gaps (opt-in, explicit expected interval, never inferred), invalid prices, contradictory OHLC relationships, impossible timestamps (outside the contract's own listed window via ContractChain), and contract metadata conflicts (unresolvable product or unlisted contract month). The seeded corruption suite (tools/seeded_quality_corruptions.py, shared by tests and the evidence generator) proves every one of the nine detector categories is actually triggered by the production function -- the evidence generator itself raises rather than writing an unsupported claim. See ADR-0016's slice 5 addendum for why a tenth, volume/OI-cross-field category is deliberately out of scope. Not yet 'verified': independent spec-auditor review is at M2 closure."
+      "notes": "M2 slice 5. python/futures/quality.py detects duplicates (duplicate_observation, a business-key (contract_symbol, event_time_ns) identity distinct from ingestion's (contract_symbol, source_sequence) check), gaps (opt-in, explicit expected interval, never inferred), invalid prices, contradictory OHLC relationships, impossible timestamps (outside the contract's own listed window via ContractChain), and contract metadata conflicts (unresolvable product or unlisted contract month). The seeded corruption suite (tools/seeded_quality_corruptions.py, shared by tests and the evidence generator) proves every one of the nine detector categories is actually triggered by the production function -- the evidence generator itself raises rather than writing an unsupported claim. See ADR-0016's slice 5 addendum for why a tenth, volume/OI-cross-field category is deliberately out of scope. Not yet 'verified': independent spec-auditor review is at M2 closure.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-026": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/futures/schema.py",
         "python/futures/ingest.py",
@@ -468,7 +538,12 @@
       "reports": [
         "experiments/evidence/AEGIS-026/three_family_load.json"
       ],
-      "notes": "M2 slice 4. One normalized schema, futures_bar.v1 (configs/schemas/futures_bar.v1.json), registered through the existing python/data/schema_registry.SchemaRegistry rather than a second validator. python/futures/ingest.py normalizes CSV/JSONL rows from any product family into it: integer tick prices via exact division against the product's Decimal tick_size (never rounded), explicit-UTC-integer event_time_ns only (no timestamp parsing/inference), canonical contract_symbol only. record_index is assigned exactly per the M2 plan of record section 7: paths made repo-relative POSIX, deduplicated, sorted lexicographically, record_index assigned contiguously from zero over surviving records in (source_file, physical_position) order, persisted and never recomputed downstream. Malformed/duplicate policy is STRICT (raise on first rejection, default) or REPORT (collect all); out-of-order source data is recorded, never silently resorted. The three committed synthetic bar fixtures (EQX/CLX/SRX, one CSV + one JSONL to cover both supported formats) load through this one interface, meeting the >=3-family floor. See ADR-0016. Not yet 'verified': independent spec-auditor review is at M2 closure."
+      "notes": "M2 slice 4. One normalized schema, futures_bar.v1 (configs/schemas/futures_bar.v1.json), registered through the existing python/data/schema_registry.SchemaRegistry rather than a second validator. python/futures/ingest.py normalizes CSV/JSONL rows from any product family into it: integer tick prices via exact division against the product's Decimal tick_size (never rounded), explicit-UTC-integer event_time_ns only (no timestamp parsing/inference), canonical contract_symbol only. record_index is assigned exactly per the M2 plan of record section 7: paths made repo-relative POSIX, deduplicated, sorted lexicographically, record_index assigned contiguously from zero over surviving records in (source_file, physical_position) order, persisted and never recomputed downstream. Malformed/duplicate policy is STRICT (raise on first rejection, default) or REPORT (collect all); out-of-order source data is recorded, never silently resorted. The three committed synthetic bar fixtures (EQX/CLX/SRX, one CSV + one JSONL to cover both supported formats) load through this one interface, meeting the >=3-family floor. See ADR-0016. Not yet 'verified': independent spec-auditor review is at M2 closure.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-027": {
       "status": "verified",
@@ -840,7 +915,7 @@
       "notes": ""
     },
     "AEGIS-054": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/replay/pacing.hpp",
         "cpp/replay/pacing.cpp",
@@ -856,10 +931,15 @@
       "reports": [
         "experiments/evidence/AEGIS-054/replay_pacing_modes.json"
       ],
-      "notes": "M2 slice 10. OriginalSpeedPacing::wait_before returns the exact original gap between two events' own timestamps. ReplayEngine::next_with_pacing pairs the next emitted event with the policy-computed wait; never sleeps. See ADR-0018's slice 10 addendum. Not yet 'verified'."
+      "notes": "M2 slice 10. OriginalSpeedPacing::wait_before returns the exact original gap between two events' own timestamps. ReplayEngine::next_with_pacing pairs the next emitted event with the policy-computed wait; never sleeps. See ADR-0018's slice 10 addendum. Not yet 'verified'.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-055": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/replay/pacing.hpp",
         "cpp/replay/pacing.cpp",
@@ -873,10 +953,15 @@
       "reports": [
         "experiments/evidence/AEGIS-055/replay_pacing_modes.json"
       ],
-      "notes": "M2 slice 10. AcceleratedPacing::wait_before divides the original gap by a caller-supplied multiplier (constructor-validated strictly positive). See ADR-0018's slice 10 addendum. Not yet 'verified'."
+      "notes": "M2 slice 10. AcceleratedPacing::wait_before divides the original gap by a caller-supplied multiplier (constructor-validated strictly positive). See ADR-0018's slice 10 addendum. Not yet 'verified'.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-056": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/replay/pacing.hpp",
         "cpp/replay/pacing.cpp",
@@ -889,10 +974,15 @@
       "reports": [
         "experiments/evidence/AEGIS-056/replay_pacing_modes.json"
       ],
-      "notes": "M2 slice 10. FixedRatePacing::wait_before returns a constant configured interval (constructor-validated non-negative) independent of the original gap. See ADR-0018's slice 10 addendum. Not yet 'verified'."
+      "notes": "M2 slice 10. FixedRatePacing::wait_before returns a constant configured interval (constructor-validated non-negative) independent of the original gap. See ADR-0018's slice 10 addendum. Not yet 'verified'.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent M2 re-audit of AEGIS-056/057/060 remediation)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-11"
+      }
     },
     "AEGIS-057": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/replay/pacing.hpp",
         "cpp/replay/pacing.cpp",
@@ -908,10 +998,15 @@
       "reports": [
         "experiments/evidence/AEGIS-057/replay_pacing_modes.json"
       ],
-      "notes": "M2 slice 10. StepPacing::wait_before is always zero; advancing one event at a time is ReplayEngine::next (slice 9), and one timestamp group at a time is ReplayEngine::next_group (slice 9). See ADR-0018's slice 10 addendum. Not yet 'verified'."
+      "notes": "M2 slice 10. StepPacing::wait_before is always zero; advancing one event at a time is ReplayEngine::next (slice 9), and one timestamp group at a time is ReplayEngine::next_group (slice 9). See ADR-0018's slice 10 addendum. Not yet 'verified'.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent M2 re-audit of AEGIS-056/057/060 remediation)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-11"
+      }
     },
     "AEGIS-058": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/replay/replay_stream.hpp",
         "cpp/replay/replay_stream.cpp",
@@ -934,7 +1029,12 @@
       "reports": [
         "experiments/evidence/AEGIS-058/replay_determinism.json"
       ],
-      "notes": "M2 slice 9. cpp/replay/ gains load_replay_stream (reads/validates a canonical JSON-Lines input, record_index read never recomputed, rejects out-of-order/duplicate-key input via the real canonical_compare from slice 1), VirtualClock (a WallClock whose only mutator is advance_to -- structurally never reads the system clock or sleeps), compute_manifest (FNV-1a 64-bit reproducibility digest, not cryptographic), and ReplayEngine (next/next_group/cursor/resume_from). cpp-replay still has no edge to any cpp-exchange-* layer. Deterministic benchmark mode is draining next() in a loop with no pacing delay. See ADR-0018. Not yet 'verified'; full evidence/acceptance proof is Slice 14 closure per the owner's build-first-mode instructions."
+      "notes": "M2 slice 9. cpp/replay/ gains load_replay_stream (reads/validates a canonical JSON-Lines input, record_index read never recomputed, rejects out-of-order/duplicate-key input via the real canonical_compare from slice 1), VirtualClock (a WallClock whose only mutator is advance_to -- structurally never reads the system clock or sleeps), compute_manifest (FNV-1a 64-bit reproducibility digest, not cryptographic), and ReplayEngine (next/next_group/cursor/resume_from). cpp-replay still has no edge to any cpp-exchange-* layer. Deterministic benchmark mode is draining next() in a loop with no pacing delay. See ADR-0018. Not yet 'verified'; full evidence/acceptance proof is Slice 14 closure per the owner's build-first-mode instructions.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-059": {
       "status": "implemented",
@@ -2247,7 +2347,7 @@
       }
     },
     "AEGIS-229": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/bindings/aegis_module.cpp",
         "cpp/bindings/CMakeLists.txt",
@@ -2261,10 +2361,15 @@
       "reports": [
         "experiments/evidence/AEGIS-229/feed_and_binding_symmetry.json"
       ],
-      "notes": "M2 obligation discharged at slice 13 (was blocked_until M2, registered 2026-08-06 while closing M0, residual: 'no engine exists to bind'). cpp/bindings/aegis_module.cpp now also exposes sort_canonical(list[dict]) -> list[dict] (M2 slice 13): constructs real replay::ReplayEvent objects from Slice 1's four canonical fields, sorts via the real canonical_less, returns sorted dicts -- a genuine round trip over the replay core's own ordering, not a stub. tests/integration/test_bindings_roundtrip.py::test_bindings_expose_no_mutable_engine_state asserts the six-function surface; a dedicated symmetry suite proves the C++ binding agrees with the Python peer (futures.replay.sort_canonical) on empty/single/tied/pre-epoch/scrambled inputs. See adr/0005's slice 13 addendum."
+      "notes": "M2 obligation discharged at slice 13 (was blocked_until M2, registered 2026-08-06 while closing M0, residual: 'no engine exists to bind'). cpp/bindings/aegis_module.cpp now also exposes sort_canonical(list[dict]) -> list[dict] (M2 slice 13): constructs real replay::ReplayEvent objects from Slice 1's four canonical fields, sorts via the real canonical_less, returns sorted dicts -- a genuine round trip over the replay core's own ordering, not a stub. tests/integration/test_bindings_roundtrip.py::test_bindings_expose_no_mutable_engine_state asserts the six-function surface; a dedicated symmetry suite proves the C++ binding agrees with the Python peer (futures.replay.sort_canonical) on empty/single/tied/pre-epoch/scrambled inputs. See adr/0005's slice 13 addendum.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-230": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/data/schema_registry.py",
         "configs/schemas/experiment_manifest.v1.json",
@@ -2277,7 +2382,12 @@
       "reports": [
         "experiments/evidence/AEGIS-230/columnar_roundtrip.json"
       ],
-      "notes": "M2 obligation discharged at slice 5 (was blocked_until M2, registered 2026-08-06 while closing M0, residual: 'building them now would require inventing the futures schema AEGIS-026 owns'). That schema (futures_bar.v1) now exists (M2 slice 4); python/futures/columnar.py implements the full round trip over it: normalized records -> Arrow (to_arrow_table, fixed NORMALIZED_COLUMNS order, schema name/version embedded in table metadata) -> Parquet (write_parquet; pyarrow carries the metadata into the file footer) -> Arrow/readback (read_parquet, rejects unknown/missing schema version) -> DuckDB query over the identical Parquet file (query_duckdb). Round-trip invariants proven: row count, byte-identical values including exact integer tick prices, record_index, event_time_ns, contract identity, volume/OI nullability, deterministic column order, schema version in Parquet metadata, DuckDB row count agreeing with Arrow's. See ADR-0016's slice 5 addendum. This discharges the M2 obligation only; AEGIS-230's own catalogue status (implemented/verified) is unaffected -- that promotion belongs to M2 closure, per docs/DEFERRED_VERIFICATION.md's mechanism."
+      "notes": "M2 obligation discharged at slice 5 (was blocked_until M2, registered 2026-08-06 while closing M0, residual: 'building them now would require inventing the futures schema AEGIS-026 owns'). That schema (futures_bar.v1) now exists (M2 slice 4); python/futures/columnar.py implements the full round trip over it: normalized records -> Arrow (to_arrow_table, fixed NORMALIZED_COLUMNS order, schema name/version embedded in table metadata) -> Parquet (write_parquet; pyarrow carries the metadata into the file footer) -> Arrow/readback (read_parquet, rejects unknown/missing schema version) -> DuckDB query over the identical Parquet file (query_duckdb). Round-trip invariants proven: row count, byte-identical values including exact integer tick prices, record_index, event_time_ns, contract identity, volume/OI nullability, deterministic column order, schema version in Parquet metadata, DuckDB row count agreeing with Arrow's. See ADR-0016's slice 5 addendum. This discharges the M2 obligation only; AEGIS-230's own catalogue status (implemented/verified) is unaffected -- that promotion belongs to M2 closure, per docs/DEFERRED_VERIFICATION.md's mechanism.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent /audit-milestone M2)",
+        "commit": "32945bc6cb773ef60e4b55a0749eb98c9bc7477a",
+        "date": "2026-08-10"
+      }
     },
     "AEGIS-231": {
       "status": "verified",

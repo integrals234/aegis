@@ -7,11 +7,20 @@
   `2747ea6` — 15 PASS, 0 FAIL, no blocking finding. Every obligation due at M1
   was paid, so `--check-deferred M1` passes. PR #2 merged; canonical main
   `55ed162`.
-- M2 status: **IN PROGRESS**, started 2026-08-10 per `experiments/plans/M2.md`
+- M2 status: **CLOSURE PROPOSED** 2026-08-11 — all 14 slices of
+  `experiments/plans/M2.md` are complete and the closure PR is open, awaiting
+  the owner's approving review. **20 of the 26 primary M2 requirements
+  (AEGIS-011..026, 054..063) are `verified`** on an independent spec-auditor
+  review of the final tree; the other six carry owner-approved residuals
+  (024→M4, 059→M9, 060/061→M3, 062/063→M5) and stay `implemented`. Both
+  inherited M2 obligations are discharged and `verified`: AEGIS-229 (bindings,
+  slice 13) and AEGIS-230 (columnar interchange, slice 5), so
+  `--check-deferred M2` passes. AEGIS-237 is untouched and remains due at M3.
+  Report: `experiments/milestone-reports/M2.md`.
+- M2 was started 2026-08-10 per `experiments/plans/M2.md`
   (approved plan of record, rev. 4 — revised four times after the owner found
   the signed-anchor circularity, the credential gap, the fine-grained-PAT
-  incompatibility and the `record_index` wording). Slice 1 of 14 is this
-  change: M2 activation and layer foundations.
+  incompatibility and the `record_index` wording). All 14 slices are complete.
 - Active branch: `milestone/m2-futures-replay`, based on `f3118b6`.
 - Owner-approved scope changes: `cpp/CMakeLists.txt`, `scripts/ci_local.sh`, `.github/workflows/ci.yml`, `requirements/python-requirements.in`, `requirements/requirements.lock`, `pyproject.toml`
   — **a MIRROR, not the authority.** Since ADR-0014 (R8, PR #3) this line
@@ -32,9 +41,15 @@
   approved those two plus `.github/workflows/governance.yml` and
   `scripts/governance_preflight.sh` in the final use of this channel, which the
   same change retired.
-- Last audit: **independent `/audit-milestone M1`, 2026-08-09, against the
+- Last audit: **independent M2 spec-auditor review, 2026-08-11, against the
+  final M2 tree.** Its first pass returned three blocking findings (AEGIS-056's
+  missing rate metrics, AEGIS-057's missing interactive path, AEGIS-060's
+  declared-but-unrealized delay); all three were remediated by building the
+  missing behaviour rather than narrowing the wording, mutation-verified, and
+  re-audited. The 20 M2 promotions rest on that review.
+- Prior audit: **independent `/audit-milestone M1`, 2026-08-09, against the
   final tree `2747ea6` — 15 PASS, 0 FAIL, no blocking finding.** This is the
-  audit of record behind the promotions; it supersedes the 2026-08-08 audit of
+  audit of record behind the M1 promotions; it supersedes the 2026-08-08 audit of
   `b33ca67`, which is not usable as the verification audit because the tree
   changed after it (R1–R7 remediation, CI remediation, and the AEGIS-009 /
   227 / 233 / 234 discharges). R1–R7 were confirmed present in the audited
@@ -69,37 +84,57 @@
   run 31295058007, whose `reproducibility` job executed
   `docs/ENVIRONMENT.md`'s canonical procedure verbatim on a clean
   `ubuntu-24.04` runner.
-- Deferred verification obligations: 5 open, listed in
-  `docs/DEFERRED_VERIFICATION.md`; due M2=2, M3=1, M4=1, M5=1 — **none at M1**.
-  Discharged: AEGIS-005 (exchange determinism), AEGIS-227, AEGIS-233,
-  AEGIS-234 (first real CI runs) and AEGIS-009 (clean-machine reproducibility).
-  **Two are due at M2**: AEGIS-229 (C++/Python bindings) and AEGIS-230
-  (columnar interchange). Both must be paid before M2 closes, or
-  `--check-deferred M2` fails the milestone.
+- Deferred verification obligations: 9 open, listed in
+  `docs/DEFERRED_VERIFICATION.md`; due M3=3, M4=2, M5=3, M9=1 — **none at M2**,
+  so `--check-deferred M2` passes. Both obligations that were due at M2 are
+  discharged: AEGIS-229 (bindings, slice 13) and AEGIS-230 (columnar
+  interchange, slice 5). Six of the nine open obligations were registered by M2
+  itself and are its carried debt: AEGIS-024→M4, 059→M9, 060/061→M3,
+  062/063→M5, all owner-approved during planning. Previously discharged:
+  AEGIS-005 (exchange determinism), AEGIS-227, AEGIS-233, AEGIS-234 (first real
+  CI runs) and AEGIS-009 (clean-machine reproducibility).
 
 ## M2 state
 
-Slice 1 of 14 (`experiments/plans/M2.md` §8) — activation and layer
-foundations — is complete. It flips the milestone mirrors, retargets the
-milestone-aware gates from M1 to M2 under the `m2-build-and-gate` approval, and
-populates the two layers `configs/architecture_rules.yaml` dates to M2.
+**All 14 slices of `experiments/plans/M2.md` §8 are complete.** M2 delivers the
+futures data stack and the deterministic replay core.
 
-Populating both layers in the same commit as the flip is required, not
-stylistic: `check_layer_population` makes emptiness a checked fact in both
-directions, so `cpp-replay` and `python-futures` must be non-empty the moment
-the active milestone reads M2. They carry genuine, tested code rather than
-placeholders — `cpp/replay/replay_event.{hpp,cpp}` (the canonical replay record
-and its total-order comparator, including the `record_index` tie-breaker that
-the replay-core ADR will formalise at slice 9) and `python/futures/identifiers.py` (contract
-identity and its canonical string form).
+Built, `python/futures/`: contract identity and lifecycle (`identifiers`,
+`contracts`, `chain`, `instruments`), trading-session calendars (`calendars`),
+the normalized `futures_bar.v1` schema and ingestion with deterministic
+`record_index` assignment (`schema`, `ingest`), data-quality detection
+(`quality`), Arrow/Parquet/DuckDB interchange (`columnar`), four roll policies
+(`roll/`), continuous series with difference and ratio adjustment (`series`),
+the roll audit and roll-method comparison (`roll_audit`, `roll_sensitivity`),
+and the unified feed boundary (`replay`).
 
-The `m2-columnar-dependencies` approval is consumed to pin `pyarrow`, `duckdb`
-and `tzdata`, after `tools/probe_dependencies.py` confirmed wheels exist for
-both Python 3.12 and 3.14. Nothing consumes them yet; AEGIS-230's round trips
-are Slice 5.
+Built, `cpp/replay/`: the canonical replay record and its total order
+(`replay_event`), the fail-closed stream loader (`replay_stream`), a virtual
+clock that structurally cannot read the system clock (`virtual_clock`), the
+FNV-1a reproducibility manifest (`replay_manifest`), the engine with
+cursor/resume (`replay_engine`), four pacing modes (`pacing`), eleven
+deterministic fault kinds (`fault_injection`), and the CLI (`replay_run_main`).
 
-No M2 requirement is claimed as `implemented` or `verified` by this slice.
-AEGIS-011..026 and AEGIS-054..063 all remain `not_started`.
+`cpp-replay` has no dependency edge to any `cpp-exchange-*` layer in either
+direction. `cpp-bindings` gained exactly one new edge, to `cpp-replay`, so the
+binding surface can expose the canonical order and nothing more.
+
+Determinism is proved **across separate OS processes**, matching the standard
+this repository already applies to AEGIS-005: `aegis_replay_run` produces
+byte-identical output across independent invocations, and a run resumed from a
+cursor in a fresh process reproduces exactly the tail of an uninterrupted run.
+No M2 figure is a timing measurement — the replay core never sleeps.
+
+Five ADRs cover the milestone: 0015 (contract identity), 0016 (schema,
+ingestion, interchange), 0017 (roll policies and adjustments), 0018 (replay
+core, pacing, feed boundary) and 0019 (deterministic fault injection).
+
+Closure verification found and fixed seven defects in the accepted slice-13
+tree, the most consequential being five owner-approved residuals that had never
+been registered — without an obligation the auditor would have permitted
+promoting them to `verified`. Its root cause, a `tools/update_status.py` defect
+that wrote an obligation without its ledger, is fixed and regression-tested.
+`experiments/milestone-reports/M2.md` §8 lists all seven.
 
 ## M1 state
 
