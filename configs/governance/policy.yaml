@@ -25,7 +25,7 @@ policy_version: 1
 # tools/audit_requirements.py read docs/BUILD_STATE.md, which mirrors this
 # value; the authoritative gate requires the two to agree, so a branch cannot
 # grant itself a wider scope by editing the mirror.
-active_milestone: M2
+active_milestone: M3
 
 # Paths that decide who is allowed to change what. A pull request touching any
 # of these needs an explicit approval below, because changing them changes the
@@ -40,6 +40,25 @@ governance_paths:
   - tools/governance/**
   - tools/check_scope.py
   - tools/check_frozen.py
+  # Added at the M3 transition. tools/update_status.py is the sole sanctioned
+  # writer of requirements/implementation_status.json and now controls
+  # obligation clearing, deferral registration and the append-only deferral
+  # ledger; tools/audit_requirements.py is the control of record it writes
+  # against. Protecting the writer without the judge would protect the weaker
+  # of the two, so both are listed. Neither carries an M3 approval: M3 should
+  # need to touch neither, and a defect found in either is worth one small
+  # owner-reviewed pull request rather than a silent in-branch fix.
+  - tools/update_status.py
+  - tools/audit_requirements.py
+  # configs/architecture_rules.yaml is the machine-readable half of
+  # docs/ARCHITECTURE.md — the enforced dependency law. Leaving it
+  # branch-editable let a candidate widen its own may_depend_on edges, re-date
+  # a layer or relax a banned construct: the same self-authorisation class this
+  # policy closed for tools/check_scope.py and tools/check_frozen.py
+  # (adr/0014-governance-trust-boundary.md). M3's genuine transition is carried
+  # by the exact-path m3-architecture-transition approval below, which
+  # enumerates every authorised change and expires with the milestone.
+  - configs/architecture_rules.yaml
   - .claude/settings.json
   - .claude/hooks/protect_spec.py
 
@@ -88,3 +107,53 @@ approvals:
       AEGIS-230 requires pyarrow/duckdb; AEGIS-013 requires pinned tzdata.
     granted_on: 2026-08-10
     granted_by_pr: 5
+
+  # The two M2 approvals above are inert from here on: approved_paths() skips
+  # any entry whose milestone is not the active one, so they stopped granting
+  # anything the moment active_milestone became M3. They are kept as the
+  # historical record of what M2 was allowed to touch.
+
+  - id: m3-milestone-gate
+    milestone: M3
+    paths:
+      - .github/workflows/ci.yml
+      - scripts/ci_local.sh
+    reason: >
+      The milestone audit is hardcoded to M2 in both the GitHub workflow and
+      the local CI mirror. M3 slice 1 must retarget both to M3 together —
+      tests/unit/test_ci_parity.py fails if only one moves — and scripts/** is
+      outside M3's declared scope in configs/milestone_scope.yaml.
+    granted_on: 2026-08-12
+    granted_by_pr: 7
+
+  - id: m3-architecture-transition
+    milestone: M3
+    paths:
+      - configs/architecture_rules.yaml
+    reason: >
+      configs/architecture_rules.yaml becomes a governance path in this same
+      change, so M3 needs an explicit grant to perform the layer transition its
+      requirements depend on. This approval authorises exactly four changes to
+      that file and nothing else:
+        1. add layer cpp-participant-app (paths cpp/participant/app, namespace
+           aegis::participant::app, expect_sources_from_milestone M3) as the
+           participant composition root, mirroring cpp-exchange-app;
+        2. add the edge cpp-bindings -> cpp-statistics, required by AEGIS-107's
+           cross-language comparison and by nothing else;
+        3. add the edge cpp-exchange-app -> cpp-exchange-market-data, required
+           to wire the market-data publisher into the exchange composition
+           root;
+        4. set cpp-statistics.may_depend_on to [cpp-common] — removing the
+           cpp-participant-book-builder dependency so the generic statistics
+           library carries no participant-domain dependency — together with the
+           adjacent forward-only pipeline comment that describes that
+           relationship.
+      Explicitly NOT authorised by this approval: any other may_depend_on
+      widening; re-dating any layer's expect_sources_from_milestone; relaxing
+      any entry under `banned` (parent_relative_includes,
+      python_headers_only_in, gateway_header_markers,
+      mutable_globals_forbidden_in); narrowing covered_roots; or any other
+      weakening of architecture policy. The approval is exact-path and
+      milestone-scoped, so it expires when M3 does.
+    granted_on: 2026-08-12
+    granted_by_pr: 7
