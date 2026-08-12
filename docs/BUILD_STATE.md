@@ -1,6 +1,6 @@
 # Build State
 
-- Active milestone: M2
+- Active milestone: M3
 - M0 status: **CLOSED** 2026-08-06 (owner-approved fast-track closure)
 - M1 status: **CLOSED** 2026-08-09. All 15 M1 requirements (AEGIS-027..041) are
   `verified` on an independent `/audit-milestone M1` against the final tree
@@ -22,12 +22,20 @@
   the signed-anchor circularity, the credential gap, the fine-grained-PAT
   incompatibility and the `record_index` wording). All 14 slices are complete,
   and `milestone/m2-futures-replay` was merged and is no longer active.
-- M3 activation is in flight. The plan of record is `experiments/plans/M3.md`.
-  This line **stays `M2`** until the activation policy change is merged: the
-  authoritative gate reads `configs/governance/policy.yaml` from the *base*
-  branch and requires this file's active milestone to match it, so a candidate
-  that flips both at once fails. The mirror moves to M3 in the first commit of
-  the M3 implementation branch, after the policy change lands on `main`.
+- M3 started 2026-08-12 per `experiments/plans/M3.md` (owner-approved plan of
+  record, after the three architecture corrections recorded in that file's
+  header — `configs/architecture_rules.yaml` protected as a governance path
+  rather than exempted, `cpp-statistics` decoupled from participant book
+  reconstruction, and the AEGIS-119 adapter design corrected to remove an
+  implied production participant→exchange edge). PR #7 ("M3 activation
+  policy") merged `configs/governance/policy.yaml`'s `active_milestone: M3`
+  and the `m3-milestone-gate`/`m3-architecture-transition` approvals to `main`
+  first, deliberately leaving this line at `M2` — the authoritative gate reads
+  policy from the *base* branch and requires this mirror to match it, so a
+  single PR flipping both would have failed its own gate. This is that first
+  commit on `milestone/m3-participant-execution`, flipping the mirror now that
+  the policy change is on `main`.
+- Active branch: `milestone/m3-participant-execution`, based on `9f14f11`.
 - Owner-approved scope changes: `cpp/CMakeLists.txt`, `scripts/ci_local.sh`, `.github/workflows/ci.yml`, `requirements/python-requirements.in`, `requirements/requirements.lock`, `pyproject.toml`
   — **a MIRROR, not the authority.** Since ADR-0014 (R8, PR #3) this line
   **grants nothing**: approvals live in `configs/governance/policy.yaml` on
@@ -99,6 +107,22 @@
   062/063→M5, all owner-approved during planning. Previously discharged:
   AEGIS-005 (exchange determinism), AEGIS-227, AEGIS-233, AEGIS-234 (first real
   CI runs) and AEGIS-009 (clean-machine reproducibility).
+
+## M3 state
+
+**In progress.** Plan of record: `experiments/plans/M3.md`. Build-first
+cadence: few large slices, focused tests while building, two checkpoints, one
+heavy closure — not a per-slice milestone re-certification.
+
+Slice 1 (activation + vertical skeleton) populates the six M3-dated layers
+`configs/architecture_rules.yaml` requires non-empty from this milestone, plus
+the new `cpp-participant-app` composition root the same slice adds under the
+owner-approved `m3-architecture-transition` change set (4 changes: add
+`cpp-participant-app`; add edge `cpp-bindings -> cpp-statistics`; add edge
+`cpp-exchange-app -> cpp-exchange-market-data`; narrow
+`cpp-statistics.may_depend_on` to `[cpp-common]`). ADR-0020 through ADR-0024
+record the five architecture decisions the plan called for. This section is
+completed at M3 closure (slice 8), matching the M0/M1/M2 precedent above.
 
 ## M2 state
 

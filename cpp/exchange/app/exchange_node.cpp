@@ -92,4 +92,24 @@ std::vector<EmittedEvent> ExchangeNode::apply_modify_order(
   return matching_engine_.apply_modify_order(*target_book, *spec, command, command_sequence);
 }
 
+std::vector<events::market_data::BookDeltaEvent> ExchangeNode::derive_market_data(
+    const std::vector<EmittedEvent>& emitted) {
+  std::vector<EmittedMessage> converted;
+  converted.reserve(emitted.size());
+  for (const EmittedEvent& event : emitted) {
+    converted.push_back(
+        EmittedMessage{.message_type = event.message_type, .payload = event.payload});
+  }
+  return market_data_publisher_.observe(converted);
+}
+
+events::market_data::BookSnapshotEvent ExchangeNode::capture_market_data_snapshot(
+    InstrumentId id) const {
+  const OrderBook* target_book = book(id);
+  if (target_book == nullptr) {
+    return events::market_data::BookSnapshotEvent{};
+  }
+  return capture_book_snapshot(*target_book, market_data_publisher_.next_md_sequence());
+}
+
 }  // namespace aegis::exchange

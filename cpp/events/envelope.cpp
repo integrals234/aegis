@@ -84,6 +84,8 @@ bool is_known_message_type(std::uint16_t value) {
     case MessageType::kOrderReplaced:
     case MessageType::kTrade:
     case MessageType::kOrderTerminated:
+    case MessageType::kBookSnapshot:
+    case MessageType::kBookDelta:
       return true;
     default:
       return false;

@@ -5,15 +5,15 @@
 # the target_link_libraries edges below and rejects any that the layer DAG does
 # not permit, so the build graph and the architecture cannot drift apart.
 #
-# Layers that belong to later milestones (participant, memory, queues,
-# statistics, and the exchange's own market-data layer, re-dated to M3 by
-# ADR-0012) are deliberately absent: the roadmap places them in M3-M8, and an
-# empty placeholder target would let their rules pass vacuously.
+# cpp-memory and cpp-queues (M8) are deliberately absent: an empty placeholder
+# target would let their rules pass vacuously.
 #
-# cpp-replay joined at M2. check_layer_population makes emptiness a checked
-# fact in both directions, so it had to become non-empty in the same change
-# that set the active milestone to M2 — a placeholder would have satisfied the
-# checker while proving nothing, so it carries real, tested code instead.
+# cpp-replay joined at M2; participant, statistics and the exchange's own
+# market-data layer (re-dated to M3 by ADR-0012) joined at M3 slice 1
+# (ADR-0020). check_layer_population makes emptiness a checked fact in both
+# directions, so each had to become non-empty in the same change that made it
+# the active milestone — a placeholder would have satisfied the checker while
+# proving nothing, so each carries real, tested code instead.
 
 # nlohmann/json is pinned by release URL and archive hash. It is the only
 # third-party runtime dependency of the C++ substrate: the configuration loader
@@ -32,6 +32,8 @@ add_subdirectory(common)
 add_subdirectory(events)
 add_subdirectory(exchange)
 add_subdirectory(replay)
+add_subdirectory(statistics)
+add_subdirectory(participant)
 
 if(AEGIS_BUILD_BINDINGS)
   add_subdirectory(bindings)

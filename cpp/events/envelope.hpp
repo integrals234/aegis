@@ -66,6 +66,14 @@ enum class MessageType : std::uint16_t {
   kTrade = 14,
   kOrderTerminated = 15,
 
+  // Market data (M3, AEGIS-064/065, ADR-0020): exchange-*published*, so these
+  // take permanent numbers in this same exchange band rather than the
+  // participant band below -- a participant decodes them without depending on
+  // cpp-exchange-market-data, exactly as it decodes order/trade events without
+  // depending on cpp-exchange-matching. See cpp/events/market_data_messages.hpp.
+  kBookSnapshot = 20,
+  kBookDelta = 21,
+
   // 1000..1999 reserved for participant-side domain messages (M3).
 };
 
