@@ -7,21 +7,27 @@
   `2747ea6` — 15 PASS, 0 FAIL, no blocking finding. Every obligation due at M1
   was paid, so `--check-deferred M1` passes. PR #2 merged; canonical main
   `55ed162`.
-- M2 status: **CLOSURE PROPOSED** 2026-08-11 — all 14 slices of
-  `experiments/plans/M2.md` are complete and the closure PR is open, awaiting
-  the owner's approving review. **20 of the 26 primary M2 requirements
-  (AEGIS-011..026, 054..063) are `verified`** on an independent spec-auditor
-  review of the final tree; the other six carry owner-approved residuals
-  (024→M4, 059→M9, 060/061→M3, 062/063→M5) and stay `implemented`. Both
-  inherited M2 obligations are discharged and `verified`: AEGIS-229 (bindings,
-  slice 13) and AEGIS-230 (columnar interchange, slice 5), so
-  `--check-deferred M2` passes. AEGIS-237 is untouched and remains due at M3.
+- M2 status: **CLOSED** 2026-08-11. All 14 slices of `experiments/plans/M2.md`
+  are complete. **20 of the 26 primary M2 requirements (AEGIS-011..026,
+  054..063) are `verified`** on an independent spec-auditor review of the final
+  tree; the other six carry owner-approved residuals (024→M4, 059→M9,
+  060/061→M3, 062/063→M5) and stay `implemented`. Both inherited M2 obligations
+  are discharged and `verified`: AEGIS-229 (bindings, slice 13) and AEGIS-230
+  (columnar interchange, slice 5), so `--check-deferred M2` passes. AEGIS-237 is
+  untouched and remains due at M3. PR #6 merged; canonical main
+  `0a31251b140d698fd30ac7897b0a2d2760680c90`.
   Report: `experiments/milestone-reports/M2.md`.
 - M2 was started 2026-08-10 per `experiments/plans/M2.md`
   (approved plan of record, rev. 4 — revised four times after the owner found
   the signed-anchor circularity, the credential gap, the fine-grained-PAT
-  incompatibility and the `record_index` wording). All 14 slices are complete.
-- Active branch: `milestone/m2-futures-replay`, based on `f3118b6`.
+  incompatibility and the `record_index` wording). All 14 slices are complete,
+  and `milestone/m2-futures-replay` was merged and is no longer active.
+- M3 activation is in flight. The plan of record is `experiments/plans/M3.md`.
+  This line **stays `M2`** until the activation policy change is merged: the
+  authoritative gate reads `configs/governance/policy.yaml` from the *base*
+  branch and requires this file's active milestone to match it, so a candidate
+  that flips both at once fails. The mirror moves to M3 in the first commit of
+  the M3 implementation branch, after the policy change lands on `main`.
 - Owner-approved scope changes: `cpp/CMakeLists.txt`, `scripts/ci_local.sh`, `.github/workflows/ci.yml`, `requirements/python-requirements.in`, `requirements/requirements.lock`, `pyproject.toml`
   — **a MIRROR, not the authority.** Since ADR-0014 (R8, PR #3) this line
   **grants nothing**: approvals live in `configs/governance/policy.yaml` on
