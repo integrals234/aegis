@@ -28,6 +28,8 @@ int main() {
                                        ? nlohmann::json(*summary.best_ask_quantity_units)
                                        : nlohmann::json(nullptr);
   out["last_md_sequence"] = summary.last_md_sequence;
+  out["microprice"] = summary.microprice.has_value() ? nlohmann::json(*summary.microprice)
+                                                     : nlohmann::json(nullptr);
   out["trade_count"] = summary.trade_count;
   out["trade_price_rolling_mean"] = summary.trade_price_rolling_mean;
   out["final_order_state"] = summary.final_order_state;

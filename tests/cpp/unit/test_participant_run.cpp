@@ -4,8 +4,9 @@
 #include "cpp/participant/oms/order_state.hpp"
 
 /// The composition root's own proof, and the market-data event -> feed
-/// handler -> reconstructed book -> generic statistic -> OMS -> portfolio
-/// happy path Checkpoint 1 asks for (ADR-0020).
+/// handler -> reconstructed book -> microstructure feature -> generic
+/// statistic -> OMS -> portfolio happy path Checkpoint 1 asks for
+/// (ADR-0020).
 namespace {
 
 using aegis::participant::app::run_builtin_scenario;
@@ -21,6 +22,11 @@ TEST(ParticipantRun, BuiltinScenarioComposesEveryM3Layer) {
   ASSERT_TRUE(summary.best_ask_price_units.has_value());
   EXPECT_EQ(*summary.best_ask_price_units, 10'010);
   EXPECT_EQ(summary.last_md_sequence, 3U);
+
+  // Reconstructed book -> microstructure feature (AEGIS-072): quantity-
+  // weighted microprice over the same best bid/ask asserted above.
+  ASSERT_TRUE(summary.microprice.has_value());
+  EXPECT_NEAR(*summary.microprice, (30.0 * 10'010.0 + 40.0 * 10'000.0) / 70.0, 1e-9);
 
   // Feed handler -> generic statistic: three trades decoded and averaged.
   EXPECT_EQ(summary.trade_count, 3U);

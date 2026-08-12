@@ -138,6 +138,7 @@ RunSummary run_builtin_scenario() {
     summary.best_ask_quantity_units = ask->quantity_units;
   }
   summary.last_md_sequence = book.last_md_sequence();
+  summary.microprice = book.microprice();
   summary.trade_count = trade_count;
   summary.trade_price_rolling_mean = trade_prices.mean();
   summary.final_order_state = static_cast<std::uint8_t>(lifecycle.state());

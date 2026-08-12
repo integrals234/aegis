@@ -28,6 +28,10 @@ struct RunSummary {
   std::optional<std::int64_t> best_ask_quantity_units;
   std::uint64_t last_md_sequence{0};
 
+  /// AEGIS-072, the microstructure feature this happy path exercises
+  /// end-to-end: reconstructed book -> quantity-weighted microprice.
+  std::optional<double> microprice;
+
   std::uint32_t trade_count{0};
   double trade_price_rolling_mean{0.0};
 
