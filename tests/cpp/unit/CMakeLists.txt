@@ -36,6 +36,8 @@ aegis_add_test(aegis_unit_tests unit
   test_replay_stream.cpp
   test_rolling_moments.cpp
   test_feed_recovery.cpp
+  test_intensity_tracker.cpp
+  test_rolling_rate.cpp
   test_sequencer.cpp
   test_sequence_tracker.cpp
   test_snapshot_roundtrip.cpp

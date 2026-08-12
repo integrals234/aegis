@@ -43,6 +43,45 @@ struct OrderView {
   friend bool operator==(const OrderView&, const OrderView&) = default;
 };
 
+/// AEGIS-071. `spread_units`/`mid_price_units` are engaged only when both
+/// sides are present; there is no meaningful spread or mid against an empty
+/// side of the book.
+struct TopOfBook {
+  std::optional<PriceLevelView> best_bid;
+  std::optional<PriceLevelView> best_ask;
+  std::optional<std::int64_t> spread_units;
+  std::optional<double> mid_price_units;
+};
+
+/// AEGIS-075. `original_quantity_units` is the largest quantity this level
+/// has held since it last stood empty (its "high-water mark"); depletion is
+/// only queryable while the level still exists — once it empties out
+/// entirely, the level (and its history) is simply gone, matching how a
+/// real book has no memory of a vacated price.
+struct QueueDepletionSignal {
+  std::int64_t original_quantity_units{0};
+  std::int64_t current_quantity_units{0};
+  /// `1.0 - current/original`, in `[0, 1)`: 0 means untouched since it was
+  /// last at its peak, approaching 1 means nearly consumed.
+  double depletion_ratio{0.0};
+};
+
+/// AEGIS-075. `fill_side` is the side of the *resting* order that was
+/// filled — a filled bid (someone sold into it) is judged against the best
+/// bid once the window elapses, a filled ask against the best ask.
+/// `adverse` is true when that side's best price moved against the direction
+/// beneficial to the side that was filled: down after a bid fill, up after
+/// an ask fill — the classic "picked off right before a move" signal for a
+/// resting order.
+struct AdverseSelectionOutcome {
+  Side fill_side{Side::kBuy};
+  std::int64_t fill_price_units{0};
+  /// The relevant side's best price when the window elapsed, if the book
+  /// still had one; `std::nullopt` if that side was empty at evaluation.
+  std::optional<std::int64_t> mark_price_units;
+  bool adverse{false};
+};
+
 class BookBuilder {
  public:
   explicit BookBuilder(std::uint32_t instrument_id) : instrument_id_(instrument_id) {}
@@ -127,6 +166,44 @@ class BookBuilder {
   void begin_recovery();
   [[nodiscard]] bool is_recovering() const { return recovering_; }
 
+  // ---------------------------------------------------- AEGIS-071, AEGIS-072
+
+  /// Best bid, best ask, and the spread/mid derived from them when both
+  /// sides are present.
+  [[nodiscard]] TopOfBook top_of_book() const;
+
+  /// The quantity-weighted microprice: `(bid_qty * ask_price + ask_qty *
+  /// bid_price) / (bid_qty + ask_qty)` — larger size on one side pulls the
+  /// price toward the *other* side, reflecting the pressure that size
+  /// represents. `std::nullopt` if either side is empty (defined edge case).
+  [[nodiscard]] std::optional<double> microprice() const;
+
+  // ------------------------------------------------------------- AEGIS-073
+
+  /// `(bid_depth - ask_depth) / (bid_depth + ask_depth)` summed over the
+  /// best `depth` levels per side, in `[-1, 1]`. `std::nullopt` if `depth ==
+  /// 0` or both sides are empty over that depth (defined edge cases).
+  [[nodiscard]] std::optional<double> depth_imbalance(std::size_t depth) const;
+
+  // ------------------------------------------------------------- AEGIS-075
+
+  /// `std::nullopt` if no level currently exists at `price_units` on `side`.
+  [[nodiscard]] std::optional<QueueDepletionSignal> queue_depletion(Side side,
+                                                                    std::int64_t price_units) const;
+
+  /// Records a fill of a resting order on `fill_side` at `price_units`, to
+  /// be judged after `window_updates` further `apply_delta`/`apply_snapshot`
+  /// calls (each counts as one tick, whether or not it changes this specific
+  /// level) — `drain_resolved_adverse_selection()` returns it once that many
+  /// ticks have elapsed.
+  void record_fill_for_adverse_selection(Side fill_side, std::int64_t price_units,
+                                         std::uint32_t window_updates);
+
+  /// Every fill whose window has fully elapsed as of the most recent
+  /// `apply_delta`/`apply_snapshot` call, removing them from the pending set
+  /// — each is returned exactly once.
+  [[nodiscard]] std::vector<AdverseSelectionOutcome> drain_resolved_adverse_selection();
+
  private:
   using LevelMap = std::map<std::int64_t, std::int64_t>;  // price -> aggregate quantity
 
@@ -136,9 +213,20 @@ class BookBuilder {
   }
 
   /// Adds `delta_units` (positive or negative) to the level at `price_units`,
-  /// erasing the level outright if it would reach zero or below.
+  /// erasing the level outright if it would reach zero or below. Also
+  /// maintains that level's AEGIS-075 high-water mark: raised to the new
+  /// quantity if higher, erased alongside the level.
   void adjust_level(Side side, std::int64_t price_units, std::int64_t delta_units);
   void set_level(Side side, std::int64_t price_units, std::int64_t quantity_units);
+  void touch_watermark(Side side, std::int64_t price_units, std::int64_t new_quantity);
+
+  [[nodiscard]] LevelMap& watermarks_for(Side side) {
+    return side == Side::kBuy ? bid_watermarks_ : ask_watermarks_;
+  }
+
+  /// Advances every pending adverse-selection fill's countdown by one tick —
+  /// called once per `apply_delta`/`apply_snapshot`.
+  void tick_adverse_selection();
 
   std::uint32_t instrument_id_;
   std::uint64_t last_md_sequence_{0};
@@ -156,6 +244,18 @@ class BookBuilder {
 
   bool recovering_{false};
   std::vector<events::market_data::BookDeltaEvent> buffered_deltas_;
+
+  // AEGIS-075: queue depletion.
+  LevelMap bid_watermarks_;
+  LevelMap ask_watermarks_;
+
+  // AEGIS-075: post-fill adverse selection.
+  struct PendingAdverseSelectionFill {
+    Side side{Side::kBuy};
+    std::int64_t price_units{0};
+    std::uint32_t ticks_remaining{0};
+  };
+  std::vector<PendingAdverseSelectionFill> pending_adverse_selection_;
 };
 
 }  // namespace aegis::participant::book
