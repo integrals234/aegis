@@ -1,14 +1,19 @@
 # Layer cpp-participant-app: the participant composition root (ADR-0020).
 # May depend on every other participant layer plus cpp-replay -- nothing else
 # may legally see feed handler, book builder, statistics, OMS and portfolio
-# at once. No edge to any cpp-exchange-* layer.
+# at once. No edge to any cpp-exchange-* layer. cpp-replay is PUBLIC:
+# fault_scenario.hpp's public signature names replay::ReplayEvent/FaultRule
+# (AEGIS-060/061, ADR-0021) -- this is the only participant layer permitted
+# that edge.
 add_library(aegis_participant_app
+  fault_scenario.cpp
+  fault_scenario.hpp
   participant_run.cpp
   participant_run.hpp)
 
 target_include_directories(aegis_participant_app PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(aegis_participant_app
-  PUBLIC aegis_common aegis_events
+  PUBLIC aegis_common aegis_events aegis_replay
   PRIVATE aegis_participant_feed_handler aegis_participant_book_builder
           aegis_statistics aegis_participant_oms aegis_participant_portfolio
           aegis_warnings)

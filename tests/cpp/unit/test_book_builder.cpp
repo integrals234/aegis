@@ -147,4 +147,81 @@ TEST(BookBuilder, ModifyingAnUnknownOrderIsIgnored) {
   EXPECT_FALSE(book.best(Side::kBuy).has_value());
 }
 
+// AEGIS-069: stale-data detection, on a virtual (never system) clock.
+TEST(BookBuilder, StaleAfterElapsedTimeExceedsTheConfiguredThreshold) {
+  BookBuilder book(1);
+  book.configure_staleness(aegis::common::Duration{1000}, /*max_consecutive_faults=*/0);
+  book.apply_snapshot(make_snapshot(), /*received_at_nanos=*/0);
+
+  EXPECT_FALSE(book.is_stale(500));   // Within the threshold.
+  EXPECT_FALSE(book.is_stale(1000));  // Exactly at the threshold: not yet stale.
+  EXPECT_TRUE(book.is_stale(1001));   // Past it.
+}
+
+TEST(BookBuilder, StaleAfterEnoughConsecutiveSequenceFaults) {
+  BookBuilder book(1);
+  book.configure_staleness(aegis::common::Duration{0}, /*max_consecutive_faults=*/3);
+
+  using aegis::participant::feed::SequenceDiagnostic;
+  book.note_sequence_diagnostic(SequenceDiagnostic::kGap);
+  book.note_sequence_diagnostic(SequenceDiagnostic::kGap);
+  EXPECT_FALSE(book.is_stale(0));
+  book.note_sequence_diagnostic(SequenceDiagnostic::kDuplicate);
+  EXPECT_TRUE(book.is_stale(0));
+
+  book.note_sequence_diagnostic(SequenceDiagnostic::kOk);
+  EXPECT_FALSE(book.is_stale(0));  // An kOk observation resets the count.
+}
+
+TEST(BookBuilder, StalenessIsDisabledUntilConfigured) {
+  BookBuilder book(1);
+  book.apply_snapshot(make_snapshot(), /*received_at_nanos=*/0);
+  EXPECT_FALSE(book.is_stale(/*now_nanos=*/1'000'000'000'000));  // No threshold set: never stale.
+}
+
+// AEGIS-070/061: gap -> buffer -> snapshot -> re-base -> replay -> healthy state.
+TEST(BookBuilder, RecoveryBuffersThenRebasesThenReplaysSurvivingDeltas) {
+  BookBuilder book(1);
+  book.apply_snapshot(make_snapshot());  // last_md_sequence == 1.
+  ASSERT_FALSE(book.is_recovering());
+
+  book.begin_recovery();
+  ASSERT_TRUE(book.is_recovering());
+
+  // Buffered, not applied: the book must not change while recovering.
+  BookDeltaEvent stale_delta;
+  stale_delta.instrument_id = 1;
+  stale_delta.md_sequence = 2;  // At or below the eventual snapshot: discarded on recovery.
+  stale_delta.kind = DeltaKind::kOrderAdded;
+  stale_delta.order_id = 99;
+  stale_delta.side = Side::kBuy;
+  stale_delta.price_units = 50;
+  stale_delta.quantity_units = 1;
+  book.apply_delta(stale_delta);
+  EXPECT_EQ(book.quantity_at(Side::kBuy, 50), std::nullopt);  // Buffered, not applied.
+
+  BookDeltaEvent surviving_delta;
+  surviving_delta.instrument_id = 1;
+  surviving_delta.md_sequence = 6;  // Above the eventual snapshot: replayed.
+  surviving_delta.kind = DeltaKind::kOrderAdded;
+  surviving_delta.order_id = 100;
+  surviving_delta.side = Side::kBuy;
+  surviving_delta.price_units = 60;
+  surviving_delta.quantity_units = 7;
+  book.apply_delta(surviving_delta);
+
+  BookSnapshotEvent recovery_snapshot;
+  recovery_snapshot.instrument_id = 1;
+  recovery_snapshot.md_sequence = 5;  // Covers everything up to and including sequence 5.
+  recovery_snapshot.entries.push_back(
+      BookLevelEntry{.side = Side::kBuy, .price_units = 200, .quantity_units = 9, .order_id = 1});
+  book.apply_snapshot(recovery_snapshot);
+
+  EXPECT_FALSE(book.is_recovering());
+  EXPECT_EQ(book.quantity_at(Side::kBuy, 200), 9);             // From the recovery snapshot.
+  EXPECT_EQ(book.quantity_at(Side::kBuy, 60), 7);              // Replayed: sequence 6 > 5.
+  EXPECT_FALSE(book.quantity_at(Side::kBuy, 50).has_value());  // Discarded: sequence 2 <= 5.
+  EXPECT_EQ(book.last_md_sequence(), 6U);  // The replayed delta is the latest applied state.
+}
+
 }  // namespace
