@@ -78,7 +78,7 @@
     "reason": "docs/BENCHMARK_POLICY.md (frozen) requires CPU/RAM/OS/governor disclosure and a specific workload mix for any latency figure entered as evidence; that policy describes the matching-engine benchmarks it already governs and does not describe seven small numeric estimators. Recording a latency number without that disclosure would violate the policy; inventing a workload mix to satisfy it would misdescribe what was measured. Neither is acceptable, so no latency or memory figure is claimed here.",
     "status": "not measured in this artifact"
   },
-  "repository_commit": "53e59e9f115b6fc41f0b57a142e5c493baa22655",
+  "repository_commit": "5a5d6dc90160b79780f1eb52f8ad76598be77751",
   "requirements": [
     "AEGIS-107"
   ],

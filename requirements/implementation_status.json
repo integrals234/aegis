@@ -1470,11 +1470,19 @@
       "notes": ""
     },
     "AEGIS-107": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "implemented",
+      "implementation": [
+        "cpp/bindings/aegis_module.cpp",
+        "python/common/online_stats.py",
+        "tools/generate_stats_cross_language_evidence.py"
+      ],
+      "tests": [
+        "tests/integration/test_online_stats_cross_language.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-107/cross_language_validation.json"
+      ],
+      "notes": "M3 Slice 4: cross-language numerical validation of the C++ statistics estimators against the independent python/common/online_stats.py reference. Not independently audited; not promoted to verified."
     },
     "AEGIS-108": {
       "status": "not_started",
