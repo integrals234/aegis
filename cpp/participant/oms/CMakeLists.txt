@@ -4,8 +4,12 @@
 # this layer, and only this layer, hold the ExecutionAdapter/ExecutionTransport
 # seam.
 add_library(aegis_participant_oms
+  cost_model.hpp
   execution_adapter.hpp
   execution_transport.hpp
+  latency_model.cpp
+  latency_model.hpp
+  missed_trade_tracker.hpp
   order_lifecycle.hpp
   order_manager.cpp
   order_manager.hpp

@@ -5,6 +5,7 @@ aegis_add_test(aegis_unit_tests unit
   test_book_invariants.cpp
   test_client_order_id_scope.cpp
   test_config.cpp
+  test_cost_model.cpp
   test_envelope.cpp
   test_event_log.cpp
   test_exchange_messages.cpp
@@ -16,6 +17,7 @@ aegis_add_test(aegis_unit_tests unit
   test_full_fills.cpp
   test_instrument_grid.cpp
   test_level_index.cpp
+  test_latency_model.cpp
   test_limit_orders.cpp
   test_logging.cpp
   test_market_data_messages.cpp
@@ -24,6 +26,7 @@ aegis_add_test(aegis_unit_tests unit
   test_market_stress_faults.cpp
   test_matching_fifo.cpp
   test_matching_policy_interface.cpp
+  test_missed_trade_tracker.cpp
   test_modify_semantics.cpp
   test_order_lifecycle.cpp
   test_order_manager.cpp
