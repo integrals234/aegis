@@ -34,7 +34,12 @@ aegis_add_test(aegis_unit_tests unit
   test_replay_full_stack_integration.cpp
   test_replay_manifest.cpp
   test_replay_stream.cpp
+  test_drawdown_tracker.cpp
+  test_exponential_stats.cpp
+  test_realized_volatility.cpp
+  test_rolling_covariance.cpp
   test_rolling_moments.cpp
+  test_rolling_zscore.cpp
   test_feed_recovery.cpp
   test_intensity_tracker.cpp
   test_rolling_rate.cpp

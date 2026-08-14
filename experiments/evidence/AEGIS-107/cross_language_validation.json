@@ -1,0 +1,90 @@
+{
+  "artifact": "cross_language_validation",
+  "claim": "For every estimator AEGIS-098..106 own, the compiled C++ production implementation and the independent Python reference agree within 1e-09 absolute difference at every point along the committed deterministic fixture trajectories above.",
+  "comparisons": [
+    {
+      "estimator": "RollingMoments",
+      "max_abs_diff_mean": 0.0,
+      "max_abs_diff_variance": 0.0,
+      "n_observations": 12,
+      "requirement_ids": [
+        "AEGIS-098",
+        "AEGIS-099",
+        "AEGIS-100"
+      ],
+      "window": 4
+    },
+    {
+      "estimator": "RollingCovariance",
+      "max_abs_diff_correlation": 0.0,
+      "max_abs_diff_covariance": 0.0,
+      "n_observations": 10,
+      "requirement_ids": [
+        "AEGIS-101",
+        "AEGIS-102"
+      ],
+      "window": 4
+    },
+    {
+      "estimator": "RollingZScore",
+      "max_abs_diff_score": 0.0,
+      "n_observations": 12,
+      "requirement_ids": [
+        "AEGIS-103"
+      ],
+      "window": 4
+    },
+    {
+      "alpha": 0.3,
+      "estimator": "ExponentialStats",
+      "max_abs_diff_mean": 0.0,
+      "max_abs_diff_variance": 0.0,
+      "n_observations": 12,
+      "requirement_ids": [
+        "AEGIS-104"
+      ]
+    },
+    {
+      "estimator": "RollingRealizedVolatility + RollingBeta",
+      "max_abs_diff_beta": 0.0,
+      "max_abs_diff_realized_volatility": 0.0,
+      "n_observations": 10,
+      "periods_per_year": 252.0,
+      "requirement_ids": [
+        "AEGIS-105"
+      ],
+      "window": 4
+    },
+    {
+      "estimator": "DrawdownTracker",
+      "max_abs_diff_current_drawdown": 0.0,
+      "max_abs_diff_high_water_mark": 0.0,
+      "max_abs_diff_max_drawdown": 0.0,
+      "n_observations": 7,
+      "requirement_ids": [
+        "AEGIS-106"
+      ]
+    }
+  ],
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-14",
+  "methodology": "Each estimator is driven through the identical, deterministic, committed input sequence twice: once through the compiled C++ implementation (cpp/statistics, via the aegis_bindings *_batch functions) and once through the independent Python reference (python/common/online_stats.py), which was written from this project's own reading of the governing mathematics (ADR-0022), not ported from the C++. Every intermediate value in each trajectory is compared, not only the final one -- the *_batch bindings return one output per input precisely so eviction/recursion behaviour mid-window is checked, not just steady state.",
+  "not_evidence_for": [
+    "Any latency or memory comparison for AEGIS-107's 'performance' half -- see performance_validation above.",
+    "AEGIS-098..106's own acceptance criteria, which are discharged by tests/cpp/unit/test_rolling_*.cpp, test_exponential_stats.cpp, test_realized_volatility.cpp and test_drawdown_tracker.cpp (C++) and tests/unit/test_online_stats.py (Python) -- this artifact is cross-language agreement evidence, not first-party correctness evidence for those IDs."
+  ],
+  "performance_validation": {
+    "reason": "docs/BENCHMARK_POLICY.md (frozen) requires CPU/RAM/OS/governor disclosure and a specific workload mix for any latency figure entered as evidence; that policy describes the matching-engine benchmarks it already governs and does not describe seven small numeric estimators. Recording a latency number without that disclosure would violate the policy; inventing a workload mix to satisfy it would misdescribe what was measured. Neither is acceptable, so no latency or memory figure is claimed here.",
+    "status": "not measured in this artifact"
+  },
+  "repository_commit": "53e59e9f115b6fc41f0b57a142e5c493baa22655",
+  "requirements": [
+    "AEGIS-107"
+  ],
+  "tolerance": {
+    "rationale": "Both implementations perform the same double-precision arithmetic in the same operation order (ADR-0022 fixes one numerical convention, restated independently in each language); the residual is IEEE-754 rounding noise between two hand-written implementations of the same recursion, not a methodological difference.",
+    "type": "absolute",
+    "value": 1e-09
+  }
+}
