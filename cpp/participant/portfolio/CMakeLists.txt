@@ -4,7 +4,9 @@
 # by reaching into the module that decides them).
 add_library(aegis_participant_portfolio
   portfolio.cpp
-  portfolio.hpp)
+  portfolio.hpp
+  portfolio_snapshot.cpp
+  portfolio_snapshot.hpp)
 
 target_include_directories(aegis_participant_portfolio PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(aegis_participant_portfolio

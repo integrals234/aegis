@@ -1,5 +1,6 @@
 #include "cpp/participant/oms/order_manager.hpp"
 
+#include <algorithm>
 #include <utility>
 
 namespace aegis::participant::oms {
@@ -23,6 +24,7 @@ std::uint64_t OrderManager::submit_new_order(
   tracked.instrument_id = instrument_id;
   tracked.participant_id = participant_id;
   tracked.side = side;
+  tracked.price_units = price_units;
   static_cast<void>(tracked.lifecycle.transition(OrderState::kRiskPending));
 
   NewOrderCommand command;
@@ -210,6 +212,16 @@ TrackedOrder* OrderManager::find_mutable_by_exchange_order_id(std::uint64_t exch
   }
   const auto order_it = orders_by_client_id_.find(exch_it->second);
   return order_it == orders_by_client_id_.end() ? nullptr : &order_it->second;
+}
+
+std::vector<TrackedOrder> OrderManager::all_tracked_orders() const {
+  std::vector<TrackedOrder> orders;
+  orders.reserve(orders_by_client_id_.size());
+  for (const auto& [client_order_id, tracked] : orders_by_client_id_) {
+    orders.push_back(tracked);
+  }
+  std::ranges::sort(orders, {}, &TrackedOrder::client_order_id);
+  return orders;
 }
 
 }  // namespace aegis::participant::oms

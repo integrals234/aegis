@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <optional>
 #include <unordered_map>
+#include <vector>
 
 #include "cpp/events/exchange_messages.hpp"
 #include "cpp/participant/oms/execution_adapter.hpp"
@@ -28,9 +29,12 @@ struct TrackedOrder {
   std::uint32_t instrument_id{0};
   std::uint64_t participant_id{0};
   events::exchange::Side side{events::exchange::Side::kBuy};
+  std::int64_t price_units{0};  ///< The order's own price; 0 and meaningless for a market order.
   std::int64_t original_quantity_units{0};
   std::int64_t cumulative_filled_units{0};  ///< AEGIS-114: sum of every fill applied so far.
   std::int64_t remaining_units{0};
+
+  friend bool operator==(const TrackedOrder&, const TrackedOrder&) = default;
 };
 
 class OrderManager {
@@ -39,6 +43,36 @@ class OrderManager {
   /// injection discipline as `TransportExecutionAdapter`.
   OrderManager(ExecutionAdapter& adapter, RiskGate& risk_gate)
       : adapter_(&adapter), risk_gate_(&risk_gate) {}
+
+  /// Restoring constructor (AEGIS-237; ADR-0024): rebuilds tracked-order
+  /// state and the client/exchange id indexes directly from
+  /// `restored_orders`, bypassing `submit_new_order`'s risk-seam and
+  /// adapter-call side effects entirely -- those already happened in the run
+  /// that produced the snapshot, and replaying them again would resubmit
+  /// orders that already exist at the exchange or re-consult a risk gate
+  /// about a decision it already made. This is the "dedicated trusted
+  /// construction path" the recovery contract calls for: it does not
+  /// re-validate the transition history that produced each order's
+  /// `lifecycle` (the snapshot codec that supplied `restored_orders` is
+  /// responsible for that), but it does rebuild the index invariants
+  /// (`exchange_to_client_id_` populated for every order with a nonzero
+  /// `exchange_order_id`) exactly as the ordinary handlers would have left
+  /// them, so every subsequent `handle_*` call behaves identically to an
+  /// uninterrupted run. `next_client_order_id` continues numbering exactly
+  /// where the snapshotted run left off, so a client_order_id is never
+  /// reused.
+  OrderManager(ExecutionAdapter& adapter, RiskGate& risk_gate,
+               std::vector<TrackedOrder> restored_orders, std::uint64_t next_client_order_id)
+      : adapter_(&adapter), risk_gate_(&risk_gate), next_client_order_id_(next_client_order_id) {
+    for (auto& order : restored_orders) {
+      const std::uint64_t client_order_id = order.client_order_id;
+      const std::uint64_t exchange_order_id = order.exchange_order_id;
+      orders_by_client_id_.emplace(client_order_id, std::move(order));
+      if (exchange_order_id != 0) {
+        exchange_to_client_id_[exchange_order_id] = client_order_id;
+      }
+    }
+  }
 
   /// The full mandatory path: `Created -> RiskPending ->` (`risk_gate_`'s
   /// verdict) `-> Submitted -> adapter_.submit()`, or `-> Rejected` with the
@@ -101,6 +135,14 @@ class OrderManager {
   [[nodiscard]] const TrackedOrder* find_by_client_order_id(std::uint64_t client_order_id) const;
   [[nodiscard]] const TrackedOrder* find_by_exchange_order_id(
       std::uint64_t exchange_order_id) const;
+
+  /// AEGIS-237; ADR-0024 capture support. Every tracked order, in ascending
+  /// `client_order_id` order -- `orders_by_client_id_` is unordered, and a
+  /// snapshot's bytes must not depend on hash-table iteration order
+  /// (`docs/RECOVERY_CONTRACT.md` byte-stability obligation).
+  [[nodiscard]] std::vector<TrackedOrder> all_tracked_orders() const;
+
+  [[nodiscard]] std::uint64_t next_client_order_id() const { return next_client_order_id_; }
 
  private:
   [[nodiscard]] TrackedOrder* find_mutable_by_exchange_order_id(std::uint64_t exchange_order_id);

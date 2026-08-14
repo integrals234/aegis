@@ -1,5 +1,7 @@
 #include "cpp/participant/portfolio/portfolio.hpp"
 
+#include <algorithm>
+
 namespace aegis::participant::portfolio {
 namespace {
 
@@ -62,6 +64,12 @@ std::int64_t Portfolio::unrealized_pnl_units(std::uint32_t instrument_id,
                                              std::int64_t mark_price_units) const {
   const Position pos = position(instrument_id);
   return pos.quantity_units * (mark_price_units - pos.average_price_units);
+}
+
+std::vector<std::pair<std::uint32_t, Position>> Portfolio::all_positions() const {
+  std::vector<std::pair<std::uint32_t, Position>> positions(positions_.begin(), positions_.end());
+  std::ranges::sort(positions, {}, &std::pair<std::uint32_t, Position>::first);
+  return positions;
 }
 
 }  // namespace aegis::participant::portfolio

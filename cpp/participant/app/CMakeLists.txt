@@ -11,14 +11,16 @@ add_library(aegis_participant_app
   intensity_tracker.cpp
   intensity_tracker.hpp
   participant_run.cpp
-  participant_run.hpp)
+  participant_run.hpp
+  participant_snapshot.cpp
+  participant_snapshot.hpp)
 
 target_include_directories(aegis_participant_app PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(aegis_participant_app
   PUBLIC aegis_common aegis_events aegis_replay aegis_participant_feed_handler
          aegis_statistics
   PRIVATE aegis_participant_book_builder aegis_participant_oms
-          aegis_participant_portfolio aegis_warnings)
+          aegis_participant_portfolio nlohmann_json::nlohmann_json aegis_warnings)
 
 # aegis_participant_run: this layer's CLI entry point, the participant-side
 # counterpart to aegis_exchange_replay and aegis_replay_run.

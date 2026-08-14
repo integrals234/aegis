@@ -10,6 +10,8 @@ add_library(aegis_participant_oms
   latency_model.cpp
   latency_model.hpp
   missed_trade_tracker.hpp
+  oms_snapshot.cpp
+  oms_snapshot.hpp
   order_lifecycle.hpp
   order_manager.cpp
   order_manager.hpp

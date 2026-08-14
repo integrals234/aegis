@@ -12,6 +12,8 @@ class OrderLifecycle {
   [[nodiscard]] OrderState state() const { return state_; }
   [[nodiscard]] bool is_terminal() const { return oms::is_terminal(state_); }
 
+  friend bool operator==(const OrderLifecycle&, const OrderLifecycle&) = default;
+
   /// Applies `next` if `is_legal_transition(state(), next)`, leaving state
   /// unchanged and returning false otherwise -- a caller distinguishes "this
   /// did not happen" from a thrown exception, since an illegal request from

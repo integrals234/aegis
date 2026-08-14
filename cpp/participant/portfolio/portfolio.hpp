@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "cpp/events/exchange_messages.hpp"
 
@@ -34,6 +36,21 @@ class Portfolio {
  public:
   Portfolio() = default;
 
+  /// Restoring constructor (AEGIS-237; ADR-0024): rebuilds cash and every
+  /// instrument's position directly from already-computed state, bypassing
+  /// `apply_fill`'s own accounting arithmetic entirely -- those fills
+  /// already happened in the run that produced the snapshot, and replaying
+  /// them again would double-count. `positions` may list a given
+  /// `instrument_id` at most once; the caller (the snapshot codec) is
+  /// responsible for that, since this constructor has no way to signal a
+  /// rejection.
+  Portfolio(std::int64_t cash_units, std::vector<std::pair<std::uint32_t, Position>> positions)
+      : cash_units_(cash_units) {
+    for (auto& [instrument_id, position] : positions) {
+      positions_.emplace(instrument_id, std::move(position));
+    }
+  }
+
   /// Applies one fill: `side` is the participant's own side of the trade
   /// (a buy adds to a long position or reduces/covers a short one).
   /// `price_units` and `quantity_units` are always positive; `quantity_units`
@@ -59,6 +76,15 @@ class Portfolio {
   /// position under one formula, with no sign-dependent branch to get wrong.
   [[nodiscard]] std::int64_t unrealized_pnl_units(std::uint32_t instrument_id,
                                                   std::int64_t mark_price_units) const;
+
+  /// AEGIS-237; ADR-0024 capture support. Every instrument that has had at
+  /// least one fill applied, in ascending `instrument_id` order --
+  /// `positions_` is unordered, and a snapshot's bytes must not depend on
+  /// hash-table iteration order (`docs/RECOVERY_CONTRACT.md` byte-stability
+  /// obligation). An instrument only ever queried via `position()` and
+  /// never filled is not included: `position()` uses `find`, not
+  /// `operator[]`, so it never inserts a phantom flat entry.
+  [[nodiscard]] std::vector<std::pair<std::uint32_t, Position>> all_positions() const;
 
  private:
   std::unordered_map<std::uint32_t, Position> positions_;

@@ -1,0 +1,39 @@
+{
+  "all_claims_hold": true,
+  "artifact": "AEGIS-237/participant_recovery.json",
+  "claim": "The M3 portion of AEGIS-237 (OMS order lifecycle and portfolio positions surviving a snapshot/restore cycle) is discharged: ParticipantSnapshot v1 round-trips byte-stably, and a run split at a snapshot boundary across two aegis_participant_run process invocations reproduces the tail of the same scenario run uninterrupted through one process, for a scenario containing a partially filled order, a fully filled order on a second instrument, a rejected order and a cancellation, with a fresh order submitted and filled after restore.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-14",
+  "methodology": {
+    "binary": "build/debug/cpp/participant/app/aegis_participant_run",
+    "fixture": "tests/unit/fixtures/participant/recovery_scenario.jsonl",
+    "fixture_step_count": 15,
+    "scenario_description": "Order 1 (buy 100 @ 1000) is accepted then partially filled (40 units) before the split; order 2 (rejected on price) and order 3 (sell 30 on a second instrument, fully filled) also land before the split. After restore: order 1 is cancelled (60 units unfilled), and a fresh order 4 is submitted, accepted and fully filled -- proving next-fill continuation after restore, not just that restore did not throw.",
+    "split_step": 9
+  },
+  "not_evidence_for": [
+    "M9 paper/live restart recovery (AEGIS-221, AEGIS-222) -- no broker/paper adapter, no session/reconnect logic, no external account reconciliation is exercised here.",
+    "AEGIS-061 in-stream feed-gap recovery -- a different mechanism (a market-data wire message re-basing the book) for a different failure mode; no feed or book state is involved in this artifact.",
+    "AEGIS-070 book-snapshot re-base -- no market-data or book-builder state is covered by ParticipantSnapshot (ADR-0024).",
+    "Combined exchange+participant atomic recovery -- the exchange and participant snapshot mechanisms are independent; this artifact covers only the participant side."
+  ],
+  "producer": "tools/generate_participant_recovery_evidence.py",
+  "repository_commit": "803237019327b252e6dfa4c3e1130e48686742c7",
+  "requirements": [
+    "AEGIS-237"
+  ],
+  "results": {
+    "corrupt_snapshot_deterministically_rejected": true,
+    "final_state_has_filled_order": true,
+    "final_state_has_nonzero_position": true,
+    "final_state_nonzero_cash_units": true,
+    "first_half_matches_full_run_prefix": true,
+    "full_run_line_count": 15,
+    "full_run_sha256": "9a508cd07c9689654bf2358c835e25350d6a5b46d7fa1fb0544a75767bd04d17",
+    "restored_continuation_equals_uninterrupted_tail": true,
+    "snapshot_a_sha256": "0684d5901cd2d7835957fd3e4996e8d75cb796e63652a3f5932d9ead973228de",
+    "snapshot_b_sha256": "0684d5901cd2d7835957fd3e4996e8d75cb796e63652a3f5932d9ead973228de",
+    "snapshot_byte_stable_across_repeated_captures": true
+  }
+}

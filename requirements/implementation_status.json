@@ -2511,15 +2511,23 @@
         "python/common/recovery.py",
         "docs/RECOVERY_CONTRACT.md",
         "cpp/exchange/state/snapshot.hpp",
-        "cpp/exchange/state/snapshot.cpp"
+        "cpp/exchange/state/snapshot.cpp",
+        "cpp/participant/oms/oms_snapshot.cpp",
+        "cpp/participant/portfolio/portfolio_snapshot.cpp",
+        "cpp/participant/app/participant_snapshot.cpp",
+        "cpp/participant/app/participant_run.cpp"
       ],
       "tests": [
         "tests/unit/test_recovery_contract.py",
         "tests/cpp/unit/test_snapshot_roundtrip.cpp",
-        "tests/replay/test_exchange_determinism.py"
+        "tests/replay/test_exchange_determinism.py",
+        "tests/cpp/unit/test_participant_snapshot.cpp",
+        "tests/replay/test_participant_recovery.py"
       ],
-      "reports": [],
-      "notes": "Contract and interface: version refusal, byte-stable snapshots, round-trip verification and a defined shutdown sequence. No snapshot store, deliberately.",
+      "reports": [
+        "experiments/evidence/AEGIS-237/participant_recovery.json"
+      ],
+      "notes": "M3 Slice 7: participant-state (OMS + portfolio) process-boundary recovery per ADR-0024 -- ParticipantSnapshot v1, round trip, byte stability, and continuation equality across two aegis_participant_run process invocations. Discharges the M3 portion only; M9 restart recovery (AEGIS-221/222) remains owed. Not independently audited; not promoted to verified; verification_blocked_until left untouched for Slice 8's audit to resolve.",
       "verification_blocked_until": "M3",
       "residual": "The acceptance names recovery tests for exchange and participant state. Exchange-state recovery is paid at M1: sequencer position and book state survive a snapshot/restore cycle, verified by round trip and by continuation equality across a process boundary (docs/RECOVERY_CONTRACT.md M1 row, ADR-0013). Participant-state recovery still requires the OMS and portfolio layers, which configs/architecture_rules.yaml dates M3.",
       "deferral_history": [

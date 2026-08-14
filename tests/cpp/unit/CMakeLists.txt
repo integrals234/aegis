@@ -33,6 +33,7 @@ aegis_add_test(aegis_unit_tests unit
   test_pacing.cpp
   test_participant_exchange_integration.cpp
   test_participant_run.cpp
+  test_participant_snapshot.cpp
   test_portfolio.cpp
   test_queue_position_estimator.cpp
   test_recorded_response_adapter.cpp
