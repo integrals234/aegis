@@ -36,7 +36,7 @@ bool is_legal_transition(OrderState from, OrderState to) {
              to == OrderState::kCancelPending || to == OrderState::kExpired;
     case OrderState::kCancelPending:
       return to == OrderState::kCancelled || to == OrderState::kFilled ||
-             to == OrderState::kPartiallyFilled;
+             to == OrderState::kPartiallyFilled || to == OrderState::kAcknowledged;
     case OrderState::kRejected:
     case OrderState::kFilled:
     case OrderState::kCancelled:

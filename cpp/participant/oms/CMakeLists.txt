@@ -7,8 +7,14 @@ add_library(aegis_participant_oms
   execution_adapter.hpp
   execution_transport.hpp
   order_lifecycle.hpp
+  order_manager.cpp
+  order_manager.hpp
   order_state.cpp
   order_state.hpp
+  queue_position_estimator.cpp
+  queue_position_estimator.hpp
+  recorded_response_adapter.cpp
+  recorded_response_adapter.hpp
   risk_gate.hpp
   transport_execution_adapter.cpp
   transport_execution_adapter.hpp)

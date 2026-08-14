@@ -1,4 +1,5 @@
 aegis_add_test(aegis_unit_tests unit
+  test_adapter_contract.cpp
   test_book_add_cancel.cpp
   test_book_builder.cpp
   test_book_invariants.cpp
@@ -25,9 +26,13 @@ aegis_add_test(aegis_unit_tests unit
   test_matching_policy_interface.cpp
   test_modify_semantics.cpp
   test_order_lifecycle.cpp
+  test_order_manager.cpp
   test_pacing.cpp
+  test_participant_exchange_integration.cpp
   test_participant_run.cpp
   test_portfolio.cpp
+  test_queue_position_estimator.cpp
+  test_recorded_response_adapter.cpp
   test_reject_matrix.cpp
   test_replay_engine.cpp
   test_replay_event.cpp

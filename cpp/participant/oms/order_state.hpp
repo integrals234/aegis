@@ -34,6 +34,11 @@ enum class OrderState : std::uint8_t {
 /// order is not a state change. `kCancelPending -> kFilled` and
 /// `kCancelPending -> kPartiallyFilled` are deliberately legal -- a fill can
 /// race an in-flight cancel and arrive first (AEGIS-112).
+/// `kCancelPending -> kAcknowledged` is the fourth cancel-race outcome:
+/// the exchange rejects the cancel (`OrderRejectedEvent`) and the order
+/// remains live with nothing filled -- the frozen state list has no
+/// separate "cancel rejected" state, so the order returns to exactly the
+/// state it was in before the cancel was attempted.
 [[nodiscard]] bool is_legal_transition(OrderState from, OrderState to);
 
 }  // namespace aegis::participant::oms
