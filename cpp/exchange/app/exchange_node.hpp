@@ -7,6 +7,8 @@
 #include <vector>
 
 #include "cpp/common/time.hpp"
+#include "cpp/events/market_data_messages.hpp"
+#include "cpp/exchange/market_data/market_data_publisher.hpp"
 #include "cpp/exchange/matching/engine.hpp"
 #include "cpp/exchange/matching/fifo_policy.hpp"
 #include "cpp/exchange/order_book/book.hpp"
@@ -78,6 +80,18 @@ class ExchangeNode {
   [[nodiscard]] const EventLog& event_log() const { return event_log_; }
   [[nodiscard]] std::uint64_t next_order_id() const { return matching_engine_.next_order_id(); }
 
+  /// The market-data half of the composition root (AEGIS-064, AEGIS-065;
+  /// ADR-0020). `derive_market_data` converts an `apply_*` call's already-
+  /// emitted events to the shape `cpp-exchange-market-data` accepts (that
+  /// layer may not depend on `cpp-exchange-matching`, so it cannot name
+  /// `EmittedEvent` itself) and forwards them; `capture_market_data_snapshot`
+  /// reads `book(id)` read-only. Neither method changes what `apply_*`
+  /// returns or how it matches — purely additive, observing after the fact.
+  [[nodiscard]] std::vector<events::market_data::BookDeltaEvent> derive_market_data(
+      const std::vector<EmittedEvent>& emitted);
+  [[nodiscard]] events::market_data::BookSnapshotEvent capture_market_data_snapshot(
+      InstrumentId id) const;
+
  private:
   Sequencer sequencer_;
   EventLog event_log_;
@@ -85,6 +99,7 @@ class ExchangeNode {
   MatchingEngine matching_engine_;
   std::unordered_map<std::uint32_t, InstrumentSpec> instruments_;
   std::unordered_map<std::uint32_t, OrderBook> books_;
+  MarketDataPublisher market_data_publisher_;
 };
 
 }  // namespace aegis::exchange

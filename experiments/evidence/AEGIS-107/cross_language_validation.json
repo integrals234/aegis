@@ -1,0 +1,95 @@
+{
+  "artifact": "cross_language_validation",
+  "claim": "For every estimator AEGIS-098..106 own, the compiled C++ production implementation and an independently-algorithmed Python reference (python/common/offline_stats.py, computed from the textbook definition) agree within 1e-09 absolute difference at every point along the committed deterministic fixture trajectories above.",
+  "comparisons": [
+    {
+      "estimator": "RollingMoments",
+      "max_abs_diff_mean": 1.1102230246251565e-16,
+      "max_abs_diff_stddev": 4.440892098500626e-16,
+      "max_abs_diff_variance": 1.7763568394002505e-15,
+      "n_observations": 12,
+      "requirement_ids": [
+        "AEGIS-098",
+        "AEGIS-099",
+        "AEGIS-100"
+      ],
+      "window": 4
+    },
+    {
+      "estimator": "RollingCovariance",
+      "max_abs_diff_correlation": 2.7755575615628914e-16,
+      "max_abs_diff_covariance": 2.636779683484747e-16,
+      "n_observations": 10,
+      "requirement_ids": [
+        "AEGIS-101",
+        "AEGIS-102"
+      ],
+      "window": 4
+    },
+    {
+      "estimator": "RollingZScore",
+      "max_abs_diff_score": 4.440892098500626e-16,
+      "n_observations": 12,
+      "requirement_ids": [
+        "AEGIS-103"
+      ],
+      "window": 4
+    },
+    {
+      "alpha": 0.3,
+      "estimator": "ExponentialStats",
+      "max_abs_diff_mean": 8.881784197001252e-16,
+      "max_abs_diff_variance": 0.0,
+      "n_observations": 12,
+      "requirement_ids": [
+        "AEGIS-104"
+      ]
+    },
+    {
+      "estimator": "RollingRealizedVolatility + RollingBeta",
+      "max_abs_diff_beta": 6.661338147750939e-16,
+      "max_abs_diff_realized_volatility": 5.551115123125783e-17,
+      "n_observations": 10,
+      "periods_per_year": 252.0,
+      "requirement_ids": [
+        "AEGIS-105"
+      ],
+      "window": 4
+    },
+    {
+      "estimator": "DrawdownTracker",
+      "max_abs_diff_current_drawdown": 0.0,
+      "max_abs_diff_high_water_mark": 0.0,
+      "max_abs_diff_max_drawdown": 0.0,
+      "max_abs_diff_pnl_mean": 1.4210854715202004e-14,
+      "max_abs_diff_pnl_variance": 5.684341886080802e-14,
+      "n_observations": 7,
+      "requirement_ids": [
+        "AEGIS-106"
+      ]
+    }
+  ],
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-15",
+  "methodology": "Each estimator is driven through the identical, deterministic, committed input sequence twice: once through the compiled C++ implementation (cpp/statistics, via the aegis_bindings *_batch functions) and once through the independent Python reference (python/common/offline_stats.py), which computes every quantity DIRECTLY FROM ITS TEXTBOOK DEFINITION using deliberately different algorithms for most quantities -- two-pass variance and covariance rather than any updating form, the exponentially-weighted MEAN expanded as a weighted sum over the whole history rather than as a recurrence, and drawdown by plain scan. One exception is stated plainly: the exponentially-weighted VARIANCE has no closed weighted-sum form matching this convention, so the reference reproduces Finch's recurrence there and its divergence is consequently exactly 0.0 -- that single series is a transliteration check, not an independent one. python/common/online_stats.py is deliberately NOT used as the reference: it transliterates the C++ recursion step for step, so its agreement with the C++ is tautological. Every intermediate value in each trajectory is compared, not only the final one -- the *_batch bindings return one output per input precisely so eviction/recursion behaviour mid-window is checked, not just steady state.",
+  "not_evidence_for": [
+    "Any latency or memory comparison for AEGIS-107's 'performance' half -- see performance_validation above.",
+    "AEGIS-098..106's own acceptance criteria, which are discharged by tests/cpp/unit/test_rolling_*.cpp, test_exponential_stats.cpp, test_realized_volatility.cpp and test_drawdown_tracker.cpp (C++) and tests/unit/test_online_stats.py (Python) -- this artifact is cross-language agreement evidence, not first-party correctness evidence for those IDs."
+  ],
+  "performance_validation": {
+    "reason": "docs/BENCHMARK_POLICY.md (frozen) requires CPU/RAM/OS/governor disclosure and a specific workload mix for any latency figure entered as evidence; that policy describes the matching-engine benchmarks it already governs and does not describe seven small numeric estimators. Recording a latency number without that disclosure would violate the policy; inventing a workload mix to satisfy it would misdescribe what was measured. Neither is acceptable, so no latency or memory figure is claimed here.",
+    "residual": "AEGIS-107's frozen description names output, error, latency AND memory. M3 completes the output/error half only. The latency and memory comparison is registered as an owner-approved residual against AEGIS-107 with verification_blocked_until: M8, so this requirement stays `implemented` rather than `verified` at M3 closure. It is NOT silently dropped.",
+    "status": "NOT DONE -- owner-approved residual deferred to M8"
+  },
+  "producer": "tools/generate_stats_cross_language_evidence.py",
+  "repository_commit": "6822152bb00609bc69c5e8f533584938784c1608",
+  "requirements": [
+    "AEGIS-107"
+  ],
+  "tolerance": {
+    "rationale": "The two implementations share the numerical CONVENTION (ADR-0022: sample statistics with ddof=1, the documented edge cases) but NOT the algorithm -- production uses a numerically stable reverse-Welford recursion, the reference recomputes from the definition in two passes. A small nonzero residual is therefore the expected outcome, and is IEEE-754 rounding noise between two different-but-correct algorithms. An exact 0.0 across EVERY series would indicate the reference shares the production algorithm rather than checking it -- precisely the defect the M3 closure audit found in the earlier reference. Exactly one series (exponential_variance) legitimately reports 0.0 for the reason given under methodology; every other series reports a genuine nonzero residual.",
+    "type": "absolute",
+    "value": 1e-09
+  }
+}

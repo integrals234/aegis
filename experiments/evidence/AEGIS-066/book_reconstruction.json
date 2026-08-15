@@ -1,0 +1,49 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 138,
+        "passed": true,
+        "source": "tests/cpp/unit/test_book_builder.cpp",
+        "test": "BookBuilder.ModifyingAnUnknownOrderIsIgnored"
+      },
+      {
+        "line": 49,
+        "passed": true,
+        "source": "tests/cpp/unit/test_book_builder.cpp",
+        "test": "BookBuilder.OrderLifecycleFixturesReconstructOrderLevelState"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "BookBuilder.OrderLifecycleFixturesReconstructOrderLevelState",
+      "BookBuilder.ModifyingAnUnknownOrderIsIgnored"
+    ],
+    "test_count": 2
+  },
+  "all_claims_hold": true,
+  "artifact": "AEGIS-066/book_reconstruction.json",
+  "claim": "AEGIS-066 (Order-level reconstruction): the frozen acceptance criterion \u201cOrder lifecycle fixtures pass.\u201d is satisfied by 2 acceptance test(s) executed against the real production implementation listed under 'implementation'. Each case below records the source file and line of the assertion made.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Order lifecycle fixtures pass.",
+  "generated_on": "2026-08-15",
+  "implementation": [
+    "cpp/participant/book_builder/book_builder.cpp"
+  ],
+  "not_evidence_for": [
+    "Any performance, latency or throughput property: no timing is measured here and none is claimed (docs/BENCHMARK_POLICY.md).",
+    "Behaviour on real venue market data: every fixture is synthetic and committed in-repository; M3 ships no live or paper feed.",
+    "M5 risk responses to stale or recovered data -- M3 delivers the feed/book-level response only (ADR-0021)."
+  ],
+  "producer": "tools/generate_participant_evidence.py",
+  "repository_commit": "6822152bb00609bc69c5e8f533584938784c1608",
+  "requirements": [
+    "AEGIS-066"
+  ],
+  "title": "Order-level reconstruction"
+}

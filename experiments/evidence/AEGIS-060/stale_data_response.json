@@ -1,0 +1,59 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 90,
+        "passed": true,
+        "source": "tests/cpp/unit/test_stale_data_response.cpp",
+        "test": "StaleDataResponse.ADelayShorterThanTheThresholdDoesNotGoStale"
+      },
+      {
+        "line": 58,
+        "passed": true,
+        "source": "tests/cpp/unit/test_stale_data_response.cpp",
+        "test": "StaleDataResponse.DelayedFaultDrivesTheBookStaleBeforeTheLateMessageArrives"
+      },
+      {
+        "line": 78,
+        "passed": true,
+        "source": "tests/cpp/unit/test_stale_data_response.cpp",
+        "test": "StaleDataResponse.OnTimeDeliveryWithinThresholdIsNotStale"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "StaleDataResponse.*"
+    ],
+    "test_count": 3
+  },
+  "all_claims_hold": true,
+  "artifact": "AEGIS-060/stale_data_response.json",
+  "claim": "AEGIS-060: M2's deterministic fault injector (ADR-0019, unmodified) drives the fault kinds listed in 'm2_fault_kinds_consumed' through the real participant feed handler and book builder, and the participant's own response is asserted -- the reconstructed book is marked stale once the configured threshold elapses, and is not marked stale when delivery is within it. This is the M3 half of the obligation; the M2 injection mechanism has its own artifact (experiments/evidence/AEGIS-060/replay_fault_injection.json).",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Scenario fixtures verify delayed observations and stale-data responses.",
+  "generated_on": "2026-08-15",
+  "implementation": [
+    "cpp/participant/app/fault_scenario.cpp",
+    "cpp/participant/book_builder/book_builder.cpp"
+  ],
+  "m2_fault_kinds_consumed": [
+    "delayed"
+  ],
+  "not_evidence_for": [
+    "M5 risk action on stale or recovered data (AEGIS-062/AEGIS-063): M3 delivers the feed/book-level response only. No risk engine exists.",
+    "The M2 injection mechanism itself, which is proven separately by tools/generate_replay_evidence.py and is not re-derived here.",
+    "AEGIS-237 process-boundary participant-state recovery: a different mechanism (a byte-stable file snapshot) for a different failure mode (ADR-0024).",
+    "Recovery against a real venue feed: every fault and every message here is synthetic and committed in-repository."
+  ],
+  "producer": "tools/generate_participant_evidence.py",
+  "repository_commit": "6822152bb00609bc69c5e8f533584938784c1608",
+  "requirements": [
+    "AEGIS-060"
+  ],
+  "title": "Delayed observations and stale-data response (M3 half)"
+}

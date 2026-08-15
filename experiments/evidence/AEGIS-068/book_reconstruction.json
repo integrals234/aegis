@@ -1,0 +1,110 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 28,
+        "passed": true,
+        "source": "tests/cpp/unit/test_feed_handler.cpp",
+        "test": "FeedHandler.DecodesABookSnapshotAndTracksItsSequence"
+      },
+      {
+        "line": 65,
+        "passed": true,
+        "source": "tests/cpp/unit/test_feed_handler.cpp",
+        "test": "FeedHandler.DecodesATrade"
+      },
+      {
+        "line": 85,
+        "passed": true,
+        "source": "tests/cpp/unit/test_feed_handler.cpp",
+        "test": "FeedHandler.MalformedPayloadIsUnhandled"
+      },
+      {
+        "line": 45,
+        "passed": true,
+        "source": "tests/cpp/unit/test_feed_handler.cpp",
+        "test": "FeedHandler.TracksSequenceIndependentlyPerInstrument"
+      },
+      {
+        "line": 79,
+        "passed": true,
+        "source": "tests/cpp/unit/test_feed_handler.cpp",
+        "test": "FeedHandler.UnrecognizedMessageTypeIsUnhandled"
+      },
+      {
+        "line": 48,
+        "passed": true,
+        "source": "tests/cpp/unit/test_sequence_tracker.cpp",
+        "test": "SequenceTracker.ConsecutiveFaultsResetOnTheNextOk"
+      },
+      {
+        "line": 17,
+        "passed": true,
+        "source": "tests/cpp/unit/test_sequence_tracker.cpp",
+        "test": "SequenceTracker.ConsecutiveObservationIsOk"
+      },
+      {
+        "line": 10,
+        "passed": true,
+        "source": "tests/cpp/unit/test_sequence_tracker.cpp",
+        "test": "SequenceTracker.FirstObservationIsAlwaysOk"
+      },
+      {
+        "line": 41,
+        "passed": true,
+        "source": "tests/cpp/unit/test_sequence_tracker.cpp",
+        "test": "SequenceTracker.GoingBackwardIsAReset"
+      },
+      {
+        "line": 34,
+        "passed": true,
+        "source": "tests/cpp/unit/test_sequence_tracker.cpp",
+        "test": "SequenceTracker.RepeatingTheSameSequenceIsADuplicate"
+      },
+      {
+        "line": 58,
+        "passed": true,
+        "source": "tests/cpp/unit/test_sequence_tracker.cpp",
+        "test": "SequenceTracker.ResetClearsState"
+      },
+      {
+        "line": 25,
+        "passed": true,
+        "source": "tests/cpp/unit/test_sequence_tracker.cpp",
+        "test": "SequenceTracker.SkippingAheadIsAGap"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "SequenceTracker.*",
+      "FeedHandler.*"
+    ],
+    "test_count": 12
+  },
+  "all_claims_hold": true,
+  "artifact": "AEGIS-068/book_reconstruction.json",
+  "claim": "AEGIS-068 (Sequence validation): the frozen acceptance criterion \u201cSeeded faults trigger exact diagnostics.\u201d is satisfied by 12 acceptance test(s) executed against the real production implementation listed under 'implementation'. Each case below records the source file and line of the assertion made.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Seeded faults trigger exact diagnostics.",
+  "generated_on": "2026-08-15",
+  "implementation": [
+    "cpp/participant/feed_handler/sequence_tracker.cpp",
+    "cpp/participant/feed_handler/feed_handler.cpp"
+  ],
+  "not_evidence_for": [
+    "Any performance, latency or throughput property: no timing is measured here and none is claimed (docs/BENCHMARK_POLICY.md).",
+    "Behaviour on real venue market data: every fixture is synthetic and committed in-repository; M3 ships no live or paper feed.",
+    "M5 risk responses to stale or recovered data -- M3 delivers the feed/book-level response only (ADR-0021)."
+  ],
+  "producer": "tools/generate_participant_evidence.py",
+  "repository_commit": "6822152bb00609bc69c5e8f533584938784c1608",
+  "requirements": [
+    "AEGIS-068"
+  ],
+  "title": "Sequence validation"
+}

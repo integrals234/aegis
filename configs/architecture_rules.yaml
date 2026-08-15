@@ -39,9 +39,11 @@ layers:
     namespaces: [aegis::bindings]
     # cpp-replay added M2 slice 13 (AEGIS-229): the binding surface exposes
     # the canonical replay order (ReplayEvent, canonical_less) to Python.
-    # No other cpp-exchange-* or cpp-participant-* layer is added here --
-    # the binding does not widen past what M2 actually needs bound.
-    may_depend_on: [cpp-common, cpp-events, cpp-replay]
+    # cpp-statistics added M3 slice 1 (AEGIS-107): the cross-language
+    # validation report needs the C++ estimators callable from Python. No
+    # other cpp-exchange-* or cpp-participant-* layer is added here -- the
+    # binding does not widen past what each milestone actually needs bound.
+    may_depend_on: [cpp-common, cpp-events, cpp-replay, cpp-statistics]
     expect_sources_from_milestone: M0
     allows_python_headers: true
 
@@ -78,13 +80,15 @@ layers:
     expect_sources_from_milestone: M1
 
   # The composition root: nothing else may legally see all of sequencer, book,
-  # matching and state at once (ADR-0012).
+  # matching and state at once (ADR-0012). cpp-exchange-market-data added M3
+  # slice 1: the composition root is where the market-data publisher is wired
+  # to the book it observes (ADR-0020).
   - name: cpp-exchange-app
     paths: [cpp/exchange/app]
     language: cpp
     namespaces: [aegis::exchange]
     may_depend_on: [cpp-common, cpp-events, cpp-exchange-sequencer, cpp-exchange-order-book,
-                    cpp-exchange-matching, cpp-exchange-state]
+                    cpp-exchange-matching, cpp-exchange-state, cpp-exchange-market-data]
     expect_sources_from_milestone: M1
 
   # No M1 requirement asks the exchange to publish a market-data feed; the first
@@ -125,11 +129,16 @@ layers:
     may_depend_on: [cpp-common, cpp-events, cpp-participant-feed-handler]
     expect_sources_from_milestone: M3
 
+  # Generic numeric library, not a participant component: it knows nothing of
+  # books, orders, feeds or participants, so M4-M7 can reuse it without
+  # inheriting participant-domain types (ADR-0020, ADR-0022). Narrowed from
+  # [cpp-common, cpp-participant-book-builder] at M3 slice 1 -- the book
+  # builder and this layer meet only at cpp-participant-app.
   - name: cpp-statistics
     paths: [cpp/statistics]
     language: cpp
     namespaces: [aegis::participant::stats]
-    may_depend_on: [cpp-common, cpp-participant-book-builder]
+    may_depend_on: [cpp-common]
     expect_sources_from_milestone: M3
 
   - name: cpp-participant-strategy
@@ -159,6 +168,24 @@ layers:
     language: cpp
     namespaces: [aegis::participant::portfolio]
     may_depend_on: [cpp-common, cpp-events]
+    expect_sources_from_milestone: M3
+
+  # The participant composition root (ADR-0020), mirroring cpp-exchange-app:
+  # nothing else may legally see feed handler, book builder, statistics, OMS
+  # and portfolio at once. It is the only participant layer permitted to
+  # depend on cpp-replay -- that is how M2's DeterministicFaultInjector
+  # reaches the participant for AEGIS-060/061 without either layer depending
+  # on the other. It has no edge to any cpp-exchange-* layer: the exchange and
+  # the participant meet only through versioned messages, at a process/stream
+  # boundary or a test-only integration harness, never a production
+  # dependency (MASTER_SPEC immutable principle 1).
+  - name: cpp-participant-app
+    paths: [cpp/participant/app]
+    language: cpp
+    namespaces: [aegis::participant::app]
+    may_depend_on: [cpp-common, cpp-events, cpp-replay, cpp-participant-feed-handler,
+                    cpp-participant-book-builder, cpp-statistics, cpp-participant-oms,
+                    cpp-participant-portfolio]
     expect_sources_from_milestone: M3
 
   # ------------------------------------------------- performance work (M8 only)
@@ -252,4 +279,4 @@ banned:
                                  cpp-participant-feed-handler, cpp-participant-book-builder,
                                  cpp-participant-strategy, cpp-participant-risk,
                                  cpp-participant-oms, cpp-participant-portfolio,
-                                 cpp-statistics]
+                                 cpp-participant-app, cpp-statistics]

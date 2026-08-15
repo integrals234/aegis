@@ -1,0 +1,68 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 104,
+        "passed": true,
+        "source": "tests/cpp/unit/test_feed_recovery.cpp",
+        "test": "FeedRecovery.DuplicatedFaultIsDetectedAndSkippedNotReapplied"
+      },
+      {
+        "line": 66,
+        "passed": true,
+        "source": "tests/cpp/unit/test_feed_recovery.cpp",
+        "test": "FeedRecovery.MissingFaultTriggersBufferRebaseReplayRecovery"
+      },
+      {
+        "line": 87,
+        "passed": true,
+        "source": "tests/cpp/unit/test_feed_recovery.cpp",
+        "test": "FeedRecovery.MissingFaultWithNoRecoverySnapshotLeavesRecoveryIncomplete"
+      },
+      {
+        "line": 120,
+        "passed": true,
+        "source": "tests/cpp/unit/test_feed_recovery.cpp",
+        "test": "FeedRecovery.SequenceGapFaultTriggersRecovery"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "FeedRecovery.*"
+    ],
+    "test_count": 4
+  },
+  "all_claims_hold": true,
+  "artifact": "AEGIS-061/feed_recovery.json",
+  "claim": "AEGIS-061: M2's deterministic fault injector (ADR-0019, unmodified) drives the fault kinds listed in 'm2_fault_kinds_consumed' through the real participant feed handler and book builder, and the participant's own response is asserted -- each fault kind is detected and drives buffer -> re-base on a fresh snapshot -> replay of the surviving buffered deltas, ending in the correct book state; a duplicate is skipped rather than reapplied. This is the M3 half of the obligation; the M2 injection mechanism has its own artifact (experiments/evidence/AEGIS-061/replay_fault_injection.json).",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Feed recovery tests cover each fault.",
+  "generated_on": "2026-08-15",
+  "implementation": [
+    "cpp/participant/app/fault_scenario.cpp",
+    "cpp/participant/book_builder/book_builder.cpp",
+    "cpp/participant/feed_handler/sequence_tracker.cpp"
+  ],
+  "m2_fault_kinds_consumed": [
+    "missing",
+    "duplicated",
+    "sequence_gap"
+  ],
+  "not_evidence_for": [
+    "M5 risk action on stale or recovered data (AEGIS-062/AEGIS-063): M3 delivers the feed/book-level response only. No risk engine exists.",
+    "The M2 injection mechanism itself, which is proven separately by tools/generate_replay_evidence.py and is not re-derived here.",
+    "AEGIS-237 process-boundary participant-state recovery: a different mechanism (a byte-stable file snapshot) for a different failure mode (ADR-0024).",
+    "Recovery against a real venue feed: every fault and every message here is synthetic and committed in-repository."
+  ],
+  "producer": "tools/generate_participant_evidence.py",
+  "repository_commit": "6822152bb00609bc69c5e8f533584938784c1608",
+  "requirements": [
+    "AEGIS-061"
+  ],
+  "title": "Feed recovery for each fault kind (M3 half)"
+}

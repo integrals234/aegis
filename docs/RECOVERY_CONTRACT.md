@@ -9,10 +9,11 @@ arrive with the services they belong to — the exchange side landed at M1.
 
 | Delivered | Deferred |
 |---|---|
-| The contract below | Participant-state recovery (M3, with the OMS and portfolio) |
-| `python/common/recovery.py` — protocol, version refusal, round-trip check | Restart recovery for paper trading (M9, AEGIS-222) |
+| The contract below | Restart recovery for paper trading (M9, AEGIS-222) |
+| `python/common/recovery.py` — protocol, version refusal, round-trip check | |
 | `tests/unit/test_recovery_contract.py` — the contract exercised through an implementer | |
 | **Exchange-state recovery** — `cpp/exchange/state/snapshot.{hpp,cpp}` (ADR-0013): `ExchangeSnapshot` v1, byte-stable codec, version and counter-consistency refusal, `tests/cpp/unit/test_snapshot_roundtrip.cpp` (round trip and continuation equality), `tests/replay/test_exchange_determinism.py` (the same split exercised across process boundaries via `aegis_exchange_replay --snapshot-out`/`--restore-from`) | |
+| **Participant-state recovery** (M3, ADR-0024) — `cpp/participant/oms/oms_snapshot.{hpp,cpp}` and `cpp/participant/portfolio/portfolio_snapshot.{hpp,cpp}` (each module owns its own portion), composed by `cpp/participant/app/participant_snapshot.{hpp,cpp}` into `ParticipantSnapshot` v1: byte-stable codec, version and counter-consistency refusal, `tests/cpp/unit/test_participant_snapshot.cpp` (round trip, byte stability, OMS-lifecycle and portfolio-accounting continuity), `tests/replay/test_participant_recovery.py` (the same split exercised across process boundaries via `aegis_participant_run --snapshot-out`/`--restore-from`) | |
 
 **There is no snapshot store, and that is deliberate.** A general-purpose store
 is where a shared state substrate is born: by M9 the exchange and the
@@ -77,12 +78,17 @@ step 2 has recorded state that never existed.
 | Milestone | Owed evidence |
 |---|---|
 | M1 | **Paid.** Exchange-state recovery test: sequencer position and book state survive a snapshot/restore cycle, verified by round trip — `tests/cpp/unit/test_snapshot_roundtrip.cpp`, `tests/replay/test_exchange_determinism.py`. |
-| M3 | Participant-state recovery test: OMS order lifecycle and portfolio positions survive the same cycle. |
+| M3 | **Paid.** Participant-state recovery test: OMS order lifecycle and portfolio positions survive a snapshot/restore cycle, verified by round trip and by continuation equality across a process boundary — `tests/cpp/unit/test_participant_snapshot.cpp`, `tests/replay/test_participant_recovery.py`. This is process-boundary recovery only, distinct from AEGIS-061's in-stream feed-gap recovery and AEGIS-070's book-snapshot re-base (ADR-0024); neither exchange nor market-data state is covered by this row. |
 | M9 | Restart recovery against the paper adapter, including reconciliation of positions after restore (AEGIS-221, AEGIS-222). |
 
-The M3 and M9 rows are registered in `requirements/implementation_status.json`
-under `verification_blocked_until`, so AEGIS-237 cannot be marked `verified`
-before that evidence exists, and `tools/audit_requirements.py --check-deferred`
-fails the owing milestone if it closes without paying. AEGIS-237 itself is
-still `implemented`, not `verified` — the M1 row being paid narrows what it is
-missing, and an independent audit still decides promotion.
+The M1 and M3 rows are both paid, which discharges AEGIS-237's own frozen
+acceptance ("Recovery tests exist for exchange and participant state") — so
+AEGIS-237's M3 obligation is cleared at M3 closure on the independent audit.
+
+The M9 row is **not** AEGIS-237's residual. Restart recovery against the paper
+adapter is owned by its own requirements, AEGIS-221 and AEGIS-222, which stay
+`not_started` until M9 builds the paper gateway; `--check-deferred M9` fails
+that milestone if it closes without paying them. An earlier revision of this
+paragraph said the M9 row was registered against AEGIS-237's
+`verification_blocked_until`, which was never true and would have quietly
+erased the M9 row when AEGIS-237 was promoted. Corrected at M3 closure.

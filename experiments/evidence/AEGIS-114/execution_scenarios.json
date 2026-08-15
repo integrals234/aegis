@@ -1,0 +1,137 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 205,
+        "passed": true,
+        "source": "tests/cpp/unit/test_order_manager.cpp",
+        "test": "OrderManager.PartialFillsAccumulateCorrectlyAndTerminationCompletesTheOrder"
+      },
+      {
+        "line": 277,
+        "passed": true,
+        "source": "tests/cpp/unit/test_participant_exchange_integration.cpp",
+        "test": "ParticipantExchangeIntegration.AggressiveLimitOrderSweepsMultipleLevelsWithAResidual"
+      },
+      {
+        "line": 190,
+        "passed": true,
+        "source": "tests/cpp/unit/test_participant_exchange_integration.cpp",
+        "test": "ParticipantExchangeIntegration.MarketOrderConsumesARestingOrderAndReconciles"
+      },
+      {
+        "line": 233,
+        "passed": true,
+        "source": "tests/cpp/unit/test_participant_exchange_integration.cpp",
+        "test": "ParticipantExchangeIntegration.PassiveLimitOrderRestsThenFillsFromALaterAggressor"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "OrderManager.PartialFills*",
+      "ParticipantExchangeIntegration.*"
+    ],
+    "test_count": 4
+  },
+  "all_claims_hold": true,
+  "artifact": "AEGIS-114/execution_scenarios.json",
+  "claim": "AEGIS-114 (Partial fills): the frozen acceptance criterion \u201cPosition/cash reconciliation passes.\u201d is satisfied by 4 acceptance test(s) executed against the real production implementation listed under 'implementation'. See 'interpretation' for exactly what the tests do and do not establish.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Position/cash reconciliation passes.",
+  "generated_on": "2026-08-15",
+  "implementation": [
+    "cpp/participant/oms/order_manager.cpp",
+    "cpp/participant/portfolio/portfolio.cpp"
+  ],
+  "interpretation": "Proven against a real ExchangeNode running unmodified M1 FIFO matching, driven through TransportExecutionAdapter over a test-only ExecutionTransport composed in tests/ (outside covered_roots). No production participant->exchange dependency exists. Cumulative filled and remaining quantities are tracked across successive partial fills and reconciled against the portfolio's own position.",
+  "not_evidence_for": [
+    "Any latency, throughput or comparative performance claim: AEGIS-113 models committed deterministic durations and measures nothing (docs/BENCHMARK_POLICY.md, docs/CV_CLAIMS_POLICY.md).",
+    "Paper or live broker connectivity (AEGIS-221/AEGIS-222 at M9): M3 ships a transport seam and no transport -- no socket, no broker protocol, no credential, no session/reconnect logic, no external account reconciliation.",
+    "Any risk policy, position limit, order limit or kill switch (AEGIS-120 and the M5 risk layer): M3 delivers the mandatory RiskGate seam only, and ships no production implementation of it.",
+    "Any strategy or trading-performance result: M3 contains no strategy logic (M4) and no trading returns are computed or claimed anywhere.",
+    "Behaviour against real venue data or a real counterparty: every scenario is synthetic and committed in-repository."
+  ],
+  "producer": "tools/generate_oms_evidence.py",
+  "production_run_state": {
+    "command": "build/debug/cpp/participant/app/aegis_participant_run --fixture tests/unit/fixtures/participant/recovery_scenario.jsonl",
+    "final_state": {
+      "cash_units": -27004,
+      "next_client_order_id": 5,
+      "orders": [
+        {
+          "client_order_id": 1,
+          "cumulative_filled_units": 40,
+          "exchange_order_id": 501,
+          "instrument_id": 1,
+          "lifecycle_state": 8,
+          "original_quantity_units": 100,
+          "participant_id": 1,
+          "price_units": 1000,
+          "remaining_units": 60,
+          "side": 0
+        },
+        {
+          "client_order_id": 2,
+          "cumulative_filled_units": 0,
+          "exchange_order_id": 0,
+          "instrument_id": 1,
+          "lifecycle_state": 2,
+          "original_quantity_units": 50,
+          "participant_id": 1,
+          "price_units": 900,
+          "remaining_units": 50,
+          "side": 0
+        },
+        {
+          "client_order_id": 3,
+          "cumulative_filled_units": 30,
+          "exchange_order_id": 502,
+          "instrument_id": 2,
+          "lifecycle_state": 6,
+          "original_quantity_units": 30,
+          "participant_id": 1,
+          "price_units": 1100,
+          "remaining_units": 0,
+          "side": 1
+        },
+        {
+          "client_order_id": 4,
+          "cumulative_filled_units": 20,
+          "exchange_order_id": 503,
+          "instrument_id": 1,
+          "lifecycle_state": 6,
+          "original_quantity_units": 20,
+          "participant_id": 1,
+          "price_units": 1000,
+          "remaining_units": 0,
+          "side": 0
+        }
+      ],
+      "positions": [
+        {
+          "average_price_units": 1000,
+          "instrument_id": 1,
+          "quantity_units": 60,
+          "realized_pnl_units": 0
+        },
+        {
+          "average_price_units": 1100,
+          "instrument_id": 2,
+          "quantity_units": -30,
+          "realized_pnl_units": 0
+        }
+      ]
+    },
+    "step_count": 15
+  },
+  "repository_commit": "6822152bb00609bc69c5e8f533584938784c1608",
+  "requirements": [
+    "AEGIS-114"
+  ],
+  "title": "Partial fills"
+}

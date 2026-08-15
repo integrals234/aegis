@@ -1,0 +1,99 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 193,
+        "passed": true,
+        "source": "tests/cpp/unit/test_order_manager.cpp",
+        "test": "OrderManager.CancelIsRefusedWithoutAnAcknowledgedExchangeOrderId"
+      },
+      {
+        "line": 238,
+        "passed": true,
+        "source": "tests/cpp/unit/test_order_manager.cpp",
+        "test": "OrderManager.CancellationTerminatesToCancelled"
+      },
+      {
+        "line": 166,
+        "passed": true,
+        "source": "tests/cpp/unit/test_order_manager.cpp",
+        "test": "OrderManager.FillRacingAnInFlightCancelLandsBeforeTheCancelAcknowledgement"
+      },
+      {
+        "line": 126,
+        "passed": true,
+        "source": "tests/cpp/unit/test_order_manager.cpp",
+        "test": "OrderManager.RejectedCancelRevertsToAcknowledgedWhenNothingHadFilled"
+      },
+      {
+        "line": 144,
+        "passed": true,
+        "source": "tests/cpp/unit/test_order_manager.cpp",
+        "test": "OrderManager.RejectedCancelRevertsToPartiallyFilledWhenSomethingHadFilled"
+      },
+      {
+        "line": 15,
+        "passed": true,
+        "source": "tests/cpp/unit/test_recorded_response_adapter.cpp",
+        "test": "RecordedResponseAdapter.EveryCallSucceedsAndAdvancesTheCursor"
+      },
+      {
+        "line": 22,
+        "passed": true,
+        "source": "tests/cpp/unit/test_recorded_response_adapter.cpp",
+        "test": "RecordedResponseAdapter.NextResponseDrainsTheScriptInOrder"
+      },
+      {
+        "line": 38,
+        "passed": true,
+        "source": "tests/cpp/unit/test_recorded_response_adapter.cpp",
+        "test": "RecordedResponseAdapter.NextResponseIsAConsumingPopNotAPeek"
+      },
+      {
+        "line": 46,
+        "passed": true,
+        "source": "tests/cpp/unit/test_recorded_response_adapter.cpp",
+        "test": "RecordedResponseAdapter.NoResponseAvailableBeforeACallOrPastTheScript"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "OrderManager.RejectedCancel*",
+      "OrderManager.FillRacing*",
+      "OrderManager.CancelIsRefused*",
+      "OrderManager.CancellationTerminates*",
+      "RecordedResponseAdapter.*"
+    ],
+    "test_count": 9
+  },
+  "all_claims_hold": true,
+  "artifact": "AEGIS-112/execution_scenarios.json",
+  "claim": "AEGIS-112 (Cancel/amend lifecycle): the frozen acceptance criterion \u201cRace fixtures produce deterministic outcomes.\u201d is satisfied by 9 acceptance test(s) executed against the real production implementation listed under 'implementation'. See 'interpretation' for exactly what the tests do and do not establish.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Race fixtures produce deterministic outcomes.",
+  "generated_on": "2026-08-15",
+  "implementation": [
+    "cpp/participant/oms/order_manager.cpp",
+    "cpp/participant/oms/order_state.cpp",
+    "cpp/participant/oms/recorded_response_adapter.cpp"
+  ],
+  "interpretation": "All four cancel-race outcomes are covered deterministically: the cancel wins, a fill wins the race, the exchange rejects the cancel and the order reverts to whichever live state it actually held, and a cancel before acknowledgement is refused without ever reaching the adapter. RecordedResponseAdapter supplies orderings no live engine can be made to emit on demand; it proves nothing about matching.",
+  "not_evidence_for": [
+    "Any latency, throughput or comparative performance claim: AEGIS-113 models committed deterministic durations and measures nothing (docs/BENCHMARK_POLICY.md, docs/CV_CLAIMS_POLICY.md).",
+    "Paper or live broker connectivity (AEGIS-221/AEGIS-222 at M9): M3 ships a transport seam and no transport -- no socket, no broker protocol, no credential, no session/reconnect logic, no external account reconciliation.",
+    "Any risk policy, position limit, order limit or kill switch (AEGIS-120 and the M5 risk layer): M3 delivers the mandatory RiskGate seam only, and ships no production implementation of it.",
+    "Any strategy or trading-performance result: M3 contains no strategy logic (M4) and no trading returns are computed or claimed anywhere.",
+    "Behaviour against real venue data or a real counterparty: every scenario is synthetic and committed in-repository."
+  ],
+  "producer": "tools/generate_oms_evidence.py",
+  "repository_commit": "6822152bb00609bc69c5e8f533584938784c1608",
+  "requirements": [
+    "AEGIS-112"
+  ],
+  "title": "Cancel/amend lifecycle"
+}

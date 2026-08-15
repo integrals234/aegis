@@ -1,0 +1,15 @@
+{"kind":"submit_new_order","instrument_id":1,"participant_id":1,"side":"BUY","order_type":"LIMIT","price_units":1000,"quantity_units":100}
+{"kind":"order_accepted","order_id":501,"instrument_id":1,"participant_id":1,"client_order_id":1,"side":"BUY","order_type":"LIMIT","price_units":1000,"quantity_units":100}
+{"kind":"trade","instrument_id":1,"price_units":1000,"quantity_units":40,"maker_order_id":501,"taker_order_id":9001,"maker_participant_id":1,"taker_participant_id":2,"taker_side":"SELL","fee_units":2}
+{"kind":"submit_new_order","instrument_id":1,"participant_id":1,"side":"BUY","order_type":"LIMIT","price_units":900,"quantity_units":50}
+{"kind":"order_rejected","instrument_id":1,"participant_id":1,"client_order_id":2,"reason":"PRICE_OUT_OF_BAND"}
+{"kind":"submit_new_order","instrument_id":2,"participant_id":1,"side":"SELL","order_type":"LIMIT","price_units":1100,"quantity_units":30}
+{"kind":"order_accepted","order_id":502,"instrument_id":2,"participant_id":1,"client_order_id":3,"side":"SELL","order_type":"LIMIT","price_units":1100,"quantity_units":30}
+{"kind":"trade","instrument_id":2,"price_units":1100,"quantity_units":30,"maker_order_id":502,"taker_order_id":9002,"maker_participant_id":1,"taker_participant_id":3,"taker_side":"BUY","fee_units":1}
+{"kind":"order_terminated","order_id":502,"reason":"FILLED"}
+{"kind":"cancel_order","client_order_id":1}
+{"kind":"order_terminated","order_id":501,"reason":"CANCELED","cancelled_quantity_delta_units":60}
+{"kind":"submit_new_order","instrument_id":1,"participant_id":1,"side":"BUY","order_type":"LIMIT","price_units":1000,"quantity_units":20}
+{"kind":"order_accepted","order_id":503,"instrument_id":1,"participant_id":1,"client_order_id":4,"side":"BUY","order_type":"LIMIT","price_units":1000,"quantity_units":20}
+{"kind":"trade","instrument_id":1,"price_units":1000,"quantity_units":20,"maker_order_id":9004,"taker_order_id":503,"maker_participant_id":5,"taker_participant_id":1,"taker_side":"BUY","fee_units":1}
+{"kind":"order_terminated","order_id":503,"reason":"FILLED"}

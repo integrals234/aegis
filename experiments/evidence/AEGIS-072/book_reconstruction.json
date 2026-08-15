@@ -1,0 +1,70 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 270,
+        "passed": true,
+        "source": "tests/cpp/unit/test_book_builder.cpp",
+        "test": "BookBuilder.MicropriceIsUndefinedWithoutBothSides"
+      },
+      {
+        "line": 260,
+        "passed": true,
+        "source": "tests/cpp/unit/test_book_builder.cpp",
+        "test": "BookBuilder.MicropriceWeightsTowardTheOppositeSidesPrice"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "BookBuilder.MicropriceWeightsTowardTheOppositeSidesPrice",
+      "BookBuilder.MicropriceIsUndefinedWithoutBothSides"
+    ],
+    "test_count": 2
+  },
+  "all_claims_hold": true,
+  "artifact": "AEGIS-072/book_reconstruction.json",
+  "claim": "AEGIS-072 (Microprice): the frozen acceptance criterion \u201cNumeric fixtures pass and edge cases are defined.\u201d is satisfied by 2 acceptance test(s) executed against the real production implementation listed under 'implementation'. Each case below records the source file and line of the assertion made.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "end_to_end_production_run": {
+    "command": "build/debug/cpp/participant/app/aegis_participant_run",
+    "computed": {
+      "best_ask_price_units": 10010,
+      "best_ask_quantity_units": 40,
+      "best_bid_price_units": 10000,
+      "best_bid_quantity_units": 30,
+      "cash_units": -100051,
+      "final_order_state": 6,
+      "instrument_id": 1001,
+      "last_md_sequence": 3,
+      "microprice": 10004.285714285714,
+      "position_average_price_units": 10005,
+      "position_quantity_units": 10,
+      "realized_pnl_units": 0,
+      "trade_count": 3,
+      "trade_price_rolling_mean": 10005.333333333334,
+      "unrealized_pnl_units": 50
+    },
+    "pipeline": "market-data messages -> feed handler (decode + sequence validation) -> book builder (reconstruction) -> microstructure features -> generic statistics -> OMS lifecycle -> portfolio"
+  },
+  "frozen_acceptance": "Numeric fixtures pass and edge cases are defined.",
+  "generated_on": "2026-08-15",
+  "implementation": [
+    "cpp/participant/book_builder/book_builder.cpp"
+  ],
+  "not_evidence_for": [
+    "Any performance, latency or throughput property: no timing is measured here and none is claimed (docs/BENCHMARK_POLICY.md).",
+    "Behaviour on real venue market data: every fixture is synthetic and committed in-repository; M3 ships no live or paper feed.",
+    "M5 risk responses to stale or recovered data -- M3 delivers the feed/book-level response only (ADR-0021)."
+  ],
+  "producer": "tools/generate_participant_evidence.py",
+  "repository_commit": "6822152bb00609bc69c5e8f533584938784c1608",
+  "requirements": [
+    "AEGIS-072"
+  ],
+  "title": "Microprice"
+}

@@ -188,6 +188,17 @@ def test_bindings_expose_no_mutable_engine_state(bindings):
         "encode_envelope",
         "decode_envelope",
         "sort_canonical",
+        # AEGIS-107 (M3 slice 4): cross-language validation surface for
+        # cpp/statistics. Each is a pure function over plain numeric
+        # sequences returning a full trajectory -- no estimator object, no
+        # engine state, nothing stateful is exposed (ADR-0005 unchanged).
+        "rolling_moments_batch",
+        "rolling_covariance_batch",
+        "rolling_zscore_batch",
+        "exponential_stats_batch",
+        "realized_volatility_batch",
+        "rolling_beta_batch",
+        "drawdown_tracker_batch",
     }
 
 

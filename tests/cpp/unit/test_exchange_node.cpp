@@ -132,4 +132,68 @@ TEST(ExchangeNode, NewOrderForARegisteredInstrumentReachesTheEngine) {
   EXPECT_EQ(node.book(InstrumentId{1})->live_order_count(), 1U);
 }
 
+// AEGIS-064/065, ADR-0020: the market-data half of the composition root is
+// additive -- it observes apply_*'s own return value and the book it already
+// maintains, and changes nothing about what apply_* returns.
+TEST(ExchangeNode, MarketDataSnapshotReflectsAcceptedOrder) {
+  ExchangeNode node;
+  node.add_instrument(make_spec(1));
+  const auto accepted_events = node.apply_new_order(NewOrderCommand{.instrument_id = 1,
+                                                                    .participant_id = 1,
+                                                                    .client_order_id = 1,
+                                                                    .side = Side::kBuy,
+                                                                    .order_type = OrderType::kLimit,
+                                                                    .price_units = 1000,
+                                                                    .quantity_units = 100},
+                                                    CommandSequence{1});
+  ASSERT_EQ(accepted_events.size(), 1U);
+
+  const auto snapshot = node.capture_market_data_snapshot(InstrumentId{1});
+  ASSERT_EQ(snapshot.entries.size(), 1U);
+  EXPECT_EQ(snapshot.entries[0].side, Side::kBuy);
+  EXPECT_EQ(snapshot.entries[0].price_units, 1000);
+  EXPECT_EQ(snapshot.entries[0].quantity_units, 100);
+}
+
+TEST(ExchangeNode, MarketDataDeltaReflectsAcceptedOrder) {
+  ExchangeNode node;
+  node.add_instrument(make_spec(1));
+  const auto emitted = node.apply_new_order(NewOrderCommand{.instrument_id = 1,
+                                                            .participant_id = 1,
+                                                            .client_order_id = 1,
+                                                            .side = Side::kBuy,
+                                                            .order_type = OrderType::kLimit,
+                                                            .price_units = 1000,
+                                                            .quantity_units = 100},
+                                            CommandSequence{1});
+
+  const auto deltas = node.derive_market_data(emitted);
+  ASSERT_EQ(deltas.size(), 1U);
+  EXPECT_EQ(deltas[0].kind, aegis::events::market_data::DeltaKind::kOrderAdded);
+  EXPECT_EQ(deltas[0].price_units, 1000);
+  EXPECT_EQ(deltas[0].quantity_units, 100);
+}
+
+TEST(ExchangeNode, MarketDataDeltaReflectsCancellation) {
+  ExchangeNode node;
+  node.add_instrument(make_spec(1));
+  const auto accepted = node.apply_new_order(NewOrderCommand{.instrument_id = 1,
+                                                             .participant_id = 1,
+                                                             .client_order_id = 1,
+                                                             .side = Side::kBuy,
+                                                             .order_type = OrderType::kLimit,
+                                                             .price_units = 1000,
+                                                             .quantity_units = 100},
+                                             CommandSequence{1});
+  static_cast<void>(node.derive_market_data(accepted));  // seed the publisher's order tracking
+
+  const auto cancelled = node.apply_cancel_order(
+      CancelOrderCommand{.instrument_id = 1, .participant_id = 1, .order_id = 1},
+      CommandSequence{2});
+  const auto deltas = node.derive_market_data(cancelled);
+  ASSERT_EQ(deltas.size(), 1U);
+  EXPECT_EQ(deltas[0].kind, aegis::events::market_data::DeltaKind::kOrderRemoved);
+  EXPECT_EQ(deltas[0].quantity_units, 0);
+}
+
 }  // namespace

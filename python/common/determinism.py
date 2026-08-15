@@ -166,6 +166,26 @@ def resolve_exchange_replay_binary(root: Path) -> Path:
     return binary
 
 
+def resolve_participant_run_binary(root: Path) -> Path:
+    """Locate ``aegis_participant_run``: ``AEGIS_PARTICIPANT_RUN`` if set, else
+    the debug preset's default build output path.
+
+    A missing binary raises, never skips -- same rule as
+    :func:`resolve_exchange_replay_binary`, for the same reason (AEGIS-237's
+    process-boundary recovery proof is worthless if it silently skips).
+    """
+    env_path = os.environ.get("AEGIS_PARTICIPANT_RUN")
+    binary = (
+        Path(env_path) if env_path else root / "build/debug/cpp/participant/app/aegis_participant_run"
+    )
+    if not binary.exists():
+        raise FileNotFoundError(
+            f"aegis_participant_run not found at {binary}. Build it with "
+            "'cmake --build --preset debug', or set AEGIS_PARTICIPANT_RUN to its path."
+        )
+    return binary
+
+
 def exchange_producer(seed: int, root: Path | None = None) -> str:
     """Run ``aegis_exchange_replay`` on the committed M1 scenario and return its
     canonical stdout (ADR-0012, ADR-0013) -- the AEGIS-005 discharge for the

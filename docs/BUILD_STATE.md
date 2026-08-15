@@ -1,6 +1,6 @@
 # Build State
 
-- Active milestone: M2
+- Active milestone: M3
 - M0 status: **CLOSED** 2026-08-06 (owner-approved fast-track closure)
 - M1 status: **CLOSED** 2026-08-09. All 15 M1 requirements (AEGIS-027..041) are
   `verified` on an independent `/audit-milestone M1` against the final tree
@@ -22,12 +22,20 @@
   the signed-anchor circularity, the credential gap, the fine-grained-PAT
   incompatibility and the `record_index` wording). All 14 slices are complete,
   and `milestone/m2-futures-replay` was merged and is no longer active.
-- M3 activation is in flight. The plan of record is `experiments/plans/M3.md`.
-  This line **stays `M2`** until the activation policy change is merged: the
-  authoritative gate reads `configs/governance/policy.yaml` from the *base*
-  branch and requires this file's active milestone to match it, so a candidate
-  that flips both at once fails. The mirror moves to M3 in the first commit of
-  the M3 implementation branch, after the policy change lands on `main`.
+- M3 started 2026-08-12 per `experiments/plans/M3.md` (owner-approved plan of
+  record, after the three architecture corrections recorded in that file's
+  header — `configs/architecture_rules.yaml` protected as a governance path
+  rather than exempted, `cpp-statistics` decoupled from participant book
+  reconstruction, and the AEGIS-119 adapter design corrected to remove an
+  implied production participant→exchange edge). PR #7 ("M3 activation
+  policy") merged `configs/governance/policy.yaml`'s `active_milestone: M3`
+  and the `m3-milestone-gate`/`m3-architecture-transition` approvals to `main`
+  first, deliberately leaving this line at `M2` — the authoritative gate reads
+  policy from the *base* branch and requires this mirror to match it, so a
+  single PR flipping both would have failed its own gate. This is that first
+  commit on `milestone/m3-participant-execution`, flipping the mirror now that
+  the policy change is on `main`.
+- Active branch: `milestone/m3-participant-execution`, based on `9f14f11`.
 - Owner-approved scope changes: `cpp/CMakeLists.txt`, `scripts/ci_local.sh`, `.github/workflows/ci.yml`, `requirements/python-requirements.in`, `requirements/requirements.lock`, `pyproject.toml`
   — **a MIRROR, not the authority.** Since ADR-0014 (R8, PR #3) this line
   **grants nothing**: approvals live in `configs/governance/policy.yaml` on
@@ -99,6 +107,50 @@
   062/063→M5, all owner-approved during planning. Previously discharged:
   AEGIS-005 (exchange determinism), AEGIS-227, AEGIS-233, AEGIS-234 (first real
   CI runs) and AEGIS-009 (clean-machine reproducibility).
+
+## M3 state
+
+**CLOSURE PROPOSED** — the closure PR is open, awaiting the owner's approving
+review. Nothing is merged. Plan of record: `experiments/plans/M3.md`.
+
+**33 of the 34 primary M3 requirements (AEGIS-064..075, 098..106, 108..119) are
+`verified`** on an independent spec-auditor review of the final tree.
+**AEGIS-107 stays `implemented`** with an owner-approved residual dated **M8**:
+its frozen description names output, error, latency and memory; M3 completes
+the output/error half (an algorithmically independent Python reference agrees
+with the compiled C++ to 5.7e-14 against a 1e-9 tolerance, report committed)
+but the latency/memory comparison needs performance-measurement infrastructure
+M3 does not have, and `docs/BENCHMARK_POLICY.md` is frozen.
+
+**All three inherited M3 obligations are discharged and `verified`:**
+AEGIS-060 (stale-data response), AEGIS-061 (feed recovery for missing,
+duplicated and sequence-gap faults independently) and AEGIS-237
+(participant-state recovery across a real process boundary). So
+`--check-deferred M3` passes.
+
+Seven architecture layers were populated under the four-change
+`m3-architecture-transition` approval from PR #7 and no others: add
+`cpp-participant-app`; `cpp-bindings += cpp-statistics`;
+`cpp-exchange-app += cpp-exchange-market-data`; narrow
+`cpp-statistics.may_depend_on` to `[cpp-common]`. One consequential edit
+accompanies the first — the new layer joins `mutable_globals_forbidden_in`,
+which tightens rather than relaxes. **No production participant→exchange edge
+exists.** ADR-0020 through ADR-0024 record the five decisions.
+
+Closure verification was substantive rather than ceremonial. The independent
+audit **rejected the first submission**, finding four requirements whose
+components were built and unit-tested but never integrated — AEGIS-113's
+latency model, AEGIS-116's fee/slippage model and AEGIS-117's missed-trade
+tracker each had zero production callers — plus a false independence claim in
+AEGIS-107's committed evidence, where the "independent" Python reference was a
+line-for-line transliteration of the C++ (which is why every divergence was
+exactly 0.0). All were fixed by building the missing integration and writing a
+genuinely independent reference, not by narrowing the wording. A second audit
+pass found three further gaps (a vacuous fee leg, two competing fee ledgers,
+and AEGIS-117's uncomputed opportunity cost); those were fixed too. The first
+full-policy `clang-tidy` run over M3 found 124 accumulated violations, all
+fixed mechanically with no check disabled and no assertion weakened.
+`experiments/milestone-reports/M3.md` §12 lists every defect.
 
 ## M2 state
 

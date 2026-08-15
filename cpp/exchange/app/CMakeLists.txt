@@ -1,6 +1,6 @@
-# Layer cpp-exchange-app: the composition root (ADR-0012). May depend on all
-# other exchange layers — nothing else may legally see sequencer, book,
-# matching and state at once.
+# Layer cpp-exchange-app: the composition root (ADR-0012, ADR-0020). May
+# depend on all other exchange layers — nothing else may legally see
+# sequencer, book, matching, state and market-data at once.
 add_library(aegis_exchange_app
   exchange_node.cpp
   exchange_node.hpp)
@@ -8,7 +8,7 @@ add_library(aegis_exchange_app
 target_include_directories(aegis_exchange_app PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(aegis_exchange_app
   PUBLIC aegis_common aegis_events aegis_exchange_sequencer aegis_exchange_order_book
-         aegis_exchange_matching aegis_exchange_state
+         aegis_exchange_matching aegis_exchange_state aegis_exchange_market_data
   PRIVATE aegis_warnings)
 
 # aegis_exchange_replay: the CLI entry point python/common/determinism.py's
