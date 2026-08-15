@@ -1084,7 +1084,7 @@
       "notes": "M3 Slice 2 + Slice 8: M2's deterministic delayed-observation injector drives the real participant feed handler and book builder; the reconstructed book is marked stale on the virtual clock and the defined feed/book-level response is asserted. NOT a risk response (M5).",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1111,7 +1111,7 @@
       "notes": "M3 Slice 2 + Slice 8: M2's missing/duplicated/sequence-gap injectors each drive detection and buffer -> re-base -> replay recovery through the real participant stack, ending in the correct book state.",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1183,7 +1183,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1203,7 +1203,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1221,7 +1221,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1239,7 +1239,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1259,7 +1259,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1277,7 +1277,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1296,7 +1296,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1314,7 +1314,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1332,7 +1332,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1350,7 +1350,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1370,7 +1370,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1388,7 +1388,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1560,7 +1560,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1578,7 +1578,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1596,7 +1596,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1614,7 +1614,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1632,7 +1632,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1650,7 +1650,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1668,7 +1668,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1686,7 +1686,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1704,7 +1704,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1752,7 +1752,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1771,7 +1771,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1789,7 +1789,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1807,7 +1807,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1828,7 +1828,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1848,7 +1848,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1868,7 +1868,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1886,7 +1886,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1906,7 +1906,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1925,7 +1925,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1944,7 +1944,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -1967,7 +1967,7 @@
       "notes": "",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
@@ -2933,7 +2933,7 @@
       "notes": "M1 exchange-state recovery plus M3 Slice 7 participant-state recovery (ADR-0024): ParticipantSnapshot v1, byte-stable, version/corruption refusing, verified by round trip and by continuation equality across a real process boundary.",
       "audit": {
         "auditor": "aegis-spec-auditor",
-        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "commit": "f4557de1914da7bfa62e249b38591101f32722b8",
         "date": "2026-08-15"
       }
     },
