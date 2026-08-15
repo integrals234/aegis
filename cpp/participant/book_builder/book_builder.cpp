@@ -24,7 +24,9 @@ void BookBuilder::apply_snapshot(const BookSnapshotEvent& snapshot,
   for (const auto& entry : snapshot.entries) {
     adjust_level(entry.side, entry.price_units, entry.quantity_units);
     if (entry.order_id != 0) {
-      orders_[entry.order_id] = OrderView{entry.side, entry.price_units, entry.quantity_units};
+      orders_[entry.order_id] = OrderView{.side = entry.side,
+                                          .price_units = entry.price_units,
+                                          .quantity_units = entry.quantity_units};
     }
   }
 
@@ -59,7 +61,9 @@ void BookBuilder::apply_delta(const BookDeltaEvent& delta, common::Nanos receive
 
   switch (delta.kind) {
     case DeltaKind::kOrderAdded:
-      orders_[delta.order_id] = OrderView{delta.side, delta.price_units, delta.quantity_units};
+      orders_[delta.order_id] = OrderView{.side = delta.side,
+                                          .price_units = delta.price_units,
+                                          .quantity_units = delta.quantity_units};
       adjust_level(delta.side, delta.price_units, delta.quantity_units);
       return;
     case DeltaKind::kOrderModified: {
@@ -130,7 +134,7 @@ std::optional<PriceLevelView> BookBuilder::best(Side side) const {
   // Bids: best = highest price = last element of an ascending map.
   // Asks: best = lowest price = first element.
   const auto& [price, quantity] = side == Side::kBuy ? *target.rbegin() : *target.begin();
-  return PriceLevelView{price, quantity};
+  return PriceLevelView{.price_units = price, .quantity_units = quantity};
 }
 
 std::optional<std::int64_t> BookBuilder::quantity_at(Side side, std::int64_t price_units) const {
@@ -145,11 +149,11 @@ std::vector<PriceLevelView> BookBuilder::levels(Side side, std::size_t depth) co
   out.reserve(depth);
   if (side == Side::kBuy) {
     for (auto it = target.rbegin(); it != target.rend() && out.size() < depth; ++it) {
-      out.push_back(PriceLevelView{it->first, it->second});
+      out.push_back(PriceLevelView{.price_units = it->first, .quantity_units = it->second});
     }
   } else {
     for (auto it = target.begin(); it != target.end() && out.size() < depth; ++it) {
-      out.push_back(PriceLevelView{it->first, it->second});
+      out.push_back(PriceLevelView{.price_units = it->first, .quantity_units = it->second});
     }
   }
   return out;
@@ -209,8 +213,8 @@ std::optional<double> BookBuilder::microprice() const {
   if (!bid.has_value() || !ask.has_value()) {
     return std::nullopt;
   }
-  const double bid_qty = static_cast<double>(bid->quantity_units);
-  const double ask_qty = static_cast<double>(ask->quantity_units);
+  const auto bid_qty = static_cast<double>(bid->quantity_units);
+  const auto ask_qty = static_cast<double>(ask->quantity_units);
   const double denominator = bid_qty + ask_qty;
   if (denominator <= 0.0) {
     return std::nullopt;
@@ -218,8 +222,8 @@ std::optional<double> BookBuilder::microprice() const {
   // Larger size on one side pulls the price toward the *other* side's price:
   // more resting bid quantity signals buying pressure, pulling the microprice
   // up toward the ask.
-  return (bid_qty * static_cast<double>(ask->price_units) +
-          ask_qty * static_cast<double>(bid->price_units)) /
+  return ((bid_qty * static_cast<double>(ask->price_units)) +
+          (ask_qty * static_cast<double>(bid->price_units))) /
          denominator;
 }
 
@@ -258,14 +262,15 @@ std::optional<QueueDepletionSignal> BookBuilder::queue_depletion(Side side,
   signal.original_quantity_units = original;
   signal.current_quantity_units = found->second;
   signal.depletion_ratio =
-      original > 0 ? 1.0 - static_cast<double>(found->second) / static_cast<double>(original) : 0.0;
+      original > 0 ? 1.0 - (static_cast<double>(found->second) / static_cast<double>(original))
+                   : 0.0;
   return signal;
 }
 
 void BookBuilder::record_fill_for_adverse_selection(Side fill_side, std::int64_t price_units,
                                                     std::uint32_t window_updates) {
-  pending_adverse_selection_.push_back(
-      PendingAdverseSelectionFill{fill_side, price_units, window_updates});
+  pending_adverse_selection_.push_back(PendingAdverseSelectionFill{
+      .side = fill_side, .price_units = price_units, .ticks_remaining = window_updates});
 }
 
 void BookBuilder::tick_adverse_selection() {

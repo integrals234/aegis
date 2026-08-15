@@ -14,7 +14,7 @@ void ExponentialStats::push(double value) {
   const double diff = value - mean_;
   const double incr = alpha_ * diff;
   mean_ += incr;
-  variance_ = (1.0 - alpha_) * (variance_ + diff * incr);
+  variance_ = (1.0 - alpha_) * (variance_ + (diff * incr));
 }
 
 double ExponentialStats::stddev() const { return std::sqrt(variance_); }

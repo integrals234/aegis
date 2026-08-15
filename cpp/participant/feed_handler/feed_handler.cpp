@@ -23,7 +23,7 @@ DecodedMessage FeedHandler::decode(const events::Envelope& envelope) {
       }
       result.kind = DecodedKind::kBookDelta;
       result.sequence_check = trackers_[decoded->instrument_id].observe(decoded->md_sequence);
-      result.delta = std::move(decoded);
+      result.delta = decoded;
       return result;
     }
     case events::MessageType::kTrade: {
@@ -32,7 +32,7 @@ DecodedMessage FeedHandler::decode(const events::Envelope& envelope) {
         return result;
       }
       result.kind = DecodedKind::kTrade;
-      result.trade = std::move(decoded);
+      result.trade = decoded;
       return result;
     }
     case events::MessageType::kOrderTerminated: {
@@ -41,7 +41,7 @@ DecodedMessage FeedHandler::decode(const events::Envelope& envelope) {
         return result;
       }
       result.kind = DecodedKind::kOrderTerminated;
-      result.terminated = std::move(decoded);
+      result.terminated = decoded;
       return result;
     }
     default:

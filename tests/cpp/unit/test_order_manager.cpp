@@ -250,4 +250,207 @@ TEST(OrderManager, CancellationTerminatesToCancelled) {
             OrderState::kCancelled);
 }
 
+// ---------------------------------------------------------------------------
+// AEGIS-116 and AEGIS-117 through the OMS itself.
+//
+// The M3 closure audit found FeeSchedule/compute_slippage and
+// MissedTradeTracker built and unit-tested but never called from production
+// code -- so the acceptance criteria were satisfied by the classes in
+// isolation rather than by the system the criteria describe. These cases
+// exercise them where they now actually live: inside OrderManager's fill and
+// termination paths.
+// ---------------------------------------------------------------------------
+
+TEST(OrderManager, FillsAccrueFeesAtTheConfiguredRate) {
+  RecordedResponseAdapter adapter({});
+  AlwaysApproveRiskGate risk;
+  // 1000 ppm == 0.1% of notional.
+  OrderManager manager(adapter, risk, aegis::participant::oms::FeeSchedule{.fee_rate_ppm = 1000});
+  const auto client_order_id =
+      manager.submit_new_order(1, 100, Side::kBuy, OrderType::kLimit, 1000, 100);
+  manager.handle_order_accepted(
+      OrderAcceptedEvent{.order_id = 1, .participant_id = 100, .client_order_id = client_order_id});
+
+  manager.handle_trade(TradeEvent{.price_units = 1000,
+                                  .quantity_units = 100,
+                                  .maker_order_id = 1,
+                                  .taker_order_id = 2,
+                                  .taker_side = Side::kSell});
+
+  // 1000 * 100 * 1000 / 1'000'000 == 100.
+  EXPECT_EQ(manager.find_by_client_order_id(client_order_id)->cumulative_fees_units, 100);
+  EXPECT_EQ(manager.total_fees_units(), 100);
+}
+
+TEST(OrderManager, AdverseFillPriceAccruesSlippageAgainstTheOrdersOwnPrice) {
+  RecordedResponseAdapter adapter({});
+  AlwaysApproveRiskGate risk;
+  OrderManager manager(adapter, risk);
+  // A buy limit at 1000 that fills at 1010 paid 10 per unit more than its
+  // own reference price: adverse.
+  const auto client_order_id =
+      manager.submit_new_order(1, 100, Side::kBuy, OrderType::kLimit, 1000, 50);
+  manager.handle_order_accepted(
+      OrderAcceptedEvent{.order_id = 1, .participant_id = 100, .client_order_id = client_order_id});
+
+  manager.handle_trade(TradeEvent{.price_units = 1010,
+                                  .quantity_units = 50,
+                                  .maker_order_id = 1,
+                                  .taker_order_id = 2,
+                                  .taker_side = Side::kSell});
+
+  EXPECT_EQ(manager.total_slippage_cost_units(), 10 * 50);
+}
+
+TEST(OrderManager, MarketOrdersAccrueNoSlippageBecauseTheyCarryNoReferencePrice) {
+  RecordedResponseAdapter adapter({});
+  AlwaysApproveRiskGate risk;
+  OrderManager manager(adapter, risk);
+  const auto client_order_id =
+      manager.submit_new_order(1, 100, Side::kBuy, OrderType::kMarket, 0, 50);
+  manager.handle_order_accepted(
+      OrderAcceptedEvent{.order_id = 1, .participant_id = 100, .client_order_id = client_order_id});
+
+  manager.handle_trade(TradeEvent{.price_units = 1010,
+                                  .quantity_units = 50,
+                                  .maker_order_id = 1,
+                                  .taker_order_id = 2,
+                                  .taker_side = Side::kSell});
+
+  EXPECT_EQ(manager.total_slippage_cost_units(), 0);
+}
+
+TEST(OrderManager, CancelledOrderRecordsItsUntradedRemainderAsAMissedTrade) {
+  RecordedResponseAdapter adapter({});
+  AlwaysApproveRiskGate risk;
+  OrderManager manager(adapter, risk);
+  const auto client_order_id =
+      manager.submit_new_order(1, 100, Side::kBuy, OrderType::kLimit, 1000, 100);
+  manager.handle_order_accepted(
+      OrderAcceptedEvent{.order_id = 1, .participant_id = 100, .client_order_id = client_order_id});
+  manager.handle_trade(TradeEvent{.price_units = 1000,
+                                  .quantity_units = 40,
+                                  .maker_order_id = 1,
+                                  .taker_order_id = 2,
+                                  .taker_side = Side::kSell});
+  ASSERT_TRUE(manager.cancel_order(client_order_id));
+
+  EXPECT_EQ(manager.missed_trades().total_missed_quantity_units(), 0);  // Nothing yet.
+  manager.handle_order_terminated(
+      OrderTerminatedEvent{.order_id = 1, .reason = TerminationReason::kCanceled});
+
+  EXPECT_EQ(manager.missed_trades().missed_order_count(), 1U);
+  EXPECT_EQ(manager.missed_trades().total_missed_quantity_units(),
+            60);  // 100 requested, 40 filled.
+}
+
+TEST(OrderManager, FullyFilledOrderRecordsNoMissedTrade) {
+  RecordedResponseAdapter adapter({});
+  AlwaysApproveRiskGate risk;
+  OrderManager manager(adapter, risk);
+  const auto client_order_id =
+      manager.submit_new_order(1, 100, Side::kBuy, OrderType::kLimit, 1000, 50);
+  manager.handle_order_accepted(
+      OrderAcceptedEvent{.order_id = 1, .participant_id = 100, .client_order_id = client_order_id});
+  manager.handle_trade(TradeEvent{.price_units = 1000,
+                                  .quantity_units = 50,
+                                  .maker_order_id = 1,
+                                  .taker_order_id = 2,
+                                  .taker_side = Side::kSell});
+  manager.handle_order_terminated(
+      OrderTerminatedEvent{.order_id = 1, .reason = TerminationReason::kFilled});
+
+  EXPECT_EQ(manager.missed_trades().missed_order_count(), 0U);
+  EXPECT_EQ(manager.missed_trades().total_missed_quantity_units(), 0);
+}
+
+TEST(OrderManager, ExchangeRejectedOrderRecordsItsWholeSizeAsMissed) {
+  RecordedResponseAdapter adapter({});
+  AlwaysApproveRiskGate risk;
+  OrderManager manager(adapter, risk);
+  const auto client_order_id =
+      manager.submit_new_order(1, 100, Side::kBuy, OrderType::kLimit, 1000, 75);
+
+  manager.handle_order_rejected(OrderRejectedEvent{.instrument_id = 1,
+                                                   .participant_id = 100,
+                                                   .client_order_id = client_order_id,
+                                                   .order_id = 0,
+                                                   .reason = RejectReason::kPriceOutOfBand});
+
+  EXPECT_EQ(manager.missed_trades().total_missed_quantity_units(), 75);
+}
+
+// AEGIS-113 through the OMS: an order carries the five-stage attribution for
+// the market event that motivated it. The M3 closure audit found LatencyModel
+// with no production caller at all; these cases assert the wiring.
+TEST(OrderManager, SubmittedOrderCarriesAFiveStageLatencyAttribution) {
+  using aegis::common::Duration;
+  using aegis::common::EventTime;
+  RecordedResponseAdapter adapter({});
+  AlwaysApproveRiskGate risk;
+  OrderManager manager(adapter, risk, aegis::participant::oms::FeeSchedule{},
+                       aegis::participant::oms::LatencyConfig{.feed_delay = Duration{40},
+                                                              .decision_delay = Duration{100},
+                                                              .gateway_delay = Duration{250},
+                                                              .exchange_delay = Duration{700},
+                                                              .ack_delay = Duration{4000}});
+  ASSERT_TRUE(manager.models_latency());
+
+  const auto client_order_id = manager.submit_new_order(1, 100, Side::kBuy, OrderType::kLimit, 1000,
+                                                        50, EventTime{1'000'000});
+  const auto* tracked = manager.find_by_client_order_id(client_order_id);
+  ASSERT_NE(tracked, nullptr);
+  ASSERT_TRUE(tracked->latency.has_value());
+
+  EXPECT_EQ(tracked->latency.value().feed_latency(), Duration{40});
+  EXPECT_EQ(tracked->latency.value().gateway_latency(), Duration{250});
+  EXPECT_EQ(tracked->latency.value().exchange_latency(), Duration{700});
+  EXPECT_EQ(tracked->latency.value().total_latency(), Duration{5090});
+  EXPECT_TRUE(tracked->latency.value().reconciles());
+}
+
+TEST(OrderManager, WithoutALatencyModelNoAttributionIsFabricated) {
+  RecordedResponseAdapter adapter({});
+  AlwaysApproveRiskGate risk;
+  OrderManager manager(adapter, risk);
+  EXPECT_FALSE(manager.models_latency());
+
+  const auto client_order_id =
+      manager.submit_new_order(1, 100, Side::kBuy, OrderType::kLimit, 1000, 50);
+  // No model configured: no attribution recorded at all, rather than a
+  // zero-latency one that would read as a measurement.
+  EXPECT_FALSE(manager.find_by_client_order_id(client_order_id)->latency.has_value());
+}
+
+// AEGIS-117's second half: the frozen description names opportunity cost, not
+// just the missed quantity. Cost is measured against a mark the CALLER
+// supplies -- the OMS observes no market and will not invent one.
+TEST(OrderManager, MissedTradeOpportunityCostIsMeasuredAgainstACallerSuppliedMark) {
+  RecordedResponseAdapter adapter({});
+  AlwaysApproveRiskGate risk;
+  OrderManager manager(adapter, risk);
+  const auto client_order_id =
+      manager.submit_new_order(1, 100, Side::kBuy, OrderType::kLimit, 1000, 100);
+  manager.handle_order_accepted(
+      OrderAcceptedEvent{.order_id = 1, .participant_id = 100, .client_order_id = client_order_id});
+  manager.handle_trade(TradeEvent{.price_units = 1000,
+                                  .quantity_units = 40,
+                                  .maker_order_id = 1,
+                                  .taker_order_id = 2,
+                                  .taker_side = Side::kSell});
+  ASSERT_TRUE(manager.cancel_order(client_order_id));
+  manager.handle_order_terminated(
+      OrderTerminatedEvent{.order_id = 1, .reason = TerminationReason::kCanceled});
+
+  ASSERT_EQ(manager.missed_trades().total_missed_quantity_units(), 60);
+
+  // The market rose to 1050 after the buy at 1000 was cancelled: missing the
+  // remaining 60 units cost 50/unit.
+  EXPECT_EQ(manager.missed_trades().total_opportunity_cost_units(1050), 50 * 60);
+  // Had it fallen instead, missing the order was favourable -- a negative cost.
+  EXPECT_EQ(manager.missed_trades().total_opportunity_cost_units(980), -20 * 60);
+  // At the order's own price, missing it cost nothing.
+  EXPECT_EQ(manager.missed_trades().total_opportunity_cost_units(1000), 0);
+}
+
 }  // namespace

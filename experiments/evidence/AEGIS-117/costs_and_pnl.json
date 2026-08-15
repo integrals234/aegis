@@ -1,0 +1,103 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 39,
+        "passed": true,
+        "source": "tests/cpp/unit/test_missed_trade_tracker.cpp",
+        "test": "MissedTradeTracker.CancelledOrderRecordsOnlyTheUnfilledRemainder"
+      },
+      {
+        "line": 47,
+        "passed": true,
+        "source": "tests/cpp/unit/test_missed_trade_tracker.cpp",
+        "test": "MissedTradeTracker.MultipleRecordsAccumulate"
+      },
+      {
+        "line": 24,
+        "passed": true,
+        "source": "tests/cpp/unit/test_missed_trade_tracker.cpp",
+        "test": "MissedTradeTracker.NegativeMissedQuantityIsRejectedAsANoOp"
+      },
+      {
+        "line": 30,
+        "passed": true,
+        "source": "tests/cpp/unit/test_missed_trade_tracker.cpp",
+        "test": "MissedTradeTracker.OutrightRejectionRecordsTheFullRequestedQuantity"
+      },
+      {
+        "line": 10,
+        "passed": true,
+        "source": "tests/cpp/unit/test_missed_trade_tracker.cpp",
+        "test": "MissedTradeTracker.StartsEmpty"
+      },
+      {
+        "line": 17,
+        "passed": true,
+        "source": "tests/cpp/unit/test_missed_trade_tracker.cpp",
+        "test": "MissedTradeTracker.ZeroMissedQuantityIsANoOpNotACountedRecord"
+      },
+      {
+        "line": 323,
+        "passed": true,
+        "source": "tests/cpp/unit/test_order_manager.cpp",
+        "test": "OrderManager.CancelledOrderRecordsItsUntradedRemainderAsAMissedTrade"
+      },
+      {
+        "line": 367,
+        "passed": true,
+        "source": "tests/cpp/unit/test_order_manager.cpp",
+        "test": "OrderManager.ExchangeRejectedOrderRecordsItsWholeSizeAsMissed"
+      },
+      {
+        "line": 347,
+        "passed": true,
+        "source": "tests/cpp/unit/test_order_manager.cpp",
+        "test": "OrderManager.FullyFilledOrderRecordsNoMissedTrade"
+      },
+      {
+        "line": 428,
+        "passed": true,
+        "source": "tests/cpp/unit/test_order_manager.cpp",
+        "test": "OrderManager.MissedTradeOpportunityCostIsMeasuredAgainstACallerSuppliedMark"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "MissedTradeTracker.*",
+      "OrderManager.CancelledOrderRecordsItsUntradedRemainder*",
+      "OrderManager.FullyFilledOrderRecordsNoMissedTrade",
+      "OrderManager.ExchangeRejectedOrderRecordsItsWholeSize*",
+      "OrderManager.MissedTradeOpportunityCost*"
+    ],
+    "test_count": 10
+  },
+  "all_claims_hold": true,
+  "artifact": "AEGIS-117/costs_and_pnl.json",
+  "claim": "AEGIS-117 (Missed trades): the frozen acceptance criterion \u201cAttribution includes missed-trade statistics.\u201d is satisfied by 10 acceptance test(s) executed against the real production implementation listed under 'implementation'. See 'interpretation' for exactly what the tests do and do not establish.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Attribution includes missed-trade statistics.",
+  "generated_on": "2026-08-15",
+  "implementation": [
+    "cpp/participant/oms/missed_trade_tracker.hpp"
+  ],
+  "interpretation": "Missed trades are recorded BY OrderManager on both terminal paths: an exchange rejection records the whole requested size, and a termination records original minus cumulative filled (zero for a fully filled order, the residual for a cancel). The M3 closure audit found the tracker built but never called from production; the OrderManager.* cases below assert it is reached through those real paths. It deliberately does NOT model counterfactual profit -- that would need a strategy (M4) and is not claimed. Risk-gate rejections are excluded: a self-imposed decision is not a missed market opportunity. Opportunity cost (named in the frozen description) IS computed: each record keeps the missed order's own price and side, and total_opportunity_cost_units() measures the cost against a mark the CALLER supplies -- the OMS observes no market and will not invent one, so the mark is a parameter of the query rather than a fabricated field.",
+  "not_evidence_for": [
+    "Any latency, throughput or comparative performance claim: AEGIS-113 models committed deterministic durations and measures nothing (docs/BENCHMARK_POLICY.md, docs/CV_CLAIMS_POLICY.md).",
+    "Paper or live broker connectivity (AEGIS-221/AEGIS-222 at M9): M3 ships a transport seam and no transport -- no socket, no broker protocol, no credential, no session/reconnect logic, no external account reconciliation.",
+    "Any risk policy, position limit, order limit or kill switch (AEGIS-120 and the M5 risk layer): M3 delivers the mandatory RiskGate seam only, and ships no production implementation of it.",
+    "Any strategy or trading-performance result: M3 contains no strategy logic (M4) and no trading returns are computed or claimed anywhere.",
+    "Behaviour against real venue data or a real counterparty: every scenario is synthetic and committed in-repository."
+  ],
+  "producer": "tools/generate_oms_evidence.py",
+  "repository_commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+  "requirements": [
+    "AEGIS-117"
+  ],
+  "title": "Missed trades"
+}

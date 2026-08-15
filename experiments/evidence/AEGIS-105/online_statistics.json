@@ -1,0 +1,81 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 50,
+        "passed": true,
+        "source": "tests/cpp/unit/test_realized_volatility.cpp",
+        "test": "RollingBeta.MatchesExpectedSlopeForAnExactLinearRelationship"
+      },
+      {
+        "line": 59,
+        "passed": true,
+        "source": "tests/cpp/unit/test_realized_volatility.cpp",
+        "test": "RollingBeta.ZeroBenchmarkVarianceReportsZeroEdgeCase"
+      },
+      {
+        "line": 36,
+        "passed": true,
+        "source": "tests/cpp/unit/test_realized_volatility.cpp",
+        "test": "RollingRealizedVolatility.AnnualizationScalesBySqrtOfPeriodsPerYear"
+      },
+      {
+        "line": 45,
+        "passed": true,
+        "source": "tests/cpp/unit/test_realized_volatility.cpp",
+        "test": "RollingRealizedVolatility.EmptyWindowReportsZeroEdgeCase"
+      },
+      {
+        "line": 22,
+        "passed": true,
+        "source": "tests/cpp/unit/test_realized_volatility.cpp",
+        "test": "RollingRealizedVolatility.MatchesOfflineRootMeanSquareAfterSlidingPastTheWindow"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "RollingRealizedVolatility.*",
+      "RollingBeta.*"
+    ],
+    "test_count": 5
+  },
+  "all_claims_hold": true,
+  "artifact": "AEGIS-105/online_statistics.json",
+  "claim": "AEGIS-105 (Realized volatility and beta): the frozen acceptance criterion \u201cOffline equivalence tests pass.\u201d is satisfied. 5 acceptance test(s) pass against the real C++ implementation, and the compiled implementation agrees with the independent Python reference (offline_stats.py, a different algorithm computed from the definition) to within 1e-09 absolute across every recorded series.",
+  "cross_language_comparison": {
+    "method": "the compiled aegis_bindings extension (real cpp/statistics code) is compared against python/common/offline_stats.py, which computes each quantity directly from its textbook definition using deliberately DIFFERENT algorithms (two-pass variance/covariance, the EW mean expanded as a weighted sum rather than a recurrence, drawdown by plain scan). Both are run over the same committed fixture and the maximum absolute difference across the whole trajectory is recorded per series. A small nonzero divergence is the expected result for two different-but-correct algorithms; python/common/online_stats.py is NOT used as the reference here because it transliterates the C++ recursion and so cannot validate it.",
+    "series": {
+      "realized_volatility": {
+        "max_abs_diff": 5.551115123125783e-17
+      },
+      "rolling_beta": {
+        "max_abs_diff": 6.661338147750939e-16
+      }
+    },
+    "tolerance_absolute": 1e-09,
+    "within_tolerance": true
+  },
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Offline equivalence tests pass.",
+  "generated_on": "2026-08-15",
+  "implementation": [
+    "cpp/statistics/realized_volatility.cpp"
+  ],
+  "not_evidence_for": [
+    "Any latency, throughput, memory or comparative performance property: nothing is timed here and no such claim is made (docs/BENCHMARK_POLICY.md, docs/CV_CLAIMS_POLICY.md).",
+    "Statistical validity of any trading strategy or research result: these are numeric estimators, not a research finding.",
+    "Behaviour on real market data: every fixture is synthetic and committed in-repository."
+  ],
+  "producer": "tools/generate_stats_evidence.py",
+  "reference_implementation": "python/common/offline_stats.py",
+  "repository_commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+  "requirements": [
+    "AEGIS-105"
+  ],
+  "title": "Realized volatility and beta"
+}

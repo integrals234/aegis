@@ -40,6 +40,13 @@ struct OmsOrderRecord {
   std::int64_t original_quantity_units{0};
   std::int64_t cumulative_filled_units{0};
   std::int64_t remaining_units{0};
+  /// AEGIS-116 realized cost state. Persisted because it is *accumulated*
+  /// accounting, exactly like `cumulative_filled_units`: a restored order
+  /// that forgot the fees it already paid would under-report net P&L for the
+  /// rest of its life. The latency attribution is deliberately NOT persisted
+  /// alongside it -- that is derived from a market event, not accumulated.
+  std::int64_t cumulative_fees_units{0};
+  std::int64_t cumulative_slippage_cost_units{0};
 
   friend bool operator==(const OmsOrderRecord&, const OmsOrderRecord&) = default;
 };

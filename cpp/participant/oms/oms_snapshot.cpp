@@ -31,6 +31,8 @@ void put_record(std::vector<std::byte>& out, const OmsOrderRecord& record) {
   put_i64(out, record.original_quantity_units);
   put_i64(out, record.cumulative_filled_units);
   put_i64(out, record.remaining_units);
+  put_i64(out, record.cumulative_fees_units);
+  put_i64(out, record.cumulative_slippage_cost_units);
 }
 
 [[nodiscard]] bool take_record(std::span<const std::byte> bytes, std::size_t& offset,
@@ -45,7 +47,9 @@ void put_record(std::vector<std::byte>& out, const OmsOrderRecord& record) {
       !take_i64(bytes, offset, record.price_units) ||
       !take_i64(bytes, offset, record.original_quantity_units) ||
       !take_i64(bytes, offset, record.cumulative_filled_units) ||
-      !take_i64(bytes, offset, record.remaining_units)) {
+      !take_i64(bytes, offset, record.remaining_units) ||
+      !take_i64(bytes, offset, record.cumulative_fees_units) ||
+      !take_i64(bytes, offset, record.cumulative_slippage_cost_units)) {
     return false;
   }
   record.side = static_cast<Side>(raw_side);
@@ -90,6 +94,8 @@ OmsSnapshot capture_oms_snapshot(const OrderManager& manager) {
         .original_quantity_units = tracked.original_quantity_units,
         .cumulative_filled_units = tracked.cumulative_filled_units,
         .remaining_units = tracked.remaining_units,
+        .cumulative_fees_units = tracked.cumulative_fees_units,
+        .cumulative_slippage_cost_units = tracked.cumulative_slippage_cost_units,
     });
   }
   // all_tracked_orders() already returns ascending client_order_id order;
@@ -168,6 +174,12 @@ std::vector<TrackedOrder> to_tracked_orders(const OmsSnapshot& snapshot) {
         .original_quantity_units = record.original_quantity_units,
         .cumulative_filled_units = record.cumulative_filled_units,
         .remaining_units = record.remaining_units,
+        .cumulative_fees_units = record.cumulative_fees_units,
+        .cumulative_slippage_cost_units = record.cumulative_slippage_cost_units,
+        // Derived from a market event, not persisted state: a restored order
+        // has no event to attribute, and inventing one would fabricate a
+        // measurement (AEGIS-113).
+        .latency = std::nullopt,
     });
   }
   return orders;

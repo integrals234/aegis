@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generate AEGIS-107 evidence: numerical cross-language validation of the
-`cpp-statistics` estimators against the independent Python reference.
+`cpp-statistics` estimators against an independently-algorithmed Python
+reference (`python/common/offline_stats.py`).
 
 Every figure here comes from running the actual compiled `aegis_bindings`
 extension and the actual `python/common/online_stats.py` reference over the
@@ -37,15 +38,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
 sys.path.insert(0, str(ROOT / "tools"))
 
-from common.online_stats import (
-    DrawdownTracker,
-    ExponentialStats,
-    RollingBeta,
-    RollingCovariance,
-    RollingMoments,
-    RollingRealizedVolatility,
-    RollingZScore,
-)
+from common import offline_stats as offline
 from evidence_provenance import provenance
 
 TOLERANCE = 1e-9
@@ -58,6 +51,7 @@ BENCHMARK_RETURNS = [0.008, -0.018, 0.012, -0.004, 0.025, -0.009, 0.017, -0.012,
 CUMULATIVE_PNL = [100.0, 120.0, 90.0, 150.0, 80.0, 200.0, 60.0]
 WINDOW = 4
 ALPHA = 0.3
+PERIODS_PER_YEAR = 252.0
 
 
 def _load_bindings() -> Any:
@@ -84,122 +78,97 @@ def _max_abs_diff(cpp_values: list[float], python_values: list[float]) -> float:
 
 def _compare_rolling_moments(bindings: Any) -> dict[str, Any]:
     batch = bindings.rolling_moments_batch(VALUES, WINDOW)
-    reference = RollingMoments(WINDOW)
-    means: list[float] = []
-    variances: list[float] = []
-    for value in VALUES:
-        reference.push(value)
-        means.append(reference.mean())
-        variances.append(reference.variance())
     return {
-        "requirement_ids": ["AEGIS-098", "AEGIS-099", "AEGIS-100"],
         "estimator": "RollingMoments",
-        "n_observations": len(VALUES),
+        "requirement_ids": ["AEGIS-098", "AEGIS-099", "AEGIS-100"],
         "window": WINDOW,
-        "max_abs_diff_mean": _max_abs_diff(batch["means"], means),
-        "max_abs_diff_variance": _max_abs_diff(batch["variances"], variances),
+        "n_observations": len(VALUES),
+        "max_abs_diff_mean": _max_abs_diff(batch["means"], offline.rolling_mean(VALUES, WINDOW)),
+        "max_abs_diff_variance": _max_abs_diff(
+            batch["variances"], offline.rolling_variance(VALUES, WINDOW)
+        ),
+        "max_abs_diff_stddev": _max_abs_diff(
+            batch["stddevs"], offline.rolling_stddev(VALUES, WINDOW)
+        ),
     }
 
 
 def _compare_rolling_covariance(bindings: Any) -> dict[str, Any]:
     batch = bindings.rolling_covariance_batch(XS, YS, WINDOW)
-    reference = RollingCovariance(WINDOW)
-    covariances: list[float] = []
-    correlations: list[float] = []
-    for x, y in zip(XS, YS, strict=True):
-        reference.push(x, y)
-        covariances.append(reference.covariance())
-        correlations.append(reference.correlation())
     return {
-        "requirement_ids": ["AEGIS-101", "AEGIS-102"],
         "estimator": "RollingCovariance",
-        "n_observations": len(XS),
+        "requirement_ids": ["AEGIS-101", "AEGIS-102"],
         "window": WINDOW,
-        "max_abs_diff_covariance": _max_abs_diff(batch["covariances"], covariances),
-        "max_abs_diff_correlation": _max_abs_diff(batch["correlations"], correlations),
+        "n_observations": len(XS),
+        "max_abs_diff_covariance": _max_abs_diff(
+            batch["covariances"], offline.rolling_covariance(XS, YS, WINDOW)
+        ),
+        "max_abs_diff_correlation": _max_abs_diff(
+            batch["correlations"], offline.rolling_correlation(XS, YS, WINDOW)
+        ),
     }
 
 
 def _compare_rolling_zscore(bindings: Any) -> dict[str, Any]:
-    scores = bindings.rolling_zscore_batch(VALUES, WINDOW)
-    reference = RollingZScore(WINDOW)
-    expected = [reference.push_and_score(value) for value in VALUES]
     return {
-        "requirement_ids": ["AEGIS-103"],
         "estimator": "RollingZScore",
-        "n_observations": len(VALUES),
+        "requirement_ids": ["AEGIS-103"],
         "window": WINDOW,
-        "max_abs_diff_score": _max_abs_diff(list(scores), expected),
+        "n_observations": len(VALUES),
+        "max_abs_diff_score": _max_abs_diff(
+            bindings.rolling_zscore_batch(VALUES, WINDOW),
+            offline.rolling_zscore(VALUES, WINDOW),
+        ),
     }
 
 
 def _compare_exponential_stats(bindings: Any) -> dict[str, Any]:
     batch = bindings.exponential_stats_batch(VALUES, ALPHA)
-    reference = ExponentialStats(ALPHA)
-    means: list[float] = []
-    variances: list[float] = []
-    for value in VALUES:
-        reference.push(value)
-        means.append(reference.mean())
-        variances.append(reference.variance())
     return {
-        "requirement_ids": ["AEGIS-104"],
         "estimator": "ExponentialStats",
-        "n_observations": len(VALUES),
+        "requirement_ids": ["AEGIS-104"],
         "alpha": ALPHA,
-        "max_abs_diff_mean": _max_abs_diff(batch["means"], means),
-        "max_abs_diff_variance": _max_abs_diff(batch["variances"], variances),
+        "n_observations": len(VALUES),
+        "max_abs_diff_mean": _max_abs_diff(
+            batch["means"], offline.exponential_mean(VALUES, ALPHA)
+        ),
+        "max_abs_diff_variance": _max_abs_diff(
+            batch["variances"], offline.exponential_variance(VALUES, ALPHA)
+        ),
     }
 
 
 def _compare_realized_volatility_and_beta(bindings: Any) -> dict[str, Any]:
-    vol_values = bindings.realized_volatility_batch(RETURNS, WINDOW, 252.0)
-    vol_reference = RollingRealizedVolatility(WINDOW)
-    vol_expected = []
-    for r in RETURNS:
-        vol_reference.push(r)
-        vol_expected.append(vol_reference.realized_volatility(252.0))
-
-    beta_values = bindings.rolling_beta_batch(RETURNS, BENCHMARK_RETURNS, WINDOW)
-    beta_reference = RollingBeta(WINDOW)
-    beta_expected = []
-    for asset_r, bench_r in zip(RETURNS, BENCHMARK_RETURNS, strict=True):
-        beta_reference.push(asset_r, bench_r)
-        beta_expected.append(beta_reference.beta())
-
     return {
-        "requirement_ids": ["AEGIS-105"],
         "estimator": "RollingRealizedVolatility + RollingBeta",
-        "n_observations": len(RETURNS),
+        "requirement_ids": ["AEGIS-105"],
         "window": WINDOW,
-        "periods_per_year": 252.0,
-        "max_abs_diff_realized_volatility": _max_abs_diff(list(vol_values), vol_expected),
-        "max_abs_diff_beta": _max_abs_diff(list(beta_values), beta_expected),
+        "periods_per_year": PERIODS_PER_YEAR,
+        "n_observations": len(RETURNS),
+        "max_abs_diff_realized_volatility": _max_abs_diff(
+            bindings.realized_volatility_batch(RETURNS, WINDOW, PERIODS_PER_YEAR),
+            offline.rolling_realized_volatility(RETURNS, WINDOW, PERIODS_PER_YEAR),
+        ),
+        "max_abs_diff_beta": _max_abs_diff(
+            bindings.rolling_beta_batch(RETURNS, BENCHMARK_RETURNS, WINDOW),
+            offline.rolling_beta(RETURNS, BENCHMARK_RETURNS, WINDOW),
+        ),
     }
 
 
 def _compare_drawdown_tracker(bindings: Any) -> dict[str, Any]:
     batch = bindings.drawdown_tracker_batch(CUMULATIVE_PNL)
-    reference = DrawdownTracker()
-    high_water_marks: list[float] = []
-    current_drawdowns: list[float] = []
-    max_drawdowns: list[float] = []
-    for value in CUMULATIVE_PNL:
-        reference.push(value)
-        high_water_marks.append(reference.high_water_mark())
-        current_drawdowns.append(reference.current_drawdown())
-        max_drawdowns.append(reference.max_drawdown())
+    ref_high, ref_current, ref_max = offline.drawdown_series(CUMULATIVE_PNL)
+    ref_mean, ref_variance = offline.pnl_moments(CUMULATIVE_PNL)
     return {
-        "requirement_ids": ["AEGIS-106"],
         "estimator": "DrawdownTracker",
+        "requirement_ids": ["AEGIS-106"],
         "n_observations": len(CUMULATIVE_PNL),
-        "max_abs_diff_high_water_mark": _max_abs_diff(
-            batch["high_water_marks"], high_water_marks
-        ),
-        "max_abs_diff_current_drawdown": _max_abs_diff(
-            batch["current_drawdowns"], current_drawdowns
-        ),
-        "max_abs_diff_max_drawdown": _max_abs_diff(batch["max_drawdowns"], max_drawdowns),
+        "max_abs_diff_high_water_mark": _max_abs_diff(batch["high_water_marks"], ref_high),
+        "max_abs_diff_current_drawdown": _max_abs_diff(batch["current_drawdowns"], ref_current),
+        "max_abs_diff_max_drawdown": _max_abs_diff(batch["max_drawdowns"], ref_max),
+        "max_abs_diff_pnl_mean": _max_abs_diff(batch["means"], ref_mean),
+        "max_abs_diff_pnl_variance": _max_abs_diff(batch["variances"], ref_variance),
     }
 
 
@@ -228,15 +197,26 @@ def main() -> int:
 
     payload = {
         "artifact": "cross_language_validation",
+        "producer": "tools/generate_stats_cross_language_evidence.py",
         "requirements": ["AEGIS-107"],
         **provenance(),
         "methodology": (
             "Each estimator is driven through the identical, deterministic, committed "
             "input sequence twice: once through the compiled C++ implementation "
             "(cpp/statistics, via the aegis_bindings *_batch functions) and once through "
-            "the independent Python reference (python/common/online_stats.py), which was "
-            "written from this project's own reading of the governing mathematics "
-            "(ADR-0022), not ported from the C++. Every intermediate value in each "
+            "the independent Python reference (python/common/offline_stats.py), which "
+            "computes every quantity DIRECTLY FROM ITS TEXTBOOK DEFINITION using "
+            "deliberately different algorithms for most quantities -- two-pass variance "
+            "and covariance rather than any updating form, the exponentially-weighted "
+            "MEAN expanded as a weighted sum over the whole history rather than as a "
+            "recurrence, and drawdown by plain scan. One exception is stated plainly: "
+            "the exponentially-weighted VARIANCE has no closed weighted-sum form "
+            "matching this convention, so the reference reproduces Finch's recurrence "
+            "there and its divergence is consequently exactly 0.0 -- that single "
+            "series is a transliteration check, not an independent one. "
+            "python/common/online_stats.py is deliberately NOT "
+            "used as the reference: it transliterates the C++ recursion step for step, "
+            "so its agreement with the C++ is tautological. Every intermediate value in each "
             "trajectory is compared, not only the final one -- the *_batch bindings "
             "return one output per input precisely so eviction/recursion behaviour mid-"
             "window is checked, not just steady state."
@@ -245,16 +225,31 @@ def main() -> int:
             "type": "absolute",
             "value": TOLERANCE,
             "rationale": (
-                "Both implementations perform the same double-precision arithmetic in "
-                "the same operation order (ADR-0022 fixes one numerical convention, "
-                "restated independently in each language); the residual is IEEE-754 "
-                "rounding noise between two hand-written implementations of the same "
-                "recursion, not a methodological difference."
+                "The two implementations share the numerical CONVENTION (ADR-0022: "
+                "sample statistics with ddof=1, the documented edge cases) but NOT the "
+                "algorithm -- production uses a numerically stable reverse-Welford "
+                "recursion, the reference recomputes from the definition in two passes. "
+                "A small nonzero residual is therefore the expected outcome, and is "
+                "IEEE-754 rounding noise between two different-but-correct algorithms. "
+                "An exact 0.0 across EVERY series would indicate the reference shares "
+                "the production algorithm rather than checking it -- precisely the "
+                "defect the M3 closure audit found in the earlier reference. Exactly "
+                "one series (exponential_variance) legitimately reports 0.0 for the "
+                "reason given under methodology; every other series reports a genuine "
+                "nonzero residual."
             ),
         },
         "comparisons": comparisons,
         "performance_validation": {
-            "status": "not measured in this artifact",
+            "status": "NOT DONE -- owner-approved residual deferred to M8",
+            "residual": (
+                "AEGIS-107's frozen description names output, error, latency AND "
+                "memory. M3 completes the output/error half only. The latency and "
+                "memory comparison is registered as an owner-approved residual "
+                "against AEGIS-107 with verification_blocked_until: M8, so this "
+                "requirement stays `implemented` rather than `verified` at M3 "
+                "closure. It is NOT silently dropped."
+            ),
             "reason": (
                 "docs/BENCHMARK_POLICY.md (frozen) requires CPU/RAM/OS/governor "
                 "disclosure and a specific workload mix for any latency figure entered "
@@ -268,7 +263,9 @@ def main() -> int:
         },
         "claim": (
             "For every estimator AEGIS-098..106 own, the compiled C++ production "
-            "implementation and the independent Python reference agree within "
+            "implementation and an independently-algorithmed Python reference "
+            "(python/common/offline_stats.py, computed from the textbook definition) "
+            "agree within "
             f"{TOLERANCE} absolute difference at every point along the committed "
             "deterministic fixture trajectories above."
         ),

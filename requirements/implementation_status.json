@@ -1063,58 +1063,57 @@
       ]
     },
     "AEGIS-060": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/replay/fault_injection.hpp",
         "cpp/replay/fault_injection.cpp",
-        "cpp/replay/replay_run_main.cpp"
+        "cpp/replay/replay_run_main.cpp",
+        "cpp/participant/app/fault_scenario.cpp",
+        "cpp/participant/book_builder/book_builder.cpp"
       ],
       "tests": [
         "tests/cpp/unit/test_fault_injection.cpp",
         "tests/cpp/unit/test_replay_full_stack_integration.cpp",
-        "tests/replay/test_futures_replay_determinism.py"
+        "tests/replay/test_futures_replay_determinism.py",
+        "tests/cpp/unit/test_stale_data_response.cpp"
       ],
       "reports": [
-        "experiments/evidence/AEGIS-060/replay_fault_injection.json"
+        "experiments/evidence/AEGIS-060/replay_fault_injection.json",
+        "experiments/evidence/AEGIS-060/stale_data_response.json"
       ],
-      "notes": "M2 slice 11. DeterministicFaultInjector's kDelayed fault: an explicit, committed FaultRule (record_index + delay), never randomness, annotates the targeted record with FaultAnnotation{kind, delay} while leaving it in the emitted sequence and its canonical-order fields untouched. This is the injection mechanism only -- the stale-data RESPONSE the acceptance criterion names needs a participant-side consumer that does not exist before M3; that residual is unchanged from the owner-confirmed M2 plan of record. See ADR-0019. Not yet 'verified'.",
-      "verification_blocked_until": "M3",
-      "residual": "The frozen acceptance names delayed observations AND stale-data responses. M2 delivers both halves of the observation: the kDelayed declaration attached deterministically to an exact record (cpp/replay/fault_injection.*), and its realization in the emitted schedule as fault_delay_nanos/scheduled_wait_nanos (cpp/replay/replay_run_main.cpp) -- the delay lengthens the record's scheduled wait rather than moving it, because moving it would perturb the canonical order (ADR-0019). What remains is the RESPONSE: detecting that data is stale and reacting needs a participant-side consumer, and configs/architecture_rules.yaml dates cpp-participant-feed-handler to M3.",
-      "deferral_history": [
-        {
-          "blocked_until": "M3",
-          "recorded_at": "M2",
-          "date": "2026-08-10",
-          "reason": "Registered while closing M2: the deterministic delayed-data injection mechanism is implemented and tested, but responding to stale data requires the M3 participant feed handler. Owner-approved residual 060 -> M3 in experiments/plans/M2.md rev. 4."
-        }
-      ]
+      "notes": "M3 Slice 2 + Slice 8: M2's deterministic delayed-observation injector drives the real participant feed handler and book builder; the reconstructed book is marked stale on the virtual clock and the defined feed/book-level response is asserted. NOT a risk response (M5).",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-061": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "cpp/replay/fault_injection.hpp",
         "cpp/replay/fault_injection.cpp",
-        "cpp/replay/replay_run_main.cpp"
+        "cpp/replay/replay_run_main.cpp",
+        "cpp/participant/app/fault_scenario.cpp",
+        "cpp/participant/book_builder/book_builder.cpp",
+        "cpp/participant/feed_handler/sequence_tracker.cpp"
       ],
       "tests": [
         "tests/cpp/unit/test_fault_injection.cpp",
         "tests/cpp/unit/test_replay_full_stack_integration.cpp",
-        "tests/replay/test_futures_replay_determinism.py"
+        "tests/replay/test_futures_replay_determinism.py",
+        "tests/cpp/unit/test_feed_recovery.cpp"
       ],
       "reports": [
-        "experiments/evidence/AEGIS-061/replay_fault_injection.json"
+        "experiments/evidence/AEGIS-061/replay_fault_injection.json",
+        "experiments/evidence/AEGIS-061/feed_recovery.json"
       ],
-      "notes": "M2 slice 11. DeterministicFaultInjector's kMissing (removed from output, accounted for in FaultInjectionResult::dropped, never silently lost), kDuplicated (the record appears twice consecutively, only the injected copy annotated) and kSequenceGap (an annotation declaring a source-sequence-numbering gap, never a mutation of the record's own source_sequence -- canonical order is never put at risk) faults. Mechanism only -- feed RECOVERY is the registered M3 residual, unchanged from the owner-confirmed M2 plan of record. See ADR-0019. Not yet 'verified'.",
-      "verification_blocked_until": "M3",
-      "residual": "The frozen acceptance names feed RECOVERY tests covering each fault. M2 delivers deterministic missing/duplicate/sequence-gap injection with full accounting (nothing is silently lost); recovery is a participant-side behaviour and configs/architecture_rules.yaml dates cpp-participant-feed-handler to M3.",
-      "deferral_history": [
-        {
-          "blocked_until": "M3",
-          "recorded_at": "M2",
-          "date": "2026-08-10",
-          "reason": "Registered while closing M2: missing, duplicated and sequence-gap injection is implemented and tested, but feed recovery requires the M3 participant feed handler. Owner-approved residual 061 -> M3 in experiments/plans/M2.md rev. 4."
-        }
-      ]
+      "notes": "M3 Slice 2 + Slice 8: M2's missing/duplicated/sequence-gap injectors each drive detection and buffer -> re-base -> replay recovery through the real participant stack, ending in the correct book state.",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-062": {
       "status": "implemented",
@@ -1169,88 +1168,229 @@
       ]
     },
     "AEGIS-064": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/exchange/market_data/market_data_publisher.cpp",
+        "cpp/participant/book_builder/book_builder.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_book_builder.cpp",
+        "tests/cpp/unit/test_exchange_node.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-064/book_reconstruction.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-065": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/book_builder/book_builder.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_book_builder.cpp",
+        "tests/cpp/unit/test_exchange_node.cpp",
+        "tests/cpp/unit/test_market_data_publisher.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-065/book_reconstruction.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-066": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/book_builder/book_builder.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_book_builder.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-066/book_reconstruction.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-067": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/book_builder/book_builder.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_book_builder.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-067/book_reconstruction.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-068": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/feed_handler/feed_handler.cpp",
+        "cpp/participant/feed_handler/sequence_tracker.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_feed_handler.cpp",
+        "tests/cpp/unit/test_sequence_tracker.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-068/book_reconstruction.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-069": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/book_builder/book_builder.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_book_builder.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-069/book_reconstruction.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-070": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/book_builder/book_builder.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_book_builder.cpp",
+        "tests/cpp/unit/test_feed_recovery.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-070/book_reconstruction.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-071": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/book_builder/book_builder.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_book_builder.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-071/book_reconstruction.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-072": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/book_builder/book_builder.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_book_builder.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-072/book_reconstruction.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-073": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/book_builder/book_builder.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_book_builder.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-073/book_reconstruction.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-074": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/app/intensity_tracker.cpp",
+        "cpp/statistics/rolling_rate.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_intensity_tracker.cpp",
+        "tests/cpp/unit/test_rolling_rate.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-074/book_reconstruction.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-075": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/book_builder/book_builder.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_book_builder.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-075/book_reconstruction.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-076": {
       "status": "not_started",
@@ -1407,166 +1547,429 @@
       "notes": ""
     },
     "AEGIS-098": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/statistics/rolling_moments.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_rolling_moments.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-098/online_statistics.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-099": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/statistics/rolling_moments.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_rolling_moments.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-099/online_statistics.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-100": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/statistics/rolling_moments.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_rolling_moments.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-100/online_statistics.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-101": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/statistics/rolling_covariance.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_rolling_covariance.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-101/online_statistics.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-102": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/statistics/rolling_covariance.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_rolling_covariance.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-102/online_statistics.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-103": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/statistics/rolling_zscore.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_rolling_zscore.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-103/online_statistics.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-104": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/statistics/exponential_stats.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_exponential_stats.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-104/online_statistics.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-105": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/statistics/realized_volatility.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_realized_volatility.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-105/online_statistics.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-106": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/statistics/drawdown_tracker.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_drawdown_tracker.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-106/online_statistics.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-107": {
       "status": "implemented",
       "implementation": [
         "cpp/bindings/aegis_module.cpp",
         "python/common/online_stats.py",
-        "tools/generate_stats_cross_language_evidence.py"
+        "tools/generate_stats_cross_language_evidence.py",
+        "python/common/offline_stats.py"
       ],
       "tests": [
-        "tests/integration/test_online_stats_cross_language.py"
+        "tests/integration/test_online_stats_cross_language.py",
+        "tests/unit/test_offline_stats.py"
       ],
       "reports": [
         "experiments/evidence/AEGIS-107/cross_language_validation.json"
       ],
-      "notes": "M3 Slice 4: cross-language numerical validation of the C++ statistics estimators against the independent python/common/online_stats.py reference. Not independently audited; not promoted to verified."
+      "notes": "M3: numerical/output/error cross-language validation complete against an algorithmically independent reference (max divergence 5.7e-14, tolerance 1e-9). Latency/memory comparison carries an owner-approved residual to M8.",
+      "verification_blocked_until": "M8",
+      "residual": "Latency and memory comparison between the C++ estimators and the Python reference, under docs/BENCHMARK_POLICY.md's disclosure methodology. The numerical output/error comparison is complete and evidenced at M3 (experiments/evidence/AEGIS-107/cross_language_validation.json).",
+      "deferral_history": [
+        {
+          "blocked_until": "M8",
+          "recorded_at": "M3",
+          "date": "2026-08-15",
+          "reason": "Owner-approved at M3 closure. The frozen description names output, error, latency AND memory. M3 truthfully completes the numerical output/error half: an algorithmically independent Python reference (python/common/offline_stats.py, textbook two-pass definitions) agrees with the compiled C++ estimators to 5.7e-14, and the cross-language report is committed. The latency and memory halves are NOT done: docs/BENCHMARK_POLICY.md (frozen) requires CPU/RAM/OS/governor disclosure and a specific workload mix that M3 has no infrastructure to produce honestly, and inventing one would misdescribe what was measured. Deferred to M8, the milestone that builds the performance-measurement infrastructure."
+        }
+      ]
     },
     "AEGIS-108": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/oms/order_lifecycle.hpp",
+        "cpp/participant/oms/order_manager.cpp",
+        "cpp/participant/oms/order_state.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_order_lifecycle.cpp",
+        "tests/cpp/unit/test_order_manager.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-108/oms_lifecycle.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-109": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/oms/order_manager.cpp",
+        "cpp/participant/portfolio/portfolio.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_participant_exchange_integration.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-109/execution_scenarios.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-110": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/oms/order_manager.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_participant_exchange_integration.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-110/execution_scenarios.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-111": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/oms/order_manager.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_participant_exchange_integration.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-111/execution_scenarios.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-112": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/oms/order_manager.cpp",
+        "cpp/participant/oms/order_state.cpp",
+        "cpp/participant/oms/recorded_response_adapter.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_order_manager.cpp",
+        "tests/cpp/unit/test_recorded_response_adapter.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-112/execution_scenarios.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-113": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/oms/latency_model.cpp",
+        "cpp/participant/oms/order_manager.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_latency_model.cpp",
+        "tests/cpp/unit/test_order_manager.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-113/latency_attribution.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-114": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/oms/order_manager.cpp",
+        "cpp/participant/portfolio/portfolio.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_order_manager.cpp",
+        "tests/cpp/unit/test_participant_exchange_integration.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-114/execution_scenarios.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-115": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/oms/queue_position_estimator.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_queue_position_estimator.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-115/queue_approximation.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-116": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/oms/cost_model.hpp",
+        "cpp/participant/portfolio/portfolio.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_cost_model.cpp",
+        "tests/cpp/unit/test_order_manager.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-116/costs_and_pnl.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-117": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/oms/missed_trade_tracker.hpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_missed_trade_tracker.cpp",
+        "tests/cpp/unit/test_order_manager.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-117/costs_and_pnl.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-118": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/portfolio/portfolio.cpp"
+      ],
+      "tests": [
+        "tests/cpp/property/test_portfolio_conservation.cpp",
+        "tests/cpp/unit/test_portfolio.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-118/portfolio_accounting.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-119": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/oms/execution_adapter.hpp",
+        "cpp/participant/oms/execution_transport.hpp",
+        "cpp/participant/oms/recorded_response_adapter.cpp",
+        "cpp/participant/oms/transport_execution_adapter.cpp"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_adapter_contract.cpp",
+        "tests/cpp/unit/test_execution_adapter.cpp",
+        "tests/cpp/unit/test_recorded_response_adapter.cpp"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-119/adapter_contract.json"
+      ],
+      "notes": "",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-120": {
       "status": "not_started",
@@ -2506,7 +2909,7 @@
       }
     },
     "AEGIS-237": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "python/common/recovery.py",
         "docs/RECOVERY_CONTRACT.md",
@@ -2527,23 +2930,12 @@
       "reports": [
         "experiments/evidence/AEGIS-237/participant_recovery.json"
       ],
-      "notes": "M3 Slice 7: participant-state (OMS + portfolio) process-boundary recovery per ADR-0024 -- ParticipantSnapshot v1, round trip, byte stability, and continuation equality across two aegis_participant_run process invocations. Discharges the M3 portion only; M9 restart recovery (AEGIS-221/222) remains owed. Not independently audited; not promoted to verified; verification_blocked_until left untouched for Slice 8's audit to resolve.",
-      "verification_blocked_until": "M3",
-      "residual": "The acceptance names recovery tests for exchange and participant state. Exchange-state recovery is paid at M1: sequencer position and book state survive a snapshot/restore cycle, verified by round trip and by continuation equality across a process boundary (docs/RECOVERY_CONTRACT.md M1 row, ADR-0013). Participant-state recovery still requires the OMS and portfolio layers, which configs/architecture_rules.yaml dates M3.",
-      "deferral_history": [
-        {
-          "blocked_until": "M1",
-          "recorded_at": "M0",
-          "date": "2026-08-06",
-          "reason": "Registered while closing M0: the acceptance names exchange and participant recovery tests, and neither subsystem exists."
-        },
-        {
-          "blocked_until": "M3",
-          "recorded_at": "M0",
-          "date": "2026-08-06",
-          "reason": "The independent M0 audit found the obligation dated M1 while participant-state recovery depends on the OMS and portfolio layers, which configs/architecture_rules.yaml dates M3. Re-dated to the milestone that can actually discharge it."
-        }
-      ]
+      "notes": "M1 exchange-state recovery plus M3 Slice 7 participant-state recovery (ADR-0024): ParticipantSnapshot v1, byte-stable, version/corruption refusing, verified by round trip and by continuation equality across a real process boundary.",
+      "audit": {
+        "auditor": "aegis-spec-auditor",
+        "commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+        "date": "2026-08-15"
+      }
     },
     "AEGIS-238": {
       "status": "implemented",

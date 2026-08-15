@@ -1,14 +1,25 @@
-"""Independent Python reference for the online statistics estimators
-(AEGIS-098..107; ADR-0022).
+"""Python mirror of the online statistics estimators (AEGIS-098..107; ADR-0022).
 
-This is the reference AEGIS-107's cross-language comparison holds the C++
-production estimators (`cpp/statistics`) to. It is written from this
-module's own reading of the mathematics, not by porting the C++ — an
-implementation cannot validate itself, so agreement between two independent
-readings is what "cross-language validation" is allowed to mean here.
+**What this module is, stated accurately.** It implements the *same*
+incremental algorithms as `cpp/statistics` — the same reverse-Welford
+recursion, the same branch structure, the same update order. It is an
+executable specification of the C++: useful for reading the algorithm in a
+language without a build step, and useful for confirming that the compiled
+binding layer transports values faithfully.
 
-Every class below mirrors the numerical convention ADR-0022 fixed once, in
-`cpp/statistics`, and restates here rather than reinventing:
+**What it is not: an independent check of the C++.** An earlier version of
+this docstring, and of ADR-0022, claimed independence and rested AEGIS-107's
+cross-language validation on it. That claim was false — this is a
+transliteration, and two transliterations of one recursion agree because they
+are the same recursion, so their agreement cannot detect an error *in* that
+recursion. The genuinely independent reference is
+`python/common/offline_stats.py`, which computes every quantity directly from
+its textbook definition using deliberately different (naive, two-pass,
+recompute-from-scratch) algorithms. AEGIS-107's numerical claim rests on that
+module; this one contributes the step-for-step mirror.
+
+Every class below follows the numerical convention ADR-0022 fixed once, in
+`cpp/statistics`:
 
 * sample statistics (``ddof = 1``), not population statistics;
 * reverse-Welford (or its bivariate/exponential analogue) for numerically
@@ -18,9 +29,7 @@ Every class below mirrors the numerical convention ADR-0022 fixed once, in
   rather than raising or propagating ``nan``.
 
 Dependency-light on purpose: standard library only (``collections.deque``,
-``math``), so nothing about this reference's own correctness depends on a
-third-party numerical library's floating-point choices — the exact kind of
-external variable a cross-language comparison is supposed to rule out.
+``math``).
 """
 
 from __future__ import annotations

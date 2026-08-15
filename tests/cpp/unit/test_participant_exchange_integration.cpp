@@ -37,13 +37,8 @@ using aegis::events::exchange::decode_order_replaced;
 using aegis::events::exchange::decode_order_terminated;
 using aegis::events::exchange::decode_trade;
 using aegis::events::exchange::NewOrderCommand;
-using aegis::events::exchange::OrderAcceptedEvent;
-using aegis::events::exchange::OrderRejectedEvent;
-using aegis::events::exchange::OrderTerminatedEvent;
 using aegis::events::exchange::OrderType;
 using aegis::events::exchange::Side;
-using aegis::events::exchange::TerminationReason;
-using aegis::events::exchange::TradeEvent;
 using aegis::exchange::EmittedEvent;
 using aegis::exchange::ExchangeNode;
 using aegis::exchange::InstrumentId;
@@ -226,7 +221,7 @@ TEST(ParticipantExchangeIntegration, MarketOrderConsumesARestingOrderAndReconcil
   ASSERT_FALSE(emitted.empty());
   const auto accepted = decode_order_accepted(emitted.front().payload);
   ASSERT_TRUE(accepted.has_value());
-  deliver(emitted, manager, portfolio, accepted->order_id);
+  deliver(emitted, manager, portfolio, accepted.value().order_id);
 
   EXPECT_EQ(tracked->lifecycle.state(), OrderState::kFilled);
   EXPECT_EQ(tracked->cumulative_filled_units, 100);
@@ -254,7 +249,7 @@ TEST(ParticipantExchangeIntegration, PassiveLimitOrderRestsThenFillsFromALaterAg
   auto emitted = transport.drain();
   const auto accepted = decode_order_accepted(emitted.front().payload);
   ASSERT_TRUE(accepted.has_value());
-  deliver(emitted, manager, portfolio, accepted->order_id);
+  deliver(emitted, manager, portfolio, accepted.value().order_id);
   EXPECT_EQ(tracked->lifecycle.state(), OrderState::kAcknowledged);  // Nonfill case.
 
   // A later aggressor sells into it.
@@ -267,7 +262,7 @@ TEST(ParticipantExchangeIntegration, PassiveLimitOrderRestsThenFillsFromALaterAg
                                            .price_units = 1000,
                                            .quantity_units = 50},
                            node.sequencer().sequence(clock.stamp<aegis::common::EventTime>()));
-  deliver(aggressor_events, manager, portfolio, accepted->order_id);
+  deliver(aggressor_events, manager, portfolio, accepted.value().order_id);
 
   // The maker's OrderTerminatedEvent{kFilled} arrives in the same batch as
   // the trade (match_and_apply_fills emits both together), so a fully
@@ -322,7 +317,7 @@ TEST(ParticipantExchangeIntegration, AggressiveLimitOrderSweepsMultipleLevelsWit
   const auto emitted = transport.drain();
   const auto accepted = decode_order_accepted(emitted.front().payload);
   ASSERT_TRUE(accepted.has_value());
-  deliver(emitted, manager, portfolio, accepted->order_id);
+  deliver(emitted, manager, portfolio, accepted.value().order_id);
 
   EXPECT_EQ(tracked->cumulative_filled_units, 100);  // 50 + 50 across both levels.
   EXPECT_EQ(tracked->remaining_units, 25);           // Residual rests (limit, not market).

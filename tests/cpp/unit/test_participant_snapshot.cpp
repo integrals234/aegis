@@ -29,7 +29,6 @@ using aegis::events::exchange::OrderType;
 using aegis::events::exchange::Side;
 using aegis::events::exchange::TerminationReason;
 using aegis::participant::app::capture_participant_snapshot;
-using aegis::participant::app::describe;
 using aegis::participant::app::ParticipantSnapshot;
 using aegis::participant::app::ParticipantSnapshotError;
 using aegis::participant::app::read_participant_snapshot;
@@ -46,7 +45,6 @@ using aegis::participant::oms::RiskDecision;
 using aegis::participant::oms::RiskGate;
 using aegis::participant::oms::RiskVerdict;
 using aegis::participant::oms::to_tracked_orders;
-using aegis::participant::oms::TrackedOrder;
 using aegis::participant::oms::write_oms_snapshot;
 using aegis::participant::portfolio::capture_portfolio_snapshot;
 using aegis::participant::portfolio::Portfolio;
@@ -214,9 +212,9 @@ TEST(OmsSnapshot, RestoredOrderManagerPreservesLifecycleStateAndIndexes) {
 
 Portfolio make_nontrivial_portfolio() {
   Portfolio ledger;
-  ledger.apply_fill(1, Side::kBuy, 1000, 40, /*fee=*/4);
-  ledger.apply_fill(2, Side::kSell, 2000, 15, /*fee=*/2);
-  ledger.apply_fill(1, Side::kSell, 1050, 10, /*fee=*/1);  // Partial close: realizes P&L.
+  ledger.apply_fill(1, Side::kBuy, 1000, 40, /*fee_units=*/4);
+  ledger.apply_fill(2, Side::kSell, 2000, 15, /*fee_units=*/2);
+  ledger.apply_fill(1, Side::kSell, 1050, 10, /*fee_units=*/1);  // Partial close: realizes P&L.
   return ledger;
 }
 
@@ -278,8 +276,8 @@ TEST(PortfolioSnapshot, RestoredPortfolioContinuesAccountingIdenticallyToUninter
   // Apply the same next fill to both an uninterrupted copy and the
   // restored copy; the resulting state must match exactly.
   Portfolio uninterrupted = make_nontrivial_portfolio();
-  uninterrupted.apply_fill(1, Side::kBuy, 1020, 5, /*fee=*/1);
-  restored.apply_fill(1, Side::kBuy, 1020, 5, /*fee=*/1);
+  uninterrupted.apply_fill(1, Side::kBuy, 1020, 5, /*fee_units=*/1);
+  restored.apply_fill(1, Side::kBuy, 1020, 5, /*fee_units=*/1);
 
   EXPECT_EQ(restored.cash_units(), uninterrupted.cash_units());
   EXPECT_EQ(restored.position(1), uninterrupted.position(1));

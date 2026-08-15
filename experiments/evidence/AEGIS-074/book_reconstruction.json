@@ -1,0 +1,80 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 44,
+        "passed": true,
+        "source": "tests/cpp/unit/test_intensity_tracker.cpp",
+        "test": "IntensityTracker.CountsCanceledTerminationsButNotOtherReasons"
+      },
+      {
+        "line": 32,
+        "passed": true,
+        "source": "tests/cpp/unit/test_intensity_tracker.cpp",
+        "test": "IntensityTracker.CountsDecodedTradesOnly"
+      },
+      {
+        "line": 63,
+        "passed": true,
+        "source": "tests/cpp/unit/test_intensity_tracker.cpp",
+        "test": "IntensityTracker.UnhandledAndBookMessagesAreNoOps"
+      },
+      {
+        "line": 44,
+        "passed": true,
+        "source": "tests/cpp/unit/test_rolling_rate.cpp",
+        "test": "RollingRate.EmptyReportsZeroCountAndRate"
+      },
+      {
+        "line": 60,
+        "passed": true,
+        "source": "tests/cpp/unit/test_rolling_rate.cpp",
+        "test": "RollingRate.EventsOutsideTheWindowAreEvicted"
+      },
+      {
+        "line": 30,
+        "passed": true,
+        "source": "tests/cpp/unit/test_rolling_rate.cpp",
+        "test": "RollingRate.MatchesOfflineCountAsEventsStreamIn"
+      },
+      {
+        "line": 50,
+        "passed": true,
+        "source": "tests/cpp/unit/test_rolling_rate.cpp",
+        "test": "RollingRate.RatePerSecondMatchesCountOverWindowInSeconds"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "RollingRate.*",
+      "IntensityTracker.*"
+    ],
+    "test_count": 7
+  },
+  "all_claims_hold": true,
+  "artifact": "AEGIS-074/book_reconstruction.json",
+  "claim": "AEGIS-074 (Trade/cancellation intensity): the frozen acceptance criterion \u201cOnline/offline equivalence tests pass.\u201d is satisfied by 7 acceptance test(s) executed against the real production implementation listed under 'implementation'. Each case below records the source file and line of the assertion made.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Online/offline equivalence tests pass.",
+  "generated_on": "2026-08-15",
+  "implementation": [
+    "cpp/statistics/rolling_rate.cpp",
+    "cpp/participant/app/intensity_tracker.cpp"
+  ],
+  "not_evidence_for": [
+    "Any performance, latency or throughput property: no timing is measured here and none is claimed (docs/BENCHMARK_POLICY.md).",
+    "Behaviour on real venue market data: every fixture is synthetic and committed in-repository; M3 ships no live or paper feed.",
+    "M5 risk responses to stale or recovered data -- M3 delivers the feed/book-level response only (ADR-0021)."
+  ],
+  "producer": "tools/generate_participant_evidence.py",
+  "repository_commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+  "requirements": [
+    "AEGIS-074"
+  ],
+  "title": "Trade/cancellation intensity"
+}

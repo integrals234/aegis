@@ -110,19 +110,47 @@
 
 ## M3 state
 
-**In progress.** Plan of record: `experiments/plans/M3.md`. Build-first
-cadence: few large slices, focused tests while building, two checkpoints, one
-heavy closure — not a per-slice milestone re-certification.
+**CLOSURE PROPOSED** — the closure PR is open, awaiting the owner's approving
+review. Nothing is merged. Plan of record: `experiments/plans/M3.md`.
 
-Slice 1 (activation + vertical skeleton) populates the six M3-dated layers
-`configs/architecture_rules.yaml` requires non-empty from this milestone, plus
-the new `cpp-participant-app` composition root the same slice adds under the
-owner-approved `m3-architecture-transition` change set (4 changes: add
-`cpp-participant-app`; add edge `cpp-bindings -> cpp-statistics`; add edge
-`cpp-exchange-app -> cpp-exchange-market-data`; narrow
-`cpp-statistics.may_depend_on` to `[cpp-common]`). ADR-0020 through ADR-0024
-record the five architecture decisions the plan called for. This section is
-completed at M3 closure (slice 8), matching the M0/M1/M2 precedent above.
+**33 of the 34 primary M3 requirements (AEGIS-064..075, 098..106, 108..119) are
+`verified`** on an independent spec-auditor review of the final tree.
+**AEGIS-107 stays `implemented`** with an owner-approved residual dated **M8**:
+its frozen description names output, error, latency and memory; M3 completes
+the output/error half (an algorithmically independent Python reference agrees
+with the compiled C++ to 5.7e-14 against a 1e-9 tolerance, report committed)
+but the latency/memory comparison needs performance-measurement infrastructure
+M3 does not have, and `docs/BENCHMARK_POLICY.md` is frozen.
+
+**All three inherited M3 obligations are discharged and `verified`:**
+AEGIS-060 (stale-data response), AEGIS-061 (feed recovery for missing,
+duplicated and sequence-gap faults independently) and AEGIS-237
+(participant-state recovery across a real process boundary). So
+`--check-deferred M3` passes.
+
+Seven architecture layers were populated under the four-change
+`m3-architecture-transition` approval from PR #7 and no others: add
+`cpp-participant-app`; `cpp-bindings += cpp-statistics`;
+`cpp-exchange-app += cpp-exchange-market-data`; narrow
+`cpp-statistics.may_depend_on` to `[cpp-common]`. One consequential edit
+accompanies the first — the new layer joins `mutable_globals_forbidden_in`,
+which tightens rather than relaxes. **No production participant→exchange edge
+exists.** ADR-0020 through ADR-0024 record the five decisions.
+
+Closure verification was substantive rather than ceremonial. The independent
+audit **rejected the first submission**, finding four requirements whose
+components were built and unit-tested but never integrated — AEGIS-113's
+latency model, AEGIS-116's fee/slippage model and AEGIS-117's missed-trade
+tracker each had zero production callers — plus a false independence claim in
+AEGIS-107's committed evidence, where the "independent" Python reference was a
+line-for-line transliteration of the C++ (which is why every divergence was
+exactly 0.0). All were fixed by building the missing integration and writing a
+genuinely independent reference, not by narrowing the wording. A second audit
+pass found three further gaps (a vacuous fee leg, two competing fee ledgers,
+and AEGIS-117's uncomputed opportunity cost); those were fixed too. The first
+full-policy `clang-tidy` run over M3 found 124 accumulated violations, all
+fixed mechanically with no check disabled and no assertion weakened.
+`experiments/milestone-reports/M3.md` §12 lists every defect.
 
 ## M2 state
 

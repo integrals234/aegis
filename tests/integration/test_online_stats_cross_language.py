@@ -1,21 +1,20 @@
-"""AEGIS-107 — the compiled C++ estimators must agree with the independent
-Python reference (ADR-0022).
+"""AEGIS-107: the compiled C++ estimators and the Python modules agree.
 
-Same discipline as ``test_bindings_roundtrip.py``: the compiled extension
-must actually be the compiled module (a pure-Python fallback would make
-every comparison below decorative), and a missing build fails rather than
-skips (AEGIS-003 — a skipped test is not evidence).
+**What this file proves, precisely.** It compares `cpp/statistics` (through
+the compiled `aegis_bindings` extension) against
+`python/common/online_stats.py`. That module mirrors the C++ recursion step
+for step, so agreement here demonstrates that the binding layer transports
+values faithfully and that the two transliterations have not drifted -- it
+is NOT an independent check of the recursion itself.
 
-The Python reference (``common.online_stats``) was written from this
-project's own reading of the mathematics, not by porting the C++ (see that
-module's docstring) — agreement here is between two independent
-implementations, not an implementation checked against itself.
-
-This file numerically validates every estimator AEGIS-101..106 and
-AEGIS-098..100 own; `tools/generate_stats_cross_language_evidence.py`
-produces the committed report from the same fixtures and the same
-tolerances. Performance (latency/memory) comparison is explicitly out of
-scope for both — see that generator's module docstring for why.
+The genuinely independent numerical check lives in
+`tests/unit/test_offline_stats.py` and in
+`tools/generate_stats_evidence.py`, both of which use
+`python/common/offline_stats.py` -- textbook definitions computed with
+deliberately different algorithms. AEGIS-107's numerical claim rests on
+those. An earlier version of this docstring called the two implementations
+here "independent"; the M3 closure audit found that false, and it is
+retracted.
 """
 
 from __future__ import annotations

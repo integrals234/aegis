@@ -48,21 +48,47 @@ it is what makes the type directly bindable: `cpp-bindings` can expose
 `push`/`mean`/`variance`/`stddev` without knowing anything about the
 participant pipeline that eventually feeds it real numbers.
 
-**C++ is production; `python/common/online_stats.py` is the independent
-reference.** The Python reference implements the same reverse-Welford
-algorithm from its own reading of the mathematics, not by porting the C++ —
-independence is what makes an agreement between the two mean something for
-AEGIS-107. It lives in `python/common/`, not a new `python/participant/`
-package: it is a platform-level numeric reference, the same category as
+**C++ is production; the Python side is two modules with two different jobs.**
+
+`python/common/online_stats.py` implements the *same* reverse-Welford
+recursion as the C++, step for step. It is an executable specification and a
+check that the compiled binding layer transports values faithfully — but it
+is **not** an independent validation of the recursion, because it *is* the
+recursion. This ADR originally claimed it was independent, and AEGIS-107's
+cross-language report rested on that claim; the M3 closure audit found the
+module to be a line-for-line transliteration (identical variable names,
+identical branch structure), which is why every reported divergence was
+exactly `0.0`. Agreement between a transliteration and its source is not
+evidence about the source. **That claim is withdrawn here.**
+
+`python/common/offline_stats.py` is the genuinely independent reference, and
+is what AEGIS-107's numerical claim now rests on. It computes every quantity
+**directly from its textbook definition** using deliberately different
+algorithms: two-pass variance and covariance rather than any updating form,
+the exponentially-weighted mean expanded as an explicit weighted sum over the
+whole history rather than as a recurrence, and drawdown by plain scan. These
+are slower and allocate freely — that is the point. They are obviously
+correct by inspection against the definition, so a disagreement is a real
+finding about the production recursion, and agreement is a real cross-check.
+Sharing the *convention* (`ddof = 1`, the documented edge cases) is not
+sharing the *algorithm*: the convention is the definition being compared
+against, the algorithm is what is under test.
+
+Both live in `python/common/`, not a new `python/participant/` package: they
+are platform-level numeric references, the same category as
 `python/common/determinism.py`, not participant production code (C++ owns
-that path, ADR-0005), so it needs no scope widening in
+that path, ADR-0005), so they need no scope widening in
 `configs/milestone_scope.yaml`.
 
 ## Alternatives considered
 
-- **Naive running-sum recomputation on eviction** — rejected: not numerically
-  stable under a sliding window, which is exactly what AEGIS-099 rules out by
-  name.
+- **Naive running-sum recomputation on eviction** — rejected *for production*:
+  not numerically stable under a sliding window, which is exactly what
+  AEGIS-099 rules out by name. It is, however, exactly the right choice for
+  the offline *reference* (`python/common/offline_stats.py`), where being
+  obviously correct against the definition matters more than being fast or
+  stable, and where using a different algorithm from production is the whole
+  point.
 - **NumPy as the Python reference** — rejected: not independent of the same
   floating-point library pitfalls the comparison is meant to catch, and adds a
   dependency for a comparison that stdlib arithmetic already answers.

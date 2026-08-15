@@ -72,8 +72,9 @@ TEST(PortfolioConservation, SingleInstrumentHoldsOverAGeneratedOpenReduceFlipSeq
     // Never add to an already-open position in the same direction: open
     // from flat with either side, or always trade the opposite side of
     // whatever is currently open (a reduce or a flip, per the header note).
-    const Side side = current_quantity == 0 ? (side_choice(rng) == 0 ? Side::kBuy : Side::kSell)
-                                            : (current_quantity > 0 ? Side::kSell : Side::kBuy);
+    const Side opening_side = side_choice(rng) == 0 ? Side::kBuy : Side::kSell;
+    const Side closing_side = current_quantity > 0 ? Side::kSell : Side::kBuy;
+    const Side side = current_quantity == 0 ? opening_side : closing_side;
     const std::int64_t price = price_dist(rng);
     const std::int64_t quantity = quantity_dist(rng);
     const std::int64_t fee = fee_dist(rng);
@@ -101,8 +102,9 @@ TEST(PortfolioConservation, MultipleInstrumentsShareOneCashPoolButEachReconciles
   for (int i = 0; i < kFills; ++i) {
     const std::uint32_t instrument = instrument_dist(rng);
     const std::int64_t current_quantity = ledger.position(instrument).quantity_units;
-    const Side side = current_quantity == 0 ? (side_choice(rng) == 0 ? Side::kBuy : Side::kSell)
-                                            : (current_quantity > 0 ? Side::kSell : Side::kBuy);
+    const Side opening_side = side_choice(rng) == 0 ? Side::kBuy : Side::kSell;
+    const Side closing_side = current_quantity > 0 ? Side::kSell : Side::kBuy;
+    const Side side = current_quantity == 0 ? opening_side : closing_side;
     const std::int64_t price = price_dist(rng);
     const std::int64_t quantity = quantity_dist(rng);
     const std::int64_t fee = fee_dist(rng);

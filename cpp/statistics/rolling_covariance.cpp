@@ -19,8 +19,8 @@ void RollingCovariance::push(double x, double y) {
     } else {
       // Bivariate reverse Welford: the algebraic inverse of the forward
       // update below, in the same style as RollingMoments (ADR-0022).
-      const double mean_x_prev = (n_before * mean_x_ - evicted_x) / n_after;
-      const double mean_y_prev = (n_before * mean_y_ - evicted_y) / n_after;
+      const double mean_x_prev = ((n_before * mean_x_) - evicted_x) / n_after;
+      const double mean_y_prev = ((n_before * mean_y_) - evicted_y) / n_after;
       m2_x_ -= (evicted_x - mean_x_prev) * (evicted_x - mean_x_);
       m2_y_ -= (evicted_y - mean_y_prev) * (evicted_y - mean_y_);
       c_xy_ -= (evicted_x - mean_x_prev) * (evicted_y - mean_y_);
@@ -29,7 +29,7 @@ void RollingCovariance::push(double x, double y) {
     }
   }
 
-  buffer_.push_back({x, y});
+  buffer_.emplace_back(x, y);
   const auto n = static_cast<double>(buffer_.size());
   const double dx = x - mean_x_;
   const double dy = y - mean_y_;

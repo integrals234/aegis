@@ -6,7 +6,10 @@
 #include <vector>
 
 #include "cpp/events/exchange_messages.hpp"
+#include "cpp/participant/oms/cost_model.hpp"
 #include "cpp/participant/oms/execution_adapter.hpp"
+#include "cpp/participant/oms/latency_model.hpp"
+#include "cpp/participant/oms/missed_trade_tracker.hpp"
 #include "cpp/participant/oms/order_lifecycle.hpp"
 #include "cpp/participant/oms/risk_gate.hpp"
 
@@ -34,6 +37,21 @@ struct TrackedOrder {
   std::int64_t cumulative_filled_units{0};  ///< AEGIS-114: sum of every fill applied so far.
   std::int64_t remaining_units{0};
 
+  /// AEGIS-116, accumulated as fills land rather than recomputed: total fees
+  /// charged on this order, and total signed slippage cost measured against
+  /// the order's own price as the reference (positive is adverse). Both are
+  /// zero for an order that never filled.
+  std::int64_t cumulative_fees_units{0};
+  std::int64_t cumulative_slippage_cost_units{0};
+
+  /// AEGIS-113: the five-stage latency attribution for the market event that
+  /// motivated this order. Present only when the manager was given a
+  /// `LatencyModel` and the caller supplied the event's own `EventTime`.
+  /// Deliberately last, and deliberately NOT part of `OmsSnapshot`: it is
+  /// derived from a market event, not persisted state, and a restored order
+  /// has no event to attribute.
+  std::optional<LatencyAttribution> latency;
+
   friend bool operator==(const TrackedOrder&, const TrackedOrder&) = default;
 };
 
@@ -41,8 +59,13 @@ class OrderManager {
  public:
   /// Neither reference is owned; both must outlive this object — the same
   /// injection discipline as `TransportExecutionAdapter`.
-  OrderManager(ExecutionAdapter& adapter, RiskGate& risk_gate)
-      : adapter_(&adapter), risk_gate_(&risk_gate) {}
+  OrderManager(ExecutionAdapter& adapter, RiskGate& risk_gate, FeeSchedule fees = {},
+               std::optional<LatencyConfig> latency = std::nullopt)
+      : adapter_(&adapter),
+        risk_gate_(&risk_gate),
+        fees_(fees),
+        latency_(latency.has_value() ? std::optional<LatencyModel>{LatencyModel{*latency}}
+                                     : std::nullopt) {}
 
   /// Restoring constructor (AEGIS-237; ADR-0024): rebuilds tracked-order
   /// state and the client/exchange id indexes directly from
@@ -62,12 +85,16 @@ class OrderManager {
   /// where the snapshotted run left off, so a client_order_id is never
   /// reused.
   OrderManager(ExecutionAdapter& adapter, RiskGate& risk_gate,
-               std::vector<TrackedOrder> restored_orders, std::uint64_t next_client_order_id)
-      : adapter_(&adapter), risk_gate_(&risk_gate), next_client_order_id_(next_client_order_id) {
+               std::vector<TrackedOrder> restored_orders, std::uint64_t next_client_order_id,
+               FeeSchedule fees = {})
+      : adapter_(&adapter),
+        risk_gate_(&risk_gate),
+        fees_(fees),
+        next_client_order_id_(next_client_order_id) {
     for (auto& order : restored_orders) {
       const std::uint64_t client_order_id = order.client_order_id;
       const std::uint64_t exchange_order_id = order.exchange_order_id;
-      orders_by_client_id_.emplace(client_order_id, std::move(order));
+      orders_by_client_id_.emplace(client_order_id, order);
       if (exchange_order_id != 0) {
         exchange_to_client_id_[exchange_order_id] = client_order_id;
       }
@@ -80,12 +107,10 @@ class OrderManager {
   /// verdict submits `resized_quantity_units`, not the caller's own —
   /// `original_quantity_units` records what was actually sent. Returns the
   /// participant-assigned `client_order_id` this order is tracked under.
-  [[nodiscard]] std::uint64_t submit_new_order(std::uint32_t instrument_id,
-                                               std::uint64_t participant_id,
-                                               events::exchange::Side side,
-                                               events::exchange::OrderType order_type,
-                                               std::int64_t price_units,
-                                               std::int64_t quantity_units);
+  [[nodiscard]] std::uint64_t submit_new_order(
+      std::uint32_t instrument_id, std::uint64_t participant_id, events::exchange::Side side,
+      events::exchange::OrderType order_type, std::int64_t price_units, std::int64_t quantity_units,
+      common::EventTime market_event_time = {});
 
   /// Requires the order to have been acknowledged (has an
   /// `exchange_order_id`) and to be in a state `kCancelPending` may legally
@@ -144,12 +169,34 @@ class OrderManager {
 
   [[nodiscard]] std::uint64_t next_client_order_id() const { return next_client_order_id_; }
 
+  /// AEGIS-117. Populated by `handle_order_rejected` and
+  /// `handle_order_terminated` as orders end without trading their full size
+  /// -- this manager is the only thing that knows an order's untraded
+  /// remainder, so recording it anywhere else would mean duplicating its
+  /// bookkeeping.
+  [[nodiscard]] const MissedTradeTracker& missed_trades() const { return missed_trades_; }
+
+  /// AEGIS-113: true when this manager was configured with a latency model,
+  /// so every order it submits carries a five-stage attribution.
+  [[nodiscard]] bool models_latency() const { return latency_.has_value(); }
+
+  /// AEGIS-116, summed across every tracked order.
+  [[nodiscard]] std::int64_t total_fees_units() const;
+  [[nodiscard]] std::int64_t total_slippage_cost_units() const;
+
  private:
   [[nodiscard]] TrackedOrder* find_mutable_by_exchange_order_id(std::uint64_t exchange_order_id);
-  void apply_fill_to(std::uint64_t exchange_order_id, std::int64_t fill_quantity_units);
+  void apply_fill_to(std::uint64_t exchange_order_id, std::int64_t fill_quantity_units,
+                     std::int64_t fill_price_units);
+
+  /// Records `tracked`'s untraded remainder, if any, exactly once.
+  void record_missed_remainder(const TrackedOrder& tracked);
 
   ExecutionAdapter* adapter_;
   RiskGate* risk_gate_;
+  FeeSchedule fees_{};
+  std::optional<LatencyModel> latency_;
+  MissedTradeTracker missed_trades_;
   std::uint64_t next_client_order_id_{1};
   std::unordered_map<std::uint64_t, TrackedOrder> orders_by_client_id_;
   std::unordered_map<std::uint64_t, std::uint64_t> exchange_to_client_id_;

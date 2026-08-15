@@ -1,5 +1,7 @@
 #include "cpp/statistics/drawdown_tracker.hpp"
 
+#include <algorithm>
+
 namespace aegis::participant::stats {
 
 void DrawdownTracker::push(double value) {
@@ -19,9 +21,7 @@ void DrawdownTracker::push(double value) {
   }
   last_value_ = value;
   current_drawdown_ = high_water_mark_ - last_value_;
-  if (current_drawdown_ > max_drawdown_) {
-    max_drawdown_ = current_drawdown_;
-  }
+  max_drawdown_ = std::max(current_drawdown_, max_drawdown_);
 }
 
 double DrawdownTracker::variance() const {

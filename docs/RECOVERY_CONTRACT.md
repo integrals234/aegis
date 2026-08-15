@@ -81,9 +81,14 @@ step 2 has recorded state that never existed.
 | M3 | **Paid.** Participant-state recovery test: OMS order lifecycle and portfolio positions survive a snapshot/restore cycle, verified by round trip and by continuation equality across a process boundary — `tests/cpp/unit/test_participant_snapshot.cpp`, `tests/replay/test_participant_recovery.py`. This is process-boundary recovery only, distinct from AEGIS-061's in-stream feed-gap recovery and AEGIS-070's book-snapshot re-base (ADR-0024); neither exchange nor market-data state is covered by this row. |
 | M9 | Restart recovery against the paper adapter, including reconciliation of positions after restore (AEGIS-221, AEGIS-222). |
 
-The M9 row is registered in `requirements/implementation_status.json` under
-`verification_blocked_until`, so AEGIS-237 cannot be marked `verified` before
-that evidence exists, and `tools/audit_requirements.py --check-deferred` fails
-M9 if it closes without paying. AEGIS-237 itself is still `implemented`, not
-`verified` — the M1 and M3 rows being paid narrows what it is missing, and an
-independent audit still decides promotion once every row is paid.
+The M1 and M3 rows are both paid, which discharges AEGIS-237's own frozen
+acceptance ("Recovery tests exist for exchange and participant state") — so
+AEGIS-237's M3 obligation is cleared at M3 closure on the independent audit.
+
+The M9 row is **not** AEGIS-237's residual. Restart recovery against the paper
+adapter is owned by its own requirements, AEGIS-221 and AEGIS-222, which stay
+`not_started` until M9 builds the paper gateway; `--check-deferred M9` fails
+that milestone if it closes without paying them. An earlier revision of this
+paragraph said the M9 row was registered against AEGIS-237's
+`verification_blocked_until`, which was never true and would have quietly
+erased the M9 row when AEGIS-237 was promoted. Corrected at M3 closure.

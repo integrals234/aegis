@@ -16,13 +16,14 @@ constexpr std::uint32_t kInstrument = 1;
 
 TEST(Portfolio, OpeningALongPositionSetsAveragePriceAndDebitsCash) {
   Portfolio ledger;
-  ledger.apply_fill(kInstrument, Side::kBuy, /*price=*/100, /*quantity=*/10, /*fee=*/1);
+  ledger.apply_fill(kInstrument, Side::kBuy, /*price_units=*/100, /*quantity_units=*/10,
+                    /*fee_units=*/1);
 
   const Position pos = ledger.position(kInstrument);
   EXPECT_EQ(pos.quantity_units, 10);
   EXPECT_EQ(pos.average_price_units, 100);
   EXPECT_EQ(pos.realized_pnl_units, 0);
-  EXPECT_EQ(ledger.cash_units(), -100 * 10 - 1);
+  EXPECT_EQ(ledger.cash_units(), (-100 * 10) - 1);
 }
 
 TEST(Portfolio, AddingToALongPositionUpdatesVolumeWeightedAveragePrice) {
@@ -83,13 +84,15 @@ TEST(Portfolio, ShortPositionRealizesPnlOnAFavorablePriceDrop) {
 TEST(Portfolio, UnrealizedPnlUsesOneFormulaForBothLongAndShort) {
   Portfolio ledger;
   ledger.apply_fill(kInstrument, Side::kBuy, 100, 10);
-  EXPECT_EQ(ledger.unrealized_pnl_units(kInstrument, /*mark=*/110), 10 * (110 - 100));
-  EXPECT_EQ(ledger.unrealized_pnl_units(kInstrument, /*mark=*/90), 10 * (90 - 100));
+  EXPECT_EQ(ledger.unrealized_pnl_units(kInstrument, /*mark_price_units=*/110), 10 * (110 - 100));
+  EXPECT_EQ(ledger.unrealized_pnl_units(kInstrument, /*mark_price_units=*/90), 10 * (90 - 100));
 
   Portfolio short_ledger;
   short_ledger.apply_fill(kInstrument, Side::kSell, 100, 10);
-  EXPECT_EQ(short_ledger.unrealized_pnl_units(kInstrument, /*mark=*/90), 10 * (90 - 100) * -1);
-  EXPECT_EQ(short_ledger.unrealized_pnl_units(kInstrument, /*mark=*/110), 10 * (110 - 100) * -1);
+  EXPECT_EQ(short_ledger.unrealized_pnl_units(kInstrument, /*mark_price_units=*/90),
+            10 * (90 - 100) * -1);
+  EXPECT_EQ(short_ledger.unrealized_pnl_units(kInstrument, /*mark_price_units=*/110),
+            10 * (110 - 100) * -1);
 }
 
 TEST(Portfolio, UnknownInstrumentReportsAFlatPosition) {

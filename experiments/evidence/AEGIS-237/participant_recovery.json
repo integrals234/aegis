@@ -4,7 +4,7 @@
   "claim": "The M3 portion of AEGIS-237 (OMS order lifecycle and portfolio positions surviving a snapshot/restore cycle) is discharged: ParticipantSnapshot v1 round-trips byte-stably, and a run split at a snapshot boundary across two aegis_participant_run process invocations reproduces the tail of the same scenario run uninterrupted through one process, for a scenario containing a partially filled order, a fully filled order on a second instrument, a rejected order and a cancellation, with a fresh order submitted and filled after restore.",
   "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
-  "generated_on": "2026-08-14",
+  "generated_on": "2026-08-15",
   "methodology": {
     "binary": "build/debug/cpp/participant/app/aegis_participant_run",
     "fixture": "tests/unit/fixtures/participant/recovery_scenario.jsonl",
@@ -19,7 +19,7 @@
     "Combined exchange+participant atomic recovery -- the exchange and participant snapshot mechanisms are independent; this artifact covers only the participant side."
   ],
   "producer": "tools/generate_participant_recovery_evidence.py",
-  "repository_commit": "803237019327b252e6dfa4c3e1130e48686742c7",
+  "repository_commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
   "requirements": [
     "AEGIS-237"
   ],
@@ -32,8 +32,8 @@
     "full_run_line_count": 15,
     "full_run_sha256": "9a508cd07c9689654bf2358c835e25350d6a5b46d7fa1fb0544a75767bd04d17",
     "restored_continuation_equals_uninterrupted_tail": true,
-    "snapshot_a_sha256": "0684d5901cd2d7835957fd3e4996e8d75cb796e63652a3f5932d9ead973228de",
-    "snapshot_b_sha256": "0684d5901cd2d7835957fd3e4996e8d75cb796e63652a3f5932d9ead973228de",
+    "snapshot_a_sha256": "cc89ca49192b1fe6071f8e58ebf8a899b09256c817af75cefbff15ec98466dcd",
+    "snapshot_b_sha256": "cc89ca49192b1fe6071f8e58ebf8a899b09256c817af75cefbff15ec98466dcd",
     "snapshot_byte_stable_across_repeated_captures": true
   }
 }

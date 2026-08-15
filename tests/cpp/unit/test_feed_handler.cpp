@@ -37,9 +37,9 @@ TEST(FeedHandler, DecodesABookSnapshotAndTracksItsSequence) {
 
   ASSERT_EQ(decoded.kind, DecodedKind::kBookSnapshot);
   ASSERT_TRUE(decoded.snapshot.has_value());
-  EXPECT_EQ(decoded.snapshot->instrument_id, 7U);
+  EXPECT_EQ(decoded.snapshot.value().instrument_id, 7U);
   ASSERT_TRUE(decoded.sequence_check.has_value());
-  EXPECT_EQ(decoded.sequence_check->diagnostic, SequenceDiagnostic::kOk);
+  EXPECT_EQ(decoded.sequence_check.value().diagnostic, SequenceDiagnostic::kOk);
 }
 
 TEST(FeedHandler, TracksSequenceIndependentlyPerInstrument) {
@@ -54,8 +54,8 @@ TEST(FeedHandler, TracksSequenceIndependentlyPerInstrument) {
   const auto first_decoded = handler.decode(frame(MessageType::kBookSnapshot, encode(first)));
   const auto second_decoded = handler.decode(frame(MessageType::kBookSnapshot, encode(second)));
 
-  EXPECT_EQ(first_decoded.sequence_check->diagnostic, SequenceDiagnostic::kOk);
-  EXPECT_EQ(second_decoded.sequence_check->diagnostic, SequenceDiagnostic::kOk);
+  EXPECT_EQ(first_decoded.sequence_check.value().diagnostic, SequenceDiagnostic::kOk);
+  EXPECT_EQ(second_decoded.sequence_check.value().diagnostic, SequenceDiagnostic::kOk);
   ASSERT_NE(handler.tracker_for(1), nullptr);
   ASSERT_NE(handler.tracker_for(2), nullptr);
   EXPECT_EQ(handler.tracker_for(1)->last_sequence(), 5U);
@@ -72,7 +72,7 @@ TEST(FeedHandler, DecodesATrade) {
   const auto decoded = handler.decode(frame(MessageType::kTrade, encode(trade)));
   ASSERT_EQ(decoded.kind, DecodedKind::kTrade);
   ASSERT_TRUE(decoded.trade.has_value());
-  EXPECT_EQ(decoded.trade->price_units, 100);
+  EXPECT_EQ(decoded.trade.value().price_units, 100);
   EXPECT_FALSE(decoded.sequence_check.has_value());  // Trades carry no md_sequence.
 }
 

@@ -47,7 +47,7 @@ class Portfolio {
   Portfolio(std::int64_t cash_units, std::vector<std::pair<std::uint32_t, Position>> positions)
       : cash_units_(cash_units) {
     for (auto& [instrument_id, position] : positions) {
-      positions_.emplace(instrument_id, std::move(position));
+      positions_.emplace(instrument_id, position);
     }
   }
 

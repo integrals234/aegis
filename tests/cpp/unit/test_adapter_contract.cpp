@@ -186,7 +186,7 @@ TEST(AdapterContract, NewOrderAcceptedReachesAcknowledgedOnBothAdapters) {
   ASSERT_EQ(real_emitted.front().message_type, MessageType::kOrderAccepted);
   const auto real_accepted = decode_order_accepted(real_emitted.front().payload);
   ASSERT_TRUE(real_accepted.has_value());
-  real.manager().handle_order_accepted(*real_accepted);
+  real.manager().handle_order_accepted(real_accepted.value());
   const auto* real_tracked = real.manager().find_by_client_order_id(real_client_order_id);
   ASSERT_NE(real_tracked, nullptr);
 
@@ -206,9 +206,9 @@ TEST(AdapterContract, NewOrderAcceptedReachesAcknowledgedOnBothAdapters) {
   ASSERT_EQ(recorded_client_order_id, real_client_order_id);  // Both managers start fresh at 1.
   const auto recorded_response = recorded.next_response();
   ASSERT_TRUE(recorded_response.has_value());
-  const auto recorded_accepted = decode_order_accepted(recorded_response->payload);
+  const auto recorded_accepted = decode_order_accepted(recorded_response.value().payload);
   ASSERT_TRUE(recorded_accepted.has_value());
-  recorded.manager().handle_order_accepted(*recorded_accepted);
+  recorded.manager().handle_order_accepted(recorded_accepted.value());
   const auto* recorded_tracked =
       recorded.manager().find_by_client_order_id(recorded_client_order_id);
   ASSERT_NE(recorded_tracked, nullptr);
@@ -229,7 +229,7 @@ TEST(AdapterContract, NewOrderRejectedReachesRejectedOnBothAdapters) {
   ASSERT_EQ(real_emitted.front().message_type, MessageType::kOrderRejected);
   const auto real_rejected = decode_order_rejected(real_emitted.front().payload);
   ASSERT_TRUE(real_rejected.has_value());
-  real.manager().handle_order_rejected(*real_rejected);
+  real.manager().handle_order_rejected(real_rejected.value());
   const auto* real_tracked = real.manager().find_by_client_order_id(real_client_order_id);
   ASSERT_NE(real_tracked, nullptr);
 
@@ -245,9 +245,9 @@ TEST(AdapterContract, NewOrderRejectedReachesRejectedOnBothAdapters) {
       /*quantity_units=*/50);
   const auto recorded_response = recorded.next_response();
   ASSERT_TRUE(recorded_response.has_value());
-  const auto recorded_rejected = decode_order_rejected(recorded_response->payload);
+  const auto recorded_rejected = decode_order_rejected(recorded_response.value().payload);
   ASSERT_TRUE(recorded_rejected.has_value());
-  recorded.manager().handle_order_rejected(*recorded_rejected);
+  recorded.manager().handle_order_rejected(recorded_rejected.value());
   const auto* recorded_tracked =
       recorded.manager().find_by_client_order_id(recorded_client_order_id);
   ASSERT_NE(recorded_tracked, nullptr);
@@ -266,7 +266,7 @@ TEST(AdapterContract, CancelTerminatedReachesCancelledOnBothAdapters) {
     const auto emitted = real.drain();
     const auto accepted = decode_order_accepted(emitted.front().payload);
     ASSERT_TRUE(accepted.has_value());
-    real.manager().handle_order_accepted(*accepted);
+    real.manager().handle_order_accepted(accepted.value());
   }
   ASSERT_TRUE(real.manager().cancel_order(real_client_order_id));
   const auto real_emitted = real.drain();
@@ -274,7 +274,7 @@ TEST(AdapterContract, CancelTerminatedReachesCancelledOnBothAdapters) {
   ASSERT_EQ(real_emitted.front().message_type, MessageType::kOrderTerminated);
   const auto real_terminated = decode_order_terminated(real_emitted.front().payload);
   ASSERT_TRUE(real_terminated.has_value());
-  real.manager().handle_order_terminated(*real_terminated);
+  real.manager().handle_order_terminated(real_terminated.value());
   const auto* real_tracked = real.manager().find_by_client_order_id(real_client_order_id);
   ASSERT_NE(real_tracked, nullptr);
 
@@ -299,16 +299,16 @@ TEST(AdapterContract, CancelTerminatedReachesCancelledOnBothAdapters) {
   {
     const auto response = recorded.next_response();
     ASSERT_TRUE(response.has_value());
-    const auto accepted = decode_order_accepted(response->payload);
+    const auto accepted = decode_order_accepted(response.value().payload);
     ASSERT_TRUE(accepted.has_value());
-    recorded.manager().handle_order_accepted(*accepted);
+    recorded.manager().handle_order_accepted(accepted.value());
   }
   ASSERT_TRUE(recorded.manager().cancel_order(recorded_client_order_id));
   const auto recorded_response = recorded.next_response();
   ASSERT_TRUE(recorded_response.has_value());
-  const auto recorded_terminated = decode_order_terminated(recorded_response->payload);
+  const auto recorded_terminated = decode_order_terminated(recorded_response.value().payload);
   ASSERT_TRUE(recorded_terminated.has_value());
-  recorded.manager().handle_order_terminated(*recorded_terminated);
+  recorded.manager().handle_order_terminated(recorded_terminated.value());
   const auto* recorded_tracked =
       recorded.manager().find_by_client_order_id(recorded_client_order_id);
   ASSERT_NE(recorded_tracked, nullptr);

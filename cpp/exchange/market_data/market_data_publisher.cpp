@@ -18,7 +18,7 @@ void append_side(const OrderBook& book, Side side, BookSnapshotEvent& snapshot) 
   const LevelIndex& index = book.levels(side);
   std::optional<PriceUnits> price = index.best_price();
   while (price.has_value()) {
-    for (OrderId order_id : book.orders_at(side, *price)) {
+    for (OrderId const order_id : book.orders_at(side, *price)) {
       const OrderNode* node = book.find(order_id);
       if (node == nullptr) {
         continue;  // Removed between enumeration and lookup: not possible
@@ -57,8 +57,9 @@ std::vector<BookDeltaEvent> MarketDataPublisher::observe(
         if (!decoded.has_value()) {
           continue;
         }
-        tracked_[decoded->order_id] =
-            TrackedOrder{decoded->instrument_id, decoded->side, decoded->price_units};
+        tracked_[decoded->order_id] = TrackedOrder{.instrument_id = decoded->instrument_id,
+                                                   .side = decoded->side,
+                                                   .price_units = decoded->price_units};
         BookDeltaEvent delta;
         delta.instrument_id = decoded->instrument_id;
         delta.md_sequence = next_md_sequence_++;
@@ -108,8 +109,9 @@ std::vector<BookDeltaEvent> MarketDataPublisher::observe(
           deltas.push_back(removed);
           tracked_.erase(old_it);
         }
-        tracked_[decoded->new_order_id] =
-            TrackedOrder{decoded->instrument_id, decoded->side, decoded->price_units};
+        tracked_[decoded->new_order_id] = TrackedOrder{.instrument_id = decoded->instrument_id,
+                                                       .side = decoded->side,
+                                                       .price_units = decoded->price_units};
         BookDeltaEvent added;
         added.instrument_id = decoded->instrument_id;
         added.md_sequence = next_md_sequence_++;

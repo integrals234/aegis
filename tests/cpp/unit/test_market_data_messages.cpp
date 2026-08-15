@@ -23,7 +23,7 @@ TEST(MarketDataMessages, SnapshotRoundTripsThroughEncodeDecode) {
 
   const auto decoded = decode_book_snapshot(encode(snapshot));
   ASSERT_TRUE(decoded.has_value());
-  EXPECT_EQ(*decoded, snapshot);
+  EXPECT_EQ(decoded.value(), snapshot);
 }
 
 TEST(MarketDataMessages, EmptySnapshotRoundTrips) {
@@ -32,7 +32,7 @@ TEST(MarketDataMessages, EmptySnapshotRoundTrips) {
   snapshot.md_sequence = 1;
   const auto decoded = decode_book_snapshot(encode(snapshot));
   ASSERT_TRUE(decoded.has_value());
-  EXPECT_TRUE(decoded->entries.empty());
+  EXPECT_TRUE(decoded.value().entries.empty());
 }
 
 TEST(MarketDataMessages, TruncatedSnapshotFailsToDecode) {
@@ -58,7 +58,7 @@ TEST(MarketDataMessages, DeltaRoundTripsThroughEncodeDecode) {
 
   const auto decoded = decode_book_delta(encode(delta));
   ASSERT_TRUE(decoded.has_value());
-  EXPECT_EQ(*decoded, delta);
+  EXPECT_EQ(decoded.value(), delta);
 }
 
 TEST(MarketDataMessages, TruncatedDeltaFailsToDecode) {

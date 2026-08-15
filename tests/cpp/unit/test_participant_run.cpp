@@ -17,16 +17,17 @@ TEST(ParticipantRun, BuiltinScenarioComposesEveryM3Layer) {
 
   // Feed handler -> book builder: the snapshot and both deltas landed.
   ASSERT_TRUE(summary.best_bid_price_units.has_value());
-  EXPECT_EQ(*summary.best_bid_price_units, 10'000);  // Unmoved: the delta touching it
-  EXPECT_EQ(*summary.best_bid_quantity_units, 30);   // was a modify to 30, not the new 9'990 order.
+  EXPECT_EQ(summary.best_bid_price_units.value(), 10'000);  // Unmoved: the delta touching it
+  EXPECT_EQ(summary.best_bid_quantity_units.value(),
+            30);  // was a modify to 30, not the new 9'990 order.
   ASSERT_TRUE(summary.best_ask_price_units.has_value());
-  EXPECT_EQ(*summary.best_ask_price_units, 10'010);
+  EXPECT_EQ(summary.best_ask_price_units.value(), 10'010);
   EXPECT_EQ(summary.last_md_sequence, 3U);
 
   // Reconstructed book -> microstructure feature (AEGIS-072): quantity-
   // weighted microprice over the same best bid/ask asserted above.
   ASSERT_TRUE(summary.microprice.has_value());
-  EXPECT_NEAR(*summary.microprice, (30.0 * 10'010.0 + 40.0 * 10'000.0) / 70.0, 1e-9);
+  EXPECT_NEAR(summary.microprice.value(), (((30.0 * 10'010.0) + (40.0 * 10'000.0)) / 70.0), 1e-9);
 
   // Feed handler -> generic statistic: three trades decoded and averaged.
   EXPECT_EQ(summary.trade_count, 3U);
@@ -38,7 +39,7 @@ TEST(ParticipantRun, BuiltinScenarioComposesEveryM3Layer) {
   // Portfolio: the fill the OMS lifecycle represents is reflected.
   EXPECT_EQ(summary.position_quantity_units, 10);
   EXPECT_EQ(summary.position_average_price_units, 10'005);
-  EXPECT_EQ(summary.cash_units, -10'005 * 10 - 1);
+  EXPECT_EQ(summary.cash_units, (-10'005 * 10) - 1);
 }
 
 TEST(ParticipantRun, BuiltinScenarioIsDeterministic) {

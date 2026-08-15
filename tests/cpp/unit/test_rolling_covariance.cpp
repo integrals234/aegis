@@ -43,7 +43,7 @@ TEST(RollingCovariance, MatchesOfflineCovarianceAfterSlidingPastTheWindow) {
                                                       {4.0, 5.0}, {5.0, 4.0}, {6.0, 7.0}};
   for (const auto& [x, y] : series) {
     cov.push(x, y);
-    window.push_back({x, y});
+    window.emplace_back(x, y);
     if (window.size() > kWindow) {
       window.pop_front();
     }
@@ -54,7 +54,7 @@ TEST(RollingCovariance, MatchesOfflineCovarianceAfterSlidingPastTheWindow) {
 TEST(RollingCovariance, PerfectlyCorrelatedSeriesReportsCorrelationOne) {
   RollingCovariance cov(5);
   for (double v = 1.0; v <= 5.0; v += 1.0) {
-    cov.push(v, 2.0 * v + 3.0);  // y is an exact positive linear function of x.
+    cov.push(v, (2.0 * v) + 3.0);  // y is an exact positive linear function of x.
   }
   EXPECT_NEAR(cov.correlation(), 1.0, kTolerance);
 }

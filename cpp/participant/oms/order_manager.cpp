@@ -15,9 +15,12 @@ using events::exchange::OrderTerminatedEvent;
 using events::exchange::TerminationReason;
 using events::exchange::TradeEvent;
 
-std::uint64_t OrderManager::submit_new_order(
-    std::uint32_t instrument_id, std::uint64_t participant_id, events::exchange::Side side,
-    events::exchange::OrderType order_type, std::int64_t price_units, std::int64_t quantity_units) {
+std::uint64_t OrderManager::submit_new_order(std::uint32_t instrument_id,
+                                             std::uint64_t participant_id,
+                                             events::exchange::Side side,
+                                             events::exchange::OrderType order_type,
+                                             std::int64_t price_units, std::int64_t quantity_units,
+                                             common::EventTime market_event_time) {
   const std::uint64_t client_order_id = next_client_order_id_++;
   TrackedOrder tracked;
   tracked.client_order_id = client_order_id;
@@ -25,6 +28,14 @@ std::uint64_t OrderManager::submit_new_order(
   tracked.participant_id = participant_id;
   tracked.side = side;
   tracked.price_units = price_units;
+  // AEGIS-113: attribute the path this order travels, from the market event
+  // that motivated it through to the acknowledgement it expects. Only when a
+  // latency model was actually configured -- a manager without one records no
+  // attribution rather than inventing a zero-latency one, which would be a
+  // fabricated measurement.
+  if (latency_.has_value()) {
+    tracked.latency = latency_->attribute(market_event_time);
+  }
   static_cast<void>(tracked.lifecycle.transition(OrderState::kRiskPending));
 
   NewOrderCommand command;
@@ -51,7 +62,7 @@ std::uint64_t OrderManager::submit_new_order(
     static_cast<void>(adapter_->submit(command));
   }
 
-  orders_by_client_id_.emplace(client_order_id, std::move(tracked));
+  orders_by_client_id_.emplace(client_order_id, tracked);
   return client_order_id;
 }
 
@@ -82,7 +93,7 @@ bool OrderManager::modify_order(std::uint64_t client_order_id, std::int64_t new_
   if (it == orders_by_client_id_.end()) {
     return false;
   }
-  TrackedOrder& tracked = it->second;
+  TrackedOrder const& tracked = it->second;
   if (tracked.exchange_order_id == 0 || tracked.lifecycle.is_terminal()) {
     return false;
   }
@@ -120,6 +131,10 @@ void OrderManager::handle_order_rejected(const OrderRejectedEvent& event) {
       return;
     }
     static_cast<void>(it->second.lifecycle.transition(OrderState::kRejected));
+    // AEGIS-117: a rejected new order never traded at all, so its whole
+    // requested size is missed. `original_quantity_units` is what risk
+    // actually let through, which is the quantity that could have traded.
+    record_missed_remainder(it->second);
     return;
   }
   if (event.order_id == 0) {
@@ -162,18 +177,31 @@ void OrderManager::handle_order_replaced(const OrderReplacedEvent& event) {
 }
 
 void OrderManager::handle_trade(const TradeEvent& event) {
-  apply_fill_to(event.maker_order_id, event.quantity_units);
-  apply_fill_to(event.taker_order_id, event.quantity_units);
+  apply_fill_to(event.maker_order_id, event.quantity_units, event.price_units);
+  apply_fill_to(event.taker_order_id, event.quantity_units, event.price_units);
 }
 
-void OrderManager::apply_fill_to(std::uint64_t exchange_order_id,
-                                 std::int64_t fill_quantity_units) {
+void OrderManager::apply_fill_to(std::uint64_t exchange_order_id, std::int64_t fill_quantity_units,
+                                 std::int64_t fill_price_units) {
   TrackedOrder* tracked = find_mutable_by_exchange_order_id(exchange_order_id);
   if (tracked == nullptr) {
     return;
   }
   tracked->cumulative_filled_units += fill_quantity_units;
   tracked->remaining_units -= fill_quantity_units;
+
+  // AEGIS-116. Fees accrue on every fill at the committed rate. Slippage is
+  // measured against the order's OWN limit price as the reference, which is
+  // the only reference this class actually holds -- a decision-time quote
+  // would have to come from the caller, and inventing one here would be
+  // fabricating a market fact. A market order carries no price (ADR-0011),
+  // so it has no meaningful reference and accrues no slippage.
+  tracked->cumulative_fees_units += fees_.fee_units(fill_price_units, fill_quantity_units);
+  if (tracked->price_units != 0) {
+    const SlippageResult slippage =
+        compute_slippage(tracked->side, tracked->price_units, fill_price_units);
+    tracked->cumulative_slippage_cost_units += slippage.slippage_units * fill_quantity_units;
+  }
   // Always kPartiallyFilled here, even if remaining just reached zero: the
   // authoritative "fully filled" transition waits for the exchange's own
   // OrderTerminatedEvent{kFilled} (handle_order_terminated), never inferred
@@ -190,6 +218,33 @@ void OrderManager::handle_order_terminated(const OrderTerminatedEvent& event) {
   const OrderState target =
       event.reason == TerminationReason::kFilled ? OrderState::kFilled : OrderState::kCancelled;
   static_cast<void>(tracked->lifecycle.transition(target));
+  // AEGIS-117: whatever the order did not trade before ending is missed --
+  // zero for a fully filled order, the residual for a cancel or a market
+  // order's residual-cancel. record_missed_remainder ignores non-positive
+  // remainders, so the kFilled path costs nothing.
+  record_missed_remainder(*tracked);
+}
+
+void OrderManager::record_missed_remainder(const TrackedOrder& tracked) {
+  missed_trades_.record(tracked.client_order_id,
+                        tracked.original_quantity_units - tracked.cumulative_filled_units,
+                        tracked.price_units, tracked.side);
+}
+
+std::int64_t OrderManager::total_fees_units() const {
+  std::int64_t total = 0;
+  for (const auto& [client_order_id, tracked] : orders_by_client_id_) {
+    total += tracked.cumulative_fees_units;
+  }
+  return total;
+}
+
+std::int64_t OrderManager::total_slippage_cost_units() const {
+  std::int64_t total = 0;
+  for (const auto& [client_order_id, tracked] : orders_by_client_id_) {
+    total += tracked.cumulative_slippage_cost_units;
+  }
+  return total;
 }
 
 const TrackedOrder* OrderManager::find_by_client_order_id(std::uint64_t client_order_id) const {

@@ -28,7 +28,8 @@ void Portfolio::apply_fill(std::uint32_t instrument_id, Side side, std::int64_t 
     const std::int64_t add_abs = abs64(signed_delta);
     const std::int64_t new_abs = old_abs + add_abs;
     pos.average_price_units =
-        new_abs == 0 ? 0 : (old_abs * pos.average_price_units + add_abs * price_units) / new_abs;
+        new_abs == 0 ? 0
+                     : ((old_abs * pos.average_price_units) + (add_abs * price_units)) / new_abs;
     pos.quantity_units += signed_delta;
     return;
   }

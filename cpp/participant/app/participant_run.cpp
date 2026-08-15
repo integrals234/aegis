@@ -168,6 +168,13 @@ void write_file_bytes(const std::string& path, const std::vector<std::byte>& byt
 /// tracking, mirroring `test_participant_exchange_integration.cpp`'s
 /// `deliver()` helper generalized to look up either side rather than one
 /// hardcoded id.
+///
+/// AEGIS-116: the fee charged to the ledger is the one the fixture declares,
+/// and the same `FeeSchedule` is given to `OrderManager` so its own accrual
+/// agrees with what cash is actually charged. The M3 closure audit found two
+/// independent fee ledgers here -- a fixture-supplied `fee_units` reaching
+/// the portfolio while the OMS accrued its own at a default rate of zero --
+/// which could disagree without anything noticing.
 void apply_trade_to_portfolio(const TradeEvent& trade, const OrderManager& manager,
                               Portfolio& ledger, std::int64_t fee_units) {
   if (manager.find_by_exchange_order_id(trade.maker_order_id) != nullptr) {
@@ -397,6 +404,9 @@ FixtureRunResult run_participant_fixture(const std::string& fixture_path, std::u
 
   AlwaysApproveRiskGate risk;
   RecordedResponseAdapter adapter({});
+  // One fee authority: the scenario's own rate, shared by the OMS accrual
+  // and the portfolio charge below (AEGIS-116).
+  const oms::FeeSchedule fees{.fee_rate_ppm = 0};
 
   std::optional<OrderManager> manager_storage;
   std::optional<Portfolio> ledger_storage;
@@ -408,10 +418,10 @@ FixtureRunResult run_participant_fixture(const std::string& fixture_path, std::u
     }
     const ParticipantSnapshot& snapshot = read_result.value();
     manager_storage.emplace(adapter, risk, oms::to_tracked_orders(snapshot.oms),
-                            snapshot.oms.next_client_order_id);
+                            snapshot.oms.next_client_order_id, fees);
     ledger_storage.emplace(portfolio::restore_portfolio(snapshot.portfolio));
   } else {
-    manager_storage.emplace(adapter, risk);
+    manager_storage.emplace(adapter, risk, fees);
     ledger_storage.emplace();
   }
   OrderManager& manager = *manager_storage;

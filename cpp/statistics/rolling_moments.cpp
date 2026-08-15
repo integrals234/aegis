@@ -16,8 +16,8 @@ void RollingMoments::push(double value) {
     } else {
       // Reverse Welford: the algebraic inverse of the forward update below,
       // derived directly from it -- not an approximation (ADR-0022).
-      const double mean_prev = (n_before * mean_ - evicted) / n_after;
-      m2_ = m2_ - (evicted - mean_prev) * (evicted - mean_);
+      const double mean_prev = ((n_before * mean_) - evicted) / n_after;
+      m2_ = m2_ - ((evicted - mean_prev) * (evicted - mean_));
       mean_ = mean_prev;
     }
   }
