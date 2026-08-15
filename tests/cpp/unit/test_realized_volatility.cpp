@@ -50,7 +50,8 @@ TEST(RollingRealizedVolatility, EmptyWindowReportsZeroEdgeCase) {
 TEST(RollingBeta, MatchesExpectedSlopeForAnExactLinearRelationship) {
   RollingBeta beta(5);
   // asset = 2 * benchmark exactly -> beta should be 2.
-  for (double b = 1.0; b <= 5.0; b += 1.0) {
+  for (int step = 1; step <= 5; ++step) {
+    const auto b = static_cast<double>(step);
     beta.push(2.0 * b, b);
   }
   EXPECT_NEAR(beta.beta(), 2.0, 1e-9);

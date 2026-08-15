@@ -27,12 +27,12 @@ TEST(RecordedResponseAdapter, NextResponseDrainsTheScriptInOrder) {
   EXPECT_TRUE(adapter.submit(NewOrderCommand{}));
   const auto first = adapter.next_response();
   ASSERT_TRUE(first.has_value());
-  EXPECT_EQ(first.value().message_type, MessageType::kOrderAccepted);
+  EXPECT_EQ(first.value_or({}).message_type, MessageType::kOrderAccepted);
 
   EXPECT_TRUE(adapter.submit(NewOrderCommand{}));
   const auto second = adapter.next_response();
   ASSERT_TRUE(second.has_value());
-  EXPECT_EQ(second.value().message_type, MessageType::kOrderRejected);
+  EXPECT_EQ(second.value_or({}).message_type, MessageType::kOrderRejected);
 }
 
 TEST(RecordedResponseAdapter, NextResponseIsAConsumingPopNotAPeek) {

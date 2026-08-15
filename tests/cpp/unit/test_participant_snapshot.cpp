@@ -105,7 +105,7 @@ TEST(OmsSnapshot, RoundTripsThroughWriteAndRead) {
   const auto bytes = write_oms_snapshot(captured);
   const auto read = read_oms_snapshot(bytes);
   ASSERT_TRUE(read.has_value());
-  EXPECT_EQ(read.value(), captured);
+  EXPECT_EQ(read.value_or({}), captured);
 }
 
 TEST(OmsSnapshot, SameStateProducesByteIdenticalOutputAcrossRepeatedCaptures) {
@@ -223,7 +223,7 @@ TEST(PortfolioSnapshot, RoundTripsThroughWriteAndRead) {
   const PortfolioSnapshot captured = capture_portfolio_snapshot(ledger);
   const auto read = read_portfolio_snapshot(write_portfolio_snapshot(captured));
   ASSERT_TRUE(read.has_value());
-  EXPECT_EQ(read.value(), captured);
+  EXPECT_EQ(read.value_or({}), captured);
 }
 
 TEST(PortfolioSnapshot, SameStateProducesByteIdenticalOutputAcrossRepeatedCaptures) {
@@ -295,7 +295,7 @@ TEST(ParticipantSnapshot, RoundTripsThroughWriteAndRead) {
   const ParticipantSnapshot captured = capture_participant_snapshot(manager, ledger);
   const auto read = read_participant_snapshot(write_participant_snapshot(captured));
   ASSERT_TRUE(read.has_value());
-  EXPECT_EQ(read.value(), captured);
+  EXPECT_EQ(read.value_or({}), captured);
 }
 
 TEST(ParticipantSnapshot, SameStateProducesByteIdenticalOutputAcrossRepeatedCaptures) {

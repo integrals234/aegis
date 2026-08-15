@@ -56,7 +56,7 @@ TEST(TransportExecutionAdapter, SubmitEncodesAndSendsANewOrderCommand) {
   EXPECT_EQ(transport.sent[0].stream_id, 1U);
   const auto decoded = decode_new_order(transport.sent[0].payload);
   ASSERT_TRUE(decoded.has_value());
-  EXPECT_EQ(decoded.value(), command);
+  EXPECT_EQ(decoded.value_or({}), command);
 }
 
 TEST(TransportExecutionAdapter, CancelEncodesAndSends) {

@@ -53,7 +53,10 @@ TEST(RollingCovariance, MatchesOfflineCovarianceAfterSlidingPastTheWindow) {
 
 TEST(RollingCovariance, PerfectlyCorrelatedSeriesReportsCorrelationOne) {
   RollingCovariance cov(5);
-  for (double v = 1.0; v <= 5.0; v += 1.0) {
+  // Integer loop counter: a float induction variable accumulates rounding and
+  // is flagged by cert-flp30-c. The values pushed are identical.
+  for (int step = 1; step <= 5; ++step) {
+    const auto v = static_cast<double>(step);
     cov.push(v, (2.0 * v) + 3.0);  // y is an exact positive linear function of x.
   }
   EXPECT_NEAR(cov.correlation(), 1.0, kTolerance);
@@ -61,7 +64,8 @@ TEST(RollingCovariance, PerfectlyCorrelatedSeriesReportsCorrelationOne) {
 
 TEST(RollingCovariance, InverselyCorrelatedSeriesReportsCorrelationMinusOne) {
   RollingCovariance cov(5);
-  for (double v = 1.0; v <= 5.0; v += 1.0) {
+  for (int step = 1; step <= 5; ++step) {
+    const auto v = static_cast<double>(step);
     cov.push(v, -v);
   }
   EXPECT_NEAR(cov.correlation(), -1.0, kTolerance);

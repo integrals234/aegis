@@ -51,7 +51,7 @@
     "Recovery against a real venue feed: every fault and every message here is synthetic and committed in-repository."
   ],
   "producer": "tools/generate_participant_evidence.py",
-  "repository_commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+  "repository_commit": "6822152bb00609bc69c5e8f533584938784c1608",
   "requirements": [
     "AEGIS-060"
   ],

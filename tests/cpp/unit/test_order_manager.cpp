@@ -402,11 +402,11 @@ TEST(OrderManager, SubmittedOrderCarriesAFiveStageLatencyAttribution) {
   ASSERT_NE(tracked, nullptr);
   ASSERT_TRUE(tracked->latency.has_value());
 
-  EXPECT_EQ(tracked->latency.value().feed_latency(), Duration{40});
-  EXPECT_EQ(tracked->latency.value().gateway_latency(), Duration{250});
-  EXPECT_EQ(tracked->latency.value().exchange_latency(), Duration{700});
-  EXPECT_EQ(tracked->latency.value().total_latency(), Duration{5090});
-  EXPECT_TRUE(tracked->latency.value().reconciles());
+  EXPECT_EQ(tracked->latency.value_or({}).feed_latency(), Duration{40});
+  EXPECT_EQ(tracked->latency.value_or({}).gateway_latency(), Duration{250});
+  EXPECT_EQ(tracked->latency.value_or({}).exchange_latency(), Duration{700});
+  EXPECT_EQ(tracked->latency.value_or({}).total_latency(), Duration{5090});
+  EXPECT_TRUE(tracked->latency.value_or({}).reconciles());
 }
 
 TEST(OrderManager, WithoutALatencyModelNoAttributionIsFabricated) {

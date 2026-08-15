@@ -12,7 +12,7 @@
         "test": "RollingBeta.MatchesExpectedSlopeForAnExactLinearRelationship"
       },
       {
-        "line": 59,
+        "line": 60,
         "passed": true,
         "source": "tests/cpp/unit/test_realized_volatility.cpp",
         "test": "RollingBeta.ZeroBenchmarkVarianceReportsZeroEdgeCase"
@@ -73,7 +73,7 @@
   ],
   "producer": "tools/generate_stats_evidence.py",
   "reference_implementation": "python/common/offline_stats.py",
-  "repository_commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+  "repository_commit": "6822152bb00609bc69c5e8f533584938784c1608",
   "requirements": [
     "AEGIS-105"
   ],

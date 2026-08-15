@@ -77,7 +77,7 @@
     "M5 risk responses to stale or recovered data -- M3 delivers the feed/book-level response only (ADR-0021)."
   ],
   "producer": "tools/generate_participant_evidence.py",
-  "repository_commit": "b2fcf6ca767b7d1f5ae4235cbf4d49c8a24a5edb",
+  "repository_commit": "6822152bb00609bc69c5e8f533584938784c1608",
   "requirements": [
     "AEGIS-064"
   ],
