@@ -85,13 +85,13 @@ class OrderManager {
   /// where the snapshotted run left off, so a client_order_id is never
   /// reused.
   OrderManager(ExecutionAdapter& adapter, RiskGate& risk_gate,
-               std::vector<TrackedOrder> restored_orders, std::uint64_t next_client_order_id,
+               const std::vector<TrackedOrder>& restored_orders, std::uint64_t next_client_order_id,
                FeeSchedule fees = {})
       : adapter_(&adapter),
         risk_gate_(&risk_gate),
         fees_(fees),
         next_client_order_id_(next_client_order_id) {
-    for (auto& order : restored_orders) {
+    for (const auto& order : restored_orders) {
       const std::uint64_t client_order_id = order.client_order_id;
       const std::uint64_t exchange_order_id = order.exchange_order_id;
       orders_by_client_id_.emplace(client_order_id, order);
