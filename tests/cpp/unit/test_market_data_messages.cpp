@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "cpp/events/market_data_messages.hpp"
+#include "tests/cpp/optional_access.hpp"
 
 namespace {
 
@@ -23,7 +24,7 @@ TEST(MarketDataMessages, SnapshotRoundTripsThroughEncodeDecode) {
 
   const auto decoded = decode_book_snapshot(encode(snapshot));
   ASSERT_TRUE(decoded.has_value());
-  EXPECT_EQ(decoded.value_or({}), snapshot);
+  EXPECT_EQ(aegis::test::checked(decoded), snapshot);
 }
 
 TEST(MarketDataMessages, EmptySnapshotRoundTrips) {
@@ -32,7 +33,7 @@ TEST(MarketDataMessages, EmptySnapshotRoundTrips) {
   snapshot.md_sequence = 1;
   const auto decoded = decode_book_snapshot(encode(snapshot));
   ASSERT_TRUE(decoded.has_value());
-  EXPECT_TRUE(decoded.value_or({}).entries.empty());
+  EXPECT_TRUE(aegis::test::checked(decoded).entries.empty());
 }
 
 TEST(MarketDataMessages, TruncatedSnapshotFailsToDecode) {
@@ -58,7 +59,7 @@ TEST(MarketDataMessages, DeltaRoundTripsThroughEncodeDecode) {
 
   const auto decoded = decode_book_delta(encode(delta));
   ASSERT_TRUE(decoded.has_value());
-  EXPECT_EQ(decoded.value_or({}), delta);
+  EXPECT_EQ(aegis::test::checked(decoded), delta);
 }
 
 TEST(MarketDataMessages, TruncatedDeltaFailsToDecode) {

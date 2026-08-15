@@ -2,6 +2,7 @@
 
 #include "cpp/participant/oms/order_manager.hpp"
 #include "cpp/participant/oms/recorded_response_adapter.hpp"
+#include "tests/cpp/optional_access.hpp"
 
 /// AEGIS-108 (wired), AEGIS-112, AEGIS-114: OrderManager ties the lifecycle
 /// state machine, the mandatory risk seam and an ExecutionAdapter to
@@ -402,11 +403,11 @@ TEST(OrderManager, SubmittedOrderCarriesAFiveStageLatencyAttribution) {
   ASSERT_NE(tracked, nullptr);
   ASSERT_TRUE(tracked->latency.has_value());
 
-  EXPECT_EQ(tracked->latency.value_or({}).feed_latency(), Duration{40});
-  EXPECT_EQ(tracked->latency.value_or({}).gateway_latency(), Duration{250});
-  EXPECT_EQ(tracked->latency.value_or({}).exchange_latency(), Duration{700});
-  EXPECT_EQ(tracked->latency.value_or({}).total_latency(), Duration{5090});
-  EXPECT_TRUE(tracked->latency.value_or({}).reconciles());
+  EXPECT_EQ(aegis::test::checked(tracked->latency).feed_latency(), Duration{40});
+  EXPECT_EQ(aegis::test::checked(tracked->latency).gateway_latency(), Duration{250});
+  EXPECT_EQ(aegis::test::checked(tracked->latency).exchange_latency(), Duration{700});
+  EXPECT_EQ(aegis::test::checked(tracked->latency).total_latency(), Duration{5090});
+  EXPECT_TRUE(aegis::test::checked(tracked->latency).reconciles());
 }
 
 TEST(OrderManager, WithoutALatencyModelNoAttributionIsFabricated) {

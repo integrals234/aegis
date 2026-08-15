@@ -5,6 +5,7 @@
 #include "cpp/participant/oms/order_manager.hpp"
 #include "cpp/participant/oms/recorded_response_adapter.hpp"
 #include "cpp/participant/oms/transport_execution_adapter.hpp"
+#include "tests/cpp/optional_access.hpp"
 
 /// AEGIS-119: "Contract tests pass across adapters." Each scenario below
 /// runs the identical `OrderManager` call sequence twice -- once with
@@ -186,7 +187,7 @@ TEST(AdapterContract, NewOrderAcceptedReachesAcknowledgedOnBothAdapters) {
   ASSERT_EQ(real_emitted.front().message_type, MessageType::kOrderAccepted);
   const auto real_accepted = decode_order_accepted(real_emitted.front().payload);
   ASSERT_TRUE(real_accepted.has_value());
-  real.manager().handle_order_accepted(real_accepted.value_or({}));
+  real.manager().handle_order_accepted(aegis::test::checked(real_accepted));
   const auto* real_tracked = real.manager().find_by_client_order_id(real_client_order_id);
   ASSERT_NE(real_tracked, nullptr);
 
@@ -206,9 +207,10 @@ TEST(AdapterContract, NewOrderAcceptedReachesAcknowledgedOnBothAdapters) {
   ASSERT_EQ(recorded_client_order_id, real_client_order_id);  // Both managers start fresh at 1.
   const auto recorded_response = recorded.next_response();
   ASSERT_TRUE(recorded_response.has_value());
-  const auto recorded_accepted = decode_order_accepted(recorded_response.value_or({}).payload);
+  const auto recorded_accepted =
+      decode_order_accepted(aegis::test::checked(recorded_response).payload);
   ASSERT_TRUE(recorded_accepted.has_value());
-  recorded.manager().handle_order_accepted(recorded_accepted.value_or({}));
+  recorded.manager().handle_order_accepted(aegis::test::checked(recorded_accepted));
   const auto* recorded_tracked =
       recorded.manager().find_by_client_order_id(recorded_client_order_id);
   ASSERT_NE(recorded_tracked, nullptr);
@@ -229,7 +231,7 @@ TEST(AdapterContract, NewOrderRejectedReachesRejectedOnBothAdapters) {
   ASSERT_EQ(real_emitted.front().message_type, MessageType::kOrderRejected);
   const auto real_rejected = decode_order_rejected(real_emitted.front().payload);
   ASSERT_TRUE(real_rejected.has_value());
-  real.manager().handle_order_rejected(real_rejected.value_or({}));
+  real.manager().handle_order_rejected(aegis::test::checked(real_rejected));
   const auto* real_tracked = real.manager().find_by_client_order_id(real_client_order_id);
   ASSERT_NE(real_tracked, nullptr);
 
@@ -245,9 +247,10 @@ TEST(AdapterContract, NewOrderRejectedReachesRejectedOnBothAdapters) {
       /*quantity_units=*/50);
   const auto recorded_response = recorded.next_response();
   ASSERT_TRUE(recorded_response.has_value());
-  const auto recorded_rejected = decode_order_rejected(recorded_response.value_or({}).payload);
+  const auto recorded_rejected =
+      decode_order_rejected(aegis::test::checked(recorded_response).payload);
   ASSERT_TRUE(recorded_rejected.has_value());
-  recorded.manager().handle_order_rejected(recorded_rejected.value_or({}));
+  recorded.manager().handle_order_rejected(aegis::test::checked(recorded_rejected));
   const auto* recorded_tracked =
       recorded.manager().find_by_client_order_id(recorded_client_order_id);
   ASSERT_NE(recorded_tracked, nullptr);
@@ -266,7 +269,7 @@ TEST(AdapterContract, CancelTerminatedReachesCancelledOnBothAdapters) {
     const auto emitted = real.drain();
     const auto accepted = decode_order_accepted(emitted.front().payload);
     ASSERT_TRUE(accepted.has_value());
-    real.manager().handle_order_accepted(accepted.value_or({}));
+    real.manager().handle_order_accepted(aegis::test::checked(accepted));
   }
   ASSERT_TRUE(real.manager().cancel_order(real_client_order_id));
   const auto real_emitted = real.drain();
@@ -274,7 +277,7 @@ TEST(AdapterContract, CancelTerminatedReachesCancelledOnBothAdapters) {
   ASSERT_EQ(real_emitted.front().message_type, MessageType::kOrderTerminated);
   const auto real_terminated = decode_order_terminated(real_emitted.front().payload);
   ASSERT_TRUE(real_terminated.has_value());
-  real.manager().handle_order_terminated(real_terminated.value_or({}));
+  real.manager().handle_order_terminated(aegis::test::checked(real_terminated));
   const auto* real_tracked = real.manager().find_by_client_order_id(real_client_order_id);
   ASSERT_NE(real_tracked, nullptr);
 
@@ -299,16 +302,17 @@ TEST(AdapterContract, CancelTerminatedReachesCancelledOnBothAdapters) {
   {
     const auto response = recorded.next_response();
     ASSERT_TRUE(response.has_value());
-    const auto accepted = decode_order_accepted(response.value_or({}).payload);
+    const auto accepted = decode_order_accepted(aegis::test::checked(response).payload);
     ASSERT_TRUE(accepted.has_value());
-    recorded.manager().handle_order_accepted(accepted.value_or({}));
+    recorded.manager().handle_order_accepted(aegis::test::checked(accepted));
   }
   ASSERT_TRUE(recorded.manager().cancel_order(recorded_client_order_id));
   const auto recorded_response = recorded.next_response();
   ASSERT_TRUE(recorded_response.has_value());
-  const auto recorded_terminated = decode_order_terminated(recorded_response.value_or({}).payload);
+  const auto recorded_terminated =
+      decode_order_terminated(aegis::test::checked(recorded_response).payload);
   ASSERT_TRUE(recorded_terminated.has_value());
-  recorded.manager().handle_order_terminated(recorded_terminated.value_or({}));
+  recorded.manager().handle_order_terminated(aegis::test::checked(recorded_terminated));
   const auto* recorded_tracked =
       recorded.manager().find_by_client_order_id(recorded_client_order_id);
   ASSERT_NE(recorded_tracked, nullptr);

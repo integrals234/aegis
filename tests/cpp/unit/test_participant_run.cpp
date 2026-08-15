@@ -2,6 +2,7 @@
 
 #include "cpp/participant/app/participant_run.hpp"
 #include "cpp/participant/oms/order_state.hpp"
+#include "tests/cpp/optional_access.hpp"
 
 /// The composition root's own proof, and the market-data event -> feed
 /// handler -> reconstructed book -> microstructure feature -> generic
@@ -17,18 +18,19 @@ TEST(ParticipantRun, BuiltinScenarioComposesEveryM3Layer) {
 
   // Feed handler -> book builder: the snapshot and both deltas landed.
   ASSERT_TRUE(summary.best_bid_price_units.has_value());
-  EXPECT_EQ(summary.best_bid_price_units.value_or({}), 10'000);  // Unmoved: the delta touching it
-  EXPECT_EQ(summary.best_bid_quantity_units.value_or({}),
+  EXPECT_EQ(aegis::test::checked(summary.best_bid_price_units),
+            10'000);  // Unmoved: the delta touching it
+  EXPECT_EQ(aegis::test::checked(summary.best_bid_quantity_units),
             30);  // was a modify to 30, not the new 9'990 order.
   ASSERT_TRUE(summary.best_ask_price_units.has_value());
-  EXPECT_EQ(summary.best_ask_price_units.value_or({}), 10'010);
+  EXPECT_EQ(aegis::test::checked(summary.best_ask_price_units), 10'010);
   EXPECT_EQ(summary.last_md_sequence, 3U);
 
   // Reconstructed book -> microstructure feature (AEGIS-072): quantity-
   // weighted microprice over the same best bid/ask asserted above.
   ASSERT_TRUE(summary.microprice.has_value());
-  EXPECT_NEAR(summary.microprice.value_or({}), (((30.0 * 10'010.0) + (40.0 * 10'000.0)) / 70.0),
-              1e-9);
+  EXPECT_NEAR(aegis::test::checked(summary.microprice),
+              (((30.0 * 10'010.0) + (40.0 * 10'000.0)) / 70.0), 1e-9);
 
   // Feed handler -> generic statistic: three trades decoded and averaged.
   EXPECT_EQ(summary.trade_count, 3U);

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "cpp/participant/book_builder/book_builder.hpp"
+#include "tests/cpp/optional_access.hpp"
 
 namespace {
 
@@ -61,7 +62,8 @@ TEST(BookBuilder, OrderLifecycleFixturesReconstructOrderLevelState) {
   book.apply_delta(added);
 
   ASSERT_TRUE(book.order(4).has_value());
-  EXPECT_EQ(book.order(4).value_or({}), (aegis::participant::book::OrderView{Side::kBuy, 98, 5}));
+  EXPECT_EQ(aegis::test::checked(book.order(4)),
+            (aegis::participant::book::OrderView{Side::kBuy, 98, 5}));
   EXPECT_EQ(book.quantity_at(Side::kBuy, 98), 5);
 
   BookDeltaEvent modified;
@@ -74,7 +76,7 @@ TEST(BookBuilder, OrderLifecycleFixturesReconstructOrderLevelState) {
   modified.quantity_units = 2;
   book.apply_delta(modified);
 
-  EXPECT_EQ(book.order(4).value_or({}).quantity_units, 2);
+  EXPECT_EQ(aegis::test::checked(book.order(4)).quantity_units, 2);
   EXPECT_EQ(book.quantity_at(Side::kBuy, 98), 2);
 
   BookDeltaEvent removed;
@@ -232,12 +234,12 @@ TEST(BookBuilder, TopOfBookReportsBestBidAskSpreadAndMid) {
   const auto top = book.top_of_book();
   ASSERT_TRUE(top.best_bid.has_value());
   ASSERT_TRUE(top.best_ask.has_value());
-  EXPECT_EQ(top.best_bid.value_or({}), (PriceLevelView{100, 10}));
-  EXPECT_EQ(top.best_ask.value_or({}), (PriceLevelView{101, 15}));
+  EXPECT_EQ(aegis::test::checked(top.best_bid), (PriceLevelView{100, 10}));
+  EXPECT_EQ(aegis::test::checked(top.best_ask), (PriceLevelView{101, 15}));
   ASSERT_TRUE(top.spread_units.has_value());
-  EXPECT_EQ(top.spread_units.value_or({}), 1);
+  EXPECT_EQ(aegis::test::checked(top.spread_units), 1);
   ASSERT_TRUE(top.mid_price_units.has_value());
-  EXPECT_DOUBLE_EQ(top.mid_price_units.value_or({}), 100.5);
+  EXPECT_DOUBLE_EQ(aegis::test::checked(top.mid_price_units), 100.5);
 }
 
 TEST(BookBuilder, TopOfBookLeavesSpreadAndMidUnsetWithOnlyOneSide) {
@@ -264,7 +266,7 @@ TEST(BookBuilder, MicropriceWeightsTowardTheOppositeSidesPrice) {
   const auto price = book.microprice();
   ASSERT_TRUE(price.has_value());
   // (10*101 + 15*100) / 25 = (1010+1500)/25 = 100.4.
-  EXPECT_DOUBLE_EQ(price.value_or({}), ((10.0 * 101.0) + (15.0 * 100.0)) / 25.0);
+  EXPECT_DOUBLE_EQ(aegis::test::checked(price), ((10.0 * 101.0) + (15.0 * 100.0)) / 25.0);
 }
 
 TEST(BookBuilder, MicropriceIsUndefinedWithoutBothSides) {
@@ -280,7 +282,7 @@ TEST(BookBuilder, DepthImbalanceReflectsHeavierBidSide) {
   const auto imbalance = book.depth_imbalance(5);
   ASSERT_TRUE(imbalance.has_value());
   // (30 - 15) / (30 + 15) = 1/3.
-  EXPECT_DOUBLE_EQ(imbalance.value_or({}), (30.0 - 15.0) / (30.0 + 15.0));
+  EXPECT_DOUBLE_EQ(aegis::test::checked(imbalance), (30.0 - 15.0) / (30.0 + 15.0));
 }
 
 TEST(BookBuilder, DepthImbalanceRespectsTheRequestedDepth) {
@@ -290,7 +292,7 @@ TEST(BookBuilder, DepthImbalanceRespectsTheRequestedDepth) {
   const auto top_only = book.depth_imbalance(1);
   ASSERT_TRUE(top_only.has_value());
   // (10 - 15) / (10 + 15) = -1/5, using only the top bid level.
-  EXPECT_DOUBLE_EQ(top_only.value_or({}), (10.0 - 15.0) / (10.0 + 15.0));
+  EXPECT_DOUBLE_EQ(aegis::test::checked(top_only), (10.0 - 15.0) / (10.0 + 15.0));
 }
 
 TEST(BookBuilder, DepthImbalanceUndefinedForZeroDepthOrAnEmptyBook) {
@@ -314,9 +316,9 @@ TEST(BookBuilder, QueueDepletionTracksConsumptionAgainstTheHighWaterMark) {
 
   auto signal = book.queue_depletion(Side::kBuy, 100);
   ASSERT_TRUE(signal.has_value());
-  EXPECT_EQ(signal.value_or({}).original_quantity_units, 20);
-  EXPECT_EQ(signal.value_or({}).current_quantity_units, 20);
-  EXPECT_DOUBLE_EQ(signal.value_or({}).depletion_ratio, 0.0);
+  EXPECT_EQ(aegis::test::checked(signal).original_quantity_units, 20);
+  EXPECT_EQ(aegis::test::checked(signal).current_quantity_units, 20);
+  EXPECT_DOUBLE_EQ(aegis::test::checked(signal).depletion_ratio, 0.0);
 
   BookDeltaEvent modify;
   modify.instrument_id = 1;
@@ -330,10 +332,10 @@ TEST(BookBuilder, QueueDepletionTracksConsumptionAgainstTheHighWaterMark) {
 
   signal = book.queue_depletion(Side::kBuy, 100);
   ASSERT_TRUE(signal.has_value());
-  EXPECT_EQ(signal.value_or({}).original_quantity_units,
+  EXPECT_EQ(aegis::test::checked(signal).original_quantity_units,
             20);  // High-water mark unchanged by a decrease.
-  EXPECT_EQ(signal.value_or({}).current_quantity_units, 5);
-  EXPECT_DOUBLE_EQ(signal.value_or({}).depletion_ratio, 1.0 - (5.0 / 20.0));
+  EXPECT_EQ(aegis::test::checked(signal).current_quantity_units, 5);
+  EXPECT_DOUBLE_EQ(aegis::test::checked(signal).depletion_ratio, 1.0 - (5.0 / 20.0));
 }
 
 TEST(BookBuilder, QueueDepletionIsUndefinedForALevelThatDoesNotExist) {
@@ -390,7 +392,7 @@ TEST(BookBuilder, AdverseSelectionDetectsAnUnfavorableMoveAfterTheWindow) {
   EXPECT_EQ(resolved[0].fill_side, Side::kBuy);
   EXPECT_EQ(resolved[0].fill_price_units, 100);
   ASSERT_TRUE(resolved[0].mark_price_units.has_value());
-  EXPECT_EQ(resolved[0].mark_price_units.value_or({}), 90);
+  EXPECT_EQ(aegis::test::checked(resolved[0].mark_price_units), 90);
   EXPECT_TRUE(resolved[0].adverse);
 
   // Drained: does not resolve a second time.

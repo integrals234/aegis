@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include "cpp/participant/feed_handler/feed_handler.hpp"
+#include "tests/cpp/optional_access.hpp"
 
 namespace {
 
@@ -37,9 +38,9 @@ TEST(FeedHandler, DecodesABookSnapshotAndTracksItsSequence) {
 
   ASSERT_EQ(decoded.kind, DecodedKind::kBookSnapshot);
   ASSERT_TRUE(decoded.snapshot.has_value());
-  EXPECT_EQ(decoded.snapshot.value_or({}).instrument_id, 7U);
+  EXPECT_EQ(aegis::test::checked(decoded.snapshot).instrument_id, 7U);
   ASSERT_TRUE(decoded.sequence_check.has_value());
-  EXPECT_EQ(decoded.sequence_check.value_or({}).diagnostic, SequenceDiagnostic::kOk);
+  EXPECT_EQ(aegis::test::checked(decoded.sequence_check).diagnostic, SequenceDiagnostic::kOk);
 }
 
 TEST(FeedHandler, TracksSequenceIndependentlyPerInstrument) {
@@ -54,8 +55,9 @@ TEST(FeedHandler, TracksSequenceIndependentlyPerInstrument) {
   const auto first_decoded = handler.decode(frame(MessageType::kBookSnapshot, encode(first)));
   const auto second_decoded = handler.decode(frame(MessageType::kBookSnapshot, encode(second)));
 
-  EXPECT_EQ(first_decoded.sequence_check.value_or({}).diagnostic, SequenceDiagnostic::kOk);
-  EXPECT_EQ(second_decoded.sequence_check.value_or({}).diagnostic, SequenceDiagnostic::kOk);
+  EXPECT_EQ(aegis::test::checked(first_decoded.sequence_check).diagnostic, SequenceDiagnostic::kOk);
+  EXPECT_EQ(aegis::test::checked(second_decoded.sequence_check).diagnostic,
+            SequenceDiagnostic::kOk);
   ASSERT_NE(handler.tracker_for(1), nullptr);
   ASSERT_NE(handler.tracker_for(2), nullptr);
   EXPECT_EQ(handler.tracker_for(1)->last_sequence(), 5U);
@@ -72,7 +74,7 @@ TEST(FeedHandler, DecodesATrade) {
   const auto decoded = handler.decode(frame(MessageType::kTrade, encode(trade)));
   ASSERT_EQ(decoded.kind, DecodedKind::kTrade);
   ASSERT_TRUE(decoded.trade.has_value());
-  EXPECT_EQ(decoded.trade.value_or({}).price_units, 100);
+  EXPECT_EQ(aegis::test::checked(decoded.trade).price_units, 100);
   EXPECT_FALSE(decoded.sequence_check.has_value());  // Trades carry no md_sequence.
 }
 

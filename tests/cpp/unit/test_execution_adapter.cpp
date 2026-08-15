@@ -4,6 +4,7 @@
 
 #include "cpp/common/clock.hpp"
 #include "cpp/participant/oms/transport_execution_adapter.hpp"
+#include "tests/cpp/optional_access.hpp"
 
 /// AEGIS-119: `TransportExecutionAdapter` encodes OMS intent to the exact
 /// wire form `cpp/events/exchange_messages.hpp` already defines and hands it
@@ -56,7 +57,7 @@ TEST(TransportExecutionAdapter, SubmitEncodesAndSendsANewOrderCommand) {
   EXPECT_EQ(transport.sent[0].stream_id, 1U);
   const auto decoded = decode_new_order(transport.sent[0].payload);
   ASSERT_TRUE(decoded.has_value());
-  EXPECT_EQ(decoded.value_or({}), command);
+  EXPECT_EQ(aegis::test::checked(decoded), command);
 }
 
 TEST(TransportExecutionAdapter, CancelEncodesAndSends) {

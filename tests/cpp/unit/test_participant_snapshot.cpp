@@ -9,6 +9,7 @@
 #include "cpp/participant/oms/order_manager.hpp"
 #include "cpp/participant/oms/recorded_response_adapter.hpp"
 #include "cpp/participant/portfolio/portfolio_snapshot.hpp"
+#include "tests/cpp/optional_access.hpp"
 
 /// AEGIS-237; ADR-0024: participant-state snapshot codec -- the
 /// participant-side analogue of `test_snapshot_roundtrip.cpp`. Covers the
@@ -105,7 +106,7 @@ TEST(OmsSnapshot, RoundTripsThroughWriteAndRead) {
   const auto bytes = write_oms_snapshot(captured);
   const auto read = read_oms_snapshot(bytes);
   ASSERT_TRUE(read.has_value());
-  EXPECT_EQ(read.value_or({}), captured);
+  EXPECT_EQ(read.value(), captured);
 }
 
 TEST(OmsSnapshot, SameStateProducesByteIdenticalOutputAcrossRepeatedCaptures) {
@@ -223,7 +224,7 @@ TEST(PortfolioSnapshot, RoundTripsThroughWriteAndRead) {
   const PortfolioSnapshot captured = capture_portfolio_snapshot(ledger);
   const auto read = read_portfolio_snapshot(write_portfolio_snapshot(captured));
   ASSERT_TRUE(read.has_value());
-  EXPECT_EQ(read.value_or({}), captured);
+  EXPECT_EQ(read.value(), captured);
 }
 
 TEST(PortfolioSnapshot, SameStateProducesByteIdenticalOutputAcrossRepeatedCaptures) {
@@ -295,7 +296,7 @@ TEST(ParticipantSnapshot, RoundTripsThroughWriteAndRead) {
   const ParticipantSnapshot captured = capture_participant_snapshot(manager, ledger);
   const auto read = read_participant_snapshot(write_participant_snapshot(captured));
   ASSERT_TRUE(read.has_value());
-  EXPECT_EQ(read.value_or({}), captured);
+  EXPECT_EQ(read.value(), captured);
 }
 
 TEST(ParticipantSnapshot, SameStateProducesByteIdenticalOutputAcrossRepeatedCaptures) {
