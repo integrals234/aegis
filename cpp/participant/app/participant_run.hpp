@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -92,5 +93,46 @@ struct FixtureRunResult {
     const std::string& fixture_path, std::uint64_t skip, std::optional<std::uint64_t> limit,
     const std::optional<std::string>& restore_from_path,
     const std::optional<std::string>& snapshot_out_path);
+
+// ---------------------------------------------------------------------------
+// AEGIS-076..081, AEGIS-004, AEGIS-080; ADR-0025: the first M4 strategy,
+// wired here -- and only here -- to the existing risk seam and OMS.
+// ---------------------------------------------------------------------------
+
+struct CalendarSpreadRunConfig {
+  std::uint32_t near_instrument_id{2001};
+  std::uint32_t far_instrument_id{2002};
+  std::size_t zscore_window{20};
+  double entry_threshold{2.0};
+  double exit_threshold{0.5};
+  std::int64_t quantity_units{1};
+};
+
+struct CalendarSpreadRunResult {
+  /// One canonical JSON line per date both legs' books have absorbed --
+  /// deterministic, so two runs over the same stream produce byte-identical
+  /// output (the repeated-run half of the first real-deal demo acceptance).
+  std::vector<std::string> lines;
+};
+
+/// Drives `strategy::CalendarSpreadStrategy` from a committed two-leg
+/// market-data stream (`--stream`, one JSON step per line, `"leg": "near"`
+/// or `"far"`) through `FeedHandler` -> `BookBuilder` (one per leg) ->
+/// `CalendarSpreadStrategy` -> the existing always-approve risk-gate double
+/// (ADR-0023: no production `RiskGate` ships before M5) -> `OrderManager` ->
+/// a deterministic immediate-fill execution adapter (no transport, no
+/// exchange, AEGIS-119) -> `Portfolio`.
+///
+/// This is the **production** path (Demo A). It proves the composition, not
+/// real matching -- `tests/cpp/unit/test_calendar_spread_exchange_
+/// integration.cpp` proves the same strategy against a real, unmodified M1
+/// `ExchangeNode` and real FIFO matching (Demo B), composed entirely inside
+/// `tests/`, outside `covered_roots`, exactly as
+/// `test_participant_exchange_integration.cpp` already does for the OMS.
+///
+/// Throws `std::runtime_error` for a missing/unreadable stream file, mirroring
+/// `run_participant_fixture`.
+[[nodiscard]] CalendarSpreadRunResult run_calendar_spread_scenario(
+    const std::string& stream_path, const CalendarSpreadRunConfig& config);
 
 }  // namespace aegis::participant::app

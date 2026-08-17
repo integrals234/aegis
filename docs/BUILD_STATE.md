@@ -1,6 +1,6 @@
 # Build State
 
-- Active milestone: M3
+- Active milestone: M4
 - M0 status: **CLOSED** 2026-08-06 (owner-approved fast-track closure)
 - M1 status: **CLOSED** 2026-08-09. All 15 M1 requirements (AEGIS-027..041) are
   `verified` on an independent `/audit-milestone M1` against the final tree
@@ -45,15 +45,15 @@
   single PR flipping both would have failed its own gate. This is that first
   commit on `milestone/m3-participant-execution`, flipping the mirror now that
   the policy change is on `main`.
-- Active branch: `chore/m4-activation-policy`, based on canonical main
-  `f149aacaa82a3a40294fd674b208740198d07232`. This is the M4 activation pull
-  request. It flips `configs/governance/policy.yaml` to `active_milestone: M4`
-  and grants the three exact-path M4 approvals, and it **deliberately leaves
-  the `Active milestone:` line above at `M3`** — the authoritative gate reads
-  policy from the *base* branch and requires this mirror to match it, so a
-  single pull request flipping both would fail its own gate, exactly as at the
-  M3 transition (PR #7). The mirror flips in the first commit on
-  `milestone/m4-calendar-spread`, once this pull request is merged.
+- M4 started 2026-08-17. PR #10 ("M4 activation policy") merged
+  `configs/governance/policy.yaml`'s `active_milestone: M4` and the
+  `m4-architecture-transition`/`m4-build-wiring`/`m4-milestone-gate`
+  approvals to `main` first, deliberately leaving this line at `M3` — the
+  authoritative gate reads policy from the *base* branch and requires this
+  mirror to match it, so a single PR flipping both would have failed its own
+  gate. This is that first commit on `milestone/m4-calendar-spread`, flipping
+  the mirror now that the policy change is on `main`.
+- Active branch: `milestone/m4-calendar-spread`, based on `78ce024`.
 - Owner-approved scope changes: `cpp/CMakeLists.txt`, `scripts/ci_local.sh`, `.github/workflows/ci.yml`, `requirements/python-requirements.in`, `requirements/requirements.lock`, `pyproject.toml`
   — **a MIRROR, not the authority.** Since ADR-0014 (R8, PR #3) this line
   **grants nothing**: approvals live in `configs/governance/policy.yaml` on
@@ -125,6 +125,15 @@
   AEGIS-230 at M2, and AEGIS-005, AEGIS-227, AEGIS-233, AEGIS-234 and
   AEGIS-009 at M1. **Two obligations fall due at M4** and are that milestone's
   first-class closure work.
+
+## M4 state
+
+**IN PROGRESS.** Plan of record: `experiments/plans/M4.md`. Batch 1 (strategy
+core, real M1 matching, first real-deal demo) is underway on
+`milestone/m4-calendar-spread`. Six primary M4 requirements
+(AEGIS-076..081) plus the two obligations due at M4 (AEGIS-004, AEGIS-024) are
+`not_started`/`implemented` until Batch 2 and closure evidence exists; nothing
+here is promoted to `verified` mid-batch.
 
 ## M3 state
 

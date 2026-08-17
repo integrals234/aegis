@@ -1,0 +1,12 @@
+{"as_of":"2026-03-10","ask_price_units":500035,"ask_quantity_units":100,"bid_price_units":500015,"bid_quantity_units":100,"instrument_id":2001,"leg":"near","md_sequence":1}
+{"as_of":"2026-03-10","ask_price_units":500085,"ask_quantity_units":100,"bid_price_units":500065,"bid_quantity_units":100,"instrument_id":2002,"leg":"far","md_sequence":1}
+{"as_of":"2026-03-11","ask_price_units":500060,"ask_quantity_units":100,"bid_price_units":500040,"bid_quantity_units":100,"instrument_id":2001,"leg":"near","md_sequence":2}
+{"as_of":"2026-03-11","ask_price_units":500115,"ask_quantity_units":100,"bid_price_units":500095,"bid_quantity_units":100,"instrument_id":2002,"leg":"far","md_sequence":2}
+{"as_of":"2026-03-12","ask_price_units":500085,"ask_quantity_units":100,"bid_price_units":500065,"bid_quantity_units":100,"instrument_id":2001,"leg":"near","md_sequence":3}
+{"as_of":"2026-03-12","ask_price_units":500145,"ask_quantity_units":100,"bid_price_units":500125,"bid_quantity_units":100,"instrument_id":2002,"leg":"far","md_sequence":3}
+{"as_of":"2026-03-13","ask_price_units":500110,"ask_quantity_units":100,"bid_price_units":500090,"bid_quantity_units":100,"instrument_id":2001,"leg":"near","md_sequence":4}
+{"as_of":"2026-03-13","ask_price_units":500175,"ask_quantity_units":100,"bid_price_units":500155,"bid_quantity_units":100,"instrument_id":2002,"leg":"far","md_sequence":4}
+{"as_of":"2026-03-14","ask_price_units":500135,"ask_quantity_units":100,"bid_price_units":500115,"bid_quantity_units":100,"instrument_id":2001,"leg":"near","md_sequence":5}
+{"as_of":"2026-03-14","ask_price_units":500385,"ask_quantity_units":100,"bid_price_units":500365,"bid_quantity_units":100,"instrument_id":2002,"leg":"far","md_sequence":5}
+{"as_of":"2026-03-15","ask_price_units":500160,"ask_quantity_units":100,"bid_price_units":500140,"bid_quantity_units":100,"instrument_id":2001,"leg":"near","md_sequence":6}
+{"as_of":"2026-03-15","ask_price_units":500230,"ask_quantity_units":100,"bid_price_units":500210,"bid_quantity_units":100,"instrument_id":2002,"leg":"far","md_sequence":6}

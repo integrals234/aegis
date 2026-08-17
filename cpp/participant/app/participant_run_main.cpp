@@ -29,8 +29,11 @@
 /// (`tests/replay/test_participant_recovery.py`).
 namespace {
 
+using aegis::participant::app::CalendarSpreadRunConfig;
+using aegis::participant::app::CalendarSpreadRunResult;
 using aegis::participant::app::FixtureRunResult;
 using aegis::participant::app::run_builtin_scenario;
+using aegis::participant::app::run_calendar_spread_scenario;
 using aegis::participant::app::run_participant_fixture;
 using aegis::participant::app::RunSummary;
 
@@ -40,6 +43,10 @@ struct Options {
   std::optional<std::uint64_t> limit;
   std::optional<std::string> snapshot_out;
   std::optional<std::string> restore_from;
+  /// AEGIS-076..081, ADR-0025: `--calendar-spread --stream PATH` runs the
+  /// first M4 strategy instead of the fixture/builtin paths above.
+  bool calendar_spread{false};
+  std::optional<std::string> stream_path;
 };
 
 [[nodiscard]] std::unordered_map<std::string, std::function<void(Options&, std::string)>>
@@ -55,6 +62,8 @@ make_flag_setters() {
        [](Options& options, std::string value) { options.snapshot_out = std::move(value); }},
       {"--restore-from",
        [](Options& options, std::string value) { options.restore_from = std::move(value); }},
+      {"--stream",
+       [](Options& options, std::string value) { options.stream_path = std::move(value); }},
   };
 }
 
@@ -64,6 +73,10 @@ make_flag_setters() {
   Options options;
   for (int i = 1; i < argc; ++i) {
     const std::string flag = argv[i];  // NOLINT(cppcoreguidelines-pro-bounds-pointer-arithmetic)
+    if (flag == "--calendar-spread") {
+      options.calendar_spread = true;
+      continue;
+    }
     const auto found = setters.find(flag);
     if (found == setters.end()) {
       std::cerr << "unknown argument: " << flag << "\n";
@@ -110,6 +123,19 @@ void print_builtin_summary(const RunSummary& summary) {
 }
 
 int run(const Options& options) {
+  if (options.calendar_spread) {
+    if (!options.stream_path.has_value()) {
+      std::cerr << "--calendar-spread requires --stream PATH\n";
+      return 2;
+    }
+    const CalendarSpreadRunResult result =
+        run_calendar_spread_scenario(*options.stream_path, CalendarSpreadRunConfig{});
+    for (const auto& line : result.lines) {
+      std::cout << line << "\n";
+    }
+    return 0;
+  }
+
   if (!options.fixture_path.has_value()) {
     print_builtin_summary(run_builtin_scenario());
     return 0;
@@ -131,7 +157,7 @@ int main(int argc, char** argv) {
   if (!options.has_value()) {
     std::cerr << "usage: aegis_participant_run "
                  "[--fixture PATH [--skip N] [--limit N] [--snapshot-out PATH] "
-                 "[--restore-from PATH]]\n";
+                 "[--restore-from PATH]] | [--calendar-spread --stream PATH]\n";
     return 2;
   }
   try {
