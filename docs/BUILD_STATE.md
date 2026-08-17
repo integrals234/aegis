@@ -22,6 +22,16 @@
   the signed-anchor circularity, the credential gap, the fine-grained-PAT
   incompatibility and the `record_index` wording). All 14 slices are complete,
   and `milestone/m2-futures-replay` was merged and is no longer active.
+- M3 status: **CLOSED** 2026-08-16. **33 of the 34 primary M3 requirements
+  (AEGIS-064..075, 098..106, 108..119) are `verified`** on an independent
+  spec-auditor review of the final tree; AEGIS-107 carries an owner-approved
+  residual (→M8, latency/memory only) and stays `implemented`. All three
+  inherited M3 obligations are discharged and `verified` — AEGIS-060
+  (stale-data response), AEGIS-061 (feed recovery) and AEGIS-237
+  (participant-state recovery) — so `--check-deferred M3` passes. PR #9 merged;
+  canonical main `f149aacaa82a3a40294fd674b208740198d07232`.
+  Report: `experiments/milestone-reports/M3.md`.
+  `milestone/m3-participant-execution` was merged and is no longer active.
 - M3 started 2026-08-12 per `experiments/plans/M3.md` (owner-approved plan of
   record, after the three architecture corrections recorded in that file's
   header — `configs/architecture_rules.yaml` protected as a governance path
@@ -35,7 +45,15 @@
   single PR flipping both would have failed its own gate. This is that first
   commit on `milestone/m3-participant-execution`, flipping the mirror now that
   the policy change is on `main`.
-- Active branch: `milestone/m3-participant-execution`, based on `9f14f11`.
+- Active branch: `chore/m4-activation-policy`, based on canonical main
+  `f149aacaa82a3a40294fd674b208740198d07232`. This is the M4 activation pull
+  request. It flips `configs/governance/policy.yaml` to `active_milestone: M4`
+  and grants the three exact-path M4 approvals, and it **deliberately leaves
+  the `Active milestone:` line above at `M3`** — the authoritative gate reads
+  policy from the *base* branch and requires this mirror to match it, so a
+  single pull request flipping both would fail its own gate, exactly as at the
+  M3 transition (PR #7). The mirror flips in the first commit on
+  `milestone/m4-calendar-spread`, once this pull request is merged.
 - Owner-approved scope changes: `cpp/CMakeLists.txt`, `scripts/ci_local.sh`, `.github/workflows/ci.yml`, `requirements/python-requirements.in`, `requirements/requirements.lock`, `pyproject.toml`
   — **a MIRROR, not the authority.** Since ADR-0014 (R8, PR #3) this line
   **grants nothing**: approvals live in `configs/governance/policy.yaml` on
@@ -98,20 +116,22 @@
   run 31295058007, whose `reproducibility` job executed
   `docs/ENVIRONMENT.md`'s canonical procedure verbatim on a clean
   `ubuntu-24.04` runner.
-- Deferred verification obligations: 9 open, listed in
-  `docs/DEFERRED_VERIFICATION.md`; due M3=3, M4=2, M5=3, M9=1 — **none at M2**,
-  so `--check-deferred M2` passes. Both obligations that were due at M2 are
-  discharged: AEGIS-229 (bindings, slice 13) and AEGIS-230 (columnar
-  interchange, slice 5). Six of the nine open obligations were registered by M2
-  itself and are its carried debt: AEGIS-024→M4, 059→M9, 060/061→M3,
-  062/063→M5, all owner-approved during planning. Previously discharged:
-  AEGIS-005 (exchange determinism), AEGIS-227, AEGIS-233, AEGIS-234 (first real
-  CI runs) and AEGIS-009 (clean-machine reproducibility).
+- Deferred verification obligations: **7 open** after M3, listed in
+  `docs/DEFERRED_VERIFICATION.md`; due M4=2 (AEGIS-004, AEGIS-024), M5=3
+  (AEGIS-062, AEGIS-063, AEGIS-238), M8=1 (AEGIS-107) and M9=1 (AEGIS-059).
+  M3 discharged the three that were due at it — AEGIS-060, AEGIS-061 and
+  AEGIS-237 — so `--check-deferred M3` passes, and registered exactly one new
+  obligation, AEGIS-107→M8. Earlier milestones discharged AEGIS-229 and
+  AEGIS-230 at M2, and AEGIS-005, AEGIS-227, AEGIS-233, AEGIS-234 and
+  AEGIS-009 at M1. **Two obligations fall due at M4** and are that milestone's
+  first-class closure work.
 
 ## M3 state
 
-**CLOSURE PROPOSED** — the closure PR is open, awaiting the owner's approving
-review. Nothing is merged. Plan of record: `experiments/plans/M3.md`.
+**CLOSED** 2026-08-16 — the closure pull request **PR #9** was approved and
+merged, making `f149aacaa82a3a40294fd674b208740198d07232` canonical `main`.
+Plan of record: `experiments/plans/M3.md`; report:
+`experiments/milestone-reports/M3.md`.
 
 **33 of the 34 primary M3 requirements (AEGIS-064..075, 098..106, 108..119) are
 `verified`** on an independent spec-auditor review of the final tree.
