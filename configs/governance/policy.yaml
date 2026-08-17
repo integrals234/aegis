@@ -25,7 +25,7 @@ policy_version: 1
 # tools/audit_requirements.py read docs/BUILD_STATE.md, which mirrors this
 # value; the authoritative gate requires the two to agree, so a branch cannot
 # grant itself a wider scope by editing the mirror.
-active_milestone: M3
+active_milestone: M4
 
 # Paths that decide who is allowed to change what. A pull request touching any
 # of these needs an explicit approval below, because changing them changes the
@@ -157,3 +157,62 @@ approvals:
       milestone-scoped, so it expires when M3 does.
     granted_on: 2026-08-12
     granted_by_pr: 7
+
+  # The two M3 approvals above are inert from here on, for the same reason the
+  # M2 pair became inert at the M3 transition: approved_paths() skips any entry
+  # whose milestone is not the active one. They are kept as the historical
+  # record of what M3 was allowed to touch.
+
+  - id: m4-architecture-transition
+    milestone: M4
+    paths:
+      - configs/architecture_rules.yaml
+    reason: >
+      cpp/participant/strategy is dated M4 in configs/architecture_rules.yaml
+      and must become non-empty this milestone, but nothing may legally compose
+      it: cpp-participant-app — the participant composition root, and the only
+      layer permitted to see feed handler, book builder, statistics, OMS and
+      portfolio at once (ADR-0020) — has no edge to it. This approval
+      authorises exactly one change to that file and nothing else:
+        1. add cpp-participant-strategy to cpp-participant-app.may_depend_on.
+      Explicitly NOT authorised by this approval: an edge from
+      cpp-participant-strategy to cpp-participant-oms, to any cpp-exchange-*
+      layer, or to any gateway/broker adapter — the pipeline stays forward-only
+      and strategies emit proposals only; an edge from cpp-bindings to
+      cpp-participant-strategy; any other may_depend_on widening; re-dating any
+      layer's expect_sources_from_milestone; relaxing any entry under `banned`
+      (parent_relative_includes, python_headers_only_in,
+      gateway_header_markers, mutable_globals_forbidden_in); narrowing
+      covered_roots; or any other weakening of architecture policy. The
+      approval is exact-path and milestone-scoped, so it expires when M4 does.
+    granted_on: 2026-08-17
+    granted_by_pr: 10
+
+  - id: m4-build-wiring
+    milestone: M4
+    paths:
+      - cpp/participant/CMakeLists.txt
+      - cpp/participant/app/CMakeLists.txt
+    reason: >
+      cpp/participant/strategy cannot build without a subdirectory entry in
+      cpp/participant/CMakeLists.txt, and cpp/participant/app/CMakeLists.txt
+      must add the corresponding link edge — tools/check_architecture.py reads
+      target_link_libraries independently of includes, so the build graph and
+      the layer DAG have to move together. Both files sit outside M4's declared
+      scope in configs/milestone_scope.yaml, which allows only
+      cpp/participant/strategy/** on the C++ side.
+    granted_on: 2026-08-17
+    granted_by_pr: 10
+
+  - id: m4-milestone-gate
+    milestone: M4
+    paths:
+      - .github/workflows/ci.yml
+      - scripts/ci_local.sh
+    reason: >
+      The milestone audit is hardcoded to M3 in both the GitHub workflow and
+      the local CI mirror. M4 batch 1 must retarget both to M4 together —
+      tests/unit/test_ci_parity.py fails if only one moves — and scripts/** is
+      outside M4's declared scope in configs/milestone_scope.yaml.
+    granted_on: 2026-08-17
+    granted_by_pr: 10
