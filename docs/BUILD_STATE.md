@@ -45,23 +45,51 @@
   single PR flipping both would have failed its own gate. This is that first
   commit on `milestone/m3-participant-execution`, flipping the mirror now that
   the policy change is on `main`.
-- M4 started 2026-08-17. PR #10 ("M4 activation policy") merged
-  `configs/governance/policy.yaml`'s `active_milestone: M4` and the
-  `m4-architecture-transition`/`m4-build-wiring`/`m4-milestone-gate`
-  approvals to `main` first, deliberately leaving this line at `M3` — the
-  authoritative gate reads policy from the *base* branch and requires this
-  mirror to match it, so a single PR flipping both would have failed its own
-  gate. This is that first commit on `milestone/m4-calendar-spread`, flipping
-  the mirror now that the policy change is on `main`.
-- Active branch: `milestone/m4-calendar-spread`, based on `78ce024`.
-- Owner-approved scope changes: `cpp/CMakeLists.txt`, `scripts/ci_local.sh`, `.github/workflows/ci.yml`, `requirements/python-requirements.in`, `requirements/requirements.lock`, `pyproject.toml`
+- M4 started 2026-08-17 per `experiments/plans/M4.md`, and was activated in
+  **three** owner-merged steps rather than the planned two:
+  1. **PR #10** ("M4 activation policy") merged
+     `configs/governance/policy.yaml`'s `active_milestone: M4` and the
+     `m4-architecture-transition`/`m4-build-wiring`/`m4-milestone-gate`
+     approvals to `main`, deliberately leaving this mirror at `M3` — the
+     authoritative gate reads policy from the *base* branch and requires the
+     mirror to match it, so a single pull request flipping both would have
+     failed its own gate, exactly as at the M3 transition (PR #7).
+  2. **PR #11** ("M4 scope grant + in-scope half of Batch 1") added the
+     `m4-participant-app-integration` approval **and** flipped this mirror to
+     `M4`. The two had to land together: `check_layer_population` makes
+     emptiness a checked fact in both directions, so flipping the mirror to
+     `M4` in a tree whose three M4-dated layers were still empty failed
+     `tools/check_architecture.py` by construction, while leaving the mirror
+     at `M3` failed the authoritative gate. Only a tree carrying both the flip
+     and the implementation satisfied both, so PR #11 also carried the part of
+     Batch 1 already inside M4's declared scope, deliberately excluding the
+     three `cpp/participant/app/participant_run.*` files its own approval
+     grants — an approval takes effect only once merged, so the files it
+     authorises could not legally land in the same pull request.
+     `configs/milestone_scope.yaml` was **not** widened; the exact-path
+     approval is the narrower mechanism R8 already provides.
+  3. This branch, `milestone/m4-calendar-spread`, carries the remainder: the
+     three participant-app files, the `--calendar-spread` demo, and Batch 2's
+     research, reports and evidence.
+- Active branch: `milestone/m4-calendar-spread`, holding M4 Batch 1
+  (`44ce17c`) and Batch 2 (`fa381e6`) with canonical `main` (PR #11,
+  `3925782`) merged in. **M4 CLOSURE PROPOSED** — see the M4 state section.
+- Owner-approved scope changes: `configs/architecture_rules.yaml`, `cpp/participant/CMakeLists.txt`, `cpp/participant/app/CMakeLists.txt`, `.github/workflows/ci.yml`, `scripts/ci_local.sh`, `cpp/participant/app/participant_run.hpp`, `cpp/participant/app/participant_run.cpp`, `cpp/participant/app/participant_run_main.cpp`
   — **a MIRROR, not the authority.** Since ADR-0014 (R8, PR #3) this line
   **grants nothing**: approvals live in `configs/governance/policy.yaml` on
   protected `main`, where an agent cannot put them, and
   `tools/governance/authoritative_check.py` runs from `main` under
-  `pull_request_target` reading this branch only as data. The six paths above
-  are transcribed from the owner's `m2-build-and-gate` and
-  `m2-columnar-dependencies` approvals, granted in PR #5.
+  `pull_request_target` reading this branch only as data. The eight paths
+  above are transcribed from the four **M4** approvals in that policy:
+  `m4-architecture-transition`, `m4-build-wiring` and `m4-milestone-gate`
+  (granted in PR #10), plus `m4-participant-app-integration` (granted in the
+  pull request this line is being edited on). The M2 paths this line
+  previously carried — `cpp/CMakeLists.txt`,
+  `requirements/python-requirements.in`, `requirements/requirements.lock`,
+  `pyproject.toml` — became inert the moment `active_milestone` left M2:
+  `approved_paths()` skips any approval whose milestone is not the active
+  one, so they are dropped here rather than left to imply a permission that
+  no longer exists.
   The mirror exists so `tools/check_scope.py` — retained as a fast advisory
   check, which still parses this line — agrees with the authoritative gate
   instead of contradicting it. If the two ever disagree, **the gate is right
@@ -128,12 +156,18 @@
 
 ## M4 state
 
-**IN PROGRESS.** Plan of record: `experiments/plans/M4.md`. Batch 1 (strategy
-core, real M1 matching, first real-deal demo) is underway on
-`milestone/m4-calendar-spread`. Six primary M4 requirements
-(AEGIS-076..081) plus the two obligations due at M4 (AEGIS-004, AEGIS-024) are
-`not_started`/`implemented` until Batch 2 and closure evidence exists; nothing
-here is promoted to `verified` mid-batch.
+**CLOSURE IN PROGRESS.** Plan of record: `experiments/plans/M4.md`.
+Activation: PR #10 (policy) and PR #11 (scope grant + mirror flip + in-scope
+half of Batch 1), both merged to `main`.
+
+**6 primary M4 requirements** (AEGIS-076..081, all `must`) and **2 inherited
+obligations due at M4** (AEGIS-004, AEGIS-024). Batch 1 (`44ce17c`) delivered
+the strategy core, its composition through the existing risk seam and OMS, the
+real-M1-matching integration test and the `python/research`/`python/reports`
+foundations; Batch 2 (`fa381e6`) delivered stationarity, roll/expiry effects,
+roll-method strategy sensitivity and the AEGIS-080 cross-language closure.
+This section is finalized, with the closure result and catalogue counts, when
+the closure pass completes.
 
 ## M3 state
 

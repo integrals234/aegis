@@ -39,8 +39,7 @@ TEST(CalendarSpreadStrategy, FirstObservationNeverScoresAgainstItself) {
 
   // A huge spread: if the observation could see itself, this would score as
   // an enormous outlier and cross even a tiny 0.5 threshold immediately.
-  const auto proposal =
-      strategy.on_book_update(make_top_of_book(100.0), make_top_of_book(1000.0));
+  const auto proposal = strategy.on_book_update(make_top_of_book(100.0), make_top_of_book(1000.0));
 
   EXPECT_DOUBLE_EQ(proposal.z_score, 0.0);
   EXPECT_FALSE(proposal.has_action);

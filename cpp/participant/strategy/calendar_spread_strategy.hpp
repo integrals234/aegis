@@ -82,7 +82,7 @@ class CalendarSpreadStrategy {
   /// briefly one-sided cannot silently corrupt the spread history with a
   /// value it never actually observed.
   [[nodiscard]] StrategyProposal on_book_update(const book::TopOfBook& near,
-                                                 const book::TopOfBook& far);
+                                                const book::TopOfBook& far);
 
   [[nodiscard]] SpreadPosition position() const { return position_; }
 

@@ -30,11 +30,7 @@
 namespace {
 
 using aegis::common::ManualClock;
-using aegis::events::Envelope;
 using aegis::events::MessageType;
-using aegis::events::exchange::decode_cancel_order;
-using aegis::events::exchange::decode_modify_order;
-using aegis::events::exchange::decode_new_order;
 using aegis::events::exchange::decode_order_accepted;
 using aegis::events::exchange::decode_order_modified;
 using aegis::events::exchange::decode_order_rejected;
@@ -50,7 +46,6 @@ using aegis::exchange::InstrumentId;
 using aegis::exchange::InstrumentSpec;
 using aegis::exchange::PriceUnits;
 using aegis::exchange::QuantityUnits;
-using aegis::participant::oms::ExecutionTransport;
 using aegis::participant::oms::OrderManager;
 using aegis::participant::oms::OrderState;
 using aegis::participant::oms::RiskDecision;

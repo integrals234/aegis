@@ -39,7 +39,6 @@
 namespace {
 
 using aegis::common::ManualClock;
-using aegis::events::Envelope;
 using aegis::events::MessageType;
 using aegis::events::exchange::decode_order_accepted;
 using aegis::events::exchange::decode_order_terminated;
@@ -120,10 +119,11 @@ BookSnapshotEvent make_snapshot(std::uint32_t instrument_id, std::uint64_t md_se
 /// `test_participant_exchange_integration.cpp`'s `deliver()`, generalized to
 /// either side).
 void execute_leg_against_real_exchange(const StrategyLeg& leg, OrderManager& manager,
-                                       Portfolio& portfolio, InProcessExchangeTransport& transport) {
-  const auto client_order_id = manager.submit_new_order(
-      leg.instrument_id, /*participant_id=*/1, leg.side, OrderType::kMarket,
-      /*price_units=*/0, leg.quantity_units);
+                                       Portfolio& portfolio,
+                                       InProcessExchangeTransport& transport) {
+  const auto client_order_id = manager.submit_new_order(leg.instrument_id, /*participant_id=*/1,
+                                                        leg.side, OrderType::kMarket,
+                                                        /*price_units=*/0, leg.quantity_units);
   const auto* tracked = manager.find_by_client_order_id(client_order_id);
   ASSERT_NE(tracked, nullptr);
 
@@ -144,8 +144,7 @@ void execute_leg_against_real_exchange(const StrategyLeg& leg, OrderManager& man
         if (const auto decoded = decode_trade(event.payload); decoded.has_value()) {
           manager.handle_trade(*decoded);
           if (decoded->maker_order_id == our_order_id) {
-            const Side maker_side =
-                decoded->taker_side == Side::kBuy ? Side::kSell : Side::kBuy;
+            const Side maker_side = decoded->taker_side == Side::kBuy ? Side::kSell : Side::kBuy;
             portfolio.apply_fill(leg.instrument_id, maker_side, decoded->price_units,
                                  decoded->quantity_units);
           } else if (decoded->taker_order_id == our_order_id) {
@@ -188,24 +187,24 @@ ScenarioResult run_scenario() {
   // Resting counterparty liquidity for both legs of the spread this exact
   // sequence is known to enter (see test_calendar_spread_strategy.cpp for
   // the identical z-score arithmetic): a short spread sells near, buys far.
-  const auto near_counterparty_events = node.apply_new_order(
-      NewOrderCommand{.instrument_id = kNearInstrumentId,
-                     .participant_id = 2,
-                     .client_order_id = 1,
-                     .side = Side::kBuy,
-                     .order_type = OrderType::kLimit,
-                     .price_units = 100'000,
-                     .quantity_units = kQuantityUnits},
-      node.sequencer().sequence(clock.stamp<aegis::common::EventTime>()));
-  const auto far_counterparty_events = node.apply_new_order(
-      NewOrderCommand{.instrument_id = kFarInstrumentId,
-                     .participant_id = 3,
-                     .client_order_id = 1,
-                     .side = Side::kSell,
-                     .order_type = OrderType::kLimit,
-                     .price_units = 100'060,
-                     .quantity_units = kQuantityUnits},
-      node.sequencer().sequence(clock.stamp<aegis::common::EventTime>()));
+  const auto near_counterparty_events =
+      node.apply_new_order(NewOrderCommand{.instrument_id = kNearInstrumentId,
+                                           .participant_id = 2,
+                                           .client_order_id = 1,
+                                           .side = Side::kBuy,
+                                           .order_type = OrderType::kLimit,
+                                           .price_units = 100'000,
+                                           .quantity_units = kQuantityUnits},
+                           node.sequencer().sequence(clock.stamp<aegis::common::EventTime>()));
+  const auto far_counterparty_events =
+      node.apply_new_order(NewOrderCommand{.instrument_id = kFarInstrumentId,
+                                           .participant_id = 3,
+                                           .client_order_id = 1,
+                                           .side = Side::kSell,
+                                           .order_type = OrderType::kLimit,
+                                           .price_units = 100'060,
+                                           .quantity_units = kQuantityUnits},
+                           node.sequencer().sequence(clock.stamp<aegis::common::EventTime>()));
   EXPECT_EQ(near_counterparty_events.size(), 1U);
   EXPECT_EQ(near_counterparty_events.front().message_type, MessageType::kOrderAccepted);
   EXPECT_EQ(far_counterparty_events.size(), 1U);
@@ -241,9 +240,10 @@ ScenarioResult run_scenario() {
 
   StrategyProposal proposal;
   for (std::size_t i = 0; i < far_bases.size(); ++i) {
-    near_book.apply_snapshot(make_snapshot(kNearInstrumentId, i + 1, kNearMid, /*half_spread=*/10));
+    near_book.apply_snapshot(
+        make_snapshot(kNearInstrumentId, i + 1, kNearMid, /*half_spread_units=*/10));
     far_book.apply_snapshot(
-        make_snapshot(kFarInstrumentId, i + 1, far_bases.at(i), /*half_spread=*/10));
+        make_snapshot(kFarInstrumentId, i + 1, far_bases.at(i), /*half_spread_units=*/10));
     proposal = strategy.on_book_update(near_book.top_of_book(), far_book.top_of_book());
   }
 
@@ -275,7 +275,7 @@ ScenarioResult run_scenario() {
 }
 
 TEST(CalendarSpreadExchangeIntegration,
-    StrategyProposalReachesRealFifoMatchingAndUpdatesPortfolio) {
+     StrategyProposalReachesRealFifoMatchingAndUpdatesPortfolio) {
   const ScenarioResult result = run_scenario();
 
   // 6-8: real FIFO matching filled both legs completely (kQuantityUnits ==

@@ -13,7 +13,7 @@ namespace {
 }  // namespace
 
 StrategyProposal CalendarSpreadStrategy::on_book_update(const book::TopOfBook& near,
-                                                          const book::TopOfBook& far) {
+                                                        const book::TopOfBook& far) {
   StrategyProposal proposal;
   if (!near.mid_price_units.has_value() || !far.mid_price_units.has_value()) {
     // A leg with no two-sided market yet contributes no observation: pushing
@@ -36,23 +36,23 @@ StrategyProposal CalendarSpreadStrategy::on_book_update(const book::TopOfBook& n
       // widen back toward its recent mean.
       position_ = SpreadPosition::kLongSpread;
       proposal.has_action = true;
-      proposal.near = StrategyLeg{
-          .instrument_id = config_.near_instrument_id, .side = Side::kBuy,
-          .quantity_units = config_.quantity_units};
-      proposal.far = StrategyLeg{
-          .instrument_id = config_.far_instrument_id, .side = Side::kSell,
-          .quantity_units = config_.quantity_units};
+      proposal.near = StrategyLeg{.instrument_id = config_.near_instrument_id,
+                                  .side = Side::kBuy,
+                                  .quantity_units = config_.quantity_units};
+      proposal.far = StrategyLeg{.instrument_id = config_.far_instrument_id,
+                                 .side = Side::kSell,
+                                 .quantity_units = config_.quantity_units};
     } else if (z >= config_.entry_threshold) {
       // The spread is unusually wide: sell the near leg, buy the far leg,
       // expecting reversion the other way.
       position_ = SpreadPosition::kShortSpread;
       proposal.has_action = true;
-      proposal.near = StrategyLeg{
-          .instrument_id = config_.near_instrument_id, .side = Side::kSell,
-          .quantity_units = config_.quantity_units};
-      proposal.far = StrategyLeg{
-          .instrument_id = config_.far_instrument_id, .side = Side::kBuy,
-          .quantity_units = config_.quantity_units};
+      proposal.near = StrategyLeg{.instrument_id = config_.near_instrument_id,
+                                  .side = Side::kSell,
+                                  .quantity_units = config_.quantity_units};
+      proposal.far = StrategyLeg{.instrument_id = config_.far_instrument_id,
+                                 .side = Side::kBuy,
+                                 .quantity_units = config_.quantity_units};
     }
     return proposal;
   }
@@ -66,14 +66,12 @@ StrategyProposal CalendarSpreadStrategy::on_book_update(const book::TopOfBook& n
     const bool was_long = position_ == SpreadPosition::kLongSpread;
     position_ = SpreadPosition::kFlat;
     proposal.has_action = true;
-    proposal.near = StrategyLeg{
-        .instrument_id = config_.near_instrument_id,
-        .side = was_long ? Side::kSell : Side::kBuy,
-        .quantity_units = config_.quantity_units};
-    proposal.far = StrategyLeg{
-        .instrument_id = config_.far_instrument_id,
-        .side = opposite(proposal.near.side),
-        .quantity_units = config_.quantity_units};
+    proposal.near = StrategyLeg{.instrument_id = config_.near_instrument_id,
+                                .side = was_long ? Side::kSell : Side::kBuy,
+                                .quantity_units = config_.quantity_units};
+    proposal.far = StrategyLeg{.instrument_id = config_.far_instrument_id,
+                               .side = opposite(proposal.near.side),
+                               .quantity_units = config_.quantity_units};
   }
   return proposal;
 }
