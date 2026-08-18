@@ -45,6 +45,16 @@
   single PR flipping both would have failed its own gate. This is that first
   commit on `milestone/m3-participant-execution`, flipping the mirror now that
   the policy change is on `main`.
+- M4 status: **CLOSED** 2026-08-18. All 6 primary M4 requirements
+  (AEGIS-076..081) are `verified` on an independent spec-auditor review of the
+  final tree, and both inherited obligations due at M4 — AEGIS-004 and
+  AEGIS-024 — are discharged and `verified`, so `--check-deferred M4` passes.
+  **PR #12 merged**; canonical main
+  `596d9de140af509d059dd73a439da878ee10914c` (merge commit authored
+  2026-08-18T12:31:05+05:30, committer `GitHub <noreply@github.com>` — the
+  merge's own metadata, not an inferred date).
+  Report: `experiments/milestone-reports/M4.md`.
+  `milestone/m4-calendar-spread` was merged and is no longer active.
 - M4 started 2026-08-17 per `experiments/plans/M4.md`, and was activated in
   **three** owner-merged steps rather than the planned two:
   1. **PR #10** ("M4 activation policy") merged
@@ -71,9 +81,23 @@
   3. This branch, `milestone/m4-calendar-spread`, carries the remainder: the
      three participant-app files, the `--calendar-spread` demo, and Batch 2's
      research, reports and evidence.
-- Active branch: `milestone/m4-calendar-spread`, holding M4 Batch 1
-  (`44ce17c`) and Batch 2 (`fa381e6`) with canonical `main` (PR #11,
-  `3925782`) merged in. **M4 CLOSURE PROPOSED** — see the M4 state section.
+- Active branch: `chore/m5-activation-policy`, the M5 activation pull request
+  (**PR #13**). It changes exactly two files — `configs/governance/policy.yaml` (the M4→M5
+  `active_milestone` flip plus the five M5 approvals) and this file (M4
+  post-merge bookkeeping). It carries **no M5 implementation**:
+  `configs/architecture_rules.yaml`, CI, CMake and every source tree are
+  untouched, and `milestone/m5-risk-validation` does not exist yet.
+  `milestone/m4-calendar-spread` was merged by PR #12 and is no longer active.
+- **This pull request deliberately leaves `- Active milestone:` at `M4`.** The
+  authoritative gate reads `configs/governance/policy.yaml` from the *base*
+  branch and requires this mirror to match it, so a single pull request
+  flipping both would fail its own gate — exactly as at the M3 (PR #7) and M4
+  (PR #10) transitions. The mirror flips to `M5` in M5 Batch 1, on
+  `milestone/m5-risk-validation`, once this pull request is merged and `main`
+  itself says `M5`. That flip must land in the same commit as the first real
+  sources in `cpp/participant/risk` **and** `python/validation`:
+  `tools/check_architecture.py`'s `check_layer_population` makes emptiness a
+  checked fact in both directions, and both layers are dated M5.
 - Owner-approved scope changes: `configs/architecture_rules.yaml`, `cpp/participant/CMakeLists.txt`, `cpp/participant/app/CMakeLists.txt`, `.github/workflows/ci.yml`, `scripts/ci_local.sh`, `cpp/participant/app/participant_run.hpp`, `cpp/participant/app/participant_run.cpp`, `cpp/participant/app/participant_run_main.cpp`
   — **a MIRROR, not the authority.** Since ADR-0014 (R8, PR #3) this line
   **grants nothing**: approvals live in `configs/governance/policy.yaml` on
@@ -154,11 +178,84 @@
   AEGIS-009 at M1. **Two obligations fall due at M4** and are that milestone's
   first-class closure work.
 
+## M5 state
+
+**ACTIVATION PROPOSED** — **PR #13** is the M5 activation, awaiting the
+owner's approving review. It flips `configs/governance/policy.yaml`'s
+`active_milestone` from `M4` to `M5` and adds the five M5 approvals below.
+Nothing else changes; **no M5 implementation exists yet**, and the M5 plan of
+record will be committed as `experiments/plans/M5.md` in Batch 1.
+
+M5 is *Independent risk and validation*: 36 primary requirements
+(AEGIS-120..138 risk and portfolio controls, AEGIS-139..155 anti-overfitting
+validation) plus the three inherited obligations dated M5 in
+`docs/DEFERRED_VERIFICATION.md` — AEGIS-062, AEGIS-063 and AEGIS-238. It turns
+the mandatory risk seam into enforced policy: `cpp/participant/risk` is empty
+today and every risk verdict shipped so far is the `AlwaysApproveRiskGate`
+test double (ADR-0023).
+
+The five M5 approvals, all exact-path and milestone-scoped, so all expire when
+M5 does:
+
+1. `m5-architecture-transition` — `configs/architecture_rules.yaml`, for
+   exactly one edge: `cpp-participant-app.may_depend_on +=
+   cpp-participant-risk`. `cpp-participant-oms` already depends on
+   `cpp-participant-risk`, so the reverse edge would be a cycle; the risk layer
+   therefore implements no OMS interface and the `oms::RiskGate` adapter lives
+   in the composition root. **No change to `cpp/participant/oms/**` is
+   required by M5.**
+2. `m5-build-wiring` — `cpp/participant/CMakeLists.txt` and
+   `cpp/participant/app/CMakeLists.txt`, to add the risk subdirectory and the
+   app's link edge.
+3. `m5-participant-app-integration` — `cpp/participant/app/risk_engine_gate.hpp`,
+   `risk_engine_gate.cpp`, `participant_run.hpp`, `participant_run.cpp`,
+   `participant_run_main.cpp`. Named up front, because M4 had to spend an extra
+   owner merge (PR #11) on composition-root paths omitted at activation.
+4. `m5-milestone-gate` — `.github/workflows/ci.yml`, `scripts/ci_local.sh` and
+   `scripts/check_cpp_style.sh`: the M4→M5 milestone-audit retarget in the
+   workflow and its local mirror, plus parallelising the *same* full-tree
+   clang-tidy file set. Full-tree tidy stays mandatory; a changed-files-only
+   tidy is explicitly not authorised.
+5. `m5-fault-scenario-risk-response` — `cpp/participant/app/fault_scenario.hpp`
+   and `fault_scenario.cpp`, to add real M5 risk responses to the existing
+   deterministic fault scenarios that AEGIS-062/063 need. No new fault kind, no
+   `cpp/replay/**` change.
+
+### AEGIS-238 — owner authorization recorded at activation
+
+The owner has authorised the following, and nothing beyond it:
+
+* **M5 must attempt full AEGIS-238 verification first.** No portion of it is
+  deferred pre-emptively, and **this pull request performs no deferral**:
+  `requirements/implementation_status.json` is untouched, and no ledger entry
+  has been created. AEGIS-238 remains `implemented` with
+  `verification_blocked_until: M5`, exactly as `main` already records it.
+* The intended M5 producer for **queue depth** and **dropped/backpressured
+  events** is the **bounded `ExecutionTransport` used by the integration
+  harness** — the seam already reports backpressure by returning `false`, and
+  M2's `kBackpressure` fault drives it deterministically.
+* The evidence **must explicitly disclose** that this is the harness's bounded
+  outbound buffer and **not** the M8 lock-free queue implementation
+  (AEGIS-046/047/048, `cpp/queues`, which is empty and M8-dated). The residual
+  registered against AEGIS-238 attributes queue depth to "M1's bounded queues";
+  that attribution is inaccurate as to milestone, and M5 must not repeat it.
+* **Only if** the final independent M5 auditor determines that this does not
+  satisfy the queue-depth/dropped-events portion of frozen AEGIS-238 may that
+  **residual portion alone** re-date to M8. That fallback is pre-authorised so
+  it needs no mid-milestone owner round-trip; using it still requires the
+  append-only ledger entry `tools/update_status.py` demands.
+* If the fallback is never needed, **AEGIS-238 verifies fully at M5**.
+* **No other new M5 deferral is owner-authorised.** Any other residual
+  discovered during M5 goes to the owner before it is registered.
+
 ## M4 state
 
-**CLOSURE PROPOSED** — the closure pull request is open, awaiting the owner's
-approving review. Nothing is merged. Plan of record: `experiments/plans/M4.md`;
-report: `experiments/milestone-reports/M4.md`.
+**CLOSED** 2026-08-18 — the closure pull request **#12** was approved by the
+owner and merged. Canonical `main` is
+`596d9de140af509d059dd73a439da878ee10914c`; the merge commit's own metadata
+records 2026-08-18T12:31:05+05:30, committer `GitHub <noreply@github.com>`.
+Plan of record: `experiments/plans/M4.md`; report:
+`experiments/milestone-reports/M4.md`.
 
 **All 6 primary M4 requirements (AEGIS-076..081) are `verified`**, and **both
 inherited obligations due at M4 are discharged and `verified`** — AEGIS-004
@@ -173,7 +270,8 @@ M4 delivers the first real strategy path: reconstructed near/far market state
 → OMS → portfolio → P&L, deterministic on both the production CLI path and a
 test-only harness driving a real unmodified M1 `ExchangeNode` through real FIFO
 matching. Activation took three merged steps: PR #10 (policy), PR #11 (scope
-grant + mirror flip + the in-scope half of Batch 1), and this branch.
+grant + mirror flip + the in-scope half of Batch 1), and
+`milestone/m4-calendar-spread` itself (PR #12).
 
 **Every price in M4 is synthetic**, and the two-sided quote stream is
 constructed from daily OHLC/settlement bars, not observed tick data
