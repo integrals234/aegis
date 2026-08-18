@@ -61,7 +61,7 @@ jobs:
 
       - name: Active milestone
         run: |
-          $AEGIS_VENV/bin/python tools/audit_requirements.py --milestone M3
+          $AEGIS_VENV/bin/python tools/audit_requirements.py --milestone M4
 
       # Both of these are ADVISORY since R8 (ADR-0014). They run from the pull
       # request's own checkout, so the pull request can change what they say.
