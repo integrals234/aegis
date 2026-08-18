@@ -548,10 +548,14 @@ void execute_leg(const StrategyLeg& leg, OrderManager& manager, Portfolio& ledge
   }
 
   const std::uint64_t our_order_id = ++next_exchange_order_id;
-  manager.handle_order_accepted(OrderAcceptedEvent{
-      .order_id = our_order_id, .instrument_id = leg.instrument_id, .participant_id = 1,
-      .client_order_id = client_order_id, .side = leg.side, .order_type = OrderType::kLimit,
-      .price_units = limit_price_units, .quantity_units = leg.quantity_units});
+  manager.handle_order_accepted(OrderAcceptedEvent{.order_id = our_order_id,
+                                                   .instrument_id = leg.instrument_id,
+                                                   .participant_id = 1,
+                                                   .client_order_id = client_order_id,
+                                                   .side = leg.side,
+                                                   .order_type = OrderType::kLimit,
+                                                   .price_units = limit_price_units,
+                                                   .quantity_units = leg.quantity_units});
 
   // Our own order is always the trade's taker in this synthesis, regardless
   // of which side it trades: there is no independently modelled resting
@@ -575,9 +579,9 @@ void execute_leg(const StrategyLeg& leg, OrderManager& manager, Portfolio& ledge
   manager.handle_trade(trade);
   apply_trade_to_portfolio(trade, manager, ledger, /*fee_units=*/0);
 
-  manager.handle_order_terminated(OrderTerminatedEvent{
-      .order_id = our_order_id, .reason = TerminationReason::kFilled,
-      .cancelled_quantity_delta_units = 0});
+  manager.handle_order_terminated(OrderTerminatedEvent{.order_id = our_order_id,
+                                                       .reason = TerminationReason::kFilled,
+                                                       .cancelled_quantity_delta_units = 0});
 }
 
 [[nodiscard]] std::string describe_calendar_spread_state(
@@ -616,20 +620,19 @@ void execute_leg(const StrategyLeg& leg, OrderManager& manager, Portfolio& ledge
 }  // namespace
 
 CalendarSpreadRunResult run_calendar_spread_scenario(const std::string& stream_path,
-                                                      const CalendarSpreadRunConfig& config) {
+                                                     const CalendarSpreadRunConfig& config) {
   const auto steps = read_market_data_steps(stream_path);
 
   feed::FeedHandler handler;
   book::BookBuilder near_book(config.near_instrument_id);
   book::BookBuilder far_book(config.far_instrument_id);
 
-  const CalendarSpreadConfig strategy_config{
-      .near_instrument_id = config.near_instrument_id,
-      .far_instrument_id = config.far_instrument_id,
-      .zscore_window = config.zscore_window,
-      .entry_threshold = config.entry_threshold,
-      .exit_threshold = config.exit_threshold,
-      .quantity_units = config.quantity_units};
+  const CalendarSpreadConfig strategy_config{.near_instrument_id = config.near_instrument_id,
+                                             .far_instrument_id = config.far_instrument_id,
+                                             .zscore_window = config.zscore_window,
+                                             .entry_threshold = config.entry_threshold,
+                                             .exit_threshold = config.exit_threshold,
+                                             .quantity_units = config.quantity_units};
   CalendarSpreadStrategy strategy_state(strategy_config);
 
   AlwaysApproveRiskGate risk;
