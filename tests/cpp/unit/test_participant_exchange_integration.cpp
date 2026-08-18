@@ -8,15 +8,19 @@
 #include "cpp/participant/oms/transport_execution_adapter.hpp"
 #include "cpp/participant/portfolio/portfolio.hpp"
 #include "tests/cpp/optional_access.hpp"
+#include "tests/cpp/support/in_process_exchange_transport.hpp"
 
 /// AEGIS-109, AEGIS-110, AEGIS-111, AEGIS-114: real M1 exchange integration,
 /// composed entirely inside `tests/` -- outside `covered_roots`
 /// (`configs/architecture_rules.yaml`), so this file may legally see both
 /// the exchange and the participant at once without creating a production
 /// participant -> exchange dependency (ADR-0023, MASTER_SPEC immutable
-/// principle 1). `InProcessExchangeTransport` is the *only* code anywhere
-/// that does this; it is exercised by GoogleTest, never linked into
-/// `aegis_participant_run` or any production target.
+/// principle 1). `aegis::testing::InProcessExchangeTransport`
+/// (`tests/cpp/support/in_process_exchange_transport.hpp`) is the *only*
+/// code anywhere that does this; it is exercised by GoogleTest, never
+/// linked into `aegis_participant_run` or any production target.
+/// `tests/cpp/unit/test_calendar_spread_exchange_integration.cpp` reuses the
+/// same transport for AEGIS-004/076..081's M4 strategy.
 ///
 /// The chain under test: OMS intent -> TransportExecutionAdapter -> this
 /// test transport -> a real `ExchangeNode` -> real FIFO matching -> the
@@ -26,11 +30,7 @@
 namespace {
 
 using aegis::common::ManualClock;
-using aegis::events::Envelope;
 using aegis::events::MessageType;
-using aegis::events::exchange::decode_cancel_order;
-using aegis::events::exchange::decode_modify_order;
-using aegis::events::exchange::decode_new_order;
 using aegis::events::exchange::decode_order_accepted;
 using aegis::events::exchange::decode_order_modified;
 using aegis::events::exchange::decode_order_rejected;
@@ -46,7 +46,6 @@ using aegis::exchange::InstrumentId;
 using aegis::exchange::InstrumentSpec;
 using aegis::exchange::PriceUnits;
 using aegis::exchange::QuantityUnits;
-using aegis::participant::oms::ExecutionTransport;
 using aegis::participant::oms::OrderManager;
 using aegis::participant::oms::OrderState;
 using aegis::participant::oms::RiskDecision;
@@ -69,60 +68,7 @@ InstrumentSpec make_spec() {
   return spec;
 }
 
-/// Test-only ExecutionTransport over a real ExchangeNode. See file header.
-class InProcessExchangeTransport final : public ExecutionTransport {
- public:
-  InProcessExchangeTransport(ExchangeNode& node, ManualClock& clock)
-      : node_(&node), clock_(&clock) {}
-
-  [[nodiscard]] bool send(const Envelope& envelope) override {
-    const auto command_sequence =
-        node_->sequencer().sequence(clock_->stamp<aegis::common::EventTime>());
-    std::vector<EmittedEvent> emitted;
-    switch (envelope.message_type) {
-      case MessageType::kNewOrder: {
-        const auto command = decode_new_order(envelope.payload);
-        if (!command.has_value()) {
-          return false;
-        }
-        emitted = node_->apply_new_order(*command, command_sequence);
-        break;
-      }
-      case MessageType::kCancelOrder: {
-        const auto command = decode_cancel_order(envelope.payload);
-        if (!command.has_value()) {
-          return false;
-        }
-        emitted = node_->apply_cancel_order(*command, command_sequence);
-        break;
-      }
-      case MessageType::kModifyOrder: {
-        const auto command = decode_modify_order(envelope.payload);
-        if (!command.has_value()) {
-          return false;
-        }
-        emitted = node_->apply_modify_order(*command, command_sequence);
-        break;
-      }
-      default:
-        return false;
-    }
-    pending_.insert(pending_.end(), emitted.begin(), emitted.end());
-    return true;
-  }
-
-  /// Drains every EmittedEvent accumulated since the last drain, in order.
-  [[nodiscard]] std::vector<EmittedEvent> drain() {
-    std::vector<EmittedEvent> out;
-    out.swap(pending_);
-    return out;
-  }
-
- private:
-  ExchangeNode* node_;
-  ManualClock* clock_;
-  std::vector<EmittedEvent> pending_;
-};
+using aegis::testing::InProcessExchangeTransport;
 
 class AlwaysApproveRiskGate final : public RiskGate {
  public:

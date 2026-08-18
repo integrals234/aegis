@@ -216,3 +216,38 @@ approvals:
       outside M4's declared scope in configs/milestone_scope.yaml.
     granted_on: 2026-08-17
     granted_by_pr: 10
+
+  - id: m4-participant-app-integration
+    milestone: M4
+    paths:
+      - cpp/participant/app/participant_run.hpp
+      - cpp/participant/app/participant_run.cpp
+      - cpp/participant/app/participant_run_main.cpp
+    reason: >
+      M4's calendar-spread strategy must be composed into the existing
+      participant app so the approved vertical path can execute:
+      strategy -> RiskGate seam -> OMS -> execution -> Portfolio/P&L.
+      cpp-participant-app is the participant composition root (ADR-0020) and
+      the only layer permitted to see feed handler, book builder, statistics,
+      strategy, OMS and portfolio at once, so it is the only place that
+      wiring can legally live — a strategy that composed itself would need
+      exactly the strategy -> OMS edge the forward-only pipeline forbids.
+      m4-build-wiring already covers the two CMakeLists.txt files; these are
+      the three implementation files that same integration needs, and
+      configs/milestone_scope.yaml allows only cpp/participant/strategy/** on
+      the C++ side. Granted as a separate approval from m4-build-wiring
+      because this is application integration, not build wiring.
+
+      This approval authorises changes to those three exact paths and nothing
+      else. Explicitly NOT authorised by it: any cpp-participant-app ->
+      cpp-exchange-* edge; any cpp-participant-strategy -> cpp-participant-oms,
+      -> cpp-exchange-*, or -> gateway/broker adapter edge; any new or widened
+      architecture edge in configs/architecture_rules.yaml (that file's only
+      authorised M4 change is m4-architecture-transition's single
+      cpp-participant-app.may_depend_on += cpp-participant-strategy);
+      any unrelated cpp/participant/app change; any M5+ functionality,
+      including a production RiskGate implementation, risk limits or kill
+      switches. The approval is exact-path and milestone-scoped, so it
+      expires when M4 does.
+    granted_on: 2026-08-18
+    granted_by_pr: 11

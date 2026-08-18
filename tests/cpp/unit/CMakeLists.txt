@@ -3,6 +3,8 @@ aegis_add_test(aegis_unit_tests unit
   test_book_add_cancel.cpp
   test_book_builder.cpp
   test_book_invariants.cpp
+  test_calendar_spread_exchange_integration.cpp
+  test_calendar_spread_strategy.cpp
   test_client_order_id_scope.cpp
   test_config.cpp
   test_cost_model.cpp
@@ -65,8 +67,8 @@ target_link_libraries(aegis_unit_tests PRIVATE
   aegis_exchange_state aegis_exchange_market_data aegis_exchange_app
   aegis_replay
   aegis_participant_feed_handler aegis_participant_book_builder
-  aegis_statistics aegis_participant_oms aegis_participant_portfolio
-  aegis_participant_app)
+  aegis_statistics aegis_participant_strategy aegis_participant_oms
+  aegis_participant_portfolio aegis_participant_app)
 
 # The config tests read the schema and corpus from the source tree at runtime;
 # the exchange-message golden fixture and the exchange determinism lint do too.

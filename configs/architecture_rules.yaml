@@ -171,21 +171,25 @@ layers:
     expect_sources_from_milestone: M3
 
   # The participant composition root (ADR-0020), mirroring cpp-exchange-app:
-  # nothing else may legally see feed handler, book builder, statistics, OMS
-  # and portfolio at once. It is the only participant layer permitted to
-  # depend on cpp-replay -- that is how M2's DeterministicFaultInjector
-  # reaches the participant for AEGIS-060/061 without either layer depending
-  # on the other. It has no edge to any cpp-exchange-* layer: the exchange and
-  # the participant meet only through versioned messages, at a process/stream
-  # boundary or a test-only integration harness, never a production
-  # dependency (MASTER_SPEC immutable principle 1).
+  # nothing else may legally see feed handler, book builder, statistics,
+  # strategy, OMS and portfolio at once. It is the only participant layer
+  # permitted to depend on cpp-replay -- that is how M2's
+  # DeterministicFaultInjector reaches the participant for AEGIS-060/061
+  # without either layer depending on the other. It has no edge to any
+  # cpp-exchange-* layer: the exchange and the participant meet only through
+  # versioned messages, at a process/stream boundary or a test-only
+  # integration harness, never a production dependency (MASTER_SPEC immutable
+  # principle 1). cpp-participant-strategy added M4 slice 1
+  # (m4-architecture-transition, PR #10): the composition root is where
+  # CalendarSpreadStrategy's proposals are wired to the existing risk seam and
+  # OMS, exactly as it already wires feed, book, statistics and portfolio.
   - name: cpp-participant-app
     paths: [cpp/participant/app]
     language: cpp
     namespaces: [aegis::participant::app]
     may_depend_on: [cpp-common, cpp-events, cpp-replay, cpp-participant-feed-handler,
-                    cpp-participant-book-builder, cpp-statistics, cpp-participant-oms,
-                    cpp-participant-portfolio]
+                    cpp-participant-book-builder, cpp-statistics, cpp-participant-strategy,
+                    cpp-participant-oms, cpp-participant-portfolio]
     expect_sources_from_milestone: M3
 
   # ------------------------------------------------- performance work (M8 only)
