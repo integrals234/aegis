@@ -107,10 +107,11 @@ vectors in `RiskAuditLog`.
   requiring an OMS change: `cpp/participant/oms/**` is outside M5's approved
   scope, and no approval covers it. Fill/terminal feedback is instead
   forwarded by the composition root, which already receives the raw
-  exchange events it decodes for `OrderManager` (see ADR-0028's discussion of
-  the one resulting limitation: a failed adapter submission is invisible to
-  this engine through the real seam, because `OrderManager` discards
-  `ExecutionAdapter::submit`'s return value).
+  exchange events it decodes for `OrderManager`. The one gap this leaves --
+  `OrderManager` discards `ExecutionAdapter::submit`'s boolean return value,
+  so a failed send is invisible to the OMS seam itself -- is closed without
+  touching the OMS at all: `RiskReleasingExecutionAdapter` (below) is a
+  decorator the composition root chooses, not a change to `OrderManager`.
 
 ## Consequences
 
@@ -121,14 +122,19 @@ vectors in `RiskAuditLog`.
   event. A caller that forwards one and not the other silently desynchronises
   them; nothing in either type detects this. Documented in
   `docs/LIMITATIONS.md`.
-- A failed adapter submission (the transport refused to send) cannot release
-  a reservation automatically, because `OrderManager::submit_new_order`
-  discards `ExecutionAdapter::submit`'s boolean return value structurally.
-  `RiskEngine::release_reservation` exists as the escape hatch a caller with
-  transport-level visibility can use; `tests/cpp/unit/
-  test_risk_fault_execution_stress.cpp`'s `BackpressureLeavesTheOrder
-  UnacknowledgedAndReservationHeld` proves the reservation stays held until
-  that primitive is called, rather than silently disappearing.
+- A failed adapter submission releases its reservation automatically, through
+  `app::RiskReleasingExecutionAdapter` -- a decorator over `ExecutionAdapter`
+  the composition root installs, not a change to `OrderManager`
+  (`cpp/participant/oms/**` stays unmodified). It sees the same
+  `NewOrderCommand`, and therefore the same `client_order_id`, that
+  `RiskEngineGate::decide` approved moments earlier, and calls
+  `RiskEngine::release_reservation` only when `submit` returns `false`.
+  `release_reservation` remains public for its own legitimate, separate use
+  (manual reconciliation), but is no longer the *normal* path a caller must
+  remember to invoke. `tests/cpp/unit/test_risk_fault_execution_stress.cpp`'s
+  `BackpressureAutomaticallyReleasesTheReservationThroughTheNormalLifecycle`
+  proves capacity returns with no manual call, and that a later order can
+  use it again.
 
 ## Verification
 

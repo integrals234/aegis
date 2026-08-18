@@ -1,0 +1,67 @@
+{
+  "claim": "AEGIS-141: real expanding_window folds; train_start constant, train_end grows.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "fold_count": 9,
+  "folds": [
+    {
+      "test_end": "2026-02-09",
+      "test_start": "2026-01-31",
+      "train_end": "2026-01-30",
+      "train_start": "2026-01-01"
+    },
+    {
+      "test_end": "2026-02-19",
+      "test_start": "2026-02-10",
+      "train_end": "2026-02-09",
+      "train_start": "2026-01-01"
+    },
+    {
+      "test_end": "2026-03-01",
+      "test_start": "2026-02-20",
+      "train_end": "2026-02-19",
+      "train_start": "2026-01-01"
+    },
+    {
+      "test_end": "2026-03-11",
+      "test_start": "2026-03-02",
+      "train_end": "2026-03-01",
+      "train_start": "2026-01-01"
+    },
+    {
+      "test_end": "2026-03-21",
+      "test_start": "2026-03-12",
+      "train_end": "2026-03-11",
+      "train_start": "2026-01-01"
+    },
+    {
+      "test_end": "2026-03-31",
+      "test_start": "2026-03-22",
+      "train_end": "2026-03-21",
+      "train_start": "2026-01-01"
+    },
+    {
+      "test_end": "2026-04-10",
+      "test_start": "2026-04-01",
+      "train_end": "2026-03-31",
+      "train_start": "2026-01-01"
+    },
+    {
+      "test_end": "2026-04-20",
+      "test_start": "2026-04-11",
+      "train_end": "2026-04-10",
+      "train_start": "2026-01-01"
+    },
+    {
+      "test_end": "2026-04-30",
+      "test_start": "2026-04-21",
+      "train_end": "2026-04-20",
+      "train_start": "2026-01-01"
+    }
+  ],
+  "generated_on": "2026-08-18",
+  "repository_commit": "0a9b4968363864b8ffb19e0ef7f4fd3c0e90f4dc",
+  "requirements": [
+    "AEGIS-141"
+  ]
+}

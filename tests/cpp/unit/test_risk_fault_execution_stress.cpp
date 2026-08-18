@@ -28,6 +28,7 @@ using aegis::events::exchange::Side;
 using aegis::events::exchange::TerminationReason;
 using aegis::events::exchange::TradeEvent;
 using aegis::participant::app::RiskEngineGate;
+using aegis::participant::app::RiskReleasingExecutionAdapter;
 using aegis::participant::oms::ExecutionAdapter;
 using aegis::participant::oms::LatencyConfig;
 using aegis::participant::oms::OrderManager;
@@ -170,31 +171,83 @@ TEST(ExecutionStressIntegration, PartialFillReducesReservationWithoutDoubleCount
   EXPECT_EQ(risk_engine.state().reserved_units(kInstrumentId), 0);
 }
 
-TEST(ExecutionStressIntegration, BackpressureLeavesTheOrderUnacknowledgedAndReservationHeld) {
+TEST(ExecutionStressIntegration, BackpressureAutomaticallyReleasesTheReservationThroughTheNormalLifecycle) {
+  // Carry-in fix (ADR-0027 addendum): a submission failure must release risk
+  // capacity through the ordinary lifecycle, with no manual cleanup call.
+  // RiskReleasingExecutionAdapter is the composition-root-owned decorator
+  // that makes this automatic without touching cpp/participant/oms/** or
+  // adding a risk -> OMS dependency -- it sees the same NewOrderCommand
+  // (and client_order_id) RiskEngineGate::decide already approved.
+  ManualClock clock;
+  FaultInjectableAdapter backpressured_transport(/*simulate_backpressure=*/true);
+
+  // 1. Order approved and reservation created. A tight position limit (10)
+  // makes the auto-release provably observable in step 5: a fresh order of
+  // the same size only fits again if the failed one's reservation is truly
+  // gone, not merely reduced.
+  RiskLimitsConfig limits = permissive_config();
+  limits.position_limits[kInstrumentId] = risk::PositionLimit{.max_long_units = 10, .max_short_units = 10};
+  RiskEngine tight_engine(limits);
+  seed_quote(tight_engine);
+  RiskEngineGate tight_risk_gate(tight_engine, clock);
+  RiskReleasingExecutionAdapter tight_adapter(backpressured_transport, tight_engine);
+  OrderManager tight_manager(tight_adapter, tight_risk_gate);
+
+  // decide_order creates the reservation and adapter.submit() discovers the
+  // backpressure synchronously, inside this one call -- there is no
+  // externally observable moment where the reservation exists but has not
+  // yet been released, so steps 1-4 are verified together, on the state
+  // submit_new_order leaves behind, rather than as separate snapshots.
+  tight_engine.commit_proposal_decision("s", "p1", {kProposalLeg}, 0);
+  const auto client_order_id = tight_manager.submit_new_order(
+      kInstrumentId, /*participant_id=*/1, Side::kBuy, OrderType::kLimit, 100, 10);
+
+  // 2. Transport returns backpressure/failure (submit() -> false).
+  EXPECT_EQ(backpressured_transport.submit_calls(), 1);
+
+  // 3. Order is not live at the exchange: OrderManager's own contract
+  // (order_manager.cpp) leaves it Submitted/unacknowledged -- there is no
+  // separate "send failed" state, and no OrderAcceptedEvent was ever
+  // produced for this client_order_id, so nothing downstream can treat it
+  // as resting.
+  EXPECT_EQ(tight_manager.find_by_client_order_id(client_order_id)->lifecycle.state(),
+           OrderState::kSubmitted);
+
+  // 4. Reservation returned to its pre-order value automatically -- no call
+  // to release_reservation anywhere in this test.
+  EXPECT_EQ(tight_engine.state().reservation_count(), 0U);
+  EXPECT_EQ(tight_engine.state().reserved_units(kInstrumentId), 0);
+
+  // 5. A later, safe order can use that risk capacity again.
+  const auto& second_decision = tight_engine.commit_proposal_decision(
+      "s", "p2",
+      {risk::OrderRequest{.strategy_id = "s",
+                          .proposal_id = "p2",
+                          .instrument_id = kInstrumentId,
+                          .side = Side::kBuy,
+                          .price_units = 100,
+                          .quantity_units = 10,
+                          .request_time_nanos = 1}},
+      1);
+  EXPECT_NE(second_decision.verdict, risk::RiskVerdict::kReject);
+}
+
+TEST(ExecutionStressIntegration, ReleaseReservationRemainsAvailableForOtherRecoveryPaths) {
+  // release_reservation is not removed: it is a legitimate primitive for a
+  // caller with visibility RiskReleasingExecutionAdapter does not have (a
+  // manual reconciliation tool, an out-of-band cancel confirmation). This
+  // test proves the primitive still works on its own; it is no longer the
+  // NORMAL submission-failure path (the test above covers that).
   RiskEngine risk_engine(permissive_config());
   seed_quote(risk_engine);
+  risk_engine.commit_proposal_decision("s", "p", {kProposalLeg}, 0);
   ManualClock clock;
   RiskEngineGate risk_gate(risk_engine, clock);
-  FaultInjectableAdapter adapter(/*simulate_backpressure=*/true);
+  FaultInjectableAdapter adapter(/*simulate_backpressure=*/false);
   OrderManager manager(adapter, risk_gate);
-
-  risk_engine.commit_proposal_decision("s", "p", {kProposalLeg}, 0);
   const auto client_order_id =
       manager.submit_new_order(kInstrumentId, /*participant_id=*/1, Side::kBuy, OrderType::kLimit, 100, 10);
-
-  // kBackpressure: the transport refused the send. OrderManager's own
-  // contract (order_manager.cpp) leaves the order Submitted and
-  // unacknowledged -- there is no separate "send failed" state -- and it
-  // discards ExecutionAdapter::submit's return value, so nothing in the OMS
-  // seam itself tells the risk engine this happened. That is a documented
-  // pre-existing OMS limitation (RiskEngine::release_reservation's doc
-  // comment; docs/LIMITATIONS.md), not something this test papers over: the
-  // reservation is proven to STAY held until a caller with visibility into
-  // the concrete transport (which this test has, and the current OMS seam
-  // does not) calls the general release primitive explicitly.
-  EXPECT_EQ(adapter.submit_calls(), 1);
-  EXPECT_EQ(manager.find_by_client_order_id(client_order_id)->lifecycle.state(), OrderState::kSubmitted);
-  EXPECT_EQ(risk_engine.state().reservation_count(), 1U);
+  ASSERT_EQ(risk_engine.state().reservation_count(), 1U);
 
   risk_engine.release_reservation(client_order_id);
   EXPECT_EQ(risk_engine.state().reservation_count(), 0U);

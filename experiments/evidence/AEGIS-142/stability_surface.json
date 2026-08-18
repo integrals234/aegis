@@ -1,0 +1,94 @@
+{
+  "best": {
+    "entry_threshold": 2.5,
+    "exit_threshold": 0.5,
+    "round_trip_count": 4,
+    "total_pnl": "-61.5090",
+    "zscore_window": 30
+  },
+  "claim": "AEGIS-142: every evaluated grid point persisted, not only the optimum.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-18",
+  "metric_mean": -94.15366666666667,
+  "metric_stdev": 24.42234369488545,
+  "point_count": 9,
+  "points": [
+    {
+      "entry_threshold": 1.5,
+      "exit_threshold": 0.5,
+      "is_best": false,
+      "round_trip_count": 14,
+      "total_pnl": "-88.4471",
+      "zscore_window": 10
+    },
+    {
+      "entry_threshold": 2.0,
+      "exit_threshold": 0.5,
+      "is_best": false,
+      "round_trip_count": 10,
+      "total_pnl": "-93.2295",
+      "zscore_window": 10
+    },
+    {
+      "entry_threshold": 2.5,
+      "exit_threshold": 0.5,
+      "is_best": false,
+      "round_trip_count": 6,
+      "total_pnl": "-67.4826",
+      "zscore_window": 10
+    },
+    {
+      "entry_threshold": 1.5,
+      "exit_threshold": 0.5,
+      "is_best": false,
+      "round_trip_count": 11,
+      "total_pnl": "-119.7010",
+      "zscore_window": 20
+    },
+    {
+      "entry_threshold": 2.0,
+      "exit_threshold": 0.5,
+      "is_best": false,
+      "round_trip_count": 7,
+      "total_pnl": "-89.2305",
+      "zscore_window": 20
+    },
+    {
+      "entry_threshold": 2.5,
+      "exit_threshold": 0.5,
+      "is_best": false,
+      "round_trip_count": 5,
+      "total_pnl": "-72.0574",
+      "zscore_window": 20
+    },
+    {
+      "entry_threshold": 1.5,
+      "exit_threshold": 0.5,
+      "is_best": false,
+      "round_trip_count": 9,
+      "total_pnl": "-135.6037",
+      "zscore_window": 30
+    },
+    {
+      "entry_threshold": 2.0,
+      "exit_threshold": 0.5,
+      "is_best": false,
+      "round_trip_count": 7,
+      "total_pnl": "-120.1222",
+      "zscore_window": 30
+    },
+    {
+      "entry_threshold": 2.5,
+      "exit_threshold": 0.5,
+      "is_best": true,
+      "round_trip_count": 4,
+      "total_pnl": "-61.5090",
+      "zscore_window": 30
+    }
+  ],
+  "repository_commit": "0a9b4968363864b8ffb19e0ef7f4fd3c0e90f4dc",
+  "requirements": [
+    "AEGIS-142"
+  ]
+}

@@ -186,14 +186,19 @@ the following is a production risk system:
 - **Idempotency/duplicate-request protection is in-memory only.** It does
   not survive a process restart; AEGIS-127's frozen acceptance does not
   require that it does, and no cross-process persistence is claimed.
-- **A failed adapter submission cannot automatically release a
-  reservation.** `OrderManager::submit_new_order` (`cpp/participant/oms`,
-  unmodified by M5) discards `ExecutionAdapter::submit`'s boolean return
-  value, so the risk engine has no seam-level signal that a send failed.
-  `RiskEngine::release_reservation` is the escape hatch a caller with
-  transport-level visibility can use; proven held-until-released by
-  `tests/cpp/unit/test_risk_fault_execution_stress.cpp`'s
-  `BackpressureLeavesTheOrderUnacknowledgedAndReservationHeld`.
+- **A failed adapter submission releases its reservation through a
+  composition-root decorator, not through the OMS itself.**
+  `OrderManager::submit_new_order` (`cpp/participant/oms`, unmodified by M5)
+  discards `ExecutionAdapter::submit`'s boolean return value, so the risk
+  engine has no seam-level signal from the OMS that a send failed.
+  `app::RiskReleasingExecutionAdapter` closes this without touching the OMS:
+  it wraps the concrete adapter and releases the reservation automatically
+  when `submit` returns `false`. A caller that constructs `OrderManager`
+  with a *different*, non-wrapping adapter does not get this behaviour for
+  free -- it is a property of the wrapper, not of `OrderManager` or
+  `RiskEngine` in isolation. Proven by `tests/cpp/unit/
+  test_risk_fault_execution_stress.cpp`'s
+  `BackpressureAutomaticallyReleasesTheReservationThroughTheNormalLifecycle`.
 - **`RiskEngine`'s own position bookkeeping duplicates `Portfolio`'s.**
   `cpp-participant-risk` may not depend on `cpp-participant-portfolio`
   (`configs/architecture_rules.yaml`), so the composition root must forward
@@ -208,6 +213,38 @@ the following is a production risk system:
   (`CalendarSpreadRunConfig::starting_capital_units`) is an arbitrary,
   documented constant**, not a claim about how much capital a real deployment
   would carry.
+
+## M5 validation-framework limitations
+
+M5 (`python/validation`, ADR-0029) builds the anti-overfitting framework
+over synthetic data only. None of the following establishes a claim about
+real markets:
+
+- **Multi-market, regime and stability results are computed over
+  deterministic synthetic series** (`validation._fixtures`), a seeded
+  mean-reverting walk -- not observed prices for any of the three product
+  families.
+- **`ExecutionAssumptions`' fill assumptions (`TOUCH`, `CROSS_OR_NEXT`) are
+  validation models of eligibility, not observed fills** -- there is no bid
+  size, depth, or real order-book state behind either.
+- **The bootstrap is i.i.d., not block**, over round trips: it assumes
+  round trips are exchangeable, which a systematic drift across the sample
+  window would violate (`validation.resampling`'s own `limitations` field,
+  carried into every report).
+- **AEGIS-155's "concentration" criterion is trade-count concentration
+  (too few round trips), not AEGIS-134's portfolio instrument
+  concentration.** The two are deliberately not conflated; validation does
+  not recompute a risk-layer control.
+- **Regime evaluation resets the rolling z-score window at each regime
+  boundary** (ADR-0029): a regime's own reported outcome never benefits
+  from data outside it, at the cost of discarding the window's warm-up
+  history at every boundary.
+- **AEGIS-238's queue depth and dropped/backpressured events come from the
+  M5 integration harness's own bounded buffer
+  (`python/validation/observability_harness.py`), not the M8 lock-free
+  queue implementation** (`cpp/queues`, empty and M8-dated) -- disclosed in
+  every AEGIS-238 evidence artifact per the owner's activation-time
+  authorization (`docs/BUILD_STATE.md`).
 
 ## Data limitations
 

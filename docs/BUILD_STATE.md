@@ -236,6 +236,58 @@ AEGIS-238's observability integration, evidence generation, and the
 independent audit. `requirements/implementation_status.json` is untouched by
 Batch 1 -- no status promoted, no obligation cleared.
 
+### Batch 2 status (this commit)
+
+Carries one small carry-in fix plus the full AEGIS-139..155 validation
+suite and a full AEGIS-238 attempt. Real, tested, focused-test-verified --
+not yet `verified` in the requirement catalogue; promotion is closure work.
+
+* **Carry-in fix**: `app::RiskReleasingExecutionAdapter`
+  (`cpp/participant/app/risk_engine_gate.hpp`) wraps the concrete execution
+  adapter and releases a reservation automatically when `submit` returns
+  `false` -- no manual `release_reservation` call needed for the ordinary
+  submission-failure path. `cpp/participant/oms/**` remains untouched; the
+  fix lives entirely in the composition root's own adapter choice.
+  `release_reservation` stays public for its own separate use (manual
+  reconciliation).
+* `research.strategy_replay.ExecutionAssumptions`: fee/half-spread/slippage
+  costs, decision/execution delay, and two fill assumptions (`TOUCH`,
+  `CROSS_OR_NEXT`) that genuinely change fill timing/eligibility on the
+  observation grid -- default value byte-identical to the pre-M5 signature.
+* `python/validation/`: `stability.py` (142), `sensitivity.py` (143/144/145),
+  `resampling.py` (146/147), `markets.py` (148), `regimes.py` (149),
+  `baselines.py` (150/151), `leakage.py` (152/153, falsifiable -- catches a
+  seeded leaky fixture), `roll_sensitivity.py` (154, reuses M4's module
+  unmodified), `rejection.py` (155, the shuffled baseline receives a genuine
+  `REJECT`), `observability_harness.py` (AEGIS-238).
+* `python/reports/`: `validation_report.py`, `rejection_report.py`,
+  `portfolio_risk_report.py` (independently RECOMPUTES gross/net exposure
+  from position/price accounting values and reconciles against the C++
+  analytics' own report, rather than re-serializing it).
+* `python/reports/report_model.py`: the M4 `code_commit` `-dirty`-suffix
+  debt is fixed -- sibling `experiments/evidence/**` artifacts no longer
+  mark the commit dirty, mirroring `tools/evidence_provenance.py`'s
+  exclusion rule. M4 evidence is not regenerated; M4 stays closed.
+* `configs/validation/{partitions,regimes,rejection_criteria}.yaml`.
+* AEGIS-238: `tests/integration/test_participant_observability.py` drives
+  the real `aegis_participant_run` binary and the real `RiskEngine` through
+  a bounded outbound execution buffer this harness owns -- health, queue
+  depth, dropped/backpressured events, latency and risk status are all
+  non-vacuous in the recorded run. Evidence explicitly discloses this is
+  the harness's own bounded buffer, **not** the M8 lock-free queue
+  implementation, per the owner's activation-time authorization. The
+  fallback re-deferral is **not** used; no ledger entry created.
+* `tools/generate_validation_evidence.py` (17 artifacts, AEGIS-139..155),
+  `tools/generate_observability_evidence.py` (AEGIS-238) -- Batch-2
+  provisional evidence; closure regenerates all M5 evidence once, from a
+  clean tree, at the reviewed commit.
+* ADR-0029 (validation framework conventions).
+
+Not yet done: the M5 closure pass itself (full CI matrix, independent
+audit, promotion, milestone report). `requirements/implementation_status.json`
+is untouched by Batch 2 -- no status promoted, no obligation cleared, the
+AEGIS-238 fallback authorization is not exercised.
+
 The five M5 approvals, all exact-path and milestone-scoped, so all expire when
 M5 does:
 

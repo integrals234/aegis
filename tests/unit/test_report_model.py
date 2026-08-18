@@ -77,3 +77,58 @@ def test_serialization_is_stable_key_order_regardless_of_dict_insertion_order(
     provenance = _provenance(repo_root, strategy_config={"b": 1, "a": 2})
     rendered = render_report(provenance, {"z": 1, "a": 2})
     assert rendered.index('"a"') < rendered.index('"z"')
+
+
+# --- M5: sibling-evidence exclusion (the carried M4 debt) -------------------
+#
+# Uses a throwaway git repo rather than the real repository: the real tree's
+# dirty/clean state changes as this very milestone's work proceeds, so a test
+# asserting on it would be testing today's ambient state, not the exclusion
+# rule itself.
+
+
+def _init_throwaway_repo(tmp_path: Path) -> Path:
+    import subprocess
+
+    repo = tmp_path / "throwaway_repo"
+    repo.mkdir()
+    (repo / "code.py").write_text("x = 1\n")
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.name", "test"], cwd=repo, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "initial"], cwd=repo, check=True)
+    return repo
+
+
+def test_a_sibling_evidence_artifact_does_not_mark_the_commit_dirty(tmp_path: Path) -> None:
+    repo = _init_throwaway_repo(tmp_path)
+    clean_commit = build_report_provenance(
+        report_id="r", root=repo, input_paths=[], strategy_config={}, dataset_id="d",
+        roll_policy_name="p",
+    ).code_commit
+    assert not clean_commit.endswith("-dirty")
+
+    # A generator writing its own sibling artifact in the same batch -- the
+    # exact scenario that produced the M4 debt.
+    evidence_dir = repo / "experiments" / "evidence" / "AEGIS-999"
+    evidence_dir.mkdir(parents=True)
+    (evidence_dir / "output.json").write_text("{}\n")
+
+    still_clean_commit = build_report_provenance(
+        report_id="r", root=repo, input_paths=[], strategy_config={}, dataset_id="d",
+        roll_policy_name="p",
+    ).code_commit
+    assert not still_clean_commit.endswith("-dirty")
+    assert still_clean_commit == clean_commit
+
+
+def test_an_actual_unrelated_code_change_still_marks_the_commit_dirty(tmp_path: Path) -> None:
+    repo = _init_throwaway_repo(tmp_path)
+    (repo / "code.py").write_text("x = 2\n")  # A real, non-evidence modification.
+
+    dirty_commit = build_report_provenance(
+        report_id="r", root=repo, input_paths=[], strategy_config={}, dataset_id="d",
+        roll_policy_name="p",
+    ).code_commit
+    assert dirty_commit.endswith("-dirty")

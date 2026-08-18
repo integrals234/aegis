@@ -1,0 +1,68 @@
+{
+  "claim": "AEGIS-144: real decision/execution delay sweep; fills genuinely shift or drop on the observation grid.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-18",
+  "points": [
+    {
+      "decision_delay_days": 0,
+      "dropped_signal_count": 0,
+      "execution_delay_days": 0,
+      "round_trip_count": 7,
+      "total_pnl": "-89.2305"
+    },
+    {
+      "decision_delay_days": 0,
+      "dropped_signal_count": 0,
+      "execution_delay_days": 1,
+      "round_trip_count": 7,
+      "total_pnl": "-78.3252"
+    },
+    {
+      "decision_delay_days": 1,
+      "dropped_signal_count": 0,
+      "execution_delay_days": 0,
+      "round_trip_count": 7,
+      "total_pnl": "-78.3252"
+    },
+    {
+      "decision_delay_days": 1,
+      "dropped_signal_count": 0,
+      "execution_delay_days": 1,
+      "round_trip_count": 7,
+      "total_pnl": "-18.8228"
+    },
+    {
+      "decision_delay_days": 3,
+      "dropped_signal_count": 0,
+      "execution_delay_days": 0,
+      "round_trip_count": 7,
+      "total_pnl": "-15.1268"
+    },
+    {
+      "decision_delay_days": 3,
+      "dropped_signal_count": 0,
+      "execution_delay_days": 1,
+      "round_trip_count": 7,
+      "total_pnl": "7.0972"
+    },
+    {
+      "decision_delay_days": 5,
+      "dropped_signal_count": 0,
+      "execution_delay_days": 0,
+      "round_trip_count": 7,
+      "total_pnl": "-9.3058"
+    },
+    {
+      "decision_delay_days": 5,
+      "dropped_signal_count": 0,
+      "execution_delay_days": 1,
+      "round_trip_count": 7,
+      "total_pnl": "-48.2354"
+    }
+  ],
+  "repository_commit": "0a9b4968363864b8ffb19e0ef7f4fd3c0e90f4dc",
+  "requirements": [
+    "AEGIS-144"
+  ]
+}

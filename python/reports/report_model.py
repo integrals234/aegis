@@ -1,30 +1,44 @@
-"""Shared deterministic M4 report foundation (AEGIS-079, AEGIS-081, AEGIS-024).
+"""Shared deterministic M4/M5 report foundation (AEGIS-079, AEGIS-081,
+AEGIS-024).
 
-Every M4 report (stationarity, roll/expiry attribution, roll-method
-sensitivity) is built by attaching report-specific ``findings`` to a
-:class:`ReportProvenance` this module produces -- experiment metadata, input
-provenance (path *and* content digest, so a report's inputs are pinned, not
-just named), strategy configuration, and dataset/roll-policy identity.
-Reuses ``data.experiment_manifest.git_commit`` for the code-commit half
-rather than duplicating it.
+Every M4/M5 report (stationarity, roll/expiry attribution, roll-method
+sensitivity, M5 validation/rejection/portfolio-risk) is built by attaching
+report-specific ``findings`` to a :class:`ReportProvenance` this module
+produces -- experiment metadata, input provenance (path *and* content
+digest, so a report's inputs are pinned, not just named), strategy
+configuration, and dataset/roll-policy identity.
 
 Serialization is deterministic (``sort_keys=True``, fixed separators) so two
 renders of the same inputs are byte-identical --
 ``tests/unit/test_report_model.py`` checks this directly, and that a mutated
 input changes its recorded digest.
+
+# The M5 fix: sibling-evidence exclusion for ``code_commit``
+
+Before M5, ``code_commit`` came from ``data.experiment_manifest.git_commit``,
+whose ``-dirty`` suffix reads plain ``git status --porcelain`` -- which
+counts a sibling evidence artifact this same batch just wrote as "the tree
+is dirty", even though nothing under ``experiments/evidence/`` bears on
+whether the *code* that produced this report is reproducible. That is
+exactly the failure ``tools/evidence_provenance.py`` was built to avoid
+(AEGIS-003), and M4's accepted residual carried this file as the one spot
+that still had it. :func:`_code_commit` below mirrors that module's
+exclusion rule -- a change under ``experiments/evidence/`` never marks the
+commit dirty; anything else still does -- without importing across the
+``python/`` <-> ``tools/`` boundary that would make this module depend on
+where a caller's ``sys.path`` happens to include ``tools/``.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
-
-from data.experiment_manifest import git_commit
 
 __all__ = [
     "InputProvenance",
@@ -33,6 +47,43 @@ __all__ = [
     "hash_file",
     "render_report",
 ]
+
+
+# Mirrors tools/evidence_provenance.py's EVIDENCE_PREFIX exactly -- both must
+# agree on what "sibling evidence, not code" means, or the two dirty
+# computations would silently diverge again.
+_EVIDENCE_PREFIX = "experiments/evidence/"
+
+
+def _git(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, check=False)
+
+
+def _changed_paths(root: Path) -> list[str]:
+    # Every uncommitted repository-relative path (tracked changes plus
+    # untracked files) -- the same two-command construction
+    # tools/evidence_provenance.py uses, deliberately not `git status
+    # --porcelain`, whose status-column width a leading-space-stripped line
+    # can mis-slice.
+    tracked = _git(root, "diff", "--name-only", "HEAD").stdout.splitlines()
+    untracked = _git(root, "ls-files", "--others", "--exclude-standard").stdout.splitlines()
+    return [path for path in (*tracked, *untracked) if path.strip()]
+
+
+def _code_commit(root: Path) -> str:
+    # The current commit, suffixed `-dirty` only when something OTHER than
+    # experiments/evidence/** is uncommitted -- sibling evidence written
+    # earlier in the same generation batch never triggers the suffix.
+    head = _git(root, "rev-parse", "HEAD")
+    if head.returncode != 0:
+        raise RuntimeError(
+            "cannot determine the code commit; a report that cannot name the code it was "
+            "generated from is not reproducible"
+        )
+    commit = head.stdout.strip()
+    if any(not path.startswith(_EVIDENCE_PREFIX) for path in _changed_paths(root)):
+        commit += "-dirty"
+    return commit
 
 
 def hash_file(path: Path) -> str:
@@ -84,7 +135,7 @@ def build_report_provenance(
 ) -> ReportProvenance:
     return ReportProvenance(
         report_id=report_id,
-        code_commit=git_commit(root),
+        code_commit=_code_commit(root),
         inputs=tuple(InputProvenance.from_path(root, path) for path in input_paths),
         strategy_config=dict(strategy_config),
         dataset_id=dataset_id,

@@ -660,7 +660,13 @@ CalendarSpreadRunResult run_calendar_spread_scenario(const std::string& stream_p
   risk::RiskEngine risk_engine(risk_config);
   common::ManualClock clock;
   RiskEngineGate risk_gate(risk_engine, clock);
-  ImmediateFillExecutionAdapter adapter;
+  ImmediateFillExecutionAdapter immediate_fill_adapter;
+  // A submission failure automatically releases the reservation decide_order
+  // created -- ADR-0027's carry-in fix. ImmediateFillExecutionAdapter never
+  // actually returns false, so this changes no observable demo behaviour;
+  // it is here so the production composition is correct if that ever
+  // changes, not merely so a test can exercise it.
+  RiskReleasingExecutionAdapter adapter(immediate_fill_adapter, risk_engine);
   const oms::FeeSchedule fees{.fee_rate_ppm = 0};
   OrderManager manager(adapter, risk_gate, fees);
   Portfolio ledger;

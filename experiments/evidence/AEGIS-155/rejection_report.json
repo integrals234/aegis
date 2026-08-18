@@ -1,0 +1,39 @@
+{
+  "claim": "AEGIS-155: the intentionally weak shuffled-signal baseline (AEGIS-150), run through the identical rejection pipeline, receives a genuine REJECT verdict.",
+  "criteria": [
+    {
+      "detail": "break_even_index=0",
+      "name": "transaction_cost_unprofitable_at_lowest_swept_cost",
+      "triggered": true
+    },
+    {
+      "detail": "coefficient_of_variation=0.2594 threshold=2.0",
+      "name": "parameter_instability",
+      "triggered": false
+    },
+    {
+      "detail": "round_trip_count=8 min_required=1000000",
+      "name": "trade_concentration_too_few_round_trips",
+      "triggered": true
+    },
+    {
+      "detail": "bootstrap_ci=[-17.3476, -7.7270]",
+      "name": "statistical_test_failure_ci_excludes_no_positive_mean",
+      "triggered": true
+    },
+    {
+      "detail": "observed=9.1680 threshold=50",
+      "name": "max_drawdown_exceeds_threshold",
+      "triggered": false
+    }
+  ],
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-18",
+  "repository_commit": "0a9b4968363864b8ffb19e0ef7f4fd3c0e90f4dc",
+  "requirements": [
+    "AEGIS-155"
+  ],
+  "strategy_name": "random_shuffled_signal_baseline",
+  "verdict": "reject"
+}

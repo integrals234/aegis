@@ -79,12 +79,13 @@ class RiskEngine {
               std::int64_t fill_quantity_units);
   void on_order_terminated(std::uint64_t client_order_id);
   void on_order_rejected(std::uint64_t client_order_id);
-  /// General-purpose release, for any terminal path the OMS seam does not
-  /// itself expose (documented limitation: `OrderManager::submit_new_order`
-  /// discards `ExecutionAdapter::submit`'s return value, so a failed
-  /// adapter submission cannot reach this engine through the real seam
-  /// today -- see `docs/LIMITATIONS.md`). Exercised directly by
-  /// `tests/cpp/unit/test_risk_position_limits.cpp`.
+  /// General-purpose release, for any terminal path a caller with its own
+  /// visibility needs to signal explicitly (manual reconciliation, an
+  /// out-of-band confirmation) -- NOT the normal submission-failure path,
+  /// which `app::RiskReleasingExecutionAdapter` handles automatically by
+  /// wrapping the concrete `ExecutionAdapter` the OMS seam cannot itself be
+  /// modified to observe (`cpp/participant/oms/**` is unmodified by M5).
+  /// Exercised directly by `tests/cpp/unit/test_risk_engine.cpp`.
   void release_reservation(std::uint64_t client_order_id) { state_.release_reservation(client_order_id); }
 
   // ---- market feedback ---------------------------------------------------

@@ -1,0 +1,13 @@
+{
+  "claim": "AEGIS-153: timestamp/fitting-scope/partition-boundary audit over real feature timing records; zero violations on the honest path.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-18",
+  "passed": true,
+  "record_count": 120,
+  "repository_commit": "0a9b4968363864b8ffb19e0ef7f4fd3c0e90f4dc",
+  "requirements": [
+    "AEGIS-153"
+  ],
+  "violations": []
+}
