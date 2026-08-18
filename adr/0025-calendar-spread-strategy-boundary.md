@@ -65,16 +65,22 @@ created by either.
 
 **The market-data stream this strategy runs against is a documented
 construction, not observed tick data.** `data_samples/futures/bars/eqx.csv`
-carries six real daily settlement bars for one contract (`SYNX:EQX:2026H`);
+carries six daily settlement bars for one contract (`SYNX:EQX:2026H`);
 no second contract's price history is committed anywhere in the repository.
 `python/research/calendar_spread.ConstructedBasisRule`
 (`tools/generate_calendar_spread_stream.py`) derives the far leg's price
 from the near leg's own observed price via a fixed, documented, per-index
 basis sequence, and every `CalendarSpreadObservation` this module returns
-names that construction explicitly (`far_price_provenance`). The near leg's
-identity *and* price are real; the far leg's identity is real (the next
-contract the same real `ContractChain` lists); only the far leg's *price* is
-constructed. `python/research/stream_builder.py` turns that into the
+names its actual source explicitly (`far_price_provenance`,
+`far_price_observed`). The near leg's identity and price are **observed
+within the committed series**, and the far leg's identity is likewise a real
+entry in that `ContractChain`; only the far leg's *price* is constructed.
+
+**"Observed" here never means "real market data."** Every bar in
+`data_samples/` is synthetic sample data on the fictional venue `SYNX`
+(`data_samples/PROVENANCE.yaml`). "Observed" distinguishes a value that was
+read from the committed series from one this code synthesized — nothing more.
+No AEGIS-076..081 figure describes a real product, venue or price. `python/research/stream_builder.py` turns that into the
 committed two-leg JSONL fixture
 (`tests/unit/fixtures/participant/calendar_spread_stream.jsonl`) both demo
 paths replay. No execution-quality, fill-realism, or backtest-return claim

@@ -2,12 +2,14 @@
 """Generate the committed M4 calendar-spread demo fixture (ADR-0025).
 
 Builds ``tests/unit/fixtures/participant/calendar_spread_stream.jsonl`` from
-the real committed EQX contracts/bars in ``data_samples/futures`` through the
+the committed EQX contracts/bars in ``data_samples/futures`` (synthetic sample
+data on the fictional venue SYNX -- see data_samples/PROVENANCE.yaml) through the
 production `python/research` code path -- this script does not re-derive
 roll or spread logic, it calls `research.calendar_spread` and
 `research.stream_builder` exactly as the test suite does.
 
-The near leg's price is real (EQX settlement bars). The far leg's price is
+The near leg's price is observed within that committed series (EQX settlement
+bars); it is sample data, not real market data. The far leg's price is
 **not** observed -- `data_samples` carries only one contract's bar history
 per product -- and is constructed by a fixed, documented per-observation
 basis sequence (`_BASIS_UNITS_BY_INDEX`, in dollars) chosen so the resulting

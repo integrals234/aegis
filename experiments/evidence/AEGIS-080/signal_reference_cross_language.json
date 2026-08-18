@@ -1,0 +1,64 @@
+{
+  "actions_agree": true,
+  "artifact": "signal_reference_cross_language_agreement",
+  "claim": "AEGIS-080: the compiled C++ RollingZScore (via aegis_bindings.rolling_zscore_batch) and the independent Python reference (research.signal_reference.rolling_zscore_reference) were run once over the identical spread sequence and agree to within 3.552713678800501e-15 absolute difference at every point, and produce IDENTICAL entry/exit classifications under the approved threshold rule -- the same sequence and outcome tests/cpp/unit/test_calendar_spread_strategy.cpp verifies against the compiled production CalendarSpreadStrategy.",
+  "compiled_actions": [
+    [
+      2,
+      "enter_short"
+    ],
+    [
+      5,
+      "exit"
+    ]
+  ],
+  "compiled_scores": [
+    0.0,
+    0.0,
+    2.1213203435596393,
+    2.0000000000000004,
+    29.821971765797116,
+    -0.3013796514749198
+  ],
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "entry_threshold": 2.0,
+  "exit_threshold": 0.5,
+  "generated_on": "2026-08-18",
+  "max_abs_difference": 3.552713678800501e-15,
+  "not_evidence_for": [
+    "AEGIS-107's own cross-language claim, which concerns different fixtures and is evidenced separately in experiments/evidence/AEGIS-107/",
+    "any claim about real markets -- the spread sequence here is a fixed test sequence, not observed data"
+  ],
+  "reference_actions": [
+    [
+      2,
+      "enter_short"
+    ],
+    [
+      5,
+      "exit"
+    ]
+  ],
+  "reference_scores": [
+    0.0,
+    0.0,
+    2.1213203435596393,
+    2.000000000000002,
+    29.821971765797112,
+    -0.3013796514749198
+  ],
+  "repository_commit": "bf3de1f516949d3a4b9f7a16b0a1fd1228b14e64",
+  "requirements": [
+    "AEGIS-080"
+  ],
+  "spread_sequence": [
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    2.5,
+    0.7
+  ],
+  "window": 20
+}

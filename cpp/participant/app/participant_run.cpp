@@ -17,11 +17,13 @@
 #include "cpp/participant/app/participant_snapshot.hpp"
 #include "cpp/participant/book_builder/book_builder.hpp"
 #include "cpp/participant/feed_handler/feed_handler.hpp"
+#include "cpp/participant/oms/execution_adapter.hpp"
 #include "cpp/participant/oms/order_lifecycle.hpp"
 #include "cpp/participant/oms/order_manager.hpp"
 #include "cpp/participant/oms/recorded_response_adapter.hpp"
 #include "cpp/participant/oms/risk_gate.hpp"
 #include "cpp/participant/portfolio/portfolio.hpp"
+#include "cpp/participant/strategy/calendar_spread_strategy.hpp"
 #include "cpp/statistics/rolling_moments.hpp"
 
 namespace aegis::participant::app {
@@ -438,6 +440,248 @@ FixtureRunResult run_participant_fixture(const std::string& fixture_path, std::u
   if (snapshot_out_path.has_value()) {
     const ParticipantSnapshot snapshot = capture_participant_snapshot(manager, ledger);
     write_file_bytes(*snapshot_out_path, write_participant_snapshot(snapshot));
+  }
+
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// AEGIS-076..081, AEGIS-004, AEGIS-080; ADR-0025: the first M4 strategy,
+// wired here to the existing risk seam and OMS. See participant_run.hpp for
+// the composition this exercises and its relationship to the real-M1-matching
+// proof in tests/cpp/unit/test_calendar_spread_exchange_integration.cpp.
+// ---------------------------------------------------------------------------
+namespace {
+
+using strategy::CalendarSpreadConfig;
+using strategy::CalendarSpreadStrategy;
+using strategy::StrategyLeg;
+using strategy::StrategyProposal;
+
+/// No transport, no exchange (AEGIS-119): `submit`/`cancel`/`modify` only
+/// record that a call was made. The composition root below synthesizes the
+/// resulting accept/trade/terminate sequence itself, deterministically, from
+/// this run's own strategy-generated intent -- not from a committed script
+/// (`RecordedResponseAdapter`) and not from real matching
+/// (`TransportExecutionAdapter`, `tests/` only).
+class ImmediateFillExecutionAdapter final : public oms::ExecutionAdapter {
+ public:
+  [[nodiscard]] bool submit(const events::exchange::NewOrderCommand& /*command*/) override {
+    return true;
+  }
+  [[nodiscard]] bool cancel(const events::exchange::CancelOrderCommand& /*command*/) override {
+    return true;
+  }
+  [[nodiscard]] bool modify(const events::exchange::ModifyOrderCommand& /*command*/) override {
+    return true;
+  }
+};
+
+struct MarketDataStep {
+  std::string leg;  ///< "near" or "far".
+  std::uint32_t instrument_id{0};
+  std::uint64_t md_sequence{0};
+  std::int64_t bid_price_units{0};
+  std::int64_t bid_quantity_units{0};
+  std::int64_t ask_price_units{0};
+  std::int64_t ask_quantity_units{0};
+};
+
+[[nodiscard]] std::vector<MarketDataStep> read_market_data_steps(const std::string& path) {
+  std::ifstream file(path);
+  if (!file) {
+    throw std::runtime_error("cannot open calendar-spread stream " + path);
+  }
+  std::vector<MarketDataStep> steps;
+  std::string line;
+  while (std::getline(file, line)) {
+    if (line.empty()) {
+      continue;
+    }
+    const Json record = Json::parse(line);
+    MarketDataStep step;
+    step.leg = record.at("leg").get<std::string>();
+    step.instrument_id = record.at("instrument_id").get<std::uint32_t>();
+    step.md_sequence = record.at("md_sequence").get<std::uint64_t>();
+    step.bid_price_units = record.at("bid_price_units").get<std::int64_t>();
+    step.bid_quantity_units = record.at("bid_quantity_units").get<std::int64_t>();
+    step.ask_price_units = record.at("ask_price_units").get<std::int64_t>();
+    step.ask_quantity_units = record.at("ask_quantity_units").get<std::int64_t>();
+    steps.push_back(std::move(step));
+  }
+  return steps;
+}
+
+[[nodiscard]] BookSnapshotEvent make_two_sided_snapshot(const MarketDataStep& step) {
+  BookSnapshotEvent snapshot;
+  snapshot.instrument_id = step.instrument_id;
+  snapshot.md_sequence = step.md_sequence;
+  snapshot.entries.push_back(BookLevelEntry{.side = Side::kBuy,
+                                            .price_units = step.bid_price_units,
+                                            .quantity_units = step.bid_quantity_units,
+                                            .order_id = 1});
+  snapshot.entries.push_back(BookLevelEntry{.side = Side::kSell,
+                                            .price_units = step.ask_price_units,
+                                            .quantity_units = step.ask_quantity_units,
+                                            .order_id = 2});
+  return snapshot;
+}
+
+/// One leg's order through the mandatory risk seam, a deterministic immediate
+/// fill at that leg's own current best price (`bid_price_units` for a sell,
+/// `ask_price_units` for a buy) and the portfolio update -- the production
+/// counterpart to the real-M1-matching proof. `kCounterpartyOrderId` (0,
+/// never assigned to a real tracked order by this function -- exchange order
+/// ids here start at 1) is the fill's synthetic "other side": using an id
+/// that can never match a `TrackedOrder` is what keeps
+/// `apply_trade_to_portfolio` from double-applying the fill to our own order.
+void execute_leg(const StrategyLeg& leg, OrderManager& manager, Portfolio& ledger,
+                 std::int64_t bid_price_units, std::int64_t ask_price_units,
+                 std::uint64_t& next_exchange_order_id) {
+  const std::int64_t limit_price_units = leg.side == Side::kBuy ? ask_price_units : bid_price_units;
+  const auto client_order_id =
+      manager.submit_new_order(leg.instrument_id, /*participant_id=*/1, leg.side, OrderType::kLimit,
+                               limit_price_units, leg.quantity_units);
+  const auto* tracked = manager.find_by_client_order_id(client_order_id);
+  if (tracked == nullptr) {
+    return;
+  }
+
+  const std::uint64_t our_order_id = ++next_exchange_order_id;
+  manager.handle_order_accepted(OrderAcceptedEvent{.order_id = our_order_id,
+                                                   .instrument_id = leg.instrument_id,
+                                                   .participant_id = 1,
+                                                   .client_order_id = client_order_id,
+                                                   .side = leg.side,
+                                                   .order_type = OrderType::kLimit,
+                                                   .price_units = limit_price_units,
+                                                   .quantity_units = leg.quantity_units});
+
+  // Our own order is always the trade's taker in this synthesis, regardless
+  // of which side it trades: there is no independently modelled resting
+  // counterparty to be the maker against, only this deterministic immediate
+  // fill. `kCounterpartyOrderId` (0, never assigned to a real tracked order --
+  // exchange order ids here start at 1) is the maker side, so
+  // `apply_trade_to_portfolio`'s maker branch never matches and only the
+  // taker branch -- which uses `trade.taker_side` directly -- applies the
+  // fill, at exactly `leg.side`.
+  constexpr std::uint64_t kCounterpartyOrderId = 0;
+  const TradeEvent trade{
+      .instrument_id = leg.instrument_id,
+      .price_units = limit_price_units,
+      .quantity_units = leg.quantity_units,
+      .maker_order_id = kCounterpartyOrderId,
+      .taker_order_id = our_order_id,
+      .maker_participant_id = 0,
+      .taker_participant_id = 1,
+      .taker_side = leg.side,
+  };
+  manager.handle_trade(trade);
+  apply_trade_to_portfolio(trade, manager, ledger, /*fee_units=*/0);
+
+  manager.handle_order_terminated(OrderTerminatedEvent{.order_id = our_order_id,
+                                                       .reason = TerminationReason::kFilled,
+                                                       .cancelled_quantity_delta_units = 0});
+}
+
+[[nodiscard]] std::string describe_calendar_spread_state(
+    const CalendarSpreadStrategy& strategy_state, const StrategyProposal& proposal,
+    const OrderManager& manager, const Portfolio& ledger, std::uint32_t near_instrument_id,
+    std::int64_t near_mark_price_units, std::int64_t far_mark_price_units) {
+  Json out;
+  out["spread_price"] = proposal.spread_price;
+  out["z_score"] = proposal.z_score;
+  out["position"] = static_cast<int>(strategy_state.position());
+  out["has_action"] = proposal.has_action;
+  if (proposal.has_action) {
+    out["near_side"] = static_cast<int>(proposal.near.side);
+    out["far_side"] = static_cast<int>(proposal.far.side);
+    out["quantity_units"] = proposal.near.quantity_units;
+  }
+
+  Json positions = Json::array();
+  for (const auto& [instrument_id, position] : ledger.all_positions()) {
+    const std::int64_t mark =
+        instrument_id == near_instrument_id ? near_mark_price_units : far_mark_price_units;
+    positions.push_back(Json{
+        {"instrument_id", instrument_id},
+        {"quantity_units", position.quantity_units},
+        {"average_price_units", position.average_price_units},
+        {"realized_pnl_units", position.realized_pnl_units},
+        {"unrealized_pnl_units", ledger.unrealized_pnl_units(instrument_id, mark)},
+    });
+  }
+  out["positions"] = positions;
+  out["cash_units"] = ledger.cash_units();
+  out["order_count"] = manager.all_tracked_orders().size();
+  return out.dump();
+}
+
+}  // namespace
+
+CalendarSpreadRunResult run_calendar_spread_scenario(const std::string& stream_path,
+                                                     const CalendarSpreadRunConfig& config) {
+  const auto steps = read_market_data_steps(stream_path);
+
+  feed::FeedHandler handler;
+  book::BookBuilder near_book(config.near_instrument_id);
+  book::BookBuilder far_book(config.far_instrument_id);
+
+  const CalendarSpreadConfig strategy_config{.near_instrument_id = config.near_instrument_id,
+                                             .far_instrument_id = config.far_instrument_id,
+                                             .zscore_window = config.zscore_window,
+                                             .entry_threshold = config.entry_threshold,
+                                             .exit_threshold = config.exit_threshold,
+                                             .quantity_units = config.quantity_units};
+  CalendarSpreadStrategy strategy_state(strategy_config);
+
+  AlwaysApproveRiskGate risk;
+  ImmediateFillExecutionAdapter adapter;
+  const oms::FeeSchedule fees{.fee_rate_ppm = 0};
+  OrderManager manager(adapter, risk, fees);
+  Portfolio ledger;
+  std::uint64_t next_exchange_order_id = 0;
+
+  CalendarSpreadRunResult result;
+  bool near_ready = false;
+  std::int64_t near_bid = 0;
+  std::int64_t near_ask = 0;
+
+  for (std::uint64_t sequence = 0; sequence < steps.size(); ++sequence) {
+    const MarketDataStep& step = steps[sequence];
+    const BookSnapshotEvent snapshot = make_two_sided_snapshot(step);
+    const auto decoded = handler.decode(
+        frame(MessageType::kBookSnapshot, sequence + 1, events::market_data::encode(snapshot)));
+    if (!decoded.snapshot.has_value()) {
+      continue;
+    }
+
+    if (step.leg == "near") {
+      near_book.apply_snapshot(*decoded.snapshot);
+      near_ready = true;
+      near_bid = step.bid_price_units;
+      near_ask = step.ask_price_units;
+      continue;  // Wait for this date's far leg before acting (header).
+    }
+
+    far_book.apply_snapshot(*decoded.snapshot);
+    if (!near_ready) {
+      continue;  // A far leg with no near observation yet: nothing to spread against.
+    }
+    const std::int64_t far_bid = step.bid_price_units;
+    const std::int64_t far_ask = step.ask_price_units;
+
+    const StrategyProposal proposal =
+        strategy_state.on_book_update(near_book.top_of_book(), far_book.top_of_book());
+    if (proposal.has_action) {
+      execute_leg(proposal.near, manager, ledger, near_bid, near_ask, next_exchange_order_id);
+      execute_leg(proposal.far, manager, ledger, far_bid, far_ask, next_exchange_order_id);
+    }
+
+    const std::int64_t near_mark = (near_bid + near_ask) / 2;
+    const std::int64_t far_mark = (far_bid + far_ask) / 2;
+    result.lines.push_back(describe_calendar_spread_state(
+        strategy_state, proposal, manager, ledger, config.near_instrument_id, near_mark, far_mark));
   }
 
   return result;

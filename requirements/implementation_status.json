@@ -1,6 +1,6 @@
 {
   "project": "AEGIS",
-  "active_milestone": "M2",
+  "active_milestone": "M4",
   "requirements": {
     "AEGIS-001": {
       "status": "verified",
@@ -61,32 +61,25 @@
       }
     },
     "AEGIS-004": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
         "tools/check_architecture.py",
-        "configs/architecture_rules.yaml"
+        "configs/architecture_rules.yaml",
+        "cpp/participant/strategy/calendar_spread_strategy.cpp"
       ],
       "tests": [
-        "tests/unit/test_check_architecture.py"
+        "tests/unit/test_check_architecture.py",
+        "tests/cpp/unit/test_calendar_spread_exchange_integration.cpp"
       ],
-      "reports": [],
-      "notes": "Checker enforces include, import, namespace and CMake link edges over the real tree, with a committed counter-example tree exercising every rule.",
-      "verification_blocked_until": "M4",
-      "residual": "Architecture rules declare the full participant pipeline, but configs/architecture_rules.yaml dates cpp/participant/strategy to M4, so the rule that strategy code cannot reach the exchange book is declared and unexercised until then. The exchange book itself arrives at M1.",
-      "deferral_history": [
-        {
-          "blocked_until": "M1",
-          "recorded_at": "M0",
-          "date": "2026-08-06",
-          "reason": "Registered while closing M0: the acceptance names participant strategy code, and no exchange book or participant pipeline existed for the rules to constrain."
-        },
-        {
-          "blocked_until": "M4",
-          "recorded_at": "M0",
-          "date": "2026-08-06",
-          "reason": "The independent M0 audit found the obligation dated M1 while its own acceptance names participant strategy code, which configs/architecture_rules.yaml dates M4. Re-dated to the milestone that can actually discharge it."
-        }
-      ]
+      "reports": [
+        "experiments/evidence/AEGIS-004/exchange_participant_separation.json"
+      ],
+      "notes": "M4 residual paid: cpp/participant/strategy now contains real source, so the rule constraining it is exercised rather than vacuous. Strategy layer has no exchange/OMS/gateway edge; the only code composing both sides is the test-only InProcessExchangeTransport under tests/, outside covered_roots.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent M4 audit, 2026-08-18): first pass 6 PASS / 2 FAIL with three blocking findings (B1 AEGIS-078 missing historical test; B2 falsified report input provenance; B3 false AEGIS-079 disclosure string); all three remediated by building the missing behaviour and correcting the disclosures, then re-audited at 487e526 -- 8 PASS, no blocking finding",
+        "commit": "487e526",
+        "date": "2026-08-18"
+      }
     },
     "AEGIS-005": {
       "status": "implemented",
@@ -477,27 +470,27 @@
       }
     },
     "AEGIS-024": {
-      "status": "implemented",
+      "status": "verified",
       "implementation": [
-        "python/futures/roll_sensitivity.py"
+        "python/futures/roll_sensitivity.py",
+        "python/research/roll_method_sensitivity.py",
+        "python/reports/roll_sensitivity_report.py"
       ],
       "tests": [
-        "tests/unit/test_roll_sensitivity.py"
+        "tests/unit/test_roll_sensitivity.py",
+        "tests/unit/test_roll_method_sensitivity.py"
       ],
       "reports": [
-        "experiments/evidence/AEGIS-024/roll_audit_and_sensitivity.json"
+        "experiments/evidence/AEGIS-024/roll_audit_and_sensitivity.json",
+        "experiments/evidence/AEGIS-024/roll_method_strategy_sensitivity.json",
+        "experiments/evidence/AEGIS-024/roll_method_strategy_sensitivity_report.json"
       ],
-      "notes": "M2 slice 8, M2-owned portion only. compare_roll_methods quantifies differences between roll POLICIES (roll dates chosen, max/mean absolute deviation between additive-adjusted price paths) -- not strategy P&L, which needs a strategy that does not exist before M4. The M4 residual (strategy-level comparison) is unchanged from the owner-confirmed M2 plan of record coverage table ('024 | 8 | implemented -> M4 owner'); this is not a new deferral. Built entirely on real roll_audit.py/series.py production code. Not yet 'verified'.",
-      "verification_blocked_until": "M4",
-      "residual": "The frozen acceptance names an experiment report that quantifies STRATEGY differences caused by roll choices. No strategy exists: configs/architecture_rules.yaml dates cpp-participant-strategy and python-research to M4. M2 delivers the roll-method comparison itself (roll dates chosen and additive-adjusted price-path deviation between every pair of policies); attributing those differences to strategy P&L is M4's.",
-      "deferral_history": [
-        {
-          "blocked_until": "M4",
-          "recorded_at": "M2",
-          "date": "2026-08-10",
-          "reason": "Registered while closing M2: the M2-owned half (policy-vs-policy roll-date and adjusted-price-path comparison) is implemented and tested, but the acceptance's 'strategy differences' needs a strategy, which architecture rules date to M4. Owner-approved residual 024 -> M4 in experiments/plans/M2.md rev. 4."
-        }
-      ]
+      "notes": "M4 residual paid: strategy-level roll-method sensitivity quantified using the real strategy semantics, roll policy as the only controlled variable. Differing contract pairs, opposite positions, 110 total-P&L difference.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent M4 audit, 2026-08-18): first pass 6 PASS / 2 FAIL with three blocking findings (B1 AEGIS-078 missing historical test; B2 falsified report input provenance; B3 false AEGIS-079 disclosure string); all three remediated by building the missing behaviour and correcting the disclosures, then re-audited at 487e526 -- 8 PASS, no blocking finding",
+        "commit": "487e526",
+        "date": "2026-08-18"
+      }
     },
     "AEGIS-025": {
       "status": "verified",
@@ -1393,46 +1386,114 @@
       }
     },
     "AEGIS-076": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "python/research/calendar_spread.py"
+      ],
+      "tests": [
+        "tests/unit/test_calendar_spread_construction.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-076/calendar_spread_dataset.json"
+      ],
+      "notes": "Near/far spread construction on the M2 futures stack; observed far-leg price preferred, documented construction as fallback, provenance recorded per observation.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent M4 audit, 2026-08-18): first pass 6 PASS / 2 FAIL with three blocking findings (B1 AEGIS-078 missing historical test; B2 falsified report input provenance; B3 false AEGIS-079 disclosure string); all three remediated by building the missing behaviour and correcting the disclosures, then re-audited at 487e526 -- 8 PASS, no blocking finding",
+        "commit": "487e526",
+        "date": "2026-08-18"
+      }
     },
     "AEGIS-077": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "verified",
+      "implementation": [
+        "python/research/term_structure.py"
+      ],
+      "tests": [
+        "tests/unit/test_term_structure_features.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Carry, contango/backwardation/flat, expiry distance and roll context; feature tests use known curve shapes.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent M4 audit, 2026-08-18): first pass 6 PASS / 2 FAIL with three blocking findings (B1 AEGIS-078 missing historical test; B2 falsified report input provenance; B3 false AEGIS-079 disclosure string); all three remediated by building the missing behaviour and correcting the disclosures, then re-audited at 487e526 -- 8 PASS, no blocking finding",
+        "commit": "487e526",
+        "date": "2026-08-18"
+      }
     },
     "AEGIS-078": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
+      "status": "verified",
+      "implementation": [
+        "python/research/hedge_ratio.py"
+      ],
+      "tests": [
+        "tests/unit/test_hedge_ratio.py"
+      ],
       "reports": [],
-      "notes": ""
+      "notes": "Static (two-pass OLS) and rolling (strictly-prior window, leakage-free) hedge-ratio estimation.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent M4 audit, 2026-08-18): first pass 6 PASS / 2 FAIL with three blocking findings (B1 AEGIS-078 missing historical test; B2 falsified report input provenance; B3 false AEGIS-079 disclosure string); all three remediated by building the missing behaviour and correcting the disclosures, then re-audited at 487e526 -- 8 PASS, no blocking finding",
+        "commit": "487e526",
+        "date": "2026-08-18"
+      }
     },
     "AEGIS-079": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "python/research/stationarity.py",
+        "python/reports/stationarity_report.py"
+      ],
+      "tests": [
+        "tests/unit/test_stationarity.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-079/stationarity_test.json",
+        "experiments/evidence/AEGIS-079/stationarity_report.json"
+      ],
+      "notes": "Dickey-Fuller (unaugmented, constant, no trend); report states test, parameters, assumptions and caveats.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent M4 audit, 2026-08-18): first pass 6 PASS / 2 FAIL with three blocking findings (B1 AEGIS-078 missing historical test; B2 falsified report input provenance; B3 false AEGIS-079 disclosure string); all three remediated by building the missing behaviour and correcting the disclosures, then re-audited at 487e526 -- 8 PASS, no blocking finding",
+        "commit": "487e526",
+        "date": "2026-08-18"
+      }
     },
     "AEGIS-080": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "cpp/participant/strategy/calendar_spread_strategy.cpp",
+        "python/research/signal_reference.py"
+      ],
+      "tests": [
+        "tests/cpp/unit/test_calendar_spread_strategy.cpp",
+        "tests/integration/test_calendar_spread_signal_reference_cross_language.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-080/signal_reference_cross_language.json"
+      ],
+      "notes": "Leakage-free rolling z-score: observation scored against the PRIOR window only; C++ and independent Python reference agree on values and entry/exit classification.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent M4 audit, 2026-08-18): first pass 6 PASS / 2 FAIL with three blocking findings (B1 AEGIS-078 missing historical test; B2 falsified report input provenance; B3 false AEGIS-079 disclosure string); all three remediated by building the missing behaviour and correcting the disclosures, then re-audited at 487e526 -- 8 PASS, no blocking finding",
+        "commit": "487e526",
+        "date": "2026-08-18"
+      }
     },
     "AEGIS-081": {
-      "status": "not_started",
-      "implementation": [],
-      "tests": [],
-      "reports": [],
-      "notes": ""
+      "status": "verified",
+      "implementation": [
+        "python/research/roll_expiry_effects.py",
+        "python/reports/roll_expiry_report.py"
+      ],
+      "tests": [
+        "tests/unit/test_roll_expiry_effects.py"
+      ],
+      "reports": [
+        "experiments/evidence/AEGIS-081/roll_expiry_effects.json",
+        "experiments/evidence/AEGIS-081/roll_expiry_report.json"
+      ],
+      "notes": "Before/on/after-roll slicing over real build_roll_audit roll dates, with per-slice spread, expiry distance and strategy entry/exit counts.",
+      "audit": {
+        "auditor": "aegis-spec-auditor (independent M4 audit, 2026-08-18): first pass 6 PASS / 2 FAIL with three blocking findings (B1 AEGIS-078 missing historical test; B2 falsified report input provenance; B3 false AEGIS-079 disclosure string); all three remediated by building the missing behaviour and correcting the disclosures, then re-audited at 487e526 -- 8 PASS, no blocking finding",
+        "commit": "487e526",
+        "date": "2026-08-18"
+      }
     },
     "AEGIS-082": {
       "status": "not_started",

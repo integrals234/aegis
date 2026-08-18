@@ -2,12 +2,23 @@
 
 from __future__ import annotations
 
+import csv
+import datetime
 from datetime import date, timedelta
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
+from futures.chain import ContractChain
 from futures.identifiers import ContractId
-from research.calendar_spread import CalendarSpreadObservation
+from futures.roll.fixed_days import FixedDaysPolicy
+from futures.series import PriceObservation
+from make_futures_fixtures import load_family
+from research.calendar_spread import (
+    CalendarSpreadObservation,
+    ConstructedBasisRule,
+    build_calendar_spread_observations,
+)
 from research.hedge_ratio import (
     InsufficientObservations,
     rolling_hedge_ratio,
@@ -83,3 +94,122 @@ def test_rolling_hedge_ratio_reports_none_when_the_prior_window_has_zero_varianc
 def test_rolling_hedge_ratio_rejects_window_below_two() -> None:
     with pytest.raises(ValueError, match="window must be >= 2"):
         rolling_hedge_ratio(_observations([Decimal(1)], [Decimal(1)]), window=1)
+
+
+# --- Historical validation (AEGIS-078's "synthetic AND historical") ---------
+#
+# The tests above are synthetic: hand-built Decimal series with analytically
+# known slopes. These run the same estimators over the committed EQX
+# settlement bars in data_samples/futures/bars/eqx.csv -- real committed
+# historical input, loaded through the same path the demo generator uses.
+
+
+def _eqx_spread_observations(repo_root: Path) -> tuple[CalendarSpreadObservation, ...]:
+    contracts_path = repo_root / "data_samples/futures/eqx.json"
+    bars_path = repo_root / "data_samples/futures/bars/eqx.csv"
+    venue, product_root, contracts = load_family(contracts_path)
+
+    chain = ContractChain(venue, product_root)
+    for contract in contracts:
+        chain.add(contract)
+
+    prices: list[PriceObservation] = []
+    as_of_dates: list[date] = []
+    with bars_path.open(newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            contract_id = next(
+                c.contract_id for c in contracts if c.contract_id.canonical == row["contract_symbol"]
+            )
+            session_date = datetime.datetime.fromtimestamp(
+                int(row["event_time_ns"]) / 1e9, tz=datetime.UTC
+            ).date()
+            prices.append(
+                PriceObservation(
+                    contract_id=contract_id,
+                    session_date=session_date,
+                    price=Decimal(row["settlement_price"]),
+                )
+            )
+            as_of_dates.append(session_date)
+
+    return build_calendar_spread_observations(
+        chain=chain,
+        policy=FixedDaysPolicy(days_before_expiry=0),
+        roll_observations=(),
+        near_prices=prices,
+        as_of_dates=as_of_dates,
+        basis_rule=ConstructedBasisRule(
+            basis_units_by_index=(
+                Decimal("0.50"),
+                Decimal("0.55"),
+                Decimal("0.60"),
+                Decimal("0.65"),
+                Decimal("2.50"),
+                Decimal("0.70"),
+            ),
+            description="constructed far leg (ADR-0025); NOT observed market data",
+        ),
+    )
+
+
+def _slope_from_definition(xs: list[Decimal], ys: list[Decimal]) -> Decimal:
+    """Two-pass OLS slope straight from the textbook definition, computed in
+    the test so the expectation below is derived independently of the module
+    under test."""
+    n = len(xs)
+    mean_x = sum(xs, start=Decimal(0)) / n
+    mean_y = sum(ys, start=Decimal(0)) / n
+    cov = sum(((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys, strict=True)), start=Decimal(0))
+    var = sum(((x - mean_x) ** 2 for x in xs), start=Decimal(0))
+    return cov / var
+
+
+def test_static_hedge_ratio_over_committed_historical_bars(repo_root: Path) -> None:
+    """Historical half of AEGIS-078: the estimator run over the committed EQX
+    settlement bars.
+
+    The expectation is derived independently rather than copied from the
+    output. The committed EQX chain has bars for one contract only, so the far
+    leg is the documented additive construction ``far = near + basis[i]``
+    (ADR-0025). For an additive far leg the far-on-near slope is exactly
+    ``1 + cov(near, basis) / var(near)`` -- and the estimator never sees
+    ``basis``, only ``near`` and ``far``, so recovering that value is a real
+    check rather than a restatement.
+    """
+    observations = _eqx_spread_observations(repo_root)
+    assert len(observations) == 6
+    assert all(not o.far_price_observed for o in observations)  # Construction path, disclosed.
+
+    near = [o.near_price for o in observations]
+    far = [o.far_price for o in observations]
+    basis = [f - n for n, f in zip(near, far, strict=True)]
+    assert basis != [basis[0]] * len(basis)  # Non-constant: the slope is genuinely not 1.
+
+    expected = Decimal(1) + _slope_from_definition(near, basis)
+    actual = static_hedge_ratio(observations)
+    assert actual == pytest.approx(expected, abs=Decimal("1e-24"))
+
+
+def test_rolling_hedge_ratio_over_committed_historical_bars_is_leakage_free(
+    repo_root: Path,
+) -> None:
+    """Same committed historical input, rolling form: the first ``window``
+    observations report ``None`` (insufficient prior history), and every later
+    estimate matches the independently-derived slope over its own strictly
+    prior window -- never a window including the observation being scored."""
+    window = 3
+    observations = _eqx_spread_observations(repo_root)
+    results = rolling_hedge_ratio(observations, window=window)
+
+    assert [r.as_of for r in results] == [o.as_of for o in observations]
+    assert all(r.hedge_ratio is None for r in results[:window])
+
+    near = [o.near_price for o in observations]
+    basis = [o.far_price - o.near_price for o in observations]
+    for index in range(window, len(observations)):
+        prior_near = near[index - window : index]
+        prior_basis = basis[index - window : index]
+        expected = Decimal(1) + _slope_from_definition(prior_near, prior_basis)
+        actual = results[index].hedge_ratio
+        assert actual is not None
+        assert actual == pytest.approx(expected, abs=Decimal("1e-24")), index

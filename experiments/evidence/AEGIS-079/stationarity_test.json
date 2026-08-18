@@ -1,0 +1,52 @@
+{
+  "artifact": "stationarity_test",
+  "claim": "AEGIS-079: the real research.stationarity.test_spread_stationarity was run once, over a real research.calendar_spread observation sequence, and produced the test_result recorded above (classification: non_stationary).",
+  "dataset_id": "CSX-synthetic-multi-contract (tools/roll_sensitivity_fixture.py)",
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-18",
+  "not_evidence_for": [
+    "any claim that the spread WILL remain stationary in the future -- see test_result.caveats",
+    "any claim about real markets -- the underlying near/far price data is synthetic/constructed (ADR-0025); see tools/roll_sensitivity_fixture.py",
+    "a claim that this is the only valid stationarity test -- it is the one, documented test this module implements (ADR-0026), not a comparison across several"
+  ],
+  "repository_commit": "bf3de1f516949d3a4b9f7a16b0a1fd1228b14e64",
+  "requirements": [
+    "AEGIS-079"
+  ],
+  "roll_policy_name": "volume_crossover",
+  "spread_series": [
+    "50",
+    "50",
+    "52",
+    "56",
+    "62",
+    "70",
+    "32",
+    "22",
+    "10",
+    "-4"
+  ],
+  "test_result": {
+    "alternative_hypothesis": "the spread series is stationary (mean-reverting) around a constant",
+    "assumptions": [
+      "no augmentation lags: residuals are assumed serially uncorrelated after one difference",
+      "critical values are MacKinnon (1994) asymptotic values for a constant, no-trend regression, not adjusted for this sample's finite size",
+      "the test statistic's distribution is the Dickey-Fuller distribution, not the standard normal or Student's t"
+    ],
+    "caveats": [
+      "this is a statistical test result over the supplied sample only, not a claim that the spread will remain stationary in the future",
+      "the underlying near/far price data is synthetic/constructed (ADR-0025); no claim is made about real markets",
+      "a classification of 'stationary' does not imply any particular hedge ratio, holding period, or trading outcome"
+    ],
+    "classification": "non_stationary",
+    "critical_value": "-2.86",
+    "null_hypothesis": "the spread series has a unit root (is non-stationary / a random walk with drift)",
+    "regression_intercept": "-8.643210235533585344576911891",
+    "regression_slope": "0.05888339633614422797324803717",
+    "sample_size": 10,
+    "significance_level": "5%",
+    "test_name": "Dickey-Fuller (unaugmented, constant, no trend)",
+    "test_statistic": "0.2108149303384545118930502841"
+  }
+}

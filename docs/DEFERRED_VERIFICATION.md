@@ -17,36 +17,17 @@ append-only ledger below; the audit requires the live `verification_blocked_unti
 to equal the head of that ledger, so moving a debt is itself a recorded act.
 
 
-**7 outstanding obligation(s).**
+**5 outstanding obligation(s).**
 
-2 of them has been re-dated at least once since first registered; each move is listed under its requirement below.
+1 of them has been re-dated at least once since first registered; each move is listed under its requirement below.
 
 | ID | Requirement | Status | Unblocks at | Times re-dated | What is still missing |
 |---|---|---|---|---|---|
-| AEGIS-004 | Exchange/participant separation | implemented | M4 | 1 | Architecture rules declare the full participant pipeline, but configs/architecture_rules.yaml dates cpp/participant/strategy to M4, so the rule that strategy code cannot reach the exchange book is declared and unexercised until then. The exchange book itself arrives at M1. |
-| AEGIS-024 | Roll-method sensitivity | implemented | M4 | 0 | The frozen acceptance names an experiment report that quantifies STRATEGY differences caused by roll choices. No strategy exists: configs/architecture_rules.yaml dates cpp-participant-strategy and python-research to M4. M2 delivers the roll-method comparison itself (roll dates chosen and additive-adjusted price-path deviation between every pair of policies); attributing those differences to strategy P&L is M4's. |
 | AEGIS-059 | Unified strategy interface | implemented | M9 | 0 | Contract tests running one strategy against multiple feed implementations (live, paper, historical) require a strategy (M4) and live/paper feed adapters (M9), neither of which exists yet. M2 delivers the Feed protocol and HistoricalReplayFeed only. |
 | AEGIS-062 | Fault injection: market stress | implemented | M5 | 0 | The frozen acceptance names scenario results AND risk responses being reproducible. M2 delivers reproducible scenario results (kSpreadWidening/kVolatilitySpike/kLiquidityVanish injected deterministically from committed rule data); a RISK response needs the risk engine, which configs/architecture_rules.yaml dates cpp-participant-risk to M5. |
 | AEGIS-063 | Fault injection: execution stress | implemented | M5 | 0 | The frozen acceptance names OMS/risk INTEGRATION tests covering each fault. M2 delivers the execution-stress injection kinds (kRejection, kLatencySpike, kPartialFill, kBackpressure) deterministically; there is no OMS or risk layer to integrate with, and configs/architecture_rules.yaml dates cpp-participant-oms and cpp-participant-risk to M3 and M5 respectively. |
 | AEGIS-107 | Numerical/performance validation | implemented | M8 | 0 | Latency and memory comparison between the C++ estimators and the Python reference, under docs/BENCHMARK_POLICY.md's disclosure methodology. The numerical output/error comparison is complete and evidenced at M3 (experiments/evidence/AEGIS-107/cross_language_validation.json). |
 | AEGIS-238 | Observability | implemented | M5 | 1 | queue depth and dropped/backpressured events arrive with M1's bounded queues and execution latency with M3's execution path, but risk status has no producer until the risk engine, which configs/architecture_rules.yaml dates M5. Full metric coverage cannot be shown before M5. |
-
-## Due at M4
-
-### AEGIS-004 — Exchange/participant separation
-
-- **Frozen acceptance criterion:** Architecture tests and dependency rules prevent participant strategy code from directly mutating the exchange book.
-- **Residual:** Architecture rules declare the full participant pipeline, but configs/architecture_rules.yaml dates cpp/participant/strategy to M4, so the rule that strategy code cannot reach the exchange book is declared and unexercised until then. The exchange book itself arrives at M1.
-- **Deferral ledger:**
-  - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: the acceptance names participant strategy code, and no exchange book or participant pipeline existed for the rules to constrain.
-  - 2026-08-06 — dated **M4** while closing M0: The independent M0 audit found the obligation dated M1 while its own acceptance names participant strategy code, which configs/architecture_rules.yaml dates M4. Re-dated to the milestone that can actually discharge it.
-
-### AEGIS-024 — Roll-method sensitivity
-
-- **Frozen acceptance criterion:** One experiment report quantifies strategy differences caused by roll choices.
-- **Residual:** The frozen acceptance names an experiment report that quantifies STRATEGY differences caused by roll choices. No strategy exists: configs/architecture_rules.yaml dates cpp-participant-strategy and python-research to M4. M2 delivers the roll-method comparison itself (roll dates chosen and additive-adjusted price-path deviation between every pair of policies); attributing those differences to strategy P&L is M4's.
-- **Deferral ledger:**
-  - 2026-08-10 — dated **M4** while closing M2: Registered while closing M2: the M2-owned half (policy-vs-policy roll-date and adjusted-price-path comparison) is implemented and tested, but the acceptance's 'strategy differences' needs a strategy, which architecture rules date to M4. Owner-approved residual 024 -> M4 in experiments/plans/M2.md rev. 4.
 
 ## Due at M5
 
