@@ -156,18 +156,47 @@
 
 ## M4 state
 
-**CLOSURE IN PROGRESS.** Plan of record: `experiments/plans/M4.md`.
-Activation: PR #10 (policy) and PR #11 (scope grant + mirror flip + in-scope
-half of Batch 1), both merged to `main`.
+**CLOSURE PROPOSED** — the closure pull request is open, awaiting the owner's
+approving review. Nothing is merged. Plan of record: `experiments/plans/M4.md`;
+report: `experiments/milestone-reports/M4.md`.
 
-**6 primary M4 requirements** (AEGIS-076..081, all `must`) and **2 inherited
-obligations due at M4** (AEGIS-004, AEGIS-024). Batch 1 (`44ce17c`) delivered
-the strategy core, its composition through the existing risk seam and OMS, the
-real-M1-matching integration test and the `python/research`/`python/reports`
-foundations; Batch 2 (`fa381e6`) delivered stationarity, roll/expiry effects,
-roll-method strategy sensitivity and the AEGIS-080 cross-language closure.
-This section is finalized, with the closure result and catalogue counts, when
-the closure pass completes.
+**All 6 primary M4 requirements (AEGIS-076..081) are `verified`**, and **both
+inherited obligations due at M4 are discharged and `verified`** — AEGIS-004
+(exchange/participant separation, whose rule was declared but vacuous while
+`cpp/participant/strategy` was empty) and AEGIS-024 (roll-method sensitivity,
+whose acceptance names *strategy* differences and so needed a strategy to
+exist). `--check-deferred M4` passes. Catalogue: **93 `verified` / 10
+`implemented` / 135 `not_started`**.
+
+M4 delivers the first real strategy path: reconstructed near/far market state
+→ `CalendarSpreadStrategy` (proposal-only) → the existing mandatory risk seam
+→ OMS → portfolio → P&L, deterministic on both the production CLI path and a
+test-only harness driving a real unmodified M1 `ExchangeNode` through real FIFO
+matching. Activation took three merged steps: PR #10 (policy), PR #11 (scope
+grant + mirror flip + the in-scope half of Batch 1), and this branch.
+
+**Every price in M4 is synthetic**, and the two-sided quote stream is
+constructed from daily OHLC/settlement bars, not observed tick data
+(ADR-0025). No execution-quality, fill-realism or profitability claim is made
+anywhere in the milestone.
+
+Activation is complete under the four M4 approvals and no others:
+`m4-architecture-transition` (one edge: `cpp-participant-app.may_depend_on +=
+cpp-participant-strategy`), `m4-build-wiring`, `m4-milestone-gate` (PR #10) and
+`m4-participant-app-integration` (PR #11). **No production
+participant→exchange edge exists**, `cpp/participant/risk` is still empty (no
+M5 risk policy) and there is no gateway (no M9 connectivity).
+
+Closure verification was substantive. The independent audit **rejected the
+first submission**, finding AEGIS-078 had no *historical* test despite its
+frozen acceptance naming one, that all three Batch 2 reports pinned a digest
+for a file the computation never read, and that AEGIS-079's report stated a
+false fact about its own series. All three were fixed by building the missing
+behaviour and correcting the disclosures rather than narrowing any wording; the
+re-audit returned 8 PASS with no blocking finding.
+`experiments/milestone-reports/M4.md` §10 lists every defect, including the
+closure-review defect where observed far-leg prices were being discarded — the
+cause of a spurious *zero* result in AEGIS-024.
 
 ## M3 state
 
