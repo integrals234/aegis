@@ -1,6 +1,6 @@
 {
   "project": "AEGIS",
-  "active_milestone": "M2",
+  "active_milestone": "M4",
   "requirements": {
     "AEGIS-001": {
       "status": "verified",

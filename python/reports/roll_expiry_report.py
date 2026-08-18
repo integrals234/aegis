@@ -4,8 +4,9 @@ shared M4 report foundation."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
+from typing import Any
 
 from research.roll_expiry_effects import RollExpiryEffectsResult
 
@@ -15,13 +16,21 @@ __all__ = ["build_roll_expiry_report"]
 
 
 def build_roll_expiry_report(
-    root: Path, input_paths: Sequence[str], dataset_id: str, result: RollExpiryEffectsResult
+    root: Path,
+    input_paths: Sequence[str],
+    dataset_id: str,
+    result: RollExpiryEffectsResult,
+    *,
+    strategy_config: Mapping[str, Any] | None = None,
 ) -> str:
+    # The slice entry/exit counts are produced by a specific strategy
+    # configuration; a report that shows them without disclosing it is
+    # incomplete.
     provenance = build_report_provenance(
         report_id="AEGIS-081-roll-expiry-effects",
         root=root,
         input_paths=input_paths,
-        strategy_config={},
+        strategy_config=dict(strategy_config or {}),
         dataset_id=dataset_id,
         roll_policy_name=result.roll_policy_name,
     )

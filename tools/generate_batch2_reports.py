@@ -31,7 +31,11 @@ from research.roll_method_sensitivity import compute_roll_method_strategy_sensit
 from research.stationarity import test_spread_stationarity
 from roll_sensitivity_fixture import build_roll_sensitivity_fixture
 
-INPUT_PATHS = ["data_samples/futures/bars/eqx.csv"]
+# The genuine input: this experiment's chain, prices, dates and policies are
+# all constructed in code by the fixture builder, so the fixture module IS the
+# dataset. Pinning an unrelated data file here would make the recorded digest
+# meaningless -- a verifier re-hashing it would learn nothing about this report.
+INPUT_PATHS = ["tools/roll_sensitivity_fixture.py"]
 DATASET_ID = "CSX-synthetic-multi-contract (tools/roll_sensitivity_fixture.py)"
 
 
@@ -49,8 +53,24 @@ def main() -> int:
         basis_rule=fixture.basis_rule,
     )
     stationarity_result = test_spread_stationarity(stationarity_observations)
+    strategy_config = {
+        "zscore_window": fixture.replay_config.zscore_window,
+        "entry_threshold": fixture.replay_config.entry_threshold,
+        "exit_threshold": fixture.replay_config.exit_threshold,
+        "quantity_units": str(fixture.replay_config.quantity_units),
+    }
+    far_observed = sum(1 for o in stationarity_observations if o.far_price_observed)
+    far_constructed = len(stationarity_observations) - far_observed
+
     stationarity_report = build_stationarity_report(
-        ROOT, INPUT_PATHS, DATASET_ID, stationarity_policy_name, stationarity_result
+        ROOT,
+        INPUT_PATHS,
+        DATASET_ID,
+        stationarity_policy_name,
+        stationarity_result,
+        far_price_observed_count=far_observed,
+        far_price_constructed_count=far_constructed,
+        strategy_config=strategy_config,
     )
     _write(ROOT / "experiments/evidence/AEGIS-079/stationarity_report.json", stationarity_report)
 
@@ -64,7 +84,9 @@ def main() -> int:
         observations=stationarity_observations,
         replay_config=fixture.replay_config,
     )
-    roll_expiry_report = build_roll_expiry_report(ROOT, INPUT_PATHS, DATASET_ID, roll_expiry_result)
+    roll_expiry_report = build_roll_expiry_report(
+        ROOT, INPUT_PATHS, DATASET_ID, roll_expiry_result, strategy_config=strategy_config
+    )
     _write(ROOT / "experiments/evidence/AEGIS-081/roll_expiry_report.json", roll_expiry_report)
 
     # AEGIS-024.

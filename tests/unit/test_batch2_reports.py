@@ -18,7 +18,7 @@ from roll_sensitivity_fixture import build_roll_sensitivity_fixture
 
 pytestmark = pytest.mark.unit
 
-INPUT_PATH = "data_samples/futures/bars/eqx.csv"  # A small, real, already-committed input.
+INPUT_PATH = "data_samples/futures/bars/eqx.csv"  # A small, committed input (synthetic sample data).
 
 
 @pytest.fixture(scope="module")
@@ -37,8 +37,19 @@ def test_stationarity_report_is_byte_identical_across_renders(repo_root: Path, f
     )
     result = run_stationarity_test(observations)
 
-    first = build_stationarity_report(repo_root, [INPUT_PATH], "CSX-synthetic", "VolumeCrossoverPolicy", result)
-    second = build_stationarity_report(repo_root, [INPUT_PATH], "CSX-synthetic", "VolumeCrossoverPolicy", result)
+    observed = sum(1 for o in observations if o.far_price_observed)
+    constructed = len(observations) - observed
+    kwargs = {
+        "far_price_observed_count": observed,
+        "far_price_constructed_count": constructed,
+    }
+
+    first = build_stationarity_report(
+        repo_root, [INPUT_PATH], "CSX-synthetic", "VolumeCrossoverPolicy", result, **kwargs
+    )
+    second = build_stationarity_report(
+        repo_root, [INPUT_PATH], "CSX-synthetic", "VolumeCrossoverPolicy", result, **kwargs
+    )
     assert first == second
     assert '"classification":"' + result.classification.value + '"' in first
     assert "not a claim" in first
@@ -100,6 +111,20 @@ def test_reports_disclose_the_constructed_data_convention(repo_root: Path, fixtu
         basis_rule=fixture.basis_rule,
     )
     result = run_stationarity_test(observations)
-    rendered = build_stationarity_report(repo_root, [INPUT_PATH], "CSX-synthetic", "VolumeCrossoverPolicy", result)
-    assert "not observed" in rendered
+    observed = sum(1 for o in observations if o.far_price_observed)
+    constructed = len(observations) - observed
+    rendered = build_stationarity_report(
+        repo_root,
+        [INPUT_PATH],
+        "CSX-synthetic",
+        "VolumeCrossoverPolicy",
+        result,
+        far_price_observed_count=observed,
+        far_price_constructed_count=constructed,
+    )
+    # The disclosure must be DERIVED from the result, not a static string: it
+    # reports the actual observed/constructed split for the series tested.
+    assert f"{observed} took the far leg's own OBSERVED price" in rendered
+    assert f"{constructed} used the documented constructed basis" in rendered
     assert "ADR-0025" in rendered
+    assert "synthetic" in rendered

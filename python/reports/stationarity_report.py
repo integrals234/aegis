@@ -6,8 +6,9 @@ machinery -- this is one thin content module on top of Batch 1's foundation.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
+from typing import Any
 
 from research.stationarity import StationarityTestResult
 
@@ -22,12 +23,16 @@ def build_stationarity_report(
     dataset_id: str,
     roll_policy_name: str,
     result: StationarityTestResult,
+    *,
+    far_price_observed_count: int,
+    far_price_constructed_count: int,
+    strategy_config: Mapping[str, Any] | None = None,
 ) -> str:
     provenance = build_report_provenance(
         report_id="AEGIS-079-stationarity",
         root=root,
         input_paths=input_paths,
-        strategy_config={},  # No strategy configuration: this report concerns the spread series alone.
+        strategy_config=dict(strategy_config or {}),
         dataset_id=dataset_id,
         roll_policy_name=roll_policy_name,
     )
@@ -44,11 +49,18 @@ def build_stationarity_report(
         "classification": result.classification.value,
         "assumptions": list(result.assumptions),
         "caveats": list(result.caveats),
+        # Derived from the result, never hardcoded: a static disclosure string
+        # goes stale the moment the dataset changes, and a false disclosure in
+        # a report whose acceptance is precisely about honest disclosure is
+        # worse than none.
+        "far_price_observed_count": far_price_observed_count,
+        "far_price_constructed_count": far_price_constructed_count,
         "data_disclosure": (
-            "the spread series is derived from data_samples/futures bars plus a "
-            "documented constructed far-leg basis (ADR-0025); it is not observed "
-            "tick data, and this report makes no claim about real markets or future "
-            "behaviour."
+            f"dataset: {dataset_id}. Of {far_price_observed_count + far_price_constructed_count} "
+            f"spread observations, {far_price_observed_count} took the far leg's own OBSERVED "
+            f"price and {far_price_constructed_count} used the documented constructed basis "
+            "(ADR-0025). All underlying prices are synthetic/in-repo; none is observed tick "
+            "data, and this report makes no claim about real markets or future behaviour."
         ),
     }
     return render_report(provenance, findings)
