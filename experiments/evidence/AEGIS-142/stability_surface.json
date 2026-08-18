@@ -7,7 +7,7 @@
     "zscore_window": 30
   },
   "claim": "AEGIS-142: every evaluated grid point persisted, not only the optimum.",
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-18",
   "metric_mean": -94.15366666666667,
@@ -87,7 +87,7 @@
       "zscore_window": 30
     }
   ],
-  "repository_commit": "0a9b4968363864b8ffb19e0ef7f4fd3c0e90f4dc",
+  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
   "requirements": [
     "AEGIS-142"
   ]

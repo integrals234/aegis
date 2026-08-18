@@ -25,8 +25,8 @@ class RiskState {
  public:
   // ---- confirmed position (risk's own view, fed by on_fill) -------------
   void apply_fill(std::uint32_t instrument_id, Side side, std::int64_t fill_quantity_units) {
-    position_by_instrument_[instrument_id] += side == Side::kBuy ? fill_quantity_units
-                                                                  : -fill_quantity_units;
+    position_by_instrument_[instrument_id] +=
+        side == Side::kBuy ? fill_quantity_units : -fill_quantity_units;
   }
   [[nodiscard]] std::int64_t position_units(std::uint32_t instrument_id) const {
     const auto found = position_by_instrument_.find(instrument_id);
@@ -38,12 +38,11 @@ class RiskState {
 
   // ---- reservations (risk-approved, not yet terminal) --------------------
   void reserve(std::uint64_t client_order_id, std::uint32_t instrument_id, Side side,
-              std::int64_t quantity_units, std::string strategy_id) {
+               std::int64_t quantity_units, std::string strategy_id) {
     const std::int64_t signed_quantity = side == Side::kBuy ? quantity_units : -quantity_units;
-    reservations_[client_order_id] =
-        Reservation{.instrument_id = instrument_id,
-                   .signed_quantity_units = signed_quantity,
-                   .strategy_id = std::move(strategy_id)};
+    reservations_[client_order_id] = Reservation{.instrument_id = instrument_id,
+                                                 .signed_quantity_units = signed_quantity,
+                                                 .strategy_id = std::move(strategy_id)};
     reserved_by_instrument_[instrument_id] += signed_quantity;
   }
   /// A fill converts part of a reservation into confirmed position (the
@@ -84,7 +83,9 @@ class RiskState {
   [[nodiscard]] std::size_t reservation_count() const { return reservations_.size(); }
 
   // ---- idempotency ---------------------------------------------------
-  [[nodiscard]] bool seen_before(const std::string& key) const { return dedupe_keys_.contains(key); }
+  [[nodiscard]] bool seen_before(const std::string& key) const {
+    return dedupe_keys_.contains(key);
+  }
   void mark_seen(const std::string& key) { dedupe_keys_.insert(key); }
 
   // ---- kill switches ---------------------------------------------------
@@ -156,11 +157,13 @@ class RiskState {
   // A plain sorted deque, not stats::RollingRate: rate limiting needs a
   // read-only "what if" count for the pure evaluate() path, which
   // RollingRate's mutate-only record_event() cannot provide.
-  [[nodiscard]] std::size_t order_count_in_window(common::Nanos now, common::Duration window) const {
+  [[nodiscard]] std::size_t order_count_in_window(common::Nanos now,
+                                                  common::Duration window) const {
     return count_in_window(order_timestamps_, now, window);
   }
   void record_order_event(common::Nanos now) { order_timestamps_.push_back(now); }
-  [[nodiscard]] std::size_t cancel_count_in_window(common::Nanos now, common::Duration window) const {
+  [[nodiscard]] std::size_t cancel_count_in_window(common::Nanos now,
+                                                   common::Duration window) const {
     return count_in_window(cancel_timestamps_, now, window);
   }
   void record_cancel_event(common::Nanos now) { cancel_timestamps_.push_back(now); }

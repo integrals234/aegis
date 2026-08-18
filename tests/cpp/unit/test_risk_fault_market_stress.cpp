@@ -11,7 +11,6 @@
 /// exact translation each kind gets.
 namespace {
 
-using aegis::participant::app::MarketStressRiskResponse;
 using aegis::participant::app::run_market_stress_risk_scenario;
 using aegis::participant::risk::InstrumentInfo;
 using aegis::participant::risk::ReasonCode;
@@ -26,9 +25,10 @@ constexpr std::uint32_t kInstrumentId = 5001;
 constexpr std::int64_t kBasePrice = 100'000;
 
 RiskLimitsConfig config_for(std::int64_t price_collar_bps, double target_volatility,
-                           aegis::common::Duration max_quote_age) {
+                            aegis::common::Duration max_quote_age) {
   RiskLimitsConfig config;
-  config.instruments[kInstrumentId] = InstrumentInfo{.multiplier_units = 1, .currency = "USD"};
+  config.instruments[kInstrumentId] =
+      InstrumentInfo{.multiplier_units = 1, .currency = "USD", .market = "", .sector = ""};
   config.price_collar_bps = price_collar_bps;
   config.volatility.window = 5;
   config.volatility.target_volatility = target_volatility;
@@ -37,12 +37,15 @@ RiskLimitsConfig config_for(std::int64_t price_collar_bps, double target_volatil
 }
 
 TEST(MarketStressRisk, SpreadWideningTripsThePriceCollar) {
-  RiskEngine engine(config_for(/*price_collar_bps=*/500, /*target_volatility=*/0.0, aegis::common::Duration{0}));
-  const std::vector<FaultRule> rules{
-      {.target = RecordIndex{0}, .kind = FaultKind::kSpreadWidening, .delay = {}, .magnitude = 1'000}};
+  RiskEngine engine(
+      config_for(/*price_collar_bps=*/500, /*target_volatility=*/0.0, aegis::common::Duration{0}));
+  const std::vector<FaultRule> rules{{.target = RecordIndex{0},
+                                      .kind = FaultKind::kSpreadWidening,
+                                      .delay = {},
+                                      .magnitude = 1'000}};
 
-  const auto responses =
-      run_market_stress_risk_scenario(engine, kInstrumentId, kBasePrice, /*order_quantity_units=*/1, rules, 0);
+  const auto responses = run_market_stress_risk_scenario(engine, kInstrumentId, kBasePrice,
+                                                         /*order_quantity_units=*/1, rules, 0);
   ASSERT_EQ(responses.size(), 1U);
   EXPECT_EQ(responses[0].kind, FaultKind::kSpreadWidening);
   EXPECT_EQ(responses[0].verdict, RiskVerdict::kReject);
@@ -51,8 +54,10 @@ TEST(MarketStressRisk, SpreadWideningTripsThePriceCollar) {
 
 TEST(MarketStressRisk, SpreadWideningWithinCollarStillApproves) {
   RiskEngine engine(config_for(/*price_collar_bps=*/500, 0.0, aegis::common::Duration{0}));
-  const std::vector<FaultRule> rules{
-      {.target = RecordIndex{0}, .kind = FaultKind::kSpreadWidening, .delay = {}, .magnitude = 100}};
+  const std::vector<FaultRule> rules{{.target = RecordIndex{0},
+                                      .kind = FaultKind::kSpreadWidening,
+                                      .delay = {},
+                                      .magnitude = 100}};
 
   const auto responses =
       run_market_stress_risk_scenario(engine, kInstrumentId, kBasePrice, 1, rules, 0);
@@ -61,9 +66,12 @@ TEST(MarketStressRisk, SpreadWideningWithinCollarStillApproves) {
 }
 
 TEST(MarketStressRisk, VolatilitySpikeResizesOrRejects) {
-  RiskEngine engine(config_for(/*price_collar_bps=*/0, /*target_volatility=*/0.01, aegis::common::Duration{0}));
-  const std::vector<FaultRule> rules{
-      {.target = RecordIndex{0}, .kind = FaultKind::kVolatilitySpike, .delay = {}, .magnitude = 150}};
+  RiskEngine engine(
+      config_for(/*price_collar_bps=*/0, /*target_volatility=*/0.01, aegis::common::Duration{0}));
+  const std::vector<FaultRule> rules{{.target = RecordIndex{0},
+                                      .kind = FaultKind::kVolatilitySpike,
+                                      .delay = {},
+                                      .magnitude = 150}};
 
   const auto responses =
       run_market_stress_risk_scenario(engine, kInstrumentId, kBasePrice, 100, rules, 0);
@@ -77,9 +85,12 @@ TEST(MarketStressRisk, VolatilitySpikeResizesOrRejects) {
 }
 
 TEST(MarketStressRisk, LiquidityVanishTripsStaleness) {
-  RiskEngine engine(config_for(/*price_collar_bps=*/0, /*target_volatility=*/0.0, aegis::common::Duration{100}));
-  const std::vector<FaultRule> rules{
-      {.target = RecordIndex{0}, .kind = FaultKind::kLiquidityVanish, .delay = {}, .magnitude = 1'000}};
+  RiskEngine engine(
+      config_for(/*price_collar_bps=*/0, /*target_volatility=*/0.0, aegis::common::Duration{100}));
+  const std::vector<FaultRule> rules{{.target = RecordIndex{0},
+                                      .kind = FaultKind::kLiquidityVanish,
+                                      .delay = {},
+                                      .magnitude = 1'000}};
 
   const auto responses =
       run_market_stress_risk_scenario(engine, kInstrumentId, kBasePrice, 1, rules, 0);
@@ -92,14 +103,22 @@ TEST(MarketStressRisk, LiquidityVanishTripsStaleness) {
 TEST(MarketStressRisk, ResponsesAreReproducibleAcrossIndependentEngines) {
   const RiskLimitsConfig config = config_for(500, 0.01, aegis::common::Duration{100});
   const std::vector<FaultRule> rules{
-      {.target = RecordIndex{0}, .kind = FaultKind::kSpreadWidening, .delay = {}, .magnitude = 1'000},
-      {.target = RecordIndex{1}, .kind = FaultKind::kLiquidityVanish, .delay = {}, .magnitude = 1'000},
+      {.target = RecordIndex{0},
+       .kind = FaultKind::kSpreadWidening,
+       .delay = {},
+       .magnitude = 1'000},
+      {.target = RecordIndex{1},
+       .kind = FaultKind::kLiquidityVanish,
+       .delay = {},
+       .magnitude = 1'000},
   };
 
   RiskEngine first(config);
   RiskEngine second(config);
-  const auto first_responses = run_market_stress_risk_scenario(first, kInstrumentId, kBasePrice, 1, rules, 0);
-  const auto second_responses = run_market_stress_risk_scenario(second, kInstrumentId, kBasePrice, 1, rules, 0);
+  const auto first_responses =
+      run_market_stress_risk_scenario(first, kInstrumentId, kBasePrice, 1, rules, 0);
+  const auto second_responses =
+      run_market_stress_risk_scenario(second, kInstrumentId, kBasePrice, 1, rules, 0);
 
   ASSERT_EQ(first_responses.size(), second_responses.size());
   for (std::size_t i = 0; i < first_responses.size(); ++i) {

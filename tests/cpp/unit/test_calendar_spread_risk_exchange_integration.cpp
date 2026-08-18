@@ -113,8 +113,10 @@ StrategyProposal build_short_spread_proposal(BookBuilder& near_book, BookBuilder
 
 RiskLimitsConfig permissive_config() {
   RiskLimitsConfig config;
-  config.instruments[kNearInstrumentId] = InstrumentInfo{.multiplier_units = 1, .currency = "USD"};
-  config.instruments[kFarInstrumentId] = InstrumentInfo{.multiplier_units = 1, .currency = "USD"};
+  config.instruments[kNearInstrumentId] =
+      InstrumentInfo{.multiplier_units = 1, .currency = "USD", .market = "", .sector = ""};
+  config.instruments[kFarInstrumentId] =
+      InstrumentInfo{.multiplier_units = 1, .currency = "USD", .market = "", .sector = ""};
   return config;
 }
 
@@ -156,8 +158,10 @@ void execute_leg_against_real_exchange(const StrategyLeg& leg, OrderManager& man
           } else if (decoded->taker_order_id != our_order_id) {
             break;
           }
-          portfolio.apply_fill(leg.instrument_id, fill_side, decoded->price_units, decoded->quantity_units);
-          risk_engine.on_fill(client_order_id, leg.instrument_id, fill_side, decoded->quantity_units);
+          portfolio.apply_fill(leg.instrument_id, fill_side, decoded->price_units,
+                               decoded->quantity_units);
+          risk_engine.on_fill(client_order_id, leg.instrument_id, fill_side,
+                              decoded->quantity_units);
         }
         break;
       case MessageType::kOrderTerminated:
@@ -203,7 +207,8 @@ void seed_counterparty_liquidity(Harness& harness) {
   ASSERT_EQ(far_events.size(), 1U);
 }
 
-TEST(CalendarSpreadRiskExchangeIntegration, AllowedProposalReachesRealFifoMatchingAndUpdatesPortfolio) {
+TEST(CalendarSpreadRiskExchangeIntegration,
+     AllowedProposalReachesRealFifoMatchingAndUpdatesPortfolio) {
   Harness harness;
   seed_counterparty_liquidity(harness);
 
@@ -248,8 +253,10 @@ TEST(CalendarSpreadRiskExchangeIntegration, AllowedProposalReachesRealFifoMatchi
   ASSERT_NE(decision.verdict, aegis::participant::risk::RiskVerdict::kReject);
 
   const std::uint64_t next_order_id_before = harness.node.next_order_id();
-  execute_leg_against_real_exchange(proposal.near, manager, portfolio, risk_engine, harness.transport);
-  execute_leg_against_real_exchange(proposal.far, manager, portfolio, risk_engine, harness.transport);
+  execute_leg_against_real_exchange(proposal.near, manager, portfolio, risk_engine,
+                                    harness.transport);
+  execute_leg_against_real_exchange(proposal.far, manager, portfolio, risk_engine,
+                                    harness.transport);
 
   // Real FIFO matching filled both legs completely.
   EXPECT_GT(harness.node.next_order_id(), next_order_id_before + 1);
@@ -378,8 +385,10 @@ TEST(CalendarSpreadRiskExchangeIntegration, ResizedProposalSubmitsExactlyTheAppr
       0);
   ASSERT_EQ(decision.verdict, aegis::participant::risk::RiskVerdict::kResize);
 
-  execute_leg_against_real_exchange(proposal.near, manager, portfolio, risk_engine, harness.transport);
-  execute_leg_against_real_exchange(proposal.far, manager, portfolio, risk_engine, harness.transport);
+  execute_leg_against_real_exchange(proposal.near, manager, portfolio, risk_engine,
+                                    harness.transport);
+  execute_leg_against_real_exchange(proposal.far, manager, portfolio, risk_engine,
+                                    harness.transport);
 
   const auto tracked_orders = manager.all_tracked_orders();
   ASSERT_EQ(tracked_orders.size(), 2U);
@@ -390,7 +399,8 @@ TEST(CalendarSpreadRiskExchangeIntegration, ResizedProposalSubmitsExactlyTheAppr
   EXPECT_EQ(portfolio.position(kFarInstrumentId).quantity_units, kResizedQuantity);
 }
 
-TEST(CalendarSpreadRiskExchangeIntegration, GlobalKillSwitchCancelsLiveOrdersAndBlocksNewSubmissions) {
+TEST(CalendarSpreadRiskExchangeIntegration,
+     GlobalKillSwitchCancelsLiveOrdersAndBlocksNewSubmissions) {
   Harness harness;
   seed_counterparty_liquidity(harness);
   // Widen the resting counterparty so the participant's own order rests
@@ -427,8 +437,8 @@ TEST(CalendarSpreadRiskExchangeIntegration, GlobalKillSwitchCancelsLiveOrdersAnd
                                               .quantity_units = kQuantityUnits}},
       0);
   const auto client_order_id =
-      manager.submit_new_order(kNearInstrumentId, /*participant_id=*/1, Side::kSell, OrderType::kLimit,
-                               100'050, kQuantityUnits);
+      manager.submit_new_order(kNearInstrumentId, /*participant_id=*/1, Side::kSell,
+                               OrderType::kLimit, 100'050, kQuantityUnits);
   const auto* tracked = manager.find_by_client_order_id(client_order_id);
   ASSERT_NE(tracked, nullptr);
   const auto emitted = harness.transport.drain();
@@ -441,7 +451,7 @@ TEST(CalendarSpreadRiskExchangeIntegration, GlobalKillSwitchCancelsLiveOrdersAnd
     }
   }
   ASSERT_EQ(manager.find_by_client_order_id(client_order_id)->lifecycle.state(),
-           OrderState::kAcknowledged);
+            OrderState::kAcknowledged);
 
   // Trip the global kill switch: cancel every live order (a safety cancel,
   // bypassing the ordinary cancel rate limit), then confirm it is idempotent
@@ -469,10 +479,11 @@ TEST(CalendarSpreadRiskExchangeIntegration, GlobalKillSwitchCancelsLiveOrdersAnd
   EXPECT_EQ(blocked_decision.reason_code, aegis::participant::risk::ReasonCode::kKillSwitchGlobal);
 
   const std::uint64_t next_order_id_before_new_submit = harness.node.next_order_id();
-  const auto blocked_client_order_id = manager.submit_new_order(
-      kNearInstrumentId, /*participant_id=*/1, Side::kBuy, OrderType::kLimit, 100'000, kQuantityUnits);
+  const auto blocked_client_order_id =
+      manager.submit_new_order(kNearInstrumentId, /*participant_id=*/1, Side::kBuy,
+                               OrderType::kLimit, 100'000, kQuantityUnits);
   EXPECT_EQ(manager.find_by_client_order_id(blocked_client_order_id)->lifecycle.state(),
-           OrderState::kRejected);
+            OrderState::kRejected);
   EXPECT_EQ(harness.node.next_order_id(), next_order_id_before_new_submit);
 }
 

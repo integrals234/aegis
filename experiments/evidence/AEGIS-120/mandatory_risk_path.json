@@ -1,0 +1,69 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 266,
+        "passed": true,
+        "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
+        "test": "CalendarSpreadRiskExchangeIntegration.RejectedProposalNeverReachesTheExchangeOrThePortfolio"
+      },
+      {
+        "line": 456,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineAuditInvariant.RejectedProposalReportsEveryLegRejectedAndArmsNoOrder"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "RiskEngineAuditInvariant.RejectedProposalReportsEveryLegRejectedAndArmsNoOrder",
+      "CalendarSpreadRiskExchangeIntegration.RejectedProposalNeverReachesTheExchangeOrThePortfolio"
+    ],
+    "test_count": 2
+  },
+  "artifact": "AEGIS-120/mandatory_risk_path",
+  "claim": "The bypass is rejected structurally, in both directions. NEGATIVE: tools/check_architecture.py FAILS on the committed arch_violation fixture, whose cpp/participant/strategy/rogue.hpp holds a gateway header and reaches the exchange book directly -- exactly the strategy->OMS/exchange bypass this requirement forbids. POSITIVE: the same checker passes on the real tree, where cpp-participant-strategy's may_depend_on carries no OMS, exchange or gateway edge. At runtime the seam is also closed: an order reaching RiskEngine::decide_order with no armed proposal decision is rejected kUnexpectedOrder, and a rejected proposal never reaches the exchange at all.",
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Architecture test rejects bypass dependencies.",
+  "generated_on": "2026-08-18",
+  "implementation": [
+    "configs/architecture_rules.yaml",
+    "tools/check_architecture.py",
+    "cpp/participant/app/risk_engine_gate.hpp",
+    "cpp/participant/app/risk_engine_gate.cpp"
+  ],
+  "inputs": [
+    "tests/unit/fixtures/arch_violation",
+    "configs/architecture_rules.yaml"
+  ],
+  "limitations": [
+    "All market data driving these tests is synthetic and in-repo: venue SYNX does not exist, quotes are constructed from committed daily bar/fixture data rather than observed tick data (ADR-0025), and no conclusion about any real market may be drawn.",
+    "These are software risk controls exercised under simulation. Passing here is not evidence of production risk adequacy, live execution realism, or profitability."
+  ],
+  "negative_gate": {
+    "checker_exit_code": 2,
+    "checker_rejected_the_fixture": true,
+    "fixture": "tests/unit/fixtures/arch_violation",
+    "strategy_to_oms_bypass_violations": [
+      "ERROR: cpp/participant/strategy/rogue.hpp: layer cpp-participant-strategy may not depend on cpp-participant-oms (include \"cpp/participant/oms/gateway.hpp\")",
+      "ERROR: cpp/participant/strategy/rogue.hpp: only the OMS may include gateway/adapter headers (include \"cpp/participant/oms/gateway.hpp\")"
+    ],
+    "violation_count": 9
+  },
+  "not_evidence_for": [
+    "any claim that no bypass could ever be written -- the gate rejects the dependency shapes it enumerates, and a future bypass of a genuinely new shape would need a new rule",
+    "any claim about a production gateway or broker adapter -- none exists before M9"
+  ],
+  "positive_architecture_check_passed": true,
+  "producer": "tools/generate_risk_evidence.py",
+  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "requirements": [
+    "AEGIS-120"
+  ],
+  "title": "Mandatory risk path"
+}

@@ -1,10 +1,10 @@
 {
   "claim": "AEGIS-139: real DatasetPartitions built and the test-set lock genuinely raised for a tuning-purpose access.",
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-18",
   "lock_error": "a tuning-purpose run attempted to read the test partition; the test set is locked until purpose=final_evaluation (AEGIS-139)",
-  "repository_commit": "0a9b4968363864b8ffb19e0ef7f4fd3c0e90f4dc",
+  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
   "requirements": [
     "AEGIS-139"
   ],

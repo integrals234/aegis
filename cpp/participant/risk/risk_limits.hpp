@@ -36,8 +36,8 @@ struct PositionLimit {
 struct InstrumentInfo {
   std::int64_t multiplier_units{1};
   std::string currency{"USD"};
-  std::string market{};  ///< AEGIS-124 grouping key, e.g. product_root.
-  std::string sector{};  ///< AEGIS-124 grouping key.
+  std::string market;  ///< AEGIS-124 grouping key, e.g. product_root.
+  std::string sector;  ///< AEGIS-124 grouping key.
 };
 
 /// AEGIS-129 (ADR-0028 Model A): `margin_per_contract_units * abs(quantity)`.
@@ -92,8 +92,8 @@ struct RiskLimitsConfig {
   common::Duration max_quote_age{common::Duration{0}};  ///< 0 == staleness check disabled.
 
   common::Duration rate_limit_window{common::Duration{1'000'000'000}};  ///< 1s default.
-  std::uint32_t max_orders_per_window{0};   ///< 0 == unlimited.
-  std::uint32_t max_cancels_per_window{0};  ///< 0 == unlimited.
+  std::uint32_t max_orders_per_window{0};                               ///< 0 == unlimited.
+  std::uint32_t max_cancels_per_window{0};                              ///< 0 == unlimited.
 
   MarginConfig margin;
   double max_leverage{0.0};  ///< 0.0 == unlimited.

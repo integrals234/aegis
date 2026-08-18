@@ -10,7 +10,9 @@
 namespace aegis::participant::risk {
 namespace {
 
-[[nodiscard]] constexpr std::int64_t abs64(std::int64_t value) { return value < 0 ? -value : value; }
+[[nodiscard]] constexpr std::int64_t abs64(std::int64_t value) {
+  return value < 0 ? -value : value;
+}
 
 [[nodiscard]] std::string dedupe_key(const std::string& strategy_id, const std::string& proposal_id,
                                      std::uint32_t leg_index) {
@@ -20,13 +22,14 @@ namespace {
 }  // namespace
 
 std::int64_t RiskEngine::notional_units_base_currency(std::uint32_t instrument_id,
-                                                       std::int64_t quantity_units,
-                                                       std::int64_t price_units,
-                                                       bool& unsupported_currency) const {
+                                                      std::int64_t quantity_units,
+                                                      std::int64_t price_units,
+                                                      bool& unsupported_currency) const {
   unsupported_currency = false;
   std::int64_t multiplier = 1;
   std::string currency = config_.base_currency;
-  if (const auto found = config_.instruments.find(instrument_id); found != config_.instruments.end()) {
+  if (const auto found = config_.instruments.find(instrument_id);
+      found != config_.instruments.end()) {
     multiplier = found->second.multiplier_units;
     currency = found->second.currency;
   }
@@ -39,8 +42,8 @@ std::int64_t RiskEngine::notional_units_base_currency(std::uint32_t instrument_i
     }
     fx_rate = rate->second;
   }
-  const double raw = static_cast<double>(abs64(quantity_units)) *
-                     static_cast<double>(price_units) * static_cast<double>(multiplier) * fx_rate;
+  const double raw = static_cast<double>(abs64(quantity_units)) * static_cast<double>(price_units) *
+                     static_cast<double>(multiplier) * fx_rate;
   return static_cast<std::int64_t>(raw);
 }
 
@@ -59,17 +62,18 @@ std::int64_t RiskEngine::gross_portfolio_notional_units(const EvaluationOverlay&
       continue;  // No known price: excluded, not fabricated (docs/LIMITATIONS.md).
     }
     bool unsupported = false;
-    total += notional_units_base_currency(instrument_id, quantity_units, quote->reference_price_units,
-                                          unsupported);
+    total += notional_units_base_currency(instrument_id, quantity_units,
+                                          quote->reference_price_units, unsupported);
   }
   return total;
 }
 
 std::int64_t RiskEngine::group_gross_notional_units(const std::vector<std::uint32_t>& members,
-                                                     const EvaluationOverlay& overlay) const {
+                                                    const EvaluationOverlay& overlay) const {
   std::int64_t total = 0;
   for (const std::uint32_t instrument_id : members) {
-    std::int64_t exposure = state_.position_units(instrument_id) + state_.reserved_units(instrument_id);
+    std::int64_t exposure =
+        state_.position_units(instrument_id) + state_.reserved_units(instrument_id);
     if (const auto found = overlay.extra_reserved_by_instrument.find(instrument_id);
         found != overlay.extra_reserved_by_instrument.end()) {
       exposure += found->second;
@@ -79,8 +83,8 @@ std::int64_t RiskEngine::group_gross_notional_units(const std::vector<std::uint3
       continue;
     }
     bool unsupported = false;
-    total +=
-        notional_units_base_currency(instrument_id, exposure, quote->reference_price_units, unsupported);
+    total += notional_units_base_currency(instrument_id, exposure, quote->reference_price_units,
+                                          unsupported);
   }
   return total;
 }
@@ -93,94 +97,131 @@ double RiskEngine::realized_volatility(std::uint32_t instrument_id) const {
   return found->second.realized_volatility();
 }
 
-LegDecision RiskEngine::evaluate_leg(const OrderRequest& request, const EvaluationOverlay& overlay) const {
+/// Control group 1-2 (ADR-0028): kill switches, latched daily-loss/drawdown,
+/// and the three connectivity signals. An engaged optional is a rejection;
+/// a disengaged one means "nothing here objected, keep going". Split out of
+/// `evaluate_leg` so each group stays independently readable -- the ordering
+/// between groups is itself part of the documented semantics (halts first,
+/// nothing else matters once trading is stopped).
+std::optional<LegDecision> RiskEngine::check_halts_and_connectivity(
+    const OrderRequest& request) const {
   // 1. Halts: kill switches and latched daily-loss/drawdown, checked first --
   // nothing else matters once trading is stopped.
   if (state_.is_globally_halted()) {
-    return LegDecision{
-        .verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kKillSwitchGlobal,
-        .reason = "global kill switch tripped"};
+    return LegDecision{.verdict = RiskVerdict::kReject,
+                       .reason_code = ReasonCode::kKillSwitchGlobal,
+                       .reason = "global kill switch tripped"};
   }
   if (state_.is_strategy_halted(request.strategy_id)) {
-    return LegDecision{
-        .verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kKillSwitchStrategy,
-        .reason = "strategy kill switch tripped: " + request.strategy_id};
+    return LegDecision{.verdict = RiskVerdict::kReject,
+                       .reason_code = ReasonCode::kKillSwitchStrategy,
+                       .reason = "strategy kill switch tripped: " + request.strategy_id};
   }
   if (state_.is_daily_loss_tripped() || state_.is_drawdown_tripped()) {
-    return LegDecision{
-        .verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kTradingHalted,
-        .reason = "trading halted by daily-loss/drawdown latch"};
+    return LegDecision{.verdict = RiskVerdict::kReject,
+                       .reason_code = ReasonCode::kTradingHalted,
+                       .reason = "trading halted by daily-loss/drawdown latch"};
   }
 
   // 2. Connectivity.
   if (!state_.feed_connected()) {
-    return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kFeedDisconnected,
+    return LegDecision{.verdict = RiskVerdict::kReject,
+                       .reason_code = ReasonCode::kFeedDisconnected,
                        .reason = "market data feed disconnected"};
   }
   if (!state_.exchange_connected()) {
-    return LegDecision{
-        .verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kExchangeDisconnected,
-        .reason = "exchange connectivity lost"};
+    return LegDecision{.verdict = RiskVerdict::kReject,
+                       .reason_code = ReasonCode::kExchangeDisconnected,
+                       .reason = "exchange connectivity lost"};
   }
   if (!state_.broker_connected()) {
-    return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kBrokerDisconnected,
+    return LegDecision{.verdict = RiskVerdict::kReject,
+                       .reason_code = ReasonCode::kBrokerDisconnected,
                        .reason = "broker connectivity lost"};
   }
+  return std::nullopt;
+}
 
+/// Control group 3-4: market-data validity/staleness and the price collar,
+/// both judged against the last VALID reference quote. Returns that quote
+/// through `quote_out` for the caller's later use so it is looked up once.
+std::optional<LegDecision> RiskEngine::check_market_state(const OrderRequest& request,
+                                                          const MarketQuote*& quote_out) const {
   // 3. Market data validity/staleness. A stale/invalid update never became
   // the new reference (RiskState::note_market_quote only updates
   // last_valid_quote_ when valid), so this reads whatever the last GOOD
   // quote was.
   const auto* quote = state_.valid_quote(request.instrument_id);
   if (quote == nullptr) {
-    return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kNoReferencePrice,
+    return LegDecision{.verdict = RiskVerdict::kReject,
+                       .reason_code = ReasonCode::kNoReferencePrice,
                        .reason = "no valid reference price for instrument"};
   }
   if (config_.max_quote_age.nanos() > 0) {
     const common::Nanos age = request.request_time_nanos - quote->observed_at_nanos;
     if (age > config_.max_quote_age.nanos()) {
-      return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kStaleMarketData,
+      return LegDecision{.verdict = RiskVerdict::kReject,
+                         .reason_code = ReasonCode::kStaleMarketData,
                          .reason = "market data older than max_quote_age"};
     }
   }
 
   // 4. Price collar, against the last valid reference.
   if (config_.price_collar_bps > 0 && quote->reference_price_units != 0) {
-    const double deviation_bps = 10'000.0 *
+    const double deviation_bps =
+        10'000.0 *
         static_cast<double>(std::llabs(request.price_units - quote->reference_price_units)) /
         static_cast<double>(std::llabs(quote->reference_price_units));
     if (deviation_bps > static_cast<double>(config_.price_collar_bps)) {
-      return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kPriceCollar,
+      return LegDecision{.verdict = RiskVerdict::kReject,
+                         .reason_code = ReasonCode::kPriceCollar,
                          .reason = "order price outside collar of reference price"};
     }
   }
+  quote_out = quote;
+  return std::nullopt;
+}
 
+/// Control group 5-6: idempotency and the order message-rate limit.
+std::optional<LegDecision> RiskEngine::check_request_admission(
+    const OrderRequest& request, const EvaluationOverlay& overlay) const {
   // 5. Idempotency.
   const std::string key = dedupe_key(request.strategy_id, request.proposal_id, request.leg_index);
   if (state_.seen_before(key)) {
-    return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kDuplicateRequest,
+    return LegDecision{.verdict = RiskVerdict::kReject,
+                       .reason_code = ReasonCode::kDuplicateRequest,
                        .reason = "duplicate/replayed proposal leg"};
   }
 
   // 6. Message rate limit (orders).
   if (config_.max_orders_per_window > 0) {
-    const std::size_t count = state_.order_count_in_window(request.request_time_nanos,
-                                                            config_.rate_limit_window) +
-                              overlay.extra_orders_in_window;
+    const std::size_t count =
+        state_.order_count_in_window(request.request_time_nanos, config_.rate_limit_window) +
+        overlay.extra_orders_in_window;
     if (count >= config_.max_orders_per_window) {
-      return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kMessageRateLimit,
+      return LegDecision{.verdict = RiskVerdict::kReject,
+                         .reason_code = ReasonCode::kMessageRateLimit,
                          .reason = "order message rate limit exceeded"};
     }
   }
+  return std::nullopt;
+}
 
+/// Control group 7: the order-quantity cap and volatility-triggered
+/// resizing. On success writes the approved quantity and whether it was
+/// reduced; on failure returns the rejection.
+std::optional<LegDecision> RiskEngine::resolve_effective_quantity(const OrderRequest& request,
+                                                                  std::int64_t& effective_quantity,
+                                                                  bool& resized) const {
   // 7. Quantity: order-quantity cap, then volatility-triggered resize.
-  std::int64_t effective_quantity = request.quantity_units;
-  bool resized = false;
+  effective_quantity = request.quantity_units;
+  resized = false;
   if (const auto limit = config_.order_quantity_limits.find(request.instrument_id);
       limit != config_.order_quantity_limits.end() &&
       effective_quantity > limit->second.max_order_quantity_units) {
     if (!limit->second.resize_on_breach) {
-      return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kMaxOrderQuantity,
+      return LegDecision{.verdict = RiskVerdict::kReject,
+                         .reason_code = ReasonCode::kMaxOrderQuantity,
                          .reason = "order quantity exceeds max_order_quantity"};
     }
     effective_quantity = limit->second.max_order_quantity_units;
@@ -189,21 +230,30 @@ LegDecision RiskEngine::evaluate_leg(const OrderRequest& request, const Evaluati
   if (config_.volatility.target_volatility > 0.0) {
     const double realized = realized_volatility(request.instrument_id);
     if (realized > config_.volatility.target_volatility) {
-      if (realized >= config_.volatility.target_volatility * config_.volatility.hard_reject_multiple) {
-        return LegDecision{
-            .verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kVolatilityReduction,
-            .reason = "realized volatility beyond hard-reject multiple of target"};
+      if (realized >=
+          config_.volatility.target_volatility * config_.volatility.hard_reject_multiple) {
+        return LegDecision{.verdict = RiskVerdict::kReject,
+                           .reason_code = ReasonCode::kVolatilityReduction,
+                           .reason = "realized volatility beyond hard-reject multiple of target"};
       }
       const double scale = config_.volatility.target_volatility / realized;
-      const std::int64_t scaled =
-          std::max<std::int64_t>(1, static_cast<std::int64_t>(static_cast<double>(effective_quantity) * scale));
+      const std::int64_t scaled = std::max<std::int64_t>(
+          1, static_cast<std::int64_t>(static_cast<double>(effective_quantity) * scale));
       if (scaled < effective_quantity) {
         effective_quantity = scaled;
         resized = true;
       }
     }
   }
+  return std::nullopt;
+}
 
+/// Control group 8-9: position limits against the projected position, and
+/// per-order plus portfolio notional. Writes the portfolio-level overlay the
+/// remaining group needs so the candidate is folded in exactly once.
+std::optional<LegDecision> RiskEngine::check_position_and_notional(
+    const OrderRequest& request, const EvaluationOverlay& overlay, std::int64_t effective_quantity,
+    EvaluationOverlay& portfolio_overlay_out, std::int64_t& portfolio_notional_out) const {
   // 8. Position limits, against the projected position: confirmed + all
   // reservations (including this proposal's prior legs via overlay) + this
   // candidate.
@@ -219,11 +269,13 @@ LegDecision RiskEngine::evaluate_leg(const OrderRequest& request, const Evaluati
   if (const auto limit = config_.position_limits.find(request.instrument_id);
       limit != config_.position_limits.end()) {
     if (projected > limit->second.max_long_units) {
-      return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kMaxPositionLong,
+      return LegDecision{.verdict = RiskVerdict::kReject,
+                         .reason_code = ReasonCode::kMaxPositionLong,
                          .reason = "projected long position exceeds max_long_units"};
     }
     if (-projected > limit->second.max_short_units) {
-      return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kMaxPositionShort,
+      return LegDecision{.verdict = RiskVerdict::kReject,
+                         .reason_code = ReasonCode::kMaxPositionShort,
                          .reason = "projected short position exceeds max_short_units"};
     }
   }
@@ -233,11 +285,13 @@ LegDecision RiskEngine::evaluate_leg(const OrderRequest& request, const Evaluati
   const std::int64_t order_notional = notional_units_base_currency(
       request.instrument_id, effective_quantity, request.price_units, unsupported_currency);
   if (unsupported_currency) {
-    return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kUnsupportedCurrency,
+    return LegDecision{.verdict = RiskVerdict::kReject,
+                       .reason_code = ReasonCode::kUnsupportedCurrency,
                        .reason = "instrument currency has no configured FX rate to base_currency"};
   }
   if (config_.max_order_notional_units > 0 && order_notional > config_.max_order_notional_units) {
-    return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kMaxOrderNotional,
+    return LegDecision{.verdict = RiskVerdict::kReject,
+                       .reason_code = ReasonCode::kMaxOrderNotional,
                        .reason = "order notional exceeds max_order_notional_units"};
   }
   EvaluationOverlay portfolio_overlay = overlay;
@@ -245,57 +299,82 @@ LegDecision RiskEngine::evaluate_leg(const OrderRequest& request, const Evaluati
   const std::int64_t portfolio_notional = gross_portfolio_notional_units(portfolio_overlay);
   if (config_.max_portfolio_notional_units > 0 &&
       portfolio_notional > config_.max_portfolio_notional_units) {
+    return LegDecision{.verdict = RiskVerdict::kReject,
+                       .reason_code = ReasonCode::kMaxPortfolioNotional,
+                       .reason = "portfolio notional exceeds max_portfolio_notional_units"};
+  }
+  portfolio_overlay_out = portfolio_overlay;
+  portfolio_notional_out = portfolio_notional;
+  return std::nullopt;
+}
+
+/// Control group 10-12: market/sector exposure, concentration and
+/// correlated-group exposure, and margin plus leverage.
+/// Control group 10: market and sector grouped exposure.
+/// One grouping dimension (market or sector) of control group 10. The two
+/// dimensions are structurally identical -- same "sum every configured
+/// instrument sharing this key, compare to the configured limit" shape --
+/// so they share one implementation rather than two copies that could drift.
+std::optional<LegDecision> RiskEngine::check_one_exposure_group(
+    const std::string& group_key, const std::unordered_map<std::string, std::int64_t>& limits,
+    const std::function<const std::string&(const InstrumentInfo&)>& key_of,
+    const EvaluationOverlay& portfolio_overlay, ReasonCode reason_code,
+    const std::string& reason) const {
+  if (group_key.empty()) {
+    return std::nullopt;
+  }
+  const auto limit = limits.find(group_key);
+  if (limit == limits.end()) {
+    return std::nullopt;
+  }
+  // The group's total walks every configured instrument sharing this key, so
+  // a market/sector spanning several instruments is summed, not approximated
+  // by the candidate instrument alone.
+  std::vector<std::uint32_t> members;
+  for (const auto& [other_id, other_info] : config_.instruments) {
+    if (key_of(other_info) == group_key) {
+      members.push_back(other_id);
+    }
+  }
+  if (group_gross_notional_units(members, portfolio_overlay) > limit->second) {
     return LegDecision{
-        .verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kMaxPortfolioNotional,
-        .reason = "portfolio notional exceeds max_portfolio_notional_units"};
+        .verdict = RiskVerdict::kReject, .reason_code = reason_code, .reason = reason};
   }
+  return std::nullopt;
+}
 
+std::optional<LegDecision> RiskEngine::check_group_exposure(
+    const OrderRequest& request, const EvaluationOverlay& portfolio_overlay) const {
   // 10. Market/sector exposure.
-  if (const auto info = config_.instruments.find(request.instrument_id); info != config_.instruments.end()) {
-    if (!info->second.market.empty()) {
-      if (const auto limit = config_.market_exposure_limit_units.find(info->second.market);
-          limit != config_.market_exposure_limit_units.end()) {
-        // Approximation: the market group's total is this instrument's own
-        // exposure only, unless config groups multiple instruments under
-        // the same market name via `instruments[].market` -- the sum below
-        // walks every configured instrument sharing that market string.
-        std::vector<std::uint32_t> members;
-        for (const auto& [other_id, other_info] : config_.instruments) {
-          if (other_info.market == info->second.market) {
-            members.push_back(other_id);
-          }
-        }
-        if (group_gross_notional_units(members, portfolio_overlay) > limit->second) {
-          return LegDecision{
-              .verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kMarketExposure,
-              .reason = "market exposure exceeds configured limit"};
-        }
-      }
-    }
-    if (!info->second.sector.empty()) {
-      if (const auto limit = config_.sector_exposure_limit_units.find(info->second.sector);
-          limit != config_.sector_exposure_limit_units.end()) {
-        std::vector<std::uint32_t> members;
-        for (const auto& [other_id, other_info] : config_.instruments) {
-          if (other_info.sector == info->second.sector) {
-            members.push_back(other_id);
-          }
-        }
-        if (group_gross_notional_units(members, portfolio_overlay) > limit->second) {
-          return LegDecision{
-              .verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kSectorExposure,
-              .reason = "sector exposure exceeds configured limit"};
-        }
-      }
-    }
+  const auto info = config_.instruments.find(request.instrument_id);
+  if (info == config_.instruments.end()) {
+    return std::nullopt;
   }
+  if (auto rejected = check_one_exposure_group(
+          info->second.market, config_.market_exposure_limit_units,
+          [](const InstrumentInfo& i) -> const std::string& { return i.market; }, portfolio_overlay,
+          ReasonCode::kMarketExposure, "market exposure exceeds configured limit")) {
+    return rejected;
+  }
+  return check_one_exposure_group(
+      info->second.sector, config_.sector_exposure_limit_units,
+      [](const InstrumentInfo& i) -> const std::string& { return i.sector; }, portfolio_overlay,
+      ReasonCode::kSectorExposure, "sector exposure exceeds configured limit");
+}
 
+/// Control group 11: single-instrument concentration and configuration-supplied
+/// correlated-group exposure (never an online-estimated correlation, ADR-0028).
+std::optional<LegDecision> RiskEngine::check_concentration(
+    const OrderRequest& request, std::int64_t effective_quantity,
+    const EvaluationOverlay& portfolio_overlay, std::int64_t portfolio_notional) const {
+  const std::int64_t signed_candidate =
+      request.side == Side::kBuy ? effective_quantity : -effective_quantity;
   // 11. Concentration and correlated-group exposure.
   if (config_.concentration.max_concentration_share < 1.0 && portfolio_notional > 0) {
     const auto* quote_for_candidate = state_.valid_quote(request.instrument_id);
-    std::int64_t instrument_exposure =
-        state_.position_units(request.instrument_id) + state_.reserved_units(request.instrument_id) +
-        signed_candidate;
+    std::int64_t instrument_exposure = state_.position_units(request.instrument_id) +
+                                       state_.reserved_units(request.instrument_id) +
+                                       signed_candidate;
     bool unsupported = false;
     const std::int64_t instrument_notional =
         quote_for_candidate == nullptr
@@ -304,7 +383,8 @@ LegDecision RiskEngine::evaluate_leg(const OrderRequest& request, const Evaluati
                                            quote_for_candidate->reference_price_units, unsupported);
     if (static_cast<double>(instrument_notional) / static_cast<double>(portfolio_notional) >
         config_.concentration.max_concentration_share) {
-      return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kConcentration,
+      return LegDecision{.verdict = RiskVerdict::kReject,
+                         .reason_code = ReasonCode::kConcentration,
                          .reason = "instrument concentration exceeds max_concentration_share"};
     }
   }
@@ -317,11 +397,19 @@ LegDecision RiskEngine::evaluate_leg(const OrderRequest& request, const Evaluati
       continue;
     }
     if (group_gross_notional_units(members, portfolio_overlay) > limit->second) {
-      return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kCorrelatedExposure,
-                         .reason = "correlated group exposure exceeds configured limit: " + group_id};
+      return LegDecision{
+          .verdict = RiskVerdict::kReject,
+          .reason_code = ReasonCode::kCorrelatedExposure,
+          .reason = "correlated group exposure exceeds configured limit: " + group_id};
     }
   }
 
+  return std::nullopt;
+}
+
+/// Control group 12: simplified Model A margin and the leverage cap.
+std::optional<LegDecision> RiskEngine::check_margin_and_leverage(
+    const EvaluationOverlay& portfolio_overlay, std::int64_t portfolio_notional) const {
   // 12. Margin and leverage, using equity fed via on_equity_update.
   std::unordered_map<std::uint32_t, std::int64_t> exposure_for_margin = state_.all_positions();
   for (const auto& [instrument_id, reserved] : state_.all_reservations()) {
@@ -330,22 +418,69 @@ LegDecision RiskEngine::evaluate_leg(const OrderRequest& request, const Evaluati
   for (const auto& [instrument_id, extra] : portfolio_overlay.extra_reserved_by_instrument) {
     exposure_for_margin[instrument_id] += extra;
   }
-  const std::int64_t required_margin = total_required_margin_units(config_.margin, exposure_for_margin);
-  if (!config_.margin.margin_per_contract_units.empty() && required_margin > state_.equity_units()) {
-    return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kInsufficientMargin,
+  const std::int64_t required_margin =
+      total_required_margin_units(config_.margin, exposure_for_margin);
+  if (!config_.margin.margin_per_contract_units.empty() &&
+      required_margin > state_.equity_units()) {
+    return LegDecision{.verdict = RiskVerdict::kReject,
+                       .reason_code = ReasonCode::kInsufficientMargin,
                        .reason = "required margin exceeds available equity"};
   }
   if (config_.max_leverage > 0.0) {
     if (state_.equity_units() <= 0 && portfolio_notional > 0) {
-      return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kMaxLeverage,
+      return LegDecision{.verdict = RiskVerdict::kReject,
+                         .reason_code = ReasonCode::kMaxLeverage,
                          .reason = "non-positive equity cannot support any leverage"};
     }
     if (state_.equity_units() > 0 &&
         static_cast<double>(portfolio_notional) / static_cast<double>(state_.equity_units()) >
             config_.max_leverage) {
-      return LegDecision{.verdict = RiskVerdict::kReject, .reason_code = ReasonCode::kMaxLeverage,
+      return LegDecision{.verdict = RiskVerdict::kReject,
+                         .reason_code = ReasonCode::kMaxLeverage,
                          .reason = "gross notional / equity exceeds max_leverage"};
     }
+  }
+  return std::nullopt;
+}
+
+LegDecision RiskEngine::evaluate_leg(const OrderRequest& request,
+                                     const EvaluationOverlay& overlay) const {
+  // The control groups run in a fixed, documented order (ADR-0028): halts and
+  // connectivity first (nothing else matters once trading is stopped), then
+  // market state, then admission, then sizing, then the exposure-based
+  // limits that depend on the approved size.
+  if (auto rejected = check_halts_and_connectivity(request)) {
+    return *rejected;
+  }
+  const MarketQuote* quote = nullptr;
+  if (auto rejected = check_market_state(request, quote)) {
+    return *rejected;
+  }
+  if (auto rejected = check_request_admission(request, overlay)) {
+    return *rejected;
+  }
+
+  std::int64_t effective_quantity = request.quantity_units;
+  bool resized = false;
+  if (auto rejected = resolve_effective_quantity(request, effective_quantity, resized)) {
+    return *rejected;
+  }
+
+  EvaluationOverlay portfolio_overlay;
+  std::int64_t portfolio_notional = 0;
+  if (auto rejected = check_position_and_notional(request, overlay, effective_quantity,
+                                                  portfolio_overlay, portfolio_notional)) {
+    return *rejected;
+  }
+  if (auto rejected = check_group_exposure(request, portfolio_overlay)) {
+    return *rejected;
+  }
+  if (auto rejected =
+          check_concentration(request, effective_quantity, portfolio_overlay, portfolio_notional)) {
+    return *rejected;
+  }
+  if (auto rejected = check_margin_and_leverage(portfolio_overlay, portfolio_notional)) {
+    return *rejected;
   }
 
   return LegDecision{
@@ -361,8 +496,8 @@ LegDecision RiskEngine::evaluate(const OrderRequest& request) const {
 }
 
 ProposalDecisionResult RiskEngine::evaluate_proposal(const std::string& strategy_id,
-                                                      const std::string& proposal_id,
-                                                      const std::vector<OrderRequest>& legs) const {
+                                                     const std::string& proposal_id,
+                                                     const std::vector<OrderRequest>& legs) const {
   EvaluationOverlay overlay;
   std::vector<LegDecision> decisions;
   decisions.reserve(legs.size());
@@ -378,21 +513,21 @@ ProposalDecisionResult RiskEngine::evaluate_proposal(const std::string& strategy
       // was independently fine.
       std::vector<LegDecision> all_rejected(legs.size(),
                                             LegDecision{.verdict = RiskVerdict::kReject,
-                                                       .reason_code = decision.reason_code,
-                                                       .reason = decision.reason});
+                                                        .reason_code = decision.reason_code,
+                                                        .reason = decision.reason});
       return ProposalDecisionResult{.verdict = RiskVerdict::kReject,
                                     .reason_code = decision.reason_code,
                                     .reason = decision.reason,
                                     .legs = std::move(all_rejected)};
     }
     decisions.push_back(decision);
-    const std::int64_t signed_qty =
-        leg.side == Side::kBuy ? decision.approved_quantity_units : -decision.approved_quantity_units;
+    const std::int64_t signed_qty = leg.side == Side::kBuy ? decision.approved_quantity_units
+                                                           : -decision.approved_quantity_units;
     overlay.extra_reserved_by_instrument[leg.instrument_id] += signed_qty;
     overlay.extra_orders_in_window += 1;
   }
-  const bool any_resize =
-      std::ranges::any_of(decisions, [](const LegDecision& d) { return d.verdict == RiskVerdict::kResize; });
+  const bool any_resize = std::ranges::any_of(
+      decisions, [](const LegDecision& d) { return d.verdict == RiskVerdict::kResize; });
   return ProposalDecisionResult{
       .verdict = any_resize ? RiskVerdict::kResize : RiskVerdict::kApprove,
       .reason_code = ReasonCode::kNone,
@@ -401,10 +536,9 @@ ProposalDecisionResult RiskEngine::evaluate_proposal(const std::string& strategy
   };
 }
 
-const ProposalRiskDecision& RiskEngine::commit_proposal_decision(const std::string& strategy_id,
-                                                                  const std::string& proposal_id,
-                                                                  const std::vector<OrderRequest>& legs,
-                                                                  common::Nanos decided_at_nanos) {
+const ProposalRiskDecision& RiskEngine::commit_proposal_decision(
+    const std::string& strategy_id, const std::string& proposal_id,
+    const std::vector<OrderRequest>& legs, common::Nanos decided_at_nanos) {
   const ProposalDecisionResult result = evaluate_proposal(strategy_id, proposal_id, legs);
 
   if (result.verdict != RiskVerdict::kReject) {
@@ -443,15 +577,17 @@ OmsDecision RiskEngine::decide_order(std::uint32_t instrument_id, Side side,
            pending.requested_quantity_units == quantity_units;
   });
   if (found == pending_legs_.end()) {
-    audit_log_.record_order("", 0, client_order_id, instrument_id, RiskVerdict::kReject, quantity_units,
-                            0, ReasonCode::kUnexpectedOrder, "no armed proposal decision for this order",
-                            now_nanos);
+    audit_log_.record_order("", 0, client_order_id, instrument_id, RiskVerdict::kReject,
+                            quantity_units, 0, ReasonCode::kUnexpectedOrder,
+                            "no armed proposal decision for this order", now_nanos);
     return OmsDecision{.verdict = RiskVerdict::kReject,
                        .approved_quantity_units = 0,
                        .reason_code = ReasonCode::kUnexpectedOrder,
                        .reason = "no armed proposal decision for this order"};
   }
-  PendingLeg pending = *found;
+  // Moved out before the erase, not referenced: `erase` invalidates `found`,
+  // so the leg's data has to be owned here before the vector is modified.
+  const PendingLeg pending = std::move(*found);
   pending_legs_.erase(found);
 
   // A halt that tripped after commit_proposal_decision but before this order
@@ -478,8 +614,8 @@ OmsDecision RiskEngine::decide_order(std::uint32_t instrument_id, Side side,
     state_.reserve(client_order_id, instrument_id, side, approved, pending.strategy_id);
   }
 
-  audit_log_.record_order(pending.proposal_id, pending.leg_index, client_order_id, instrument_id, verdict,
-                          quantity_units, approved, reason_code, reason, now_nanos);
+  audit_log_.record_order(pending.proposal_id, pending.leg_index, client_order_id, instrument_id,
+                          verdict, quantity_units, approved, reason_code, reason, now_nanos);
   return OmsDecision{.verdict = verdict,
                      .approved_quantity_units = approved,
                      .reason_code = reason_code,

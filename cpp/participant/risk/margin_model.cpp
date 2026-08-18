@@ -2,7 +2,9 @@
 
 namespace aegis::participant::risk {
 namespace {
-[[nodiscard]] constexpr std::int64_t abs64(std::int64_t value) { return value < 0 ? -value : value; }
+[[nodiscard]] constexpr std::int64_t abs64(std::int64_t value) {
+  return value < 0 ? -value : value;
+}
 }  // namespace
 
 std::int64_t required_margin_units(const MarginConfig& config, std::uint32_t instrument_id,

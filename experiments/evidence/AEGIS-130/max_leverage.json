@@ -1,0 +1,55 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 326,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineMarginAndLeverage.RejectsExcessiveLeverage"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "RiskEngineMarginAndLeverage.RejectsExcessiveLeverage"
+    ],
+    "test_count": 1
+  },
+  "artifact": "AEGIS-130/max_leverage",
+  "claim": "gross notional / equity enforced with boundary cases at, below and above the limit. Non-positive equity supports no leverage at all -- rejected explicitly rather than dividing by a non-positive number.",
+  "deterministic_config": {
+    "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
+    "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
+  },
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Boundary tests pass.",
+  "generated_on": "2026-08-18",
+  "implementation": [
+    "cpp/participant/risk/risk_engine.cpp",
+    "cpp/participant/risk/risk_engine.hpp",
+    "cpp/participant/risk/risk_state.hpp",
+    "cpp/participant/risk/risk_limits.hpp",
+    "cpp/participant/risk/reason_codes.cpp"
+  ],
+  "inputs": [
+    "configs/risk/limits.json"
+  ],
+  "limitations": [
+    "All market data driving these tests is synthetic and in-repo: venue SYNX does not exist, quotes are constructed from committed daily bar/fixture data rather than observed tick data (ADR-0025), and no conclusion about any real market may be drawn.",
+    "These are software risk controls exercised under simulation. Passing here is not evidence of production risk adequacy, live execution realism, or profitability."
+  ],
+  "not_evidence_for": [
+    "production risk adequacy -- thresholds here are small documented demo values",
+    "any real-market behaviour -- every input is synthetic (ADR-0025)"
+  ],
+  "producer": "tools/generate_risk_evidence.py",
+  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "requirements": [
+    "AEGIS-130"
+  ],
+  "title": "Maximum leverage"
+}

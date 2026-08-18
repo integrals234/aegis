@@ -1,0 +1,83 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 174,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
+        "test": "ExecutionStressIntegration.BackpressureAutomaticallyReleasesTheReservationThroughTheNormalLifecycle"
+      },
+      {
+        "line": 256,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
+        "test": "ExecutionStressIntegration.EachExecutionStressKindIsExercisedByExactlyOneTestAbove"
+      },
+      {
+        "line": 106,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
+        "test": "ExecutionStressIntegration.LatencySpikeDoesNotDisturbTheRiskDecision"
+      },
+      {
+        "line": 136,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
+        "test": "ExecutionStressIntegration.PartialFillReducesReservationWithoutDoubleCounting"
+      },
+      {
+        "line": 81,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
+        "test": "ExecutionStressIntegration.RejectionReleasesTheReservation"
+      },
+      {
+        "line": 235,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
+        "test": "ExecutionStressIntegration.ReleaseReservationRemainsAvailableForOtherRecoveryPaths"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "ExecutionStressIntegration.*"
+    ],
+    "test_count": 6
+  },
+  "artifact": "AEGIS-063/execution_stress_oms_risk_integration",
+  "claim": "The M5 residual is paid: all four execution-stress fault kinds (kRejection, kLatencySpike, kPartialFill, kBackpressure) are covered by integration tests driving the real risk::RiskEngine through the real mandatory OMS seam (RiskEngineGate -> OrderManager), asserting risk reservation/audit state stays coherent with what actually happened at the OMS. Backpressure releases its reservation automatically.",
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "OMS/risk integration tests cover each fault.",
+  "generated_on": "2026-08-18",
+  "implementation": [
+    "cpp/participant/risk/risk_engine.cpp",
+    "cpp/participant/risk/risk_engine.hpp",
+    "cpp/participant/risk/risk_state.hpp",
+    "cpp/participant/risk/risk_limits.hpp",
+    "cpp/participant/risk/reason_codes.cpp",
+    "cpp/participant/app/risk_engine_gate.hpp",
+    "cpp/participant/app/risk_engine_gate.cpp"
+  ],
+  "inputs": [
+    "cpp/replay/fault_injection.hpp"
+  ],
+  "limitations": [
+    "All market data driving these tests is synthetic and in-repo: venue SYNX does not exist, quotes are constructed from committed daily bar/fixture data rather than observed tick data (ADR-0025), and no conclusion about any real market may be drawn.",
+    "These are software risk controls exercised under simulation. Passing here is not evidence of production risk adequacy, live execution realism, or profitability."
+  ],
+  "m2_half_of_this_obligation": "experiments/evidence/AEGIS-063/replay_fault_injection.json",
+  "not_evidence_for": [
+    "any claim that these are the only faults that could occur -- they are the fault kinds M2 deterministically injects, not an exhaustive taxonomy"
+  ],
+  "producer": "tools/generate_risk_evidence.py",
+  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "requirements": [
+    "AEGIS-063"
+  ],
+  "title": "Fault injection: execution stress"
+}

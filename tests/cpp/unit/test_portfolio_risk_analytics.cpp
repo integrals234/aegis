@@ -24,13 +24,17 @@ TEST(PortfolioRiskAnalytics, GrossNetAndGroupExposureReconcileWithPortfolioState
   portfolio.apply_fill(kFar, Side::kBuy, 100, 10);    // Long 10 @ 100.
 
   const std::unordered_map<std::uint32_t, InstrumentRiskInputs> instruments{
-      {kNear, InstrumentRiskInputs{.multiplier_units = 5, .market = "EQX", .sector = "index", .mark_price_units = 110}},
-      {kFar, InstrumentRiskInputs{.multiplier_units = 5, .market = "EQX", .sector = "index", .mark_price_units = 90}},
+      {kNear,
+       InstrumentRiskInputs{
+           .multiplier_units = 5, .market = "EQX", .sector = "index", .mark_price_units = 110}},
+      {kFar,
+       InstrumentRiskInputs{
+           .multiplier_units = 5, .market = "EQX", .sector = "index", .mark_price_units = 90}},
   };
 
-  const auto report =
-      compute_portfolio_risk(portfolio, instruments, /*equity_units=*/10'000, /*required_margin_units=*/2'000,
-                             /*volatility_by_instrument=*/{}, /*current_drawdown=*/0.0, /*max_drawdown=*/0.0, {});
+  const auto report = compute_portfolio_risk(
+      portfolio, instruments, /*equity_units=*/10'000, /*required_margin_units=*/2'000,
+      /*volatility_by_instrument=*/{}, /*current_drawdown=*/0.0, /*max_drawdown=*/0.0, {});
 
   // near: -10 * 110 * 5 = -5'500; far: 10 * 90 * 5 = 4'500.
   EXPECT_EQ(report.gross_exposure_units, 5'500 + 4'500);
@@ -46,14 +50,17 @@ TEST(PortfolioRiskAnalytics, ScriptedStressScenariosAreDeterministicParallelShoc
   portfolio.apply_fill(kNear, Side::kBuy, 100, 10);  // Long 10 @ 100.
 
   const std::unordered_map<std::uint32_t, InstrumentRiskInputs> instruments{
-      {kNear, InstrumentRiskInputs{.multiplier_units = 1, .market = "", .sector = "", .mark_price_units = 100}},
+      {kNear,
+       InstrumentRiskInputs{
+           .multiplier_units = 1, .market = "", .sector = "", .mark_price_units = 100}},
   };
   const std::vector<StressScenario> scenarios{
       StressScenario{.name = "down_10pct", .price_shock_pct = -0.10},
       StressScenario{.name = "up_10pct", .price_shock_pct = 0.10},
   };
 
-  const auto report = compute_portfolio_risk(portfolio, instruments, 10'000, 0, {}, 0.0, 0.0, scenarios);
+  const auto report =
+      compute_portfolio_risk(portfolio, instruments, 10'000, 0, {}, 0.0, 0.0, scenarios);
   ASSERT_EQ(report.stress_results.size(), 2U);
   EXPECT_EQ(report.stress_results[0].scenario_name, "down_10pct");
   EXPECT_EQ(report.stress_results[0].pnl_impact_units, -100);  // 10 * (100 * -0.10).
@@ -65,8 +72,9 @@ TEST(PortfolioRiskAnalytics, VolatilityAndDrawdownContributionArePassedThroughUn
   Portfolio portfolio;
   const std::unordered_map<std::uint32_t, double> volatility{{kNear, 0.05}, {kFar, 0.02}};
 
-  const auto report = compute_portfolio_risk(portfolio, {}, 0, 0, volatility, /*current_drawdown=*/12.5,
-                                              /*max_drawdown=*/40.0, {});
+  const auto report =
+      compute_portfolio_risk(portfolio, {}, 0, 0, volatility, /*current_drawdown=*/12.5,
+                             /*max_drawdown=*/40.0, {});
   EXPECT_EQ(report.volatility_contribution.at(kNear), 0.05);
   EXPECT_EQ(report.volatility_contribution.at(kFar), 0.02);
   EXPECT_EQ(report.current_drawdown, 12.5);
@@ -75,7 +83,8 @@ TEST(PortfolioRiskAnalytics, VolatilityAndDrawdownContributionArePassedThroughUn
 
 TEST(PortfolioRiskAnalytics, InstrumentsAbsentFromConfigAreExcludedNotFabricated) {
   Portfolio portfolio;
-  portfolio.apply_fill(kNear, Side::kBuy, 100, 10);  // No InstrumentRiskInputs entry for kNear below.
+  portfolio.apply_fill(kNear, Side::kBuy, 100,
+                       10);  // No InstrumentRiskInputs entry for kNear below.
 
   const auto report = compute_portfolio_risk(portfolio, /*instruments=*/{}, 0, 0, {}, 0.0, 0.0, {});
   EXPECT_EQ(report.gross_exposure_units, 0);

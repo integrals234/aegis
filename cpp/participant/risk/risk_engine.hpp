@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -58,9 +60,9 @@ class RiskEngine {
 
   // ---- enforcing ----------------------------------------------------
   const ProposalRiskDecision& commit_proposal_decision(const std::string& strategy_id,
-                                                        const std::string& proposal_id,
-                                                        const std::vector<OrderRequest>& legs,
-                                                        common::Nanos decided_at_nanos);
+                                                       const std::string& proposal_id,
+                                                       const std::vector<OrderRequest>& legs,
+                                                       common::Nanos decided_at_nanos);
 
   [[nodiscard]] OmsDecision decide_order(std::uint32_t instrument_id, Side side,
                                          std::int64_t quantity_units, std::uint64_t client_order_id,
@@ -76,7 +78,7 @@ class RiskEngine {
 
   // ---- fill / lifecycle feedback (fed by the composition root) ---------
   void on_fill(std::uint64_t client_order_id, std::uint32_t instrument_id, Side side,
-              std::int64_t fill_quantity_units);
+               std::int64_t fill_quantity_units);
   void on_order_terminated(std::uint64_t client_order_id);
   void on_order_rejected(std::uint64_t client_order_id);
   /// General-purpose release, for any terminal path a caller with its own
@@ -86,7 +88,9 @@ class RiskEngine {
   /// wrapping the concrete `ExecutionAdapter` the OMS seam cannot itself be
   /// modified to observe (`cpp/participant/oms/**` is unmodified by M5).
   /// Exercised directly by `tests/cpp/unit/test_risk_engine.cpp`.
-  void release_reservation(std::uint64_t client_order_id) { state_.release_reservation(client_order_id); }
+  void release_reservation(std::uint64_t client_order_id) {
+    state_.release_reservation(client_order_id);
+  }
 
   // ---- market feedback ---------------------------------------------------
   void on_market_data(std::uint32_t instrument_id, std::int64_t reference_price_units,
@@ -132,6 +136,35 @@ class RiskEngine {
 
   [[nodiscard]] LegDecision evaluate_leg(const OrderRequest& request,
                                          const EvaluationOverlay& overlay) const;
+
+  // One helper per control group of ADR-0028, run by `evaluate_leg` in a
+  // fixed documented order. Each returns an engaged optional to mean "this
+  // group rejected", disengaged to mean "nothing here objected". Split out
+  // so no single function carries every control's branching at once.
+  [[nodiscard]] std::optional<LegDecision> check_halts_and_connectivity(
+      const OrderRequest& request) const;
+  [[nodiscard]] std::optional<LegDecision> check_market_state(const OrderRequest& request,
+                                                              const MarketQuote*& quote_out) const;
+  [[nodiscard]] std::optional<LegDecision> check_request_admission(
+      const OrderRequest& request, const EvaluationOverlay& overlay) const;
+  [[nodiscard]] std::optional<LegDecision> resolve_effective_quantity(
+      const OrderRequest& request, std::int64_t& effective_quantity, bool& resized) const;
+  [[nodiscard]] std::optional<LegDecision> check_position_and_notional(
+      const OrderRequest& request, const EvaluationOverlay& overlay,
+      std::int64_t effective_quantity, EvaluationOverlay& portfolio_overlay_out,
+      std::int64_t& portfolio_notional_out) const;
+  [[nodiscard]] std::optional<LegDecision> check_group_exposure(
+      const OrderRequest& request, const EvaluationOverlay& portfolio_overlay) const;
+  [[nodiscard]] std::optional<LegDecision> check_one_exposure_group(
+      const std::string& group_key, const std::unordered_map<std::string, std::int64_t>& limits,
+      const std::function<const std::string&(const InstrumentInfo&)>& key_of,
+      const EvaluationOverlay& portfolio_overlay, ReasonCode reason_code,
+      const std::string& reason) const;
+  [[nodiscard]] std::optional<LegDecision> check_concentration(
+      const OrderRequest& request, std::int64_t effective_quantity,
+      const EvaluationOverlay& portfolio_overlay, std::int64_t portfolio_notional) const;
+  [[nodiscard]] std::optional<LegDecision> check_margin_and_leverage(
+      const EvaluationOverlay& portfolio_overlay, std::int64_t portfolio_notional) const;
   [[nodiscard]] std::int64_t notional_units_base_currency(std::uint32_t instrument_id,
                                                           std::int64_t quantity_units,
                                                           std::int64_t price_units,

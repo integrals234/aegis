@@ -60,9 +60,10 @@ struct PortfolioRiskReport {
 /// fabricated, matching `RiskEngine::gross_portfolio_notional_units`'s same
 /// convention on the risk side.
 [[nodiscard]] PortfolioRiskReport compute_portfolio_risk(
-    const Portfolio& portfolio, const std::unordered_map<std::uint32_t, InstrumentRiskInputs>& instruments,
+    const Portfolio& portfolio,
+    const std::unordered_map<std::uint32_t, InstrumentRiskInputs>& instruments,
     std::int64_t equity_units, std::int64_t required_margin_units,
-    const std::unordered_map<std::uint32_t, double>& volatility_by_instrument, double current_drawdown,
-    double max_drawdown, const std::vector<StressScenario>& scenarios);
+    const std::unordered_map<std::uint32_t, double>& volatility_by_instrument,
+    double current_drawdown, double max_drawdown, const std::vector<StressScenario>& scenarios);
 
 }  // namespace aegis::participant::portfolio

@@ -4,14 +4,17 @@
 
 namespace aegis::participant::portfolio {
 namespace {
-[[nodiscard]] constexpr std::int64_t abs64(std::int64_t value) { return value < 0 ? -value : value; }
+[[nodiscard]] constexpr std::int64_t abs64(std::int64_t value) {
+  return value < 0 ? -value : value;
+}
 }  // namespace
 
 PortfolioRiskReport compute_portfolio_risk(
-    const Portfolio& portfolio, const std::unordered_map<std::uint32_t, InstrumentRiskInputs>& instruments,
+    const Portfolio& portfolio,
+    const std::unordered_map<std::uint32_t, InstrumentRiskInputs>& instruments,
     std::int64_t equity_units, std::int64_t required_margin_units,
-    const std::unordered_map<std::uint32_t, double>& volatility_by_instrument, double current_drawdown,
-    double max_drawdown, const std::vector<StressScenario>& scenarios) {
+    const std::unordered_map<std::uint32_t, double>& volatility_by_instrument,
+    double current_drawdown, double max_drawdown, const std::vector<StressScenario>& scenarios) {
   PortfolioRiskReport report;
   report.margin_used_units = required_margin_units;
   report.margin_available_units = equity_units - required_margin_units;
@@ -51,7 +54,8 @@ PortfolioRiskReport compute_portfolio_risk(
                                               shocked_price_delta *
                                               static_cast<double>(info.multiplier_units));
     }
-    report.stress_results.push_back(StressResult{.scenario_name = scenario.name, .pnl_impact_units = pnl_impact});
+    report.stress_results.push_back(
+        StressResult{.scenario_name = scenario.name, .pnl_impact_units = pnl_impact});
   }
 
   return report;

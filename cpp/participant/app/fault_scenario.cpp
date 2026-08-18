@@ -116,7 +116,6 @@ namespace {
 
 using risk::OrderRequest;
 using risk::RiskEngine;
-using risk::RiskVerdict;
 
 /// One fixed proposal identity per call, so a repeated call within the same
 /// engine (a fresh RiskEngine per test, per the header's own documented
@@ -154,9 +153,10 @@ std::vector<MarketStressRiskResponse> run_market_stress_risk_scenario(
       case FaultKind::kSpreadWidening: {
         engine.on_market_data(instrument_id, base_price_units, now_nanos, /*valid=*/true);
         const std::int64_t widened_price_units =
-            base_price_units + (base_price_units * static_cast<std::int64_t>(rule.magnitude)) / 10'000;
-        decision = evaluate_test_order(engine, instrument_id, widened_price_units, order_quantity_units,
-                                       now_nanos);
+            base_price_units +
+            ((base_price_units * static_cast<std::int64_t>(rule.magnitude)) / 10'000);
+        decision = evaluate_test_order(engine, instrument_id, widened_price_units,
+                                       order_quantity_units, now_nanos);
         break;
       }
       case FaultKind::kVolatilitySpike: {
@@ -167,7 +167,8 @@ std::vector<MarketStressRiskResponse> run_market_stress_risk_scenario(
           price += (step % 2 == 0) ? shock : -shock;
           engine.on_market_data(instrument_id, price, now_nanos + step, /*valid=*/true);
         }
-        decision = evaluate_test_order(engine, instrument_id, price, order_quantity_units, now_nanos + 6);
+        decision =
+            evaluate_test_order(engine, instrument_id, price, order_quantity_units, now_nanos + 6);
         break;
       }
       case FaultKind::kLiquidityVanish: {
@@ -182,8 +183,8 @@ std::vector<MarketStressRiskResponse> run_market_stress_risk_scenario(
         // never fabricated by this function.
         engine.on_market_data(instrument_id, base_price_units, now_nanos, /*valid=*/true);
         const common::Nanos outage_end = now_nanos + static_cast<common::Nanos>(rule.magnitude);
-        decision = evaluate_test_order(engine, instrument_id, base_price_units, order_quantity_units,
-                                       outage_end);
+        decision = evaluate_test_order(engine, instrument_id, base_price_units,
+                                       order_quantity_units, outage_end);
         break;
       }
       default:

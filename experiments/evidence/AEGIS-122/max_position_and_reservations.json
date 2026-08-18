@@ -1,0 +1,97 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 174,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
+        "test": "ExecutionStressIntegration.BackpressureAutomaticallyReleasesTheReservationThroughTheNormalLifecycle"
+      },
+      {
+        "line": 136,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
+        "test": "ExecutionStressIntegration.PartialFillReducesReservationWithoutDoubleCounting"
+      },
+      {
+        "line": 81,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
+        "test": "ExecutionStressIntegration.RejectionReleasesTheReservation"
+      },
+      {
+        "line": 235,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
+        "test": "ExecutionStressIntegration.ReleaseReservationRemainsAvailableForOtherRecoveryPaths"
+      },
+      {
+        "line": 122,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEnginePositionLimits.PartialFillCancelAndRejectAllReleaseTheReservation"
+      },
+      {
+        "line": 87,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEnginePositionLimits.RejectsBeyondLongAndShortBoundaries"
+      },
+      {
+        "line": 101,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEnginePositionLimits.TwoIndividuallyAcceptableOrdersJointlyBreach"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "RiskEnginePositionLimits.*",
+      "ExecutionStressIntegration.RejectionReleasesTheReservation",
+      "ExecutionStressIntegration.PartialFillReducesReservationWithoutDoubleCounting",
+      "ExecutionStressIntegration.BackpressureAutomaticallyReleasesTheReservationThroughTheNormalLifecycle",
+      "ExecutionStressIntegration.ReleaseReservationRemainsAvailableForOtherRecoveryPaths"
+    ],
+    "test_count": 7
+  },
+  "artifact": "AEGIS-122/max_position_and_reservations",
+  "claim": "Long and short caps enforced against the PROJECTED position (confirmed position + every outstanding reservation + the candidate), so two orders that each pass alone but jointly breach are rejected. Reservations are released automatically on fill, partial fill, cancel, downstream rejection and failed/backpressured submission -- the last via app::RiskReleasingExecutionAdapter, with no manual caller cleanup required.",
+  "deterministic_config": {
+    "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
+    "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
+  },
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Boundary and concurrent-fill tests pass.",
+  "generated_on": "2026-08-18",
+  "implementation": [
+    "cpp/participant/risk/risk_engine.cpp",
+    "cpp/participant/risk/risk_engine.hpp",
+    "cpp/participant/risk/risk_state.hpp",
+    "cpp/participant/risk/risk_limits.hpp",
+    "cpp/participant/risk/reason_codes.cpp",
+    "cpp/participant/app/risk_engine_gate.hpp",
+    "cpp/participant/app/risk_engine_gate.cpp"
+  ],
+  "inputs": [
+    "configs/risk/limits.json"
+  ],
+  "limitations": [
+    "All market data driving these tests is synthetic and in-repo: venue SYNX does not exist, quotes are constructed from committed daily bar/fixture data rather than observed tick data (ADR-0025), and no conclusion about any real market may be drawn.",
+    "These are software risk controls exercised under simulation. Passing here is not evidence of production risk adequacy, live execution realism, or profitability."
+  ],
+  "not_evidence_for": [
+    "production risk adequacy -- thresholds here are small documented demo values",
+    "any real-market behaviour -- every input is synthetic (ADR-0025)"
+  ],
+  "producer": "tools/generate_risk_evidence.py",
+  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "requirements": [
+    "AEGIS-122"
+  ],
+  "title": "Maximum position"
+}

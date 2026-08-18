@@ -1,0 +1,78 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 21,
+        "passed": true,
+        "source": "tests/cpp/unit/test_portfolio_risk_analytics.cpp",
+        "test": "PortfolioRiskAnalytics.GrossNetAndGroupExposureReconcileWithPortfolioState"
+      },
+      {
+        "line": 76,
+        "passed": true,
+        "source": "tests/cpp/unit/test_portfolio_risk_analytics.cpp",
+        "test": "PortfolioRiskAnalytics.InstrumentsAbsentFromConfigAreExcludedNotFabricated"
+      },
+      {
+        "line": 44,
+        "passed": true,
+        "source": "tests/cpp/unit/test_portfolio_risk_analytics.cpp",
+        "test": "PortfolioRiskAnalytics.ScriptedStressScenariosAreDeterministicParallelShocks"
+      },
+      {
+        "line": 64,
+        "passed": true,
+        "source": "tests/cpp/unit/test_portfolio_risk_analytics.cpp",
+        "test": "PortfolioRiskAnalytics.VolatilityAndDrawdownContributionArePassedThroughUnmodified"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "PortfolioRiskAnalytics.*"
+    ],
+    "test_count": 4
+  },
+  "artifact": "AEGIS-138/portfolio_risk_analytics",
+  "claim": "Gross/net exposure, margin used/available, market and sector exposure, volatility and drawdown contribution, and deterministic scripted stress results are computed from real Portfolio state. The Python report side (python/reports/portfolio_risk_report.py) INDEPENDENTLY recomputes gross/net exposure from the raw position/price accounting records and reconciles against these figures rather than re-serializing them; its own tests prove it flags a deliberate mismatch.",
+  "deterministic_config": {
+    "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
+    "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
+  },
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Dashboard/report fixture reconciles with portfolio state.",
+  "generated_on": "2026-08-18",
+  "implementation": [
+    "cpp/participant/risk/risk_engine.cpp",
+    "cpp/participant/risk/risk_engine.hpp",
+    "cpp/participant/risk/risk_state.hpp",
+    "cpp/participant/risk/risk_limits.hpp",
+    "cpp/participant/risk/reason_codes.cpp",
+    "cpp/participant/portfolio/portfolio_risk.cpp",
+    "cpp/participant/portfolio/portfolio_risk.hpp",
+    "python/reports/portfolio_risk_report.py"
+  ],
+  "inputs": [
+    "configs/risk/limits.json"
+  ],
+  "limitations": [
+    "All market data driving these tests is synthetic and in-repo: venue SYNX does not exist, quotes are constructed from committed daily bar/fixture data rather than observed tick data (ADR-0025), and no conclusion about any real market may be drawn.",
+    "These are software risk controls exercised under simulation. Passing here is not evidence of production risk adequacy, live execution realism, or profitability.",
+    "Stress scenarios are scripted uniform parallel price shocks, not a statistical simulation; volatility_multiple/liquidity_factor are reported as context, not separately modelled as execution-quality effects.",
+    "The margin model is the documented simplified Model A (margin_per_contract_units * abs(quantity), currency per contract -- no contract multiplier is applied a second time). It is NOT SPAN, NOT an exchange clearing model, and NOT a claim of production margin adequacy (ADR-0028)."
+  ],
+  "not_evidence_for": [
+    "production risk adequacy -- thresholds here are small documented demo values",
+    "any real-market behaviour -- every input is synthetic (ADR-0025)"
+  ],
+  "producer": "tools/generate_risk_evidence.py",
+  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "requirements": [
+    "AEGIS-138"
+  ],
+  "title": "Portfolio risk analytics"
+}

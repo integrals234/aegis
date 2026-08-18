@@ -700,7 +700,8 @@ CalendarSpreadRunResult run_calendar_spread_scenario(const std::string& stream_p
       near_ready = true;
       near_bid = step.bid_price_units;
       near_ask = step.ask_price_units;
-      risk_engine.on_market_data(config.near_instrument_id, (near_bid + near_ask) / 2, clock.now_utc(),
+      risk_engine.on_market_data(config.near_instrument_id, (near_bid + near_ask) / 2,
+                                 clock.now_utc(),
                                  /*valid=*/true);
       continue;  // Wait for this date's far leg before acting (header).
     }
@@ -750,22 +751,24 @@ CalendarSpreadRunResult run_calendar_spread_scenario(const std::string& stream_p
       decision_ptr = &decision;
       if (decision.verdict != risk::RiskVerdict::kReject) {
         execute_leg(proposal.near, manager, ledger, risk_engine, near_bid, near_ask,
-                   next_exchange_order_id);
-        execute_leg(proposal.far, manager, ledger, risk_engine, far_bid, far_ask, next_exchange_order_id);
+                    next_exchange_order_id);
+        execute_leg(proposal.far, manager, ledger, risk_engine, far_bid, far_ask,
+                    next_exchange_order_id);
       }
     }
 
     const std::int64_t near_mark = (near_bid + near_ask) / 2;
     const std::int64_t far_mark = (far_bid + far_ask) / 2;
-    const std::int64_t equity_units = config.starting_capital_units + ledger.cash_units() +
+    const std::int64_t equity_units =
+        config.starting_capital_units + ledger.cash_units() +
         ledger.unrealized_pnl_units(config.near_instrument_id, near_mark) +
         ledger.unrealized_pnl_units(config.far_instrument_id, far_mark);
     risk_engine.on_equity_update(equity_units);
     risk_engine.on_session_pnl_update(equity_units - config.starting_capital_units);
 
-    result.lines.push_back(describe_calendar_spread_state(
-        strategy_state, proposal, manager, ledger, config.near_instrument_id, near_mark, far_mark,
-        decision_ptr));
+    result.lines.push_back(describe_calendar_spread_state(strategy_state, proposal, manager, ledger,
+                                                          config.near_instrument_id, near_mark,
+                                                          far_mark, decision_ptr));
   }
 
   return result;
@@ -784,33 +787,47 @@ namespace {
 
 }  // namespace
 
-risk::RiskLimitsConfig load_risk_limits_config(const std::string& path) {
-  std::ifstream file(path);
-  if (!file) {
-    throw std::runtime_error("cannot open risk config " + path);
-  }
-  Json doc;
-  file >> doc;
+namespace {
 
-  risk::RiskLimitsConfig config;
-  config.base_currency = doc.value("base_currency", std::string{"USD"});
-
+/// Per-instrument tables (quantity/position limits, instrument metadata,
+/// margin). Split out of `load_risk_limits_config` purely structurally --
+/// no field's parsing differs from before.
+void parse_instrument_tables(const Json& doc, risk::RiskLimitsConfig& config) {
   if (doc.contains("order_quantity_limits")) {
     for (const auto& [key, value] : doc.at("order_quantity_limits").items()) {
       config.order_quantity_limits[static_cast<std::uint32_t>(std::stoul(key))] =
-          risk::OrderQuantityLimit{.max_order_quantity_units = value.at("max_order_quantity_units").get<std::int64_t>(),
-                                  .resize_on_breach = value.value("resize_on_breach", false)};
+          risk::OrderQuantityLimit{
+              .max_order_quantity_units = value.at("max_order_quantity_units").get<std::int64_t>(),
+              .resize_on_breach = value.value("resize_on_breach", false)};
     }
   }
   if (doc.contains("position_limits")) {
     for (const auto& [key, value] : doc.at("position_limits").items()) {
       config.position_limits[static_cast<std::uint32_t>(std::stoul(key))] =
           risk::PositionLimit{.max_long_units = value.at("max_long_units").get<std::int64_t>(),
-                             .max_short_units = value.at("max_short_units").get<std::int64_t>()};
+                              .max_short_units = value.at("max_short_units").get<std::int64_t>()};
     }
   }
+  if (doc.contains("margin_per_contract_units")) {
+    config.margin.margin_per_contract_units =
+        parse_instrument_int64_map(doc.at("margin_per_contract_units"));
+  }
+}
+
+/// Scalar limits and the currency/FX table.
+void parse_scalar_and_currency_limits(const Json& doc, risk::RiskLimitsConfig& config) {
+  config.base_currency = doc.value("base_currency", std::string{"USD"});
   config.max_order_notional_units = doc.value("max_order_notional_units", std::int64_t{0});
   config.max_portfolio_notional_units = doc.value("max_portfolio_notional_units", std::int64_t{0});
+  config.price_collar_bps = doc.value("price_collar_bps", std::int64_t{0});
+  config.max_quote_age = common::Duration{doc.value("max_quote_age_nanos", std::int64_t{0})};
+  config.rate_limit_window =
+      common::Duration{doc.value("rate_limit_window_nanos", std::int64_t{1'000'000'000})};
+  config.max_orders_per_window = doc.value("max_orders_per_window", std::uint32_t{0});
+  config.max_cancels_per_window = doc.value("max_cancels_per_window", std::uint32_t{0});
+  config.max_leverage = doc.value("max_leverage", 0.0);
+  config.daily_loss_limit_units = doc.value("daily_loss_limit_units", std::int64_t{0});
+  config.max_drawdown_units = doc.value("max_drawdown_units", std::int64_t{0});
   if (doc.contains("fx_rate_to_base")) {
     for (const auto& [key, value] : doc.at("fx_rate_to_base").items()) {
       config.fx_rate_to_base[key] = value.get<double>();
@@ -820,9 +837,9 @@ risk::RiskLimitsConfig load_risk_limits_config(const std::string& path) {
     for (const auto& [key, value] : doc.at("instruments").items()) {
       config.instruments[static_cast<std::uint32_t>(std::stoul(key))] =
           risk::InstrumentInfo{.multiplier_units = value.value("multiplier_units", std::int64_t{1}),
-                              .currency = value.value("currency", std::string{"USD"}),
-                              .market = value.value("market", std::string{}),
-                              .sector = value.value("sector", std::string{})};
+                               .currency = value.value("currency", std::string{"USD"}),
+                               .market = value.value("market", std::string{}),
+                               .sector = value.value("sector", std::string{})};
     }
   }
   if (doc.contains("market_exposure_limit_units")) {
@@ -848,30 +865,51 @@ risk::RiskLimitsConfig load_risk_limits_config(const std::string& path) {
   config.max_leverage = doc.value("max_leverage", 0.0);
   config.daily_loss_limit_units = doc.value("daily_loss_limit_units", std::int64_t{0});
   config.max_drawdown_units = doc.value("max_drawdown_units", std::int64_t{0});
+}
+
+/// The two nested sub-documents: volatility sizing and concentration.
+void parse_volatility_and_concentration(const Json& doc, risk::RiskLimitsConfig& config) {
   if (doc.contains("volatility")) {
     const auto& vol = doc.at("volatility");
     config.volatility.window = vol.value("window", std::size_t{20});
     config.volatility.target_volatility = vol.value("target_volatility", 0.0);
     config.volatility.hard_reject_multiple = vol.value("hard_reject_multiple", 3.0);
   }
-  if (doc.contains("concentration")) {
-    const auto& conc = doc.at("concentration");
-    config.concentration.max_concentration_share = conc.value("max_concentration_share", 1.0);
-    if (conc.contains("correlated_groups")) {
-      for (const auto& [group_id, members] : conc.at("correlated_groups").items()) {
-        std::vector<std::uint32_t> ids;
-        for (const auto& member : members) {
-          ids.push_back(member.get<std::uint32_t>());
-        }
-        config.concentration.correlated_groups[group_id] = std::move(ids);
+  if (!doc.contains("concentration")) {
+    return;
+  }
+  const auto& conc = doc.at("concentration");
+  config.concentration.max_concentration_share = conc.value("max_concentration_share", 1.0);
+  if (conc.contains("correlated_groups")) {
+    for (const auto& [group_id, members] : conc.at("correlated_groups").items()) {
+      std::vector<std::uint32_t> ids;
+      for (const auto& member : members) {
+        ids.push_back(member.get<std::uint32_t>());
       }
-    }
-    if (conc.contains("group_exposure_limit_units")) {
-      for (const auto& [group_id, value] : conc.at("group_exposure_limit_units").items()) {
-        config.concentration.group_exposure_limit_units[group_id] = value.get<std::int64_t>();
-      }
+      config.concentration.correlated_groups[group_id] = std::move(ids);
     }
   }
+  if (conc.contains("group_exposure_limit_units")) {
+    for (const auto& [group_id, value] : conc.at("group_exposure_limit_units").items()) {
+      config.concentration.group_exposure_limit_units[group_id] = value.get<std::int64_t>();
+    }
+  }
+}
+
+}  // namespace
+
+risk::RiskLimitsConfig load_risk_limits_config(const std::string& path) {
+  std::ifstream file(path);
+  if (!file) {
+    throw std::runtime_error("cannot open risk config " + path);
+  }
+  Json doc;
+  file >> doc;
+
+  risk::RiskLimitsConfig config;
+  parse_instrument_tables(doc, config);
+  parse_scalar_and_currency_limits(doc, config);
+  parse_volatility_and_concentration(doc, config);
   return config;
 }
 

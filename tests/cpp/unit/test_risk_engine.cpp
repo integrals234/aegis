@@ -13,14 +13,11 @@ namespace {
 
 using aegis::common::Duration;
 using aegis::common::Nanos;
-using aegis::participant::risk::ConcentrationConfig;
 using aegis::participant::risk::InstrumentInfo;
 using aegis::participant::risk::LegDecision;
-using aegis::participant::risk::MarginConfig;
 using aegis::participant::risk::OrderQuantityLimit;
 using aegis::participant::risk::OrderRequest;
 using aegis::participant::risk::PositionLimit;
-using aegis::participant::risk::ProposalDecisionResult;
 using aegis::participant::risk::ReasonCode;
 using aegis::participant::risk::RiskEngine;
 using aegis::participant::risk::RiskLimitsConfig;
@@ -34,17 +31,21 @@ constexpr std::uint32_t kFar = 2002;
 RiskLimitsConfig base_config() {
   RiskLimitsConfig config;
   config.base_currency = "USD";
-  config.instruments[kNear] = InstrumentInfo{.multiplier_units = 1, .currency = "USD", .market = "EQX", .sector = "index"};
-  config.instruments[kFar] = InstrumentInfo{.multiplier_units = 1, .currency = "USD", .market = "EQX", .sector = "index"};
+  config.instruments[kNear] =
+      InstrumentInfo{.multiplier_units = 1, .currency = "USD", .market = "EQX", .sector = "index"};
+  config.instruments[kFar] =
+      InstrumentInfo{.multiplier_units = 1, .currency = "USD", .market = "EQX", .sector = "index"};
   return config;
 }
 
-void seed_valid_quote(RiskEngine& engine, std::uint32_t instrument_id, std::int64_t price, Nanos now) {
-  engine.on_market_data(instrument_id, price, now, /*valid=*/true);
+void seed_valid_quote(RiskEngine& engine, std::uint32_t instrument_id, std::int64_t price,
+                      Nanos observed_at_nanos) {
+  engine.on_market_data(instrument_id, price, observed_at_nanos, /*valid=*/true);
 }
 
 OrderRequest make_request(std::uint32_t instrument_id, Side side, std::int64_t price,
-                          std::int64_t quantity, Nanos now, const std::string& strategy_id = "strat",
+                          std::int64_t quantity, Nanos now,
+                          const std::string& strategy_id = "strat",
                           const std::string& proposal_id = "p1", std::uint32_t leg_index = 0) {
   return OrderRequest{.strategy_id = strategy_id,
                       .proposal_id = proposal_id,
@@ -60,12 +61,15 @@ OrderRequest make_request(std::uint32_t instrument_id, Side side, std::int64_t p
 
 TEST(RiskEngineOrderQuantity, RejectsAboveLimitWhenResizeDisabled) {
   RiskLimitsConfig config = base_config();
-  config.order_quantity_limits[kNear] = OrderQuantityLimit{.max_order_quantity_units = 10, .resize_on_breach = false};
+  config.order_quantity_limits[kNear] =
+      OrderQuantityLimit{.max_order_quantity_units = 10, .resize_on_breach = false};
   RiskEngine engine(config);
   seed_valid_quote(engine, kNear, 100, 0);
 
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 9, 0)).verdict, RiskVerdict::kApprove);
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 10, 0)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 9, 0)).verdict,
+            RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 10, 0)).verdict,
+            RiskVerdict::kApprove);
   const LegDecision over = engine.evaluate(make_request(kNear, Side::kBuy, 100, 11, 0));
   EXPECT_EQ(over.verdict, RiskVerdict::kReject);
   EXPECT_EQ(over.reason_code, ReasonCode::kMaxOrderQuantity);
@@ -73,7 +77,8 @@ TEST(RiskEngineOrderQuantity, RejectsAboveLimitWhenResizeDisabled) {
 
 TEST(RiskEngineOrderQuantity, ResizesDownToTheLimitWhenResizeEnabled) {
   RiskLimitsConfig config = base_config();
-  config.order_quantity_limits[kNear] = OrderQuantityLimit{.max_order_quantity_units = 10, .resize_on_breach = true};
+  config.order_quantity_limits[kNear] =
+      OrderQuantityLimit{.max_order_quantity_units = 10, .resize_on_breach = true};
   RiskEngine engine(config);
   seed_valid_quote(engine, kNear, 100, 0);
 
@@ -90,12 +95,14 @@ TEST(RiskEnginePositionLimits, RejectsBeyondLongAndShortBoundaries) {
   RiskEngine engine(config);
   seed_valid_quote(engine, kNear, 100, 0);
 
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 100, 0)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 100, 0)).verdict,
+            RiskVerdict::kApprove);
   EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 101, 0)).reason_code,
-           ReasonCode::kMaxPositionLong);
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kSell, 100, 100, 0)).verdict, RiskVerdict::kApprove);
+            ReasonCode::kMaxPositionLong);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kSell, 100, 100, 0)).verdict,
+            RiskVerdict::kApprove);
   EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kSell, 100, 101, 0)).reason_code,
-           ReasonCode::kMaxPositionShort);
+            ReasonCode::kMaxPositionShort);
 }
 
 TEST(RiskEnginePositionLimits, TwoIndividuallyAcceptableOrdersJointlyBreach) {
@@ -126,41 +133,52 @@ TEST(RiskEnginePositionLimits, PartialFillCancelAndRejectAllReleaseTheReservatio
   seed_valid_quote(engine, kNear, 100, 0);
 
   auto reserve = [&](std::uint64_t client_order_id, const std::string& proposal_id) {
-    engine.commit_proposal_decision("strat", proposal_id,
-                                    {make_request(kNear, Side::kBuy, 100, 100, 0, "strat", proposal_id)}, 0);
+    engine.commit_proposal_decision(
+        "strat", proposal_id, {make_request(kNear, Side::kBuy, 100, 100, 0, "strat", proposal_id)},
+        0);
     return engine.decide_order(kNear, Side::kBuy, 100, client_order_id, 0);
   };
 
   // Cancel releases fully.
   ASSERT_EQ(reserve(1, "p-cancel").verdict, RiskVerdict::kApprove);
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).reason_code, ReasonCode::kMaxPositionLong);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).reason_code,
+            ReasonCode::kMaxPositionLong);
   engine.on_order_terminated(1);
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 100, 0)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 100, 0)).verdict,
+            RiskVerdict::kApprove);
 
   // Downstream rejection releases fully.
   ASSERT_EQ(reserve(2, "p-reject").verdict, RiskVerdict::kApprove);
   engine.on_order_rejected(2);
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 100, 0)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 100, 0)).verdict,
+            RiskVerdict::kApprove);
 
   // A partial fill converts reserved exposure into confirmed position --
   // the projected total is unchanged, only its composition is.
   ASSERT_EQ(reserve(3, "p-partial").verdict, RiskVerdict::kApprove);
   engine.on_fill(3, kNear, Side::kBuy, 40);
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).reason_code, ReasonCode::kMaxPositionLong);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).reason_code,
+            ReasonCode::kMaxPositionLong);
   engine.on_order_terminated(3);  // Remaining 60 released; 40 stays as confirmed position.
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 60, 0)).verdict, RiskVerdict::kApprove);
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 61, 0)).reason_code, ReasonCode::kMaxPositionLong);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 60, 0)).verdict,
+            RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 61, 0)).reason_code,
+            ReasonCode::kMaxPositionLong);
 
   // The general release primitive (documented stand-in for a failed adapter
   // submission the OMS seam does not itself expose -- docs/LIMITATIONS.md).
   // 40 units are already confirmed position from the partial-fill above, so
   // this reservation is sized to the remaining 60-unit budget.
-  engine.commit_proposal_decision("strat", "p-explicit-release",
-                                  {make_request(kNear, Side::kBuy, 100, 60, 0, "strat", "p-explicit-release")}, 0);
-  ASSERT_EQ(engine.decide_order(kNear, Side::kBuy, 60, /*client_order_id=*/4, 0).verdict, RiskVerdict::kApprove);
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).reason_code, ReasonCode::kMaxPositionLong);
+  engine.commit_proposal_decision(
+      "strat", "p-explicit-release",
+      {make_request(kNear, Side::kBuy, 100, 60, 0, "strat", "p-explicit-release")}, 0);
+  ASSERT_EQ(engine.decide_order(kNear, Side::kBuy, 60, /*client_order_id=*/4, 0).verdict,
+            RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).reason_code,
+            ReasonCode::kMaxPositionLong);
   engine.release_reservation(4);
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 60, 0)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 60, 0)).verdict,
+            RiskVerdict::kApprove);
 }
 
 // ---------------------------------------------------------------- AEGIS-123
@@ -172,9 +190,10 @@ TEST(RiskEngineNotional, RejectsAboveOrderAndPortfolioNotional) {
   RiskEngine engine(config);
   seed_valid_quote(engine, kNear, 100, 0);
 
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 10, 0)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 10, 0)).verdict,
+            RiskVerdict::kApprove);
   EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 11, 0)).reason_code,
-           ReasonCode::kMaxOrderNotional);
+            ReasonCode::kMaxOrderNotional);
 }
 
 TEST(RiskEngineNotional, UnsupportedCurrencyIsRejectedExplicitly) {
@@ -197,10 +216,11 @@ TEST(RiskEngineNotional, SupportedNonBaseCurrencyIsNormalizedByFxRate) {
   seed_valid_quote(engine, kNear, 100, 0);
 
   // 100 * 1 * 1.1 = 110 <= 200: approved.
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).verdict,
+            RiskVerdict::kApprove);
   // 100 * 2 * 1.1 = 220 > 200: rejected.
   EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 2, 0)).reason_code,
-           ReasonCode::kMaxOrderNotional);
+            ReasonCode::kMaxOrderNotional);
 }
 
 // ---------------------------------------------------------------- AEGIS-124
@@ -212,9 +232,10 @@ TEST(RiskEngineExposure, RejectsAboveMarketAndSectorLimits) {
   seed_valid_quote(engine, kNear, 100, 0);
   seed_valid_quote(engine, kFar, 100, 0);
 
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 5, 0)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 5, 0)).verdict,
+            RiskVerdict::kApprove);
   EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 6, 0)).reason_code,
-           ReasonCode::kMarketExposure);
+            ReasonCode::kMarketExposure);
 }
 
 // ---------------------------------------------------------------- AEGIS-125
@@ -226,19 +247,21 @@ TEST(RiskEnginePriceCollar, BoundaryNoReferenceAndStaleReferenceCases) {
 
   // No reference price yet.
   EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).reason_code,
-           ReasonCode::kNoReferencePrice);
+            ReasonCode::kNoReferencePrice);
 
   seed_valid_quote(engine, kNear, 100'000, 0);
   // Exactly at the 5% collar: 105'000 is allowed.
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 105'000, 1, 0)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 105'000, 1, 0)).verdict,
+            RiskVerdict::kApprove);
   // Beyond the collar.
   EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 105'001, 1, 0)).reason_code,
-           ReasonCode::kPriceCollar);
+            ReasonCode::kPriceCollar);
 
   // An invalid update never becomes the new reference: the collar is still
   // judged against the last VALID price (100'000), not the invalid one.
   engine.on_market_data(kNear, 999'999, 1, /*valid=*/false);
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 105'000, 1, 1)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 105'000, 1, 1)).verdict,
+            RiskVerdict::kApprove);
 }
 
 // ---------------------------------------------------------------- AEGIS-126
@@ -249,7 +272,8 @@ TEST(RiskEngineStaleData, RejectsStaleAndInvalidMarketState) {
   RiskEngine engine(config);
   seed_valid_quote(engine, kNear, 100, /*observed_at_nanos=*/0);
 
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, /*now=*/50)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, /*now=*/50)).verdict,
+            RiskVerdict::kApprove);
   const LegDecision stale = engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, /*now=*/200));
   EXPECT_EQ(stale.verdict, RiskVerdict::kReject);
   EXPECT_EQ(stale.reason_code, ReasonCode::kStaleMarketData);
@@ -260,7 +284,7 @@ TEST(RiskEngineStaleData, RejectsStaleAndInvalidMarketState) {
   RiskEngine fresh_engine(config);
   fresh_engine.on_market_data(kFar, -5, 0, /*valid=*/true);
   EXPECT_EQ(fresh_engine.evaluate(make_request(kFar, Side::kBuy, 100, 1, 0)).reason_code,
-           ReasonCode::kNoReferencePrice);
+            ReasonCode::kNoReferencePrice);
 }
 
 // ---------------------------------------------------------------- AEGIS-127
@@ -269,7 +293,8 @@ TEST(RiskEngineIdempotency, RejectsDuplicateAndReplayedProposals) {
   RiskEngine engine(base_config());
   seed_valid_quote(engine, kNear, 100, 0);
 
-  const std::vector<OrderRequest> legs{make_request(kNear, Side::kBuy, 100, 1, 0, "strat", "dup-1")};
+  const std::vector<OrderRequest> legs{
+      make_request(kNear, Side::kBuy, 100, 1, 0, "strat", "dup-1")};
   const auto& first = engine.commit_proposal_decision("strat", "dup-1", legs, 0);
   EXPECT_EQ(first.verdict, RiskVerdict::kApprove);
 
@@ -289,8 +314,10 @@ TEST(RiskEngineRateLimit, ThrottlesOrdersAndCancelsOnAVirtualClock) {
   RiskEngine engine(config);
   seed_valid_quote(engine, kNear, 100, 0);
 
-  engine.commit_proposal_decision("s", "r1", {make_request(kNear, Side::kBuy, 100, 1, 0, "s", "r1")}, 0);
-  engine.commit_proposal_decision("s", "r2", {make_request(kNear, Side::kBuy, 100, 1, 10, "s", "r2")}, 10);
+  engine.commit_proposal_decision("s", "r1",
+                                  {make_request(kNear, Side::kBuy, 100, 1, 0, "s", "r1")}, 0);
+  engine.commit_proposal_decision("s", "r2",
+                                  {make_request(kNear, Side::kBuy, 100, 1, 10, "s", "r2")}, 10);
   const auto& third = engine.commit_proposal_decision(
       "s", "r3", {make_request(kNear, Side::kBuy, 100, 1, 20, "s", "r3")}, 20);
   EXPECT_EQ(third.verdict, RiskVerdict::kReject);
@@ -318,9 +345,10 @@ TEST(RiskEngineMarginAndLeverage, RejectsInsufficientMargin) {
   engine.on_equity_update(500);
 
   // 5 contracts * 100 = 500 <= 500 equity (boundary, ok); 6 * 100 = 600 > 500.
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 10, 5, 0)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 10, 5, 0)).verdict,
+            RiskVerdict::kApprove);
   EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 10, 6, 0)).reason_code,
-           ReasonCode::kInsufficientMargin);
+            ReasonCode::kInsufficientMargin);
 }
 
 TEST(RiskEngineMarginAndLeverage, RejectsExcessiveLeverage) {
@@ -332,16 +360,17 @@ TEST(RiskEngineMarginAndLeverage, RejectsExcessiveLeverage) {
 
   // notional = price(10) * qty * multiplier(1); equity = 500;
   // max_leverage 2.0 -> notional <= 1000 -> qty <= 100.
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 10, 100, 0)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 10, 100, 0)).verdict,
+            RiskVerdict::kApprove);
   EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 10, 101, 0)).reason_code,
-           ReasonCode::kMaxLeverage);
+            ReasonCode::kMaxLeverage);
 
   // Non-positive equity cannot support any leverage.
   RiskEngine zero_equity_engine(config);
   seed_valid_quote(zero_equity_engine, kNear, 10, 0);
   zero_equity_engine.on_equity_update(0);
   EXPECT_EQ(zero_equity_engine.evaluate(make_request(kNear, Side::kBuy, 10, 1, 0)).reason_code,
-           ReasonCode::kMaxLeverage);
+            ReasonCode::kMaxLeverage);
 }
 
 // ---------------------------------------------------------------- AEGIS-131
@@ -352,7 +381,8 @@ TEST(RiskEngineDailyLoss, TripsExactlyOnceAndLatchesTrading) {
   RiskEngine engine(config);
   seed_valid_quote(engine, kNear, 100, 0);
 
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).verdict,
+            RiskVerdict::kApprove);
   engine.on_session_pnl_update(-1'000);  // Trips exactly at the threshold.
   EXPECT_TRUE(engine.state().is_daily_loss_tripped());
   const LegDecision after = engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0));
@@ -367,7 +397,8 @@ TEST(RiskEngineDailyLoss, TripsExactlyOnceAndLatchesTrading) {
   // A new session clears the daily-loss latch only.
   engine.start_new_session();
   EXPECT_FALSE(engine.state().is_daily_loss_tripped());
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).verdict,
+            RiskVerdict::kApprove);
 }
 
 // ---------------------------------------------------------------- AEGIS-132
@@ -380,11 +411,13 @@ TEST(RiskEngineDrawdown, HighWaterMarkScenariosTripTheLatch) {
 
   engine.on_equity_update(1'000);  // Initial high-water mark.
   engine.on_equity_update(970);    // Drawdown 30: within limit.
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).verdict,
+            RiskVerdict::kApprove);
 
   engine.on_equity_update(940);  // Drawdown 60: breach.
   EXPECT_TRUE(engine.state().is_drawdown_tripped());
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).reason_code, ReasonCode::kTradingHalted);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).reason_code,
+            ReasonCode::kTradingHalted);
 
   // Recovery does not un-trip the latch (drawdown is a max-ever quantity,
   // not a start-of-session one) -- start_new_session deliberately does not
@@ -398,7 +431,8 @@ TEST(RiskEngineDrawdown, HighWaterMarkScenariosTripTheLatch) {
 
 TEST(RiskEngineVolatilityReduction, ResizesDownAsVolatilityRisesAndRejectsBeyondHardMultiple) {
   RiskLimitsConfig config = base_config();
-  config.volatility = VolatilityReductionConfig{.window = 5, .target_volatility = 0.01, .hard_reject_multiple = 3.0};
+  config.volatility = VolatilityReductionConfig{
+      .window = 5, .target_volatility = 0.01, .hard_reject_multiple = 3.0};
   RiskEngine engine(config);
 
   // Feed a return series whose realized volatility lands strictly between
@@ -425,9 +459,10 @@ TEST(RiskEngineConcentration, RejectsCorrelatedGroupExposureBreach) {
   seed_valid_quote(engine, kNear, 100, 0);
   seed_valid_quote(engine, kFar, 100, 0);
 
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 5, 0)).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 5, 0)).verdict,
+            RiskVerdict::kApprove);
   EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 6, 0)).reason_code,
-           ReasonCode::kCorrelatedExposure);
+            ReasonCode::kCorrelatedExposure);
 }
 
 // ---------------------------------------------------------------- AEGIS-137
@@ -455,7 +490,8 @@ TEST(RiskEngineAuditInvariant, ExactlyOneProposalDecisionAndOneOrderDecisionPerL
 
 TEST(RiskEngineAuditInvariant, RejectedProposalReportsEveryLegRejectedAndArmsNoOrder) {
   RiskLimitsConfig config = base_config();
-  config.order_quantity_limits[kNear] = OrderQuantityLimit{.max_order_quantity_units = 0, .resize_on_breach = false};
+  config.order_quantity_limits[kNear] =
+      OrderQuantityLimit{.max_order_quantity_units = 0, .resize_on_breach = false};
   RiskEngine engine(config);
   seed_valid_quote(engine, kNear, 100, 0);
   seed_valid_quote(engine, kFar, 100, 0);
@@ -469,7 +505,8 @@ TEST(RiskEngineAuditInvariant, RejectedProposalReportsEveryLegRejectedAndArmsNoO
   EXPECT_EQ(decision.verdict, RiskVerdict::kReject);
   ASSERT_EQ(decision.legs.size(), 2U);
   EXPECT_EQ(decision.legs[0].verdict, RiskVerdict::kReject);
-  EXPECT_EQ(decision.legs[1].verdict, RiskVerdict::kReject);  // The far leg, never itself over-quantity.
+  EXPECT_EQ(decision.legs[1].verdict,
+            RiskVerdict::kReject);  // The far leg, never itself over-quantity.
 
   // Because nothing was armed, an order that tries to reach the seam anyway
   // (a bypass, or a caller bug) is rejected as unexpected -- the structural
@@ -491,14 +528,15 @@ TEST(RiskEngineKillSwitch, StrategyAndGlobalTripsAreIdempotentAndScopedCorrectly
   EXPECT_FALSE(engine.is_strategy_halted("strat-b"));  // Unrelated strategy unaffected.
 
   EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0, "strat-a")).reason_code,
-           ReasonCode::kKillSwitchStrategy);
-  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0, "strat-b")).verdict, RiskVerdict::kApprove);
+            ReasonCode::kKillSwitchStrategy);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0, "strat-b")).verdict,
+            RiskVerdict::kApprove);
 
   EXPECT_TRUE(engine.trip_global());
   EXPECT_FALSE(engine.trip_global());
   EXPECT_TRUE(engine.is_globally_halted());
   EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0, "strat-b")).reason_code,
-           ReasonCode::kKillSwitchGlobal);
+            ReasonCode::kKillSwitchGlobal);
 }
 
 // ---------------------------------------------------------------- AEGIS-136

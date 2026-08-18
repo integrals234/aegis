@@ -6,9 +6,8 @@
 namespace aegis::participant::risk {
 
 const ProposalRiskDecision& RiskAuditLog::record_proposal(
-    std::string strategy_id, std::string proposal_id, RiskVerdict verdict,
-    ReasonCode reason_code, std::string reason, std::vector<LegDecision> legs,
-    common::Nanos decided_at_nanos) {
+    std::string strategy_id, std::string proposal_id, RiskVerdict verdict, ReasonCode reason_code,
+    std::string reason, std::vector<LegDecision> legs, common::Nanos decided_at_nanos) {
   proposal_decisions_.push_back(ProposalRiskDecision{
       .sequence = next_sequence_++,
       .decided_at_nanos = decided_at_nanos,
@@ -45,8 +44,7 @@ const OrderRiskDecision& RiskAuditLog::record_order(
 
 std::size_t RiskAuditLog::proposal_decision_count(const std::string& proposal_id) const {
   return static_cast<std::size_t>(std::ranges::count_if(
-      proposal_decisions_,
-      [&proposal_id](const ProposalRiskDecision& decision) {
+      proposal_decisions_, [&proposal_id](const ProposalRiskDecision& decision) {
         return decision.proposal_id == proposal_id;
       }));
 }

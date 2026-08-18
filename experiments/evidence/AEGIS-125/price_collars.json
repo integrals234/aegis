@@ -1,0 +1,62 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 39,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_market_stress.cpp",
+        "test": "MarketStressRisk.SpreadWideningTripsThePriceCollar"
+      },
+      {
+        "line": 222,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEnginePriceCollar.BoundaryNoReferenceAndStaleReferenceCases"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "RiskEnginePriceCollar.*",
+      "MarketStressRisk.SpreadWideningTripsThePriceCollar"
+    ],
+    "test_count": 2
+  },
+  "artifact": "AEGIS-125/price_collars",
+  "claim": "Configurable basis-point collars enforced against the last VALID reference price. A stale or structurally invalid update never becomes the new reference, and an instrument with no reference yet is rejected (kNoReferencePrice) rather than defaulting to permissive.",
+  "deterministic_config": {
+    "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
+    "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
+  },
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Stale/reference edge cases pass.",
+  "generated_on": "2026-08-18",
+  "implementation": [
+    "cpp/participant/risk/risk_engine.cpp",
+    "cpp/participant/risk/risk_engine.hpp",
+    "cpp/participant/risk/risk_state.hpp",
+    "cpp/participant/risk/risk_limits.hpp",
+    "cpp/participant/risk/reason_codes.cpp"
+  ],
+  "inputs": [
+    "configs/risk/limits.json"
+  ],
+  "limitations": [
+    "All market data driving these tests is synthetic and in-repo: venue SYNX does not exist, quotes are constructed from committed daily bar/fixture data rather than observed tick data (ADR-0025), and no conclusion about any real market may be drawn.",
+    "These are software risk controls exercised under simulation. Passing here is not evidence of production risk adequacy, live execution realism, or profitability."
+  ],
+  "not_evidence_for": [
+    "production risk adequacy -- thresholds here are small documented demo values",
+    "any real-market behaviour -- every input is synthetic (ADR-0025)"
+  ],
+  "producer": "tools/generate_risk_evidence.py",
+  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "requirements": [
+    "AEGIS-125"
+  ],
+  "title": "Price collars"
+}
