@@ -1,0 +1,59 @@
+{
+  "artifact": "roll_method_strategy_sensitivity",
+  "claim": "AEGIS-024: the real research.roll_method_sensitivity.compute_roll_method_strategy_sensitivity was run once, over two roll policies that genuinely choose different roll dates, using the real M2 compare_roll_methods for the price-path half and the real research.strategy_replay state machine (matching cpp/participant/strategy) for the strategy half. Sensitivity is quantified honestly: roll dates and absolute price paths differ; strategy signal count and P&L do not, for the structural reason stated above. No claim is made that either roll method is universally better.",
+  "compared_policies": [
+    "fixed_100_days",
+    "volume_crossover"
+  ],
+  "dataset_id": "CSX-synthetic-multi-contract (tools/roll_sensitivity_fixture.py)",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-18",
+  "not_evidence_for": [
+    "a claim that roll-method choice never affects strategy P&L in general -- see structural_finding.explanation",
+    "any claim about real markets -- the underlying price data is synthetic/constructed throughout (ADR-0025)",
+    "a claim that either compared policy is superior -- AEGIS-024 asks for sensitivity, not optimization"
+  ],
+  "price_path_comparisons": [
+    {
+      "max_abs_price_deviation": "30",
+      "mean_abs_price_deviation": "14",
+      "policy_a": "fixed_100_days",
+      "policy_b": "volume_crossover",
+      "roll_dates_a": [],
+      "roll_dates_b": [
+        "2026-01-07"
+      ],
+      "roll_dates_differ": true
+    }
+  ],
+  "repository_commit": "44ce17cf015f8cdd27c4cfd94e339a9153654e4d",
+  "requirements": [
+    "AEGIS-024"
+  ],
+  "strategy_metrics_by_policy": [
+    {
+      "entry_count": 2,
+      "exit_count": 2,
+      "final_position": "flat",
+      "policy_name": "fixed_100_days",
+      "round_trip_count": 2,
+      "signal_count": 4,
+      "total_realized_pnl": "-2.10"
+    },
+    {
+      "entry_count": 2,
+      "exit_count": 2,
+      "final_position": "flat",
+      "policy_name": "volume_crossover",
+      "round_trip_count": 2,
+      "signal_count": 4,
+      "total_realized_pnl": "-2.10"
+    }
+  ],
+  "structural_finding": {
+    "explanation": "the additive far-leg basis construction makes the calendar spread algebraically invariant to which contract is currently front (far_price - near_price == basis[index] regardless of policy), so strategy-level signal timing and realized P&L come out identical between policies in THIS fixture even though roll dates and absolute price paths genuinely differ; see module docstring.",
+    "price_path_differs_between_policies": true,
+    "strategy_signal_and_pnl_identical_between_policies": true
+  }
+}

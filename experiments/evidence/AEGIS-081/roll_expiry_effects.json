@@ -1,0 +1,54 @@
+{
+  "artifact": "roll_expiry_effects",
+  "claim": "AEGIS-081: the real research.roll_expiry_effects.compute_roll_expiry_effects was run once over a real deterministic roll transition (real futures.roll_audit.build_roll_audit output, unmodified) and produced the before/on/after-roll slice metrics recorded above.",
+  "dataset_id": "CSX-synthetic-multi-contract (tools/roll_sensitivity_fixture.py)",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-18",
+  "not_evidence_for": [
+    "any claim about real markets -- the underlying near/far price data is synthetic/constructed (ADR-0025)",
+    "the general cross-strategy attribution framework reserved for M6 -- this is the narrower, M4-specific roll/expiry analysis only"
+  ],
+  "repository_commit": "44ce17cf015f8cdd27c4cfd94e339a9153654e4d",
+  "requirements": [
+    "AEGIS-081"
+  ],
+  "roll_dates": [
+    "2026-01-07"
+  ],
+  "roll_policy_name": "VolumeCrossoverPolicy",
+  "slices": [
+    {
+      "entry_count": 1,
+      "exit_count": 1,
+      "mean_expiry_distance_days": 167.5,
+      "mean_spread": "0.9166666666666666666666666667",
+      "observation_count": 6,
+      "slice": "before_roll"
+    },
+    {
+      "entry_count": 0,
+      "exit_count": 0,
+      "mean_expiry_distance_days": 256.0,
+      "mean_spread": "0.75",
+      "observation_count": 1,
+      "slice": "on_roll"
+    },
+    {
+      "entry_count": 1,
+      "exit_count": 1,
+      "mean_expiry_distance_days": 254.0,
+      "mean_spread": "1.55",
+      "observation_count": 3,
+      "slice": "after_roll"
+    },
+    {
+      "entry_count": 0,
+      "exit_count": 0,
+      "mean_expiry_distance_days": null,
+      "mean_spread": null,
+      "observation_count": 0,
+      "slice": "no_roll_observed"
+    }
+  ]
+}

@@ -20,7 +20,10 @@ Regenerate with:  python3 tools/generate_calendar_spread_stream.py
 from __future__ import annotations
 
 import csv
+import datetime
+import json
 import sys
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
@@ -108,8 +111,6 @@ def main() -> int:
         ),
     )
 
-    import json
-
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with OUTPUT_PATH.open("w", encoding="utf-8") as handle:
         for record in records:
@@ -120,9 +121,7 @@ def main() -> int:
     return 0
 
 
-def _ns_to_date(event_time_ns: int):
-    import datetime
-
+def _ns_to_date(event_time_ns: int) -> date:
     return datetime.datetime.fromtimestamp(event_time_ns / 1e9, tz=datetime.UTC).date()
 
 
