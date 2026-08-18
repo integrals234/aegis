@@ -26,7 +26,17 @@ if [[ ! -f "$BUILD_DIR/compile_commands.json" ]]; then
   exit 2
 fi
 
-echo "[style] clang-tidy -p $BUILD_DIR"
-clang-tidy -p "$BUILD_DIR" --quiet "${SOURCES[@]}"
+# AEGIS-227 (M5 addendum, m5-milestone-gate): parallelised over the exact
+# same full-tree SOURCES list built above -- never changed-files-only, never
+# narrowed. One clang-tidy invocation per file, fanned out across
+# AEGIS_TIDY_JOBS workers (default: the machine's core count); xargs exits
+# non-zero the moment any worker does, and `set -e` above turns that into
+# this script failing, so a single file's diagnostic cannot be silently
+# swallowed by the parallel fan-out. tests/unit/test_check_cpp_style_parallel.py
+# proves both properties (full coverage, failure propagation) against a
+# throwaway fixture repo.
+JOBS="${AEGIS_TIDY_JOBS:-$(nproc)}"
+echo "[style] clang-tidy -p $BUILD_DIR (parallel, $JOBS jobs, ${#SOURCES[@]} files)"
+printf '%s\0' "${SOURCES[@]}" | xargs -0 -P "$JOBS" -n 1 clang-tidy -p "$BUILD_DIR" --quiet
 
 echo "[style] ok"

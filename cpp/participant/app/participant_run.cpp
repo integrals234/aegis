@@ -6,15 +6,18 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include <nlohmann/json.hpp>
 
+#include "cpp/common/clock.hpp"
 #include "cpp/events/envelope.hpp"
 #include "cpp/events/exchange_messages.hpp"
 #include "cpp/events/market_data_messages.hpp"
 #include "cpp/participant/app/participant_snapshot.hpp"
+#include "cpp/participant/app/risk_engine_gate.hpp"
 #include "cpp/participant/book_builder/book_builder.hpp"
 #include "cpp/participant/feed_handler/feed_handler.hpp"
 #include "cpp/participant/oms/execution_adapter.hpp"
@@ -23,6 +26,8 @@
 #include "cpp/participant/oms/recorded_response_adapter.hpp"
 #include "cpp/participant/oms/risk_gate.hpp"
 #include "cpp/participant/portfolio/portfolio.hpp"
+#include "cpp/participant/portfolio/portfolio_risk.hpp"
+#include "cpp/participant/risk/risk_engine.hpp"
 #include "cpp/participant/strategy/calendar_spread_strategy.hpp"
 #include "cpp/statistics/rolling_moments.hpp"
 
@@ -527,25 +532,31 @@ struct MarketDataStep {
   return snapshot;
 }
 
-/// One leg's order through the mandatory risk seam, a deterministic immediate
-/// fill at that leg's own current best price (`bid_price_units` for a sell,
-/// `ask_price_units` for a buy) and the portfolio update -- the production
-/// counterpart to the real-M1-matching proof. `kCounterpartyOrderId` (0,
-/// never assigned to a real tracked order by this function -- exchange order
-/// ids here start at 1) is the fill's synthetic "other side": using an id
-/// that can never match a `TrackedOrder` is what keeps
-/// `apply_trade_to_portfolio` from double-applying the fill to our own order.
-void execute_leg(const StrategyLeg& leg, OrderManager& manager, Portfolio& ledger,
-                 std::int64_t bid_price_units, std::int64_t ask_price_units,
-                 std::uint64_t& next_exchange_order_id) {
+/// One leg's order through the mandatory risk seam (the real M5
+/// `risk::RiskEngine`, via `RiskEngineGate` -- ADR-0027), a deterministic
+/// immediate fill at the APPROVED quantity -- never the strategy's original
+/// ask: a `kResize` verdict changes what `OrderManager` actually submits,
+/// and `tracked->original_quantity_units` is what `OrderManager` itself
+/// recorded after applying that resize -- and the portfolio + risk fill
+/// feedback. Returns the assigned `client_order_id`, or 0 if the seam
+/// rejected the order: the composition root only calls this after a
+/// proposal-level approve/resize, so a per-leg reject here means the seam
+/// disagreed with the already-committed proposal decision, which a
+/// well-formed run never produces but this function still handles safely
+/// rather than fabricate a fill.
+std::uint64_t execute_leg(const StrategyLeg& leg, OrderManager& manager, Portfolio& ledger,
+                          risk::RiskEngine& risk_engine, std::int64_t bid_price_units,
+                          std::int64_t ask_price_units, std::uint64_t& next_exchange_order_id) {
   const std::int64_t limit_price_units = leg.side == Side::kBuy ? ask_price_units : bid_price_units;
   const auto client_order_id =
       manager.submit_new_order(leg.instrument_id, /*participant_id=*/1, leg.side, OrderType::kLimit,
                                limit_price_units, leg.quantity_units);
   const auto* tracked = manager.find_by_client_order_id(client_order_id);
-  if (tracked == nullptr) {
-    return;
+  if (tracked == nullptr || tracked->lifecycle.state() == OrderState::kRejected) {
+    risk_engine.on_order_rejected(client_order_id);
+    return 0;
   }
+  const std::int64_t approved_quantity_units = tracked->original_quantity_units;
 
   const std::uint64_t our_order_id = ++next_exchange_order_id;
   manager.handle_order_accepted(OrderAcceptedEvent{.order_id = our_order_id,
@@ -555,21 +566,18 @@ void execute_leg(const StrategyLeg& leg, OrderManager& manager, Portfolio& ledge
                                                    .side = leg.side,
                                                    .order_type = OrderType::kLimit,
                                                    .price_units = limit_price_units,
-                                                   .quantity_units = leg.quantity_units});
+                                                   .quantity_units = approved_quantity_units});
 
-  // Our own order is always the trade's taker in this synthesis, regardless
-  // of which side it trades: there is no independently modelled resting
-  // counterparty to be the maker against, only this deterministic immediate
-  // fill. `kCounterpartyOrderId` (0, never assigned to a real tracked order --
-  // exchange order ids here start at 1) is the maker side, so
-  // `apply_trade_to_portfolio`'s maker branch never matches and only the
-  // taker branch -- which uses `trade.taker_side` directly -- applies the
-  // fill, at exactly `leg.side`.
+  // Our own order is always the trade's taker in this synthesis (see the
+  // original design note this function inherits): kCounterpartyOrderId (0,
+  // never assigned to a real tracked order -- exchange order ids here start
+  // at 1) is the maker side, so apply_trade_to_portfolio's maker branch
+  // never matches and only the taker branch applies the fill.
   constexpr std::uint64_t kCounterpartyOrderId = 0;
   const TradeEvent trade{
       .instrument_id = leg.instrument_id,
       .price_units = limit_price_units,
-      .quantity_units = leg.quantity_units,
+      .quantity_units = approved_quantity_units,
       .maker_order_id = kCounterpartyOrderId,
       .taker_order_id = our_order_id,
       .maker_participant_id = 0,
@@ -578,16 +586,20 @@ void execute_leg(const StrategyLeg& leg, OrderManager& manager, Portfolio& ledge
   };
   manager.handle_trade(trade);
   apply_trade_to_portfolio(trade, manager, ledger, /*fee_units=*/0);
+  risk_engine.on_fill(client_order_id, leg.instrument_id, leg.side, approved_quantity_units);
 
   manager.handle_order_terminated(OrderTerminatedEvent{.order_id = our_order_id,
                                                        .reason = TerminationReason::kFilled,
                                                        .cancelled_quantity_delta_units = 0});
+  risk_engine.on_order_terminated(client_order_id);
+  return client_order_id;
 }
 
 [[nodiscard]] std::string describe_calendar_spread_state(
     const CalendarSpreadStrategy& strategy_state, const StrategyProposal& proposal,
     const OrderManager& manager, const Portfolio& ledger, std::uint32_t near_instrument_id,
-    std::int64_t near_mark_price_units, std::int64_t far_mark_price_units) {
+    std::int64_t near_mark_price_units, std::int64_t far_mark_price_units,
+    const risk::ProposalRiskDecision* proposal_decision) {
   Json out;
   out["spread_price"] = proposal.spread_price;
   out["z_score"] = proposal.z_score;
@@ -597,6 +609,15 @@ void execute_leg(const StrategyLeg& leg, OrderManager& manager, Portfolio& ledge
     out["near_side"] = static_cast<int>(proposal.near.side);
     out["far_side"] = static_cast<int>(proposal.far.side);
     out["quantity_units"] = proposal.near.quantity_units;
+  }
+
+  if (proposal_decision != nullptr) {
+    Json risk_json;
+    risk_json["proposal_id"] = proposal_decision->proposal_id;
+    risk_json["verdict"] = static_cast<int>(proposal_decision->verdict);
+    risk_json["reason_code"] = static_cast<int>(proposal_decision->reason_code);
+    risk_json["reason"] = proposal_decision->reason;
+    out["risk_decision"] = risk_json;
   }
 
   Json positions = Json::array();
@@ -620,7 +641,8 @@ void execute_leg(const StrategyLeg& leg, OrderManager& manager, Portfolio& ledge
 }  // namespace
 
 CalendarSpreadRunResult run_calendar_spread_scenario(const std::string& stream_path,
-                                                     const CalendarSpreadRunConfig& config) {
+                                                     const CalendarSpreadRunConfig& config,
+                                                     const risk::RiskLimitsConfig& risk_config) {
   const auto steps = read_market_data_steps(stream_path);
 
   feed::FeedHandler handler;
@@ -635,12 +657,22 @@ CalendarSpreadRunResult run_calendar_spread_scenario(const std::string& stream_p
                                              .quantity_units = config.quantity_units};
   CalendarSpreadStrategy strategy_state(strategy_config);
 
-  AlwaysApproveRiskGate risk;
+  risk::RiskEngine risk_engine(risk_config);
+  common::ManualClock clock;
+  RiskEngineGate risk_gate(risk_engine, clock);
   ImmediateFillExecutionAdapter adapter;
   const oms::FeeSchedule fees{.fee_rate_ppm = 0};
-  OrderManager manager(adapter, risk, fees);
+  OrderManager manager(adapter, risk_gate, fees);
   Portfolio ledger;
   std::uint64_t next_exchange_order_id = 0;
+  std::uint64_t proposal_sequence = 0;
+  const std::string strategy_id = "calendar_spread";
+
+  // Deterministic virtual time: one second per market-data step, injected
+  // through a ManualClock (never the system clock -- AEGIS-005), so
+  // staleness/rate-limit/collar checks and every audit-log timestamp are
+  // reproducible byte-for-byte across runs.
+  constexpr common::Duration kStepAdvance{1'000'000'000};
 
   CalendarSpreadRunResult result;
   bool near_ready = false;
@@ -648,6 +680,7 @@ CalendarSpreadRunResult run_calendar_spread_scenario(const std::string& stream_p
   std::int64_t near_ask = 0;
 
   for (std::uint64_t sequence = 0; sequence < steps.size(); ++sequence) {
+    clock.advance(kStepAdvance);
     const MarketDataStep& step = steps[sequence];
     const BookSnapshotEvent snapshot = make_two_sided_snapshot(step);
     const auto decoded = handler.decode(
@@ -661,30 +694,179 @@ CalendarSpreadRunResult run_calendar_spread_scenario(const std::string& stream_p
       near_ready = true;
       near_bid = step.bid_price_units;
       near_ask = step.ask_price_units;
+      risk_engine.on_market_data(config.near_instrument_id, (near_bid + near_ask) / 2, clock.now_utc(),
+                                 /*valid=*/true);
       continue;  // Wait for this date's far leg before acting (header).
     }
 
     far_book.apply_snapshot(*decoded.snapshot);
+    const std::int64_t far_bid = step.bid_price_units;
+    const std::int64_t far_ask = step.ask_price_units;
+    risk_engine.on_market_data(config.far_instrument_id, (far_bid + far_ask) / 2, clock.now_utc(),
+                               /*valid=*/true);
     if (!near_ready) {
       continue;  // A far leg with no near observation yet: nothing to spread against.
     }
-    const std::int64_t far_bid = step.bid_price_units;
-    const std::int64_t far_ask = step.ask_price_units;
 
     const StrategyProposal proposal =
         strategy_state.on_book_update(near_book.top_of_book(), far_book.top_of_book());
+
+    const risk::ProposalRiskDecision* decision_ptr = nullptr;
     if (proposal.has_action) {
-      execute_leg(proposal.near, manager, ledger, near_bid, near_ask, next_exchange_order_id);
-      execute_leg(proposal.far, manager, ledger, far_bid, far_ask, next_exchange_order_id);
+      ++proposal_sequence;
+      const std::string proposal_id = strategy_id + "-" + std::to_string(proposal_sequence);
+      const std::int64_t near_price_units = proposal.near.side == Side::kBuy ? near_ask : near_bid;
+      const std::int64_t far_price_units = proposal.far.side == Side::kBuy ? far_ask : far_bid;
+      const std::vector<risk::OrderRequest> legs{
+          risk::OrderRequest{.strategy_id = strategy_id,
+                             .proposal_id = proposal_id,
+                             .leg_index = 0,
+                             .instrument_id = proposal.near.instrument_id,
+                             .side = proposal.near.side,
+                             .price_units = near_price_units,
+                             .quantity_units = proposal.near.quantity_units,
+                             .request_time_nanos = clock.now_utc()},
+          risk::OrderRequest{.strategy_id = strategy_id,
+                             .proposal_id = proposal_id,
+                             .leg_index = 1,
+                             .instrument_id = proposal.far.instrument_id,
+                             .side = proposal.far.side,
+                             .price_units = far_price_units,
+                             .quantity_units = proposal.far.quantity_units,
+                             .request_time_nanos = clock.now_utc()},
+      };
+      // Atomic, whole-proposal decision BEFORE either leg reaches the OMS
+      // (AEGIS-137/ADR-0027): a reject here means execute_leg is called for
+      // NEITHER leg, so a rejected spread can never become a naked
+      // one-legged position.
+      const risk::ProposalRiskDecision& decision =
+          risk_engine.commit_proposal_decision(strategy_id, proposal_id, legs, clock.now_utc());
+      decision_ptr = &decision;
+      if (decision.verdict != risk::RiskVerdict::kReject) {
+        execute_leg(proposal.near, manager, ledger, risk_engine, near_bid, near_ask,
+                   next_exchange_order_id);
+        execute_leg(proposal.far, manager, ledger, risk_engine, far_bid, far_ask, next_exchange_order_id);
+      }
     }
 
     const std::int64_t near_mark = (near_bid + near_ask) / 2;
     const std::int64_t far_mark = (far_bid + far_ask) / 2;
+    const std::int64_t equity_units = config.starting_capital_units + ledger.cash_units() +
+        ledger.unrealized_pnl_units(config.near_instrument_id, near_mark) +
+        ledger.unrealized_pnl_units(config.far_instrument_id, far_mark);
+    risk_engine.on_equity_update(equity_units);
+    risk_engine.on_session_pnl_update(equity_units - config.starting_capital_units);
+
     result.lines.push_back(describe_calendar_spread_state(
-        strategy_state, proposal, manager, ledger, config.near_instrument_id, near_mark, far_mark));
+        strategy_state, proposal, manager, ledger, config.near_instrument_id, near_mark, far_mark,
+        decision_ptr));
   }
 
   return result;
+}
+
+namespace {
+
+[[nodiscard]] std::unordered_map<std::uint32_t, std::int64_t> parse_instrument_int64_map(
+    const Json& node) {
+  std::unordered_map<std::uint32_t, std::int64_t> result;
+  for (const auto& [key, value] : node.items()) {
+    result[static_cast<std::uint32_t>(std::stoul(key))] = value.get<std::int64_t>();
+  }
+  return result;
+}
+
+}  // namespace
+
+risk::RiskLimitsConfig load_risk_limits_config(const std::string& path) {
+  std::ifstream file(path);
+  if (!file) {
+    throw std::runtime_error("cannot open risk config " + path);
+  }
+  Json doc;
+  file >> doc;
+
+  risk::RiskLimitsConfig config;
+  config.base_currency = doc.value("base_currency", std::string{"USD"});
+
+  if (doc.contains("order_quantity_limits")) {
+    for (const auto& [key, value] : doc.at("order_quantity_limits").items()) {
+      config.order_quantity_limits[static_cast<std::uint32_t>(std::stoul(key))] =
+          risk::OrderQuantityLimit{.max_order_quantity_units = value.at("max_order_quantity_units").get<std::int64_t>(),
+                                  .resize_on_breach = value.value("resize_on_breach", false)};
+    }
+  }
+  if (doc.contains("position_limits")) {
+    for (const auto& [key, value] : doc.at("position_limits").items()) {
+      config.position_limits[static_cast<std::uint32_t>(std::stoul(key))] =
+          risk::PositionLimit{.max_long_units = value.at("max_long_units").get<std::int64_t>(),
+                             .max_short_units = value.at("max_short_units").get<std::int64_t>()};
+    }
+  }
+  config.max_order_notional_units = doc.value("max_order_notional_units", std::int64_t{0});
+  config.max_portfolio_notional_units = doc.value("max_portfolio_notional_units", std::int64_t{0});
+  if (doc.contains("fx_rate_to_base")) {
+    for (const auto& [key, value] : doc.at("fx_rate_to_base").items()) {
+      config.fx_rate_to_base[key] = value.get<double>();
+    }
+  }
+  if (doc.contains("instruments")) {
+    for (const auto& [key, value] : doc.at("instruments").items()) {
+      config.instruments[static_cast<std::uint32_t>(std::stoul(key))] =
+          risk::InstrumentInfo{.multiplier_units = value.value("multiplier_units", std::int64_t{1}),
+                              .currency = value.value("currency", std::string{"USD"}),
+                              .market = value.value("market", std::string{}),
+                              .sector = value.value("sector", std::string{})};
+    }
+  }
+  if (doc.contains("market_exposure_limit_units")) {
+    for (const auto& [key, value] : doc.at("market_exposure_limit_units").items()) {
+      config.market_exposure_limit_units[key] = value.get<std::int64_t>();
+    }
+  }
+  if (doc.contains("sector_exposure_limit_units")) {
+    for (const auto& [key, value] : doc.at("sector_exposure_limit_units").items()) {
+      config.sector_exposure_limit_units[key] = value.get<std::int64_t>();
+    }
+  }
+  config.price_collar_bps = doc.value("price_collar_bps", std::int64_t{0});
+  config.max_quote_age = common::Duration{doc.value("max_quote_age_nanos", std::int64_t{0})};
+  config.rate_limit_window =
+      common::Duration{doc.value("rate_limit_window_nanos", std::int64_t{1'000'000'000})};
+  config.max_orders_per_window = doc.value("max_orders_per_window", std::uint32_t{0});
+  config.max_cancels_per_window = doc.value("max_cancels_per_window", std::uint32_t{0});
+  if (doc.contains("margin_per_contract_units")) {
+    config.margin.margin_per_contract_units =
+        parse_instrument_int64_map(doc.at("margin_per_contract_units"));
+  }
+  config.max_leverage = doc.value("max_leverage", 0.0);
+  config.daily_loss_limit_units = doc.value("daily_loss_limit_units", std::int64_t{0});
+  config.max_drawdown_units = doc.value("max_drawdown_units", std::int64_t{0});
+  if (doc.contains("volatility")) {
+    const auto& vol = doc.at("volatility");
+    config.volatility.window = vol.value("window", std::size_t{20});
+    config.volatility.target_volatility = vol.value("target_volatility", 0.0);
+    config.volatility.hard_reject_multiple = vol.value("hard_reject_multiple", 3.0);
+  }
+  if (doc.contains("concentration")) {
+    const auto& conc = doc.at("concentration");
+    config.concentration.max_concentration_share = conc.value("max_concentration_share", 1.0);
+    if (conc.contains("correlated_groups")) {
+      for (const auto& [group_id, members] : conc.at("correlated_groups").items()) {
+        std::vector<std::uint32_t> ids;
+        for (const auto& member : members) {
+          ids.push_back(member.get<std::uint32_t>());
+        }
+        config.concentration.correlated_groups[group_id] = std::move(ids);
+      }
+    }
+    if (conc.contains("group_exposure_limit_units")) {
+      for (const auto& [group_id, value] : conc.at("group_exposure_limit_units").items()) {
+        config.concentration.group_exposure_limit_units[group_id] = value.get<std::int64_t>();
+      }
+    }
+  }
+  return config;
 }
 
 }  // namespace aegis::participant::app

@@ -1,6 +1,6 @@
 # Build State
 
-- Active milestone: M4
+- Active milestone: M5
 - M0 status: **CLOSED** 2026-08-06 (owner-approved fast-track closure)
 - M1 status: **CLOSED** 2026-08-09. All 15 M1 requirements (AEGIS-027..041) are
   `verified` on an independent `/audit-milestone M1` against the final tree
@@ -81,39 +81,28 @@
   3. This branch, `milestone/m4-calendar-spread`, carries the remainder: the
      three participant-app files, the `--calendar-spread` demo, and Batch 2's
      research, reports and evidence.
-- Active branch: `chore/m5-activation-policy`, the M5 activation pull request
-  (**PR #13**). It changes exactly two files — `configs/governance/policy.yaml` (the M4→M5
-  `active_milestone` flip plus the five M5 approvals) and this file (M4
-  post-merge bookkeeping). It carries **no M5 implementation**:
-  `configs/architecture_rules.yaml`, CI, CMake and every source tree are
-  untouched, and `milestone/m5-risk-validation` does not exist yet.
-  `milestone/m4-calendar-spread` was merged by PR #12 and is no longer active.
-- **This pull request deliberately leaves `- Active milestone:` at `M4`.** The
-  authoritative gate reads `configs/governance/policy.yaml` from the *base*
-  branch and requires this mirror to match it, so a single pull request
-  flipping both would fail its own gate — exactly as at the M3 (PR #7) and M4
-  (PR #10) transitions. The mirror flips to `M5` in M5 Batch 1, on
-  `milestone/m5-risk-validation`, once this pull request is merged and `main`
-  itself says `M5`. That flip must land in the same commit as the first real
-  sources in `cpp/participant/risk` **and** `python/validation`:
-  `tools/check_architecture.py`'s `check_layer_population` makes emptiness a
-  checked fact in both directions, and both layers are dated M5.
-- Owner-approved scope changes: `configs/architecture_rules.yaml`, `cpp/participant/CMakeLists.txt`, `cpp/participant/app/CMakeLists.txt`, `.github/workflows/ci.yml`, `scripts/ci_local.sh`, `cpp/participant/app/participant_run.hpp`, `cpp/participant/app/participant_run.cpp`, `cpp/participant/app/participant_run_main.cpp`
+- Active branch: `milestone/m5-risk-validation`, holding M5 Batch 1. PR #13
+  (the M5 activation policy: `active_milestone: M4 -> M5`, five exact-path
+  approvals) was merged first; this branch carries the mirror flip in the
+  same commit as the first real sources in `cpp/participant/risk` **and**
+  `python/validation` — `tools/check_architecture.py`'s
+  `check_layer_population` makes emptiness a checked fact in both directions,
+  and both layers are dated M5, so flipping the mirror in a tree where either
+  was still empty would fail by construction.
+- Owner-approved scope changes: `configs/architecture_rules.yaml`, `cpp/participant/CMakeLists.txt`, `cpp/participant/app/CMakeLists.txt`, `cpp/participant/app/risk_engine_gate.hpp`, `cpp/participant/app/risk_engine_gate.cpp`, `cpp/participant/app/participant_run.hpp`, `cpp/participant/app/participant_run.cpp`, `cpp/participant/app/participant_run_main.cpp`, `.github/workflows/ci.yml`, `scripts/ci_local.sh`, `scripts/check_cpp_style.sh`, `cpp/participant/app/fault_scenario.hpp`, `cpp/participant/app/fault_scenario.cpp`
   — **a MIRROR, not the authority.** Since ADR-0014 (R8, PR #3) this line
   **grants nothing**: approvals live in `configs/governance/policy.yaml` on
   protected `main`, where an agent cannot put them, and
   `tools/governance/authoritative_check.py` runs from `main` under
-  `pull_request_target` reading this branch only as data. The eight paths
-  above are transcribed from the four **M4** approvals in that policy:
-  `m4-architecture-transition`, `m4-build-wiring` and `m4-milestone-gate`
-  (granted in PR #10), plus `m4-participant-app-integration` (granted in the
-  pull request this line is being edited on). The M2 paths this line
-  previously carried — `cpp/CMakeLists.txt`,
-  `requirements/python-requirements.in`, `requirements/requirements.lock`,
-  `pyproject.toml` — became inert the moment `active_milestone` left M2:
-  `approved_paths()` skips any approval whose milestone is not the active
-  one, so they are dropped here rather than left to imply a permission that
-  no longer exists.
+  `pull_request_target` reading this branch only as data. The thirteen paths
+  above are transcribed from the five **M5** approvals in that policy
+  (`m5-architecture-transition`, `m5-build-wiring`,
+  `m5-participant-app-integration`, `m5-milestone-gate`,
+  `m5-fault-scenario-risk-response`; all granted in PR #13). The eight M4
+  paths this line previously carried became inert the moment
+  `active_milestone` left M4: `approved_paths()` skips any approval whose
+  milestone is not the active one, so they are dropped here rather than left
+  to imply a permission that no longer exists.
   The mirror exists so `tools/check_scope.py` — retained as a fast advisory
   check, which still parses this line — agrees with the authoritative gate
   instead of contradicting it. If the two ever disagree, **the gate is right
@@ -180,19 +169,72 @@
 
 ## M5 state
 
-**ACTIVATION PROPOSED** — **PR #13** is the M5 activation, awaiting the
-owner's approving review. It flips `configs/governance/policy.yaml`'s
-`active_milestone` from `M4` to `M5` and adds the five M5 approvals below.
-Nothing else changes; **no M5 implementation exists yet**, and the M5 plan of
-record will be committed as `experiments/plans/M5.md` in Batch 1.
+**IN PROGRESS** — PR #13 (the M5 activation policy) was approved and merged.
+Batch 1 is underway on `milestone/m5-risk-validation`: the mirror above is
+now `M5`, `cpp/participant/risk` carries a real `RiskEngine` and
+`python/validation` carries the partition/walk-forward foundation. **Not yet
+closed, and no requirement below is `verified` yet** — verification is
+Batch-2-and-closure work, per `docs/BUILD_STATE.md`'s own promotion
+discipline. This section will be replaced at closure with the final M5
+state (`experiments/plans/M5.md`, `experiments/milestone-reports/M5.md`).
 
 M5 is *Independent risk and validation*: 36 primary requirements
 (AEGIS-120..138 risk and portfolio controls, AEGIS-139..155 anti-overfitting
 validation) plus the three inherited obligations dated M5 in
 `docs/DEFERRED_VERIFICATION.md` — AEGIS-062, AEGIS-063 and AEGIS-238. It turns
-the mandatory risk seam into enforced policy: `cpp/participant/risk` is empty
-today and every risk verdict shipped so far is the `AlwaysApproveRiskGate`
-test double (ADR-0023).
+the mandatory risk seam into enforced policy. Before this batch,
+`cpp/participant/risk` was empty and every risk verdict shipped
+(`cpp/participant/app/participant_run.cpp`'s calendar-spread path,
+M3's fixture-driven path) was the `AlwaysApproveRiskGate` test double
+(ADR-0023). Batch 1 replaces that double in the calendar-spread demo path
+with a real `risk::RiskEngine`; the M3 fixture-driven path
+(`run_participant_fixture`) is unrelated to M5 and keeps its own double
+unchanged, as ADR-0023 always intended.
+
+### Batch 1 status (this commit)
+
+Real, tested, focused-test-verified (not yet `verified` in the requirement
+catalogue -- promotion is closure work):
+
+* `cpp/participant/risk/`: `RiskEngine` implementing every AEGIS-121..137
+  control (order quantity, position + reservation lifecycle, notional/FX,
+  market/sector exposure, price collars, staleness/validity, idempotency,
+  message-rate limits with a safety-cancel bypass, margin, leverage, daily
+  loss and drawdown latches, volatility-triggered resizing, concentration/
+  correlated-group limits, kill switches, connectivity loss, and the
+  proposal/order audit-decision invariant).
+* `cpp/participant/app/risk_engine_gate.{hpp,cpp}`: the `oms::RiskGate`
+  adapter (ADR-0027).
+* `cpp/participant/portfolio/portfolio_risk.{hpp,cpp}`: AEGIS-138 analytics
+  (gross/net exposure, margin used/available, market/sector exposure,
+  volatility/drawdown contribution, scripted stress scenarios).
+* `cpp/participant/app/participant_run.*`: the calendar-spread demo now
+  routes through the real engine; `aegis_participant_run --calendar-spread
+  --stream PATH --risk-config PATH` is the production CLI path (Demo A).
+* `cpp/participant/app/fault_scenario.*`: `run_market_stress_risk_scenario`
+  pays the AEGIS-062 residual (real risk responses to spread-widening/
+  volatility-spike/liquidity-vanish faults).
+* `tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp`: Demo
+  B, the same engine and seam against a real unmodified M1 `ExchangeNode` and
+  real FIFO matching -- allow, reject (zero submit/zero exchange order/zero
+  portfolio change), resize, and global-kill-switch scenarios.
+* `tests/cpp/unit/test_risk_fault_execution_stress.cpp`: pays the AEGIS-063
+  residual (OMS/risk integration for kRejection/kLatencySpike/kPartialFill/
+  kBackpressure).
+* `python/validation/{partitions,walk_forward}.py`: the AEGIS-139/140/141
+  foundation `check_layer_population` requires non-vacuously for
+  `python-validation`.
+* `configs/risk/limits.json` (+ `limits_reject_demo.json`, `stress.json`),
+  ADR-0027, ADR-0028.
+* Milestone gate retargeted M4→M5 in `.github/workflows/ci.yml` and
+  `scripts/ci_local.sh`; `scripts/check_cpp_style.sh` parallelises the same
+  full-tree clang-tidy file set (`AEGIS_TIDY_JOBS`, default `nproc`), proven
+  by `tests/unit/test_check_cpp_style_parallel.py` against a stub toolchain.
+
+Not yet done (Batch 2): AEGIS-139..155's remaining validation modules,
+AEGIS-238's observability integration, evidence generation, and the
+independent audit. `requirements/implementation_status.json` is untouched by
+Batch 1 -- no status promoted, no obligation cleared.
 
 The five M5 approvals, all exact-path and milestone-scoped, so all expire when
 M5 does:

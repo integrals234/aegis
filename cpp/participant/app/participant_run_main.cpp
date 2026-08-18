@@ -32,10 +32,12 @@ namespace {
 using aegis::participant::app::CalendarSpreadRunConfig;
 using aegis::participant::app::CalendarSpreadRunResult;
 using aegis::participant::app::FixtureRunResult;
+using aegis::participant::app::load_risk_limits_config;
 using aegis::participant::app::run_builtin_scenario;
 using aegis::participant::app::run_calendar_spread_scenario;
 using aegis::participant::app::run_participant_fixture;
 using aegis::participant::app::RunSummary;
+using aegis::participant::risk::RiskLimitsConfig;
 
 struct Options {
   std::optional<std::string> fixture_path;
@@ -47,6 +49,10 @@ struct Options {
   /// first M4 strategy instead of the fixture/builtin paths above.
   bool calendar_spread{false};
   std::optional<std::string> stream_path;
+  /// AEGIS-120..138, ADR-0027: the M5 risk config the real RiskEngine
+  /// enforces the calendar-spread path with. Required together with
+  /// --calendar-spread -- there is no implicit-approve fallback in M5.
+  std::optional<std::string> risk_config_path;
 };
 
 [[nodiscard]] std::unordered_map<std::string, std::function<void(Options&, std::string)>>
@@ -64,6 +70,8 @@ make_flag_setters() {
        [](Options& options, std::string value) { options.restore_from = std::move(value); }},
       {"--stream",
        [](Options& options, std::string value) { options.stream_path = std::move(value); }},
+      {"--risk-config",
+       [](Options& options, std::string value) { options.risk_config_path = std::move(value); }},
   };
 }
 
@@ -128,8 +136,14 @@ int run(const Options& options) {
       std::cerr << "--calendar-spread requires --stream PATH\n";
       return 2;
     }
+    if (!options.risk_config_path.has_value()) {
+      std::cerr << "--calendar-spread requires --risk-config PATH (AEGIS-120: no implicit-approve "
+                   "fallback)\n";
+      return 2;
+    }
+    const RiskLimitsConfig risk_config = load_risk_limits_config(*options.risk_config_path);
     const CalendarSpreadRunResult result =
-        run_calendar_spread_scenario(*options.stream_path, CalendarSpreadRunConfig{});
+        run_calendar_spread_scenario(*options.stream_path, CalendarSpreadRunConfig{}, risk_config);
     for (const auto& line : result.lines) {
       std::cout << line << "\n";
     }
@@ -157,7 +171,7 @@ int main(int argc, char** argv) {
   if (!options.has_value()) {
     std::cerr << "usage: aegis_participant_run "
                  "[--fixture PATH [--skip N] [--limit N] [--snapshot-out PATH] "
-                 "[--restore-from PATH]] | [--calendar-spread --stream PATH]\n";
+                 "[--restore-from PATH]] | [--calendar-spread --stream PATH --risk-config PATH]\n";
     return 2;
   }
   try {

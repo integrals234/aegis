@@ -1,0 +1,75 @@
+{
+  "_comment": "M5 REJECT demo variant: identical to limits.json except order_quantity_limits are tightened to 0 with resize_on_breach=false, so the same calendar-spread stream that ALLOWs under limits.json is REJECTED here on quantity -- proving zero adapter submission and zero exchange order (AEGIS-121).",
+  "base_currency": "USD",
+  "order_quantity_limits": {
+    "2001": {
+      "max_order_quantity_units": 0,
+      "resize_on_breach": false
+    },
+    "2002": {
+      "max_order_quantity_units": 0,
+      "resize_on_breach": false
+    }
+  },
+  "position_limits": {
+    "2001": {
+      "max_long_units": 200,
+      "max_short_units": 200
+    },
+    "2002": {
+      "max_long_units": 200,
+      "max_short_units": 200
+    }
+  },
+  "max_order_notional_units": 50000000,
+  "max_portfolio_notional_units": 200000000,
+  "instruments": {
+    "2001": {
+      "multiplier_units": 50,
+      "currency": "USD",
+      "market": "EQX",
+      "sector": "index"
+    },
+    "2002": {
+      "multiplier_units": 50,
+      "currency": "USD",
+      "market": "EQX",
+      "sector": "index"
+    }
+  },
+  "market_exposure_limit_units": {
+    "EQX": 150000000
+  },
+  "sector_exposure_limit_units": {
+    "index": 150000000
+  },
+  "price_collar_bps": 500,
+  "max_quote_age_nanos": 5000000000,
+  "rate_limit_window_nanos": 1000000000,
+  "max_orders_per_window": 10,
+  "max_cancels_per_window": 10,
+  "margin_per_contract_units": {
+    "2001": 500000,
+    "2002": 500000
+  },
+  "max_leverage": 10.0,
+  "daily_loss_limit_units": 100000000,
+  "max_drawdown_units": 150000000,
+  "volatility": {
+    "window": 20,
+    "target_volatility": 0.02,
+    "hard_reject_multiple": 3.0
+  },
+  "concentration": {
+    "max_concentration_share": 1.0,
+    "correlated_groups": {
+      "calendar_spread_pair": [
+        2001,
+        2002
+      ]
+    },
+    "group_exposure_limit_units": {
+      "calendar_spread_pair": 180000000
+    }
+  }
+}

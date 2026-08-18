@@ -5,6 +5,8 @@
 add_library(aegis_participant_portfolio
   portfolio.cpp
   portfolio.hpp
+  portfolio_risk.cpp
+  portfolio_risk.hpp
   portfolio_snapshot.cpp
   portfolio_snapshot.hpp)
 

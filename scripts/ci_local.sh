@@ -81,7 +81,7 @@ negative_gates() {
 
 # --- Governance -------------------------------------------------------------
 stage "requirement audit"        "$PYTHON" tools/audit_requirements.py
-stage "milestone audit"          "$PYTHON" tools/audit_requirements.py --milestone M4
+stage "milestone audit"          "$PYTHON" tools/audit_requirements.py --milestone M5
 # Both of these are ADVISORY since R8 (ADR-0014): they live in the branch they
 # judge. The authoritative verdict is the "Authoritative governance gate (R8)"
 # job, which runs tools/governance/authoritative_check.py from protected main.

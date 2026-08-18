@@ -6,6 +6,7 @@
 
 #include "cpp/common/time.hpp"
 #include "cpp/events/market_data_messages.hpp"
+#include "cpp/participant/risk/risk_engine.hpp"
 #include "cpp/replay/fault_injection.hpp"
 #include "cpp/replay/replay_event.hpp"
 
@@ -62,5 +63,49 @@ struct FaultScenarioOutcome {
     const std::vector<replay::ReplayEvent>& timing, const std::vector<replay::FaultRule>& rules,
     const std::optional<events::market_data::BookSnapshotEvent>& recovery_snapshot,
     common::Duration max_staleness_age, std::uint32_t max_consecutive_faults);
+
+// ---------------------------------------------------------------------------
+// AEGIS-062 M5 residual: reproducible RISK RESPONSES to the three market-
+// stress fault kinds `cpp/replay/fault_injection.hpp` already delivers
+// deterministically (M2 slice 12). This adds no fault kind and reinterprets
+// nothing about how `replay::DeterministicFaultInjector::apply` declares or
+// orders a fault -- it is the M5 consumer that fault machinery had no risk
+// engine to reach before now.
+// ---------------------------------------------------------------------------
+
+/// One rule's translation into an actual `risk::RiskEngine` response, so the
+/// obligation's "risk responses are reproducible" is a decision the engine
+/// really made, not a report computed afterward.
+struct MarketStressRiskResponse {
+  replay::FaultKind kind{replay::FaultKind::kSpreadWidening};
+  std::uint64_t magnitude{0};
+  risk::RiskVerdict verdict{risk::RiskVerdict::kReject};
+  risk::ReasonCode reason_code{risk::ReasonCode::kNone};
+};
+
+/// For each `rules` entry (`kSpreadWidening`, `kVolatilitySpike` or
+/// `kLiquidityVanish` -- any other kind is skipped, not silently
+/// misinterpreted), deterministically derives the market condition
+/// `magnitude` describes and feeds it to `engine` before evaluating one
+/// fixed-size test order at `base_price_units`, in the same declared-rule
+/// order:
+///   * `kSpreadWidening`: `magnitude` basis points of price deviation from
+///     the last valid reference -- large enough, this breaches
+///     `RiskLimitsConfig::price_collar_bps`;
+///   * `kVolatilitySpike`: `magnitude` basis points of alternating return
+///     shock pushed through `RiskEngine::on_market_data`, feeding the same
+///     `RollingRealizedVolatility` `evaluate` reads (AEGIS-133);
+///   * `kLiquidityVanish`: an invalid market update (`on_market_data(...,
+///     valid=false)`) -- liquidity vanishing is modelled as the book no
+///     longer offering a valid two-sided quote, exactly what AEGIS-126
+///     already rejects trading on.
+/// `engine` is mutated (each response is a real `evaluate` call, and
+/// `on_market_data` is stateful); a caller wanting a clean-slate comparison
+/// constructs a fresh engine per call, as every test in
+/// `tests/cpp/unit/test_risk_fault_market_stress.cpp` does.
+[[nodiscard]] std::vector<MarketStressRiskResponse> run_market_stress_risk_scenario(
+    risk::RiskEngine& engine, std::uint32_t instrument_id, std::int64_t base_price_units,
+    std::int64_t order_quantity_units, const std::vector<replay::FaultRule>& rules,
+    common::Nanos now_nanos);
 
 }  // namespace aegis::participant::app
