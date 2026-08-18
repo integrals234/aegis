@@ -9,7 +9,7 @@
     "cpp-participant-book-builder",
     "cpp-statistics"
   ],
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "expect_sources_from_milestone": "M4",
   "forbidden_includes_found": [],
@@ -21,7 +21,7 @@
   ],
   "producer": "tools/generate_architecture_separation_evidence.py",
   "real_matching_harness_location": "tests/cpp/support/in_process_exchange_transport.hpp -- under tests/, which covered_roots deliberately excludes, so it creates no production participant -> exchange edge",
-  "repository_commit": "6fbfd134812b6ea225b231dfac787df865bd4449",
+  "repository_commit": "bf3de1f516949d3a4b9f7a16b0a1fd1228b14e64",
   "requirements": [
     "AEGIS-004"
   ],

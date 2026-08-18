@@ -1,7 +1,7 @@
 {
   "artifact": "calendar_spread_dataset",
   "claim": "AEGIS-076: the real research.calendar_spread.build_calendar_spread_observations was run twice over identical committed inputs and produced identical observations, each carrying the provenance needed to reproduce it: near and far contract identity, both prices, whether the far price was observed or constructed (and from what), the roll policy that selected the near leg, and the contract step.",
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "far_price_source_counts": {
     "constructed": 0,
@@ -141,7 +141,7 @@
     }
   ],
   "producer": "tools/generate_calendar_spread_dataset_evidence.py",
-  "repository_commit": "6fbfd134812b6ea225b231dfac787df865bd4449",
+  "repository_commit": "bf3de1f516949d3a4b9f7a16b0a1fd1228b14e64",
   "reproducible_across_rebuilds": true,
   "requirements": [
     "AEGIS-076"

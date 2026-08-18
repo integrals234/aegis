@@ -9,7 +9,7 @@
     "any claim about real markets -- the underlying near/far price data is synthetic/constructed (ADR-0025)",
     "the general cross-strategy attribution framework reserved for M6 -- this is the narrower, M4-specific roll/expiry analysis only"
   ],
-  "repository_commit": "6fbfd134812b6ea225b231dfac787df865bd4449",
+  "repository_commit": "bf3de1f516949d3a4b9f7a16b0a1fd1228b14e64",
   "requirements": [
     "AEGIS-081"
   ],

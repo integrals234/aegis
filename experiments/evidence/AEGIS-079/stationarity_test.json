@@ -10,7 +10,7 @@
     "any claim about real markets -- the underlying near/far price data is synthetic/constructed (ADR-0025); see tools/roll_sensitivity_fixture.py",
     "a claim that this is the only valid stationarity test -- it is the one, documented test this module implements (ADR-0026), not a comparison across several"
   ],
-  "repository_commit": "6fbfd134812b6ea225b231dfac787df865bd4449",
+  "repository_commit": "bf3de1f516949d3a4b9f7a16b0a1fd1228b14e64",
   "requirements": [
     "AEGIS-079"
   ],
