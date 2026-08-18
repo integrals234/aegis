@@ -20,7 +20,7 @@
     29.821971765797116,
     -0.3013796514749198
   ],
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "entry_threshold": 2.0,
   "exit_threshold": 0.5,
@@ -48,7 +48,7 @@
     29.821971765797112,
     -0.3013796514749198
   ],
-  "repository_commit": "44ce17cf015f8cdd27c4cfd94e339a9153654e4d",
+  "repository_commit": "6fbfd134812b6ea225b231dfac787df865bd4449",
   "requirements": [
     "AEGIS-080"
   ],

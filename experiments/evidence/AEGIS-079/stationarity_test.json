@@ -1,8 +1,8 @@
 {
   "artifact": "stationarity_test",
-  "claim": "AEGIS-079: the real research.stationarity.test_spread_stationarity was run once, over a real research.calendar_spread observation sequence, and produced the test_result recorded above (classification: stationary).",
+  "claim": "AEGIS-079: the real research.stationarity.test_spread_stationarity was run once, over a real research.calendar_spread observation sequence, and produced the test_result recorded above (classification: non_stationary).",
   "dataset_id": "CSX-synthetic-multi-contract (tools/roll_sensitivity_fixture.py)",
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-18",
   "not_evidence_for": [
@@ -10,22 +10,22 @@
     "any claim about real markets -- the underlying near/far price data is synthetic/constructed (ADR-0025); see tools/roll_sensitivity_fixture.py",
     "a claim that this is the only valid stationarity test -- it is the one, documented test this module implements (ADR-0026), not a comparison across several"
   ],
-  "repository_commit": "44ce17cf015f8cdd27c4cfd94e339a9153654e4d",
+  "repository_commit": "6fbfd134812b6ea225b231dfac787df865bd4449",
   "requirements": [
     "AEGIS-079"
   ],
   "roll_policy_name": "volume_crossover",
   "spread_series": [
-    "0.50",
-    "0.55",
-    "0.60",
-    "0.65",
-    "2.50",
-    "0.70",
-    "0.75",
-    "3.00",
-    "0.80",
-    "0.85"
+    "50",
+    "50",
+    "52",
+    "56",
+    "62",
+    "70",
+    "32",
+    "22",
+    "10",
+    "-4"
   ],
   "test_result": {
     "alternative_hypothesis": "the spread series is stationary (mean-reverting) around a constant",
@@ -39,14 +39,14 @@
       "the underlying near/far price data is synthetic/constructed (ADR-0025); no claim is made about real markets",
       "a classification of 'stationary' does not imply any particular hedge ratio, holding period, or trading outcome"
     ],
-    "classification": "stationary",
+    "classification": "non_stationary",
     "critical_value": "-2.86",
     "null_hypothesis": "the spread series has a unit root (is non-stationary / a random walk with drift)",
-    "regression_intercept": "1.375301204819277108433734941",
-    "regression_slope": "-1.196787148594377510040160643",
+    "regression_intercept": "-8.643210235533585344576911891",
+    "regression_slope": "0.05888339633614422797324803717",
     "sample_size": 10,
     "significance_level": "5%",
     "test_name": "Dickey-Fuller (unaugmented, constant, no trend)",
-    "test_statistic": "-3.309262848285125926837556924"
+    "test_statistic": "0.2108149303384545118930502841"
   }
 }

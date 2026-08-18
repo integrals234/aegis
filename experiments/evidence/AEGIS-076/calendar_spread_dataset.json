@@ -1,0 +1,149 @@
+{
+  "artifact": "calendar_spread_dataset",
+  "claim": "AEGIS-076: the real research.calendar_spread.build_calendar_spread_observations was run twice over identical committed inputs and produced identical observations, each carrying the provenance needed to reproduce it: near and far contract identity, both prices, whether the far price was observed or constructed (and from what), the roll policy that selected the near leg, and the contract step.",
+  "dirty": true,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "far_price_source_counts": {
+    "constructed": 0,
+    "observed": 10
+  },
+  "generated_on": "2026-08-18",
+  "inputs": {
+    "fixture": "tools/roll_sensitivity_fixture.py (synthetic CSX chain, three priced contracts)",
+    "roll_policy": "volume_crossover"
+  },
+  "not_evidence_for": [
+    "any claim about real markets -- this fixture's prices are synthetic throughout (ADR-0025)",
+    "AEGIS-024's sensitivity result, which is a separate artifact",
+    "execution quality -- no order, fill or venue is modelled here"
+  ],
+  "observation_count": 10,
+  "observations": [
+    {
+      "as_of": "2026-01-01",
+      "contract_steps": 1,
+      "far_contract": "SYNX:CSX:2026M",
+      "far_price": "150",
+      "far_price_observed": true,
+      "far_price_provenance": "observed: SYNX:CSX:2026M's own price on 2026-01-01 from the supplied price series",
+      "near_contract": "SYNX:CSX:2026H",
+      "near_price": "100",
+      "roll_policy_name": "VolumeCrossoverPolicy",
+      "spread": "50"
+    },
+    {
+      "as_of": "2026-01-02",
+      "contract_steps": 1,
+      "far_contract": "SYNX:CSX:2026M",
+      "far_price": "151",
+      "far_price_observed": true,
+      "far_price_provenance": "observed: SYNX:CSX:2026M's own price on 2026-01-02 from the supplied price series",
+      "near_contract": "SYNX:CSX:2026H",
+      "near_price": "101",
+      "roll_policy_name": "VolumeCrossoverPolicy",
+      "spread": "50"
+    },
+    {
+      "as_of": "2026-01-03",
+      "contract_steps": 1,
+      "far_contract": "SYNX:CSX:2026M",
+      "far_price": "154",
+      "far_price_observed": true,
+      "far_price_provenance": "observed: SYNX:CSX:2026M's own price on 2026-01-03 from the supplied price series",
+      "near_contract": "SYNX:CSX:2026H",
+      "near_price": "102",
+      "roll_policy_name": "VolumeCrossoverPolicy",
+      "spread": "52"
+    },
+    {
+      "as_of": "2026-01-04",
+      "contract_steps": 1,
+      "far_contract": "SYNX:CSX:2026M",
+      "far_price": "159",
+      "far_price_observed": true,
+      "far_price_provenance": "observed: SYNX:CSX:2026M's own price on 2026-01-04 from the supplied price series",
+      "near_contract": "SYNX:CSX:2026H",
+      "near_price": "103",
+      "roll_policy_name": "VolumeCrossoverPolicy",
+      "spread": "56"
+    },
+    {
+      "as_of": "2026-01-05",
+      "contract_steps": 1,
+      "far_contract": "SYNX:CSX:2026M",
+      "far_price": "166",
+      "far_price_observed": true,
+      "far_price_provenance": "observed: SYNX:CSX:2026M's own price on 2026-01-05 from the supplied price series",
+      "near_contract": "SYNX:CSX:2026H",
+      "near_price": "104",
+      "roll_policy_name": "VolumeCrossoverPolicy",
+      "spread": "62"
+    },
+    {
+      "as_of": "2026-01-06",
+      "contract_steps": 1,
+      "far_contract": "SYNX:CSX:2026M",
+      "far_price": "175",
+      "far_price_observed": true,
+      "far_price_provenance": "observed: SYNX:CSX:2026M's own price on 2026-01-06 from the supplied price series",
+      "near_contract": "SYNX:CSX:2026H",
+      "near_price": "105",
+      "roll_policy_name": "VolumeCrossoverPolicy",
+      "spread": "70"
+    },
+    {
+      "as_of": "2026-01-07",
+      "contract_steps": 1,
+      "far_contract": "SYNX:CSX:2026U",
+      "far_price": "218",
+      "far_price_observed": true,
+      "far_price_provenance": "observed: SYNX:CSX:2026U's own price on 2026-01-07 from the supplied price series",
+      "near_contract": "SYNX:CSX:2026M",
+      "near_price": "186",
+      "roll_policy_name": "VolumeCrossoverPolicy",
+      "spread": "32"
+    },
+    {
+      "as_of": "2026-01-08",
+      "contract_steps": 1,
+      "far_contract": "SYNX:CSX:2026U",
+      "far_price": "221",
+      "far_price_observed": true,
+      "far_price_provenance": "observed: SYNX:CSX:2026U's own price on 2026-01-08 from the supplied price series",
+      "near_contract": "SYNX:CSX:2026M",
+      "near_price": "199",
+      "roll_policy_name": "VolumeCrossoverPolicy",
+      "spread": "22"
+    },
+    {
+      "as_of": "2026-01-09",
+      "contract_steps": 1,
+      "far_contract": "SYNX:CSX:2026U",
+      "far_price": "224",
+      "far_price_observed": true,
+      "far_price_provenance": "observed: SYNX:CSX:2026U's own price on 2026-01-09 from the supplied price series",
+      "near_contract": "SYNX:CSX:2026M",
+      "near_price": "214",
+      "roll_policy_name": "VolumeCrossoverPolicy",
+      "spread": "10"
+    },
+    {
+      "as_of": "2026-01-10",
+      "contract_steps": 1,
+      "far_contract": "SYNX:CSX:2026U",
+      "far_price": "227",
+      "far_price_observed": true,
+      "far_price_provenance": "observed: SYNX:CSX:2026U's own price on 2026-01-10 from the supplied price series",
+      "near_contract": "SYNX:CSX:2026M",
+      "near_price": "231",
+      "roll_policy_name": "VolumeCrossoverPolicy",
+      "spread": "-4"
+    }
+  ],
+  "producer": "tools/generate_calendar_spread_dataset_evidence.py",
+  "repository_commit": "6fbfd134812b6ea225b231dfac787df865bd4449",
+  "reproducible_across_rebuilds": true,
+  "requirements": [
+    "AEGIS-076"
+  ]
+}
