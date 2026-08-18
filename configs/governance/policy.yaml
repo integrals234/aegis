@@ -25,7 +25,7 @@ policy_version: 1
 # tools/audit_requirements.py read docs/BUILD_STATE.md, which mirrors this
 # value; the authoritative gate requires the two to agree, so a branch cannot
 # grant itself a wider scope by editing the mirror.
-active_milestone: M4
+active_milestone: M5
 
 # Paths that decide who is allowed to change what. A pull request touching any
 # of these needs an explicit approval below, because changing them changes the
@@ -251,3 +251,148 @@ approvals:
       expires when M4 does.
     granted_on: 2026-08-18
     granted_by_pr: 11
+
+  # The four M4 approvals above are inert from here on, for the same reason the
+  # M2 and M3 sets became inert at their transitions: approved_paths() skips any
+  # entry whose milestone is not the active one. They are kept as the historical
+  # record of what M4 was allowed to touch.
+
+  - id: m5-architecture-transition
+    milestone: M5
+    paths:
+      - configs/architecture_rules.yaml
+    reason: >
+      cpp/participant/risk is dated M5 in configs/architecture_rules.yaml and
+      must become non-empty this milestone, but nothing may legally compose it:
+      cpp-participant-app — the participant composition root (ADR-0020), and
+      the only layer permitted to see feed handler, book builder, statistics,
+      strategy, OMS and portfolio at once — has no edge to it. This approval
+      authorises exactly one change to that file and nothing else:
+        1. add cpp-participant-risk to cpp-participant-app.may_depend_on.
+      Explicitly NOT authorised by this approval: an edge from
+      cpp-participant-risk to cpp-participant-oms (cpp-participant-oms already
+      depends on cpp-participant-risk, so the reverse edge would be a cycle —
+      the risk layer therefore implements no OMS interface, and the
+      oms::RiskGate adapter lives in the composition root); an edge from
+      cpp-participant-risk to cpp-participant-portfolio, to any cpp-exchange-*
+      layer, or to any gateway/broker adapter; any cpp-participant-strategy
+      widening; an edge from cpp-bindings to cpp-participant-risk; any other
+      may_depend_on widening; re-dating any layer's
+      expect_sources_from_milestone; relaxing any entry under `banned`
+      (parent_relative_includes, python_headers_only_in,
+      gateway_header_markers, mutable_globals_forbidden_in); narrowing
+      covered_roots; or any other weakening of architecture policy. The
+      approval is exact-path and milestone-scoped, so it expires when M5 does.
+    granted_on: 2026-08-18
+    granted_by_pr: 13
+
+  - id: m5-build-wiring
+    milestone: M5
+    paths:
+      - cpp/participant/CMakeLists.txt
+      - cpp/participant/app/CMakeLists.txt
+    reason: >
+      cpp/participant/risk cannot build without a subdirectory entry in
+      cpp/participant/CMakeLists.txt, and cpp/participant/app/CMakeLists.txt
+      must add the corresponding link edge — tools/check_architecture.py reads
+      target_link_libraries independently of includes, so the build graph and
+      the layer DAG have to move together. Both files sit outside M5's declared
+      scope in configs/milestone_scope.yaml, which allows only
+      cpp/participant/risk/** and cpp/participant/portfolio/** on the C++ side.
+      This approval authorises exactly those two purposes — adding the risk
+      subdirectory and linking the participant app to cpp-participant-risk —
+      and nothing else.
+    granted_on: 2026-08-18
+    granted_by_pr: 13
+
+  - id: m5-participant-app-integration
+    milestone: M5
+    paths:
+      - cpp/participant/app/risk_engine_gate.hpp
+      - cpp/participant/app/risk_engine_gate.cpp
+      - cpp/participant/app/participant_run.hpp
+      - cpp/participant/app/participant_run.cpp
+      - cpp/participant/app/participant_run_main.cpp
+    reason: >
+      M5's real risk engine must be composed into the existing participant app
+      so the approved vertical path can execute with enforcement rather than
+      the AlwaysApproveRiskGate test double ADR-0023 has carried since M3:
+      strategy -> proposal -> RiskEngine -> OMS -> execution -> Portfolio/P&L.
+      cpp-participant-app is the participant composition root (ADR-0020) and
+      the only layer permitted to see risk, OMS, strategy and portfolio at
+      once, so the oms::RiskGate adapter (risk_engine_gate.*) can legally live
+      nowhere else — a risk layer that implemented the seam itself would need
+      the cpp-participant-risk -> cpp-participant-oms edge that would cycle
+      against the existing cpp-participant-oms -> cpp-participant-risk edge.
+      m5-build-wiring already covers the two CMakeLists.txt files; these are
+      the five implementation files that same integration needs, and
+      configs/milestone_scope.yaml allows only cpp/participant/risk/** and
+      cpp/participant/portfolio/** on the C++ side.
+
+      This approval authorises changes to those five exact paths and nothing
+      else. Explicitly NOT authorised by it: any cpp-participant-app ->
+      cpp-exchange-* edge; any cpp-participant-strategy -> cpp-participant-oms,
+      -> cpp-participant-risk, -> cpp-exchange-*, or -> gateway/broker adapter
+      edge; any change to cpp/participant/oms/** (the M5 design requires none —
+      oms::RiskGate is implemented by the adapter named here); any new or
+      widened architecture edge in configs/architecture_rules.yaml (that file's
+      only authorised M5 change is m5-architecture-transition's single
+      cpp-participant-app.may_depend_on += cpp-participant-risk); any unrelated
+      cpp/participant/app change; or any M6+ functionality. The approval is
+      exact-path and milestone-scoped, so it expires when M5 does.
+    granted_on: 2026-08-18
+    granted_by_pr: 13
+
+  - id: m5-milestone-gate
+    milestone: M5
+    paths:
+      - .github/workflows/ci.yml
+      - scripts/ci_local.sh
+      - scripts/check_cpp_style.sh
+    reason: >
+      Two purposes, both outside M5's declared scope (scripts/** is not in
+      configs/milestone_scope.yaml's M5 entry, and .github/** is a governance
+      path):
+        1. The milestone audit is hardcoded to M4 in both the GitHub workflow
+           and the local CI mirror. M5 must retarget both to M5 together —
+           tests/unit/test_ci_parity.py fails if only one moves.
+        2. scripts/check_cpp_style.sh currently runs full-tree clang-tidy as a
+           single sequential invocation over every tracked C++ source. M5 adds
+           roughly 25-30 translation units to that list, so this approval
+           authorises parallelising that same invocation — the identical
+           `git ls-files` set, fanned out (run-clang-tidy or xargs -P).
+      Full-tree clang-tidy remains mandatory. Explicitly NOT authorised by this
+      approval: a changed-files-only tidy; narrowing the source coverage in any
+      way; adding NOLINT/warning suppression; relaxing .clang-tidy or
+      .clang-format; removing or weakening the clang-format --dry-run -Werror
+      step; unpinning the tools from requirements/requirements.lock; build or
+      dependency caching work; or any other CI redesign. The approval is
+      exact-path and milestone-scoped, so it expires when M5 does.
+    granted_on: 2026-08-18
+    granted_by_pr: 13
+
+  - id: m5-fault-scenario-risk-response
+    milestone: M5
+    paths:
+      - cpp/participant/app/fault_scenario.hpp
+      - cpp/participant/app/fault_scenario.cpp
+    reason: >
+      AEGIS-062's frozen acceptance names scenario results AND risk responses
+      being reproducible, and AEGIS-063's names OMS/risk integration tests
+      covering each execution-stress fault. Both obligations are registered
+      against M5 in docs/DEFERRED_VERIFICATION.md precisely because the risk
+      engine did not exist. cpp-participant-app is the only participant layer
+      permitted to depend on cpp-replay (configs/architecture_rules.yaml), so
+      the deterministic fault driver that feeds a real RiskEngine must extend
+      this existing file; it sits outside M5's declared C++ scope.
+
+      This approval authorises adding real M5 risk responses to the existing
+      deterministic fault scenarios and nothing else. Explicitly NOT authorised
+      by it: any new FaultKind; any change to cpp/replay/** or to how
+      replay::DeterministicFaultInjector declares, orders or applies a fault;
+      any reinterpretation of an existing fault's meaning; any
+      cpp-participant-app -> cpp-exchange-* edge; or any unrelated
+      cpp/participant/app change. The approval is exact-path and
+      milestone-scoped, so it expires when M5 does.
+    granted_on: 2026-08-18
+    granted_by_pr: 13
