@@ -43,10 +43,12 @@ FAR = ContractId(venue=VENUE, product_root=PRODUCT_ROOT, year=2026, month=9)
 BASE_DAY = date(2026, 1, 1)
 NUM_DATES = 10
 
-# Deliberately equal in shape to Batch 1's own demo basis sequence (same
-# 0.50/0.55/.../2.50 leading values, so the entry this sequence is known to
-# produce in isolation is recognisable here too) extended to ten indices with
-# one further spike, all documented, all synthetic (ADR-0025).
+# The constructed-basis FALLBACK for this fixture. Since all three contracts
+# above are priced, `build_calendar_spread_observations` uses observed far-leg
+# prices throughout and this rule is never actually applied here -- it is
+# supplied because the function requires one, and kept identical in shape to
+# Batch 1's own demo basis sequence for recognisability. All synthetic
+# (ADR-0025).
 FAR_BASIS_BY_INDEX: tuple[Decimal, ...] = (
     Decimal("0.50"),
     Decimal("0.55"),
@@ -105,8 +107,18 @@ def build_roll_sensitivity_fixture() -> RollSensitivityFixture:
         # proved roll on day 6 (0-based index 5) for the same policy.
         roll_observations.append(RollObservation(NEAR, day, 1000 - i * 80, None))
         roll_observations.append(RollObservation(MID, day, 200 + i * 90, None))
+        # All THREE contracts are priced, deliberately: whichever contract a
+        # policy selects as front, the next one along has an observed price,
+        # so `build_calendar_spread_observations` uses observed prices for
+        # both legs under every policy compared. That is what keeps the roll
+        # policy the only variable that differs -- if one policy's far leg
+        # were observed and another's constructed, the comparison would be
+        # confounded by provenance rather than controlled. The three shapes
+        # are deliberately different (linear / quadratic / faster-linear) so
+        # the resulting spread series genuinely differ by contract pair.
         near_prices.append(PriceObservation(NEAR, day, Decimal(100 + i)))
         near_prices.append(PriceObservation(MID, day, Decimal(150 + i * i)))
+        near_prices.append(PriceObservation(FAR, day, Decimal(200 + 3 * i)))
 
     policies: dict[str, RollPolicy] = {
         "volume_crossover": VolumeCrossoverPolicy(persistence_days=2),

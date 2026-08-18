@@ -123,3 +123,50 @@ def test_does_not_claim_any_policy_is_better_only_reports_differences() -> None:
     metric_field_names = {field.name for field in dataclasses.fields(PolicyStrategyMetrics)}
     forbidden = {"best_policy", "recommended", "ranking", "winner", "optimal_policy"}
     assert not (metric_field_names & forbidden)
+
+
+def test_roll_choice_produces_a_genuinely_different_strategy_outcome() -> None:
+    """AEGIS-024's frozen acceptance asks for an experiment report that
+    QUANTIFIES strategy differences caused by roll choices. This asserts the
+    experiment actually resolves such a difference rather than reporting a
+    degenerate zero: the two policies select different contract pairs, take
+    opposite positions, and end with different mark-to-market P&L."""
+    fixture = build_roll_sensitivity_fixture()
+    result = compute_roll_method_strategy_sensitivity(
+        fixture.chain,
+        fixture.policies,
+        fixture.roll_observations,
+        fixture.near_prices,
+        fixture.dates,
+        fixture.basis_rule,
+        fixture.replay_config,
+    )
+
+    by_name = {m.policy_name: m for m in result.strategy_metrics_by_policy}
+    volume = by_name["volume_crossover"]
+    fixed = by_name["fixed_100_days"]
+
+    # Different contract pairs traded -- the direct consequence of roll choice.
+    assert volume.contract_pairs != fixed.contract_pairs
+    # Opposite positions, and a genuinely different economic outcome.
+    assert volume.final_position != fixed.final_position
+    assert volume.total_pnl != fixed.total_pnl
+
+
+def test_every_policys_far_leg_is_observed_so_the_comparison_is_controlled() -> None:
+    """If one policy's far leg were observed and another's constructed, the
+    comparison would be confounded by provenance rather than controlled by
+    roll choice alone."""
+    from research.calendar_spread import build_calendar_spread_observations
+
+    fixture = build_roll_sensitivity_fixture()
+    for name, policy in fixture.policies.items():
+        observations = build_calendar_spread_observations(
+            chain=fixture.chain,
+            policy=policy,
+            roll_observations=fixture.roll_observations,
+            near_prices=fixture.near_prices,
+            as_of_dates=fixture.dates,
+            basis_rule=fixture.basis_rule,
+        )
+        assert all(o.far_price_observed for o in observations), name

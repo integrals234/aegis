@@ -143,3 +143,57 @@ def test_basis_rule_wraps_by_observation_index(chain: ContractChain) -> None:
         Decimal("1.00"),
         Decimal("2.00"),
     ]
+
+
+def test_observed_far_price_is_preferred_when_the_series_carries_one(chain: ContractChain) -> None:
+    """AEGIS-076 provenance: if the supplied price series has the FAR
+    contract's own price on that date, use it -- do not synthesize one. A
+    constructed additive basis makes far_price - near_price independent of
+    which contract is front, which would silently flatten AEGIS-024's
+    roll-method sensitivity comparison."""
+    dates = _dates(2)
+    prices = [PriceObservation(NEAR, day, Decimal("100.00") + i) for i, day in enumerate(dates)]
+    prices += [PriceObservation(FAR, day, Decimal("175.00") + i * i) for i, day in enumerate(dates)]
+    basis = ConstructedBasisRule(
+        basis_units_by_index=(Decimal("5.00"),), description="should NOT be used"
+    )
+
+    observations = build_calendar_spread_observations(
+        chain=chain,
+        policy=FixedDaysPolicy(days_before_expiry=0),
+        roll_observations=(),
+        near_prices=prices,
+        as_of_dates=dates,
+        basis_rule=basis,
+    )
+
+    for i, observation in enumerate(observations):
+        assert observation.far_price_observed is True
+        assert observation.far_price == Decimal("175.00") + i * i
+        assert "observed" in observation.far_price_provenance
+        assert "should NOT be used" not in observation.far_price_provenance
+
+
+def test_falls_back_to_the_constructed_basis_when_no_far_price_exists(chain: ContractChain) -> None:
+    """The M4 demo's own EQX chain has only one contract with committed bars,
+    so the fallback is the real path there -- and it must still be labelled
+    as constructed, never as observed."""
+    dates = _dates(2)
+    prices = [PriceObservation(NEAR, day, Decimal("100.00")) for day in dates]
+    basis = ConstructedBasisRule(
+        basis_units_by_index=(Decimal("5.00"),), description="constructed: NOT observed (ADR-0025)"
+    )
+
+    observations = build_calendar_spread_observations(
+        chain=chain,
+        policy=FixedDaysPolicy(days_before_expiry=0),
+        roll_observations=(),
+        near_prices=prices,
+        as_of_dates=dates,
+        basis_rule=basis,
+    )
+
+    for observation in observations:
+        assert observation.far_price_observed is False
+        assert observation.far_price == Decimal("105.00")
+        assert "NOT observed" in observation.far_price_provenance

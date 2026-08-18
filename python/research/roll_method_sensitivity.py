@@ -55,7 +55,10 @@ class PolicyStrategyMetrics:
     exit_count: int
     round_trip_count: int
     total_realized_pnl: Decimal
+    open_position_unrealized_pnl: Decimal
+    total_pnl: Decimal
     final_position: PositionState
+    contract_pairs: tuple[str, ...]  # Which (near, far) pairs this policy actually traded.
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,6 +94,9 @@ def compute_roll_method_strategy_sensitivity(
             basis_rule=basis_rule,
         )
         replay = replay_strategy(observations, replay_config)
+        pairs = sorted(
+            {f"{o.near_contract_id.canonical}/{o.far_contract_id.canonical}" for o in observations}
+        )
         metrics.append(
             PolicyStrategyMetrics(
                 policy_name=name,
@@ -99,7 +105,10 @@ def compute_roll_method_strategy_sensitivity(
                 exit_count=replay.exit_count,
                 round_trip_count=len(replay.round_trips),
                 total_realized_pnl=replay.total_realized_pnl,
+                open_position_unrealized_pnl=replay.open_position_unrealized_pnl,
+                total_pnl=replay.total_pnl,
                 final_position=replay.final_position,
+                contract_pairs=tuple(pairs),
             )
         )
 

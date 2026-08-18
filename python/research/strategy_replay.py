@@ -99,6 +99,14 @@ class StrategyReplayResult:
     final_position: PositionState
     open_position_entry_as_of: date | None
     open_position_entry_spread: Decimal | None
+    # Mark-to-market of a position still open at the end of the observation
+    # window, valued at the final observation's own near/far prices. Zero when
+    # flat. Reported separately from realized P&L, never folded into it: a
+    # comparison that comments only on realized P&L would call two runs
+    # "identical" while one is holding a long spread and the other a short one
+    # -- a real economic difference the realized figure cannot express.
+    open_position_unrealized_pnl: Decimal = Decimal(0)
+    total_pnl: Decimal = Decimal(0)  # realized + unrealized, for convenience.
 
 
 def replay_strategy(
@@ -172,6 +180,23 @@ def replay_strategy(
             entry_as_of = entry_spread = entry_z = entry_near_price = entry_far_price = None
 
     total_realized_pnl = sum((rt.realized_pnl for rt in round_trips), start=Decimal(0))
+
+    # Mark any still-open position to the final observation's own prices.
+    unrealized = Decimal(0)
+    if position is not PositionState.FLAT and observations:
+        assert entry_near_price is not None
+        assert entry_far_price is not None
+        final = observations[-1]
+        near_signed = (
+            config.quantity_units
+            if position is PositionState.LONG_SPREAD
+            else -config.quantity_units
+        )
+        far_signed = -near_signed
+        unrealized = near_signed * (final.near_price - entry_near_price) + far_signed * (
+            final.far_price - entry_far_price
+        )
+
     return StrategyReplayResult(
         signal_count=entry_count + exit_count,
         entry_count=entry_count,
@@ -181,4 +206,6 @@ def replay_strategy(
         final_position=position,
         open_position_entry_as_of=entry_as_of,
         open_position_entry_spread=entry_spread,
+        open_position_unrealized_pnl=unrealized,
+        total_pnl=total_realized_pnl + unrealized,
     )
