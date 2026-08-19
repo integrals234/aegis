@@ -256,10 +256,25 @@ not yet `verified` in the requirement catalogue; promotion is closure work.
   observation grid -- default value byte-identical to the pre-M5 signature.
 * `python/validation/`: `stability.py` (142), `sensitivity.py` (143/144/145),
   `resampling.py` (146/147), `markets.py` (148), `regimes.py` (149),
-  `baselines.py` (150/151), `leakage.py` (152/153, falsifiable -- catches a
-  seeded leaky fixture), `roll_sensitivity.py` (154, reuses M4's module
-  unmodified), `rejection.py` (155, the shuffled baseline receives a genuine
-  `REJECT`), `observability_harness.py` (AEGIS-238).
+  `baselines.py` (150/151), `leakage.py` (152/153), `roll_sensitivity.py`
+  (154, reuses M4's module unmodified), `rejection.py` (155),
+  `observability_harness.py` (AEGIS-238).
+
+  **Correction (M5 closure).** An earlier version of this line claimed "the
+  shuffled baseline receives a genuine `REJECT`". That was false. The
+  independent M5 quant review found the AEGIS-155 evidence producer was
+  judging the baseline using the *strategy's* cost sweep and bootstrap, plus
+  a `min_round_trip_count` of 1,000,000 invented at the call site -- a
+  manufactured verdict, not an earned one. With each subject judged on its
+  own statistics and on `configs/validation/rejection_criteria.yaml`'s
+  thresholds, the honest result on this dataset is the reverse: the
+  **calendar-spread strategy is REJECTED** (unprofitable at the lowest swept
+  cost; bootstrap CI excludes a positive mean) and the **shuffled baseline is
+  ACCEPTED** (it happens to make +30.22 here). That result is preserved, not
+  tuned away. It also means AEGIS-155's frozen acceptance -- "at least one
+  *intentionally weak* strategy produces a rejection report" -- is **not yet
+  demonstrated**: the criteria demonstrably work, but the subject they reject
+  is the real strategy rather than a strategy that is weak by construction.
 * `python/reports/`: `validation_report.py`, `rejection_report.py`,
   `portfolio_risk_report.py` (independently RECOMPUTES gross/net exposure
   from position/price accounting values and reconciles against the C++

@@ -1,20 +1,20 @@
 {
   "claim": "AEGIS-147: seeded trade-ORDER permutation (not with-replacement) over real round trips.",
-  "dirty": false,
+  "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "ending_pnl_quantiles": {
     "p5": -89.2305,
     "p50": -89.2305,
     "p95": -89.23049999999999
   },
-  "generated_on": "2026-08-18",
+  "generated_on": "2026-08-19",
   "max_drawdown_quantiles": {
     "p5": 89.23049999999999,
     "p50": 89.2305,
     "p95": 91.5169
   },
   "num_paths": 2000,
-  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "repository_commit": "f3fbfa147d2f07cf53cc7e417c7a24c0df5b210b",
   "requirements": [
     "AEGIS-147"
   ],

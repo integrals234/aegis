@@ -17,6 +17,9 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
+from pathlib import Path
+
+import yaml
 
 __all__ = [
     "DatasetPartitions",
@@ -24,6 +27,7 @@ __all__ = [
     "PartitionName",
     "RunPurpose",
     "guard_test_set_access",
+    "load_partition_boundaries",
     "partition",
 ]
 
@@ -77,12 +81,18 @@ class DatasetPartitions:
 
 
 def guard_test_set_access(purpose: RunPurpose, partition_name: PartitionName) -> None:
-    """Raises :class:`LockedTestPartitionError` iff a tuning-purpose run reaches
-    for the test partition. Call this at every point a run obtains a
-    partition's data, not only inside :meth:`DatasetPartitions.get` --
-    :func:`partition` itself does not call it, so a caller that slices the
-    result directly is not silently protected."""
-    if purpose is RunPurpose.TUNING and partition_name is PartitionName.TEST:
+    """Raises :class:`LockedTestPartitionError` unless a
+    ``FINAL_EVALUATION``-purpose run is the one reaching for the test
+    partition -- ``TRAINING`` and ``TUNING`` are both refused, which is what
+    the error message has always said and what "prevents test-set tuning"
+    requires: a training run that peeks at the test split has contaminated it
+    just as thoroughly as a tuning run.
+
+    Call this at every point a run obtains a partition's data, not only
+    inside :meth:`DatasetPartitions.get` -- :func:`partition` itself does not
+    call it, so a caller that slices the result directly is not silently
+    protected."""
+    if partition_name is PartitionName.TEST and purpose is not RunPurpose.FINAL_EVALUATION:
         raise LockedTestPartitionError(
             f"a {purpose.value}-purpose run attempted to read the test partition; "
             "the test set is locked until purpose=final_evaluation (AEGIS-139)"
@@ -110,3 +120,18 @@ def partition(
         validation = tuple(d for d in dates if train_end < d <= validation_end)
         test = tuple(d for d in dates if d > validation_end)
     return DatasetPartitions(train=train, validation=validation, test=test)
+
+
+def load_partition_boundaries(repo_root: Path) -> tuple[date, date | None]:
+    """Reads ``configs/validation/partitions.yaml`` and returns
+    ``(train_end, validation_end)``.
+
+    This exists because a committed config file that no code reads is worse
+    than no config at all: it implies a mechanism that is not there. The M5
+    closure quant review found exactly that — ``partitions.yaml`` and
+    ``rejection_criteria.yaml`` were both dead files — so both are now read
+    by the evidence producer that claims to honour them.
+    """
+    doc = yaml.safe_load((repo_root / "configs" / "validation" / "partitions.yaml").read_text())
+    validation_end = doc.get("validation_end")
+    return doc["train_end"], validation_end

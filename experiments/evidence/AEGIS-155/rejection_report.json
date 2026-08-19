@@ -1,39 +1,74 @@
 {
-  "claim": "AEGIS-155: the intentionally weak shuffled-signal baseline (AEGIS-150), run through the identical rejection pipeline, receives a genuine REJECT verdict.",
-  "criteria": [
-    {
-      "detail": "break_even_index=0",
-      "name": "transaction_cost_unprofitable_at_lowest_swept_cost",
-      "triggered": true
-    },
-    {
-      "detail": "coefficient_of_variation=0.2594 threshold=2.0",
-      "name": "parameter_instability",
-      "triggered": false
-    },
-    {
-      "detail": "round_trip_count=8 min_required=1000000",
-      "name": "trade_concentration_too_few_round_trips",
-      "triggered": true
-    },
-    {
-      "detail": "bootstrap_ci=[-17.3476, -7.7270]",
-      "name": "statistical_test_failure_ci_excludes_no_positive_mean",
-      "triggered": true
-    },
-    {
-      "detail": "observed=9.1680 threshold=50",
-      "name": "max_drawdown_exceeds_threshold",
-      "triggered": false
-    }
-  ],
-  "dirty": false,
+  "claim": "AEGIS-155: two subjects are put through the identical rejection pipeline -- the intentionally weak seeded shuffled-signal baseline (AEGIS-150) and the calendar-spread strategy itself. Every criterion for each subject is computed from THAT subject's own results, and every threshold comes from configs/validation/rejection_criteria.yaml; no statistic is borrowed from another subject and no threshold is invented at the call site. The recorded verdicts are whatever the criteria actually produced.",
+  "criteria_config": {
+    "bootstrap_confidence_level": "0.9",
+    "bootstrap_num_draws": "2000",
+    "instability_coefficient_of_variation_threshold": "2.0",
+    "max_drawdown_threshold": "500",
+    "min_round_trip_count": "5",
+    "monte_carlo_num_paths": "2000"
+  },
+  "criteria_config_source": "configs/validation/rejection_criteria.yaml",
+  "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
-  "generated_on": "2026-08-18",
-  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "generated_on": "2026-08-19",
+  "not_evidence_for": [
+    "any claim that the weak baseline is guaranteed to be rejected -- the verdict recorded above is the one the criteria produced on this dataset, whatever it is"
+  ],
+  "repository_commit": "f3fbfa147d2f07cf53cc7e417c7a24c0df5b210b",
   "requirements": [
     "AEGIS-155"
   ],
-  "strategy_name": "random_shuffled_signal_baseline",
-  "verdict": "reject"
+  "verdicts_by_subject": {
+    "calendar_spread_strategy": {
+      "criteria": [
+        {
+          "detail": "break_even_index=0",
+          "name": "transaction_cost_unprofitable_at_lowest_swept_cost",
+          "triggered": true
+        },
+        {
+          "detail": "coefficient_of_variation=0.2594 threshold=2.0",
+          "name": "parameter_instability",
+          "triggered": false
+        },
+        {
+          "detail": "round_trip_count=7 min_required=5",
+          "name": "trade_concentration_too_few_round_trips",
+          "triggered": false
+        },
+        {
+          "detail": "bootstrap_ci=[-17.3476, -7.7270]",
+          "name": "statistical_test_failure_ci_excludes_no_positive_mean",
+          "triggered": true
+        },
+        {
+          "detail": "observed=89.2305 threshold=500",
+          "name": "max_drawdown_exceeds_threshold",
+          "triggered": false
+        }
+      ],
+      "verdict": "reject"
+    },
+    "random_shuffled_signal_baseline": {
+      "criteria": [
+        {
+          "detail": "round_trip_count=8 min_required=5",
+          "name": "trade_concentration_too_few_round_trips",
+          "triggered": false
+        },
+        {
+          "detail": "bootstrap_ci=[-1.3379, 6.2494]",
+          "name": "statistical_test_failure_ci_excludes_no_positive_mean",
+          "triggered": false
+        },
+        {
+          "detail": "observed=9.1680 threshold=500",
+          "name": "max_drawdown_exceeds_threshold",
+          "triggered": false
+        }
+      ],
+      "verdict": "accept"
+    }
+  }
 }

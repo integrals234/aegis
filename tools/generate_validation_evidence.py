@@ -37,7 +37,7 @@ from validation.leakage import (
 from validation.markets import configured_product_roots, run_multi_market_validation
 from validation.partitions import DatasetPartitions, PartitionName, RunPurpose, guard_test_set_access
 from validation.regimes import load_regime_definitions, run_regime_evaluation
-from validation.rejection import evaluate_strategy_for_rejection
+from validation.rejection import evaluate_strategy_for_rejection, load_rejection_criteria
 from validation.resampling import bootstrap_round_trip_pnl, monte_carlo_trade_resampling
 from validation.roll_sensitivity import summarize_roll_method_differences
 from validation.sensitivity import (
@@ -260,17 +260,67 @@ def main() -> int:
         ),
     })
 
-    # AEGIS-155: formal rejection, on the weak shuffled baseline.
-    rejection = evaluate_strategy_for_rejection(
-        random_baseline.result, cost_sensitivity=cost, stability=stability, bootstrap=bootstrap,
-        max_drawdown_threshold=Decimal(50), min_round_trip_count=1_000_000,
-    )
+    # AEGIS-155: formal rejection. Every input below is derived from the
+    # SUBJECT being judged and from configs/validation/rejection_criteria.yaml
+    # -- never from a different strategy's statistics, and never from a
+    # threshold invented at this call site. The M5 closure quant review found
+    # exactly that defect here (the baseline was judged using the strategy's
+    # own cost sweep and bootstrap, plus a min_round_trip_count of 1_000_000),
+    # which manufactured a REJECT rather than earning one.
+    criteria_config = load_rejection_criteria(ROOT)
+    verdicts: dict[str, Any] = {}
+    for subject_name, subject in (
+        ("random_shuffled_signal_baseline", random_baseline.result),
+        ("calendar_spread_strategy", strategy_result),
+    ):
+        subject_cost = compute_transaction_cost_sensitivity(
+            observations, CONFIG,
+            cost_levels=(Decimal(0), Decimal("0.5"), Decimal(1), Decimal(2), Decimal(5)),
+        ) if subject_name == "calendar_spread_strategy" else None
+        # The baseline's own cost curve has to be swept through the baseline's
+        # own signal, which compute_transaction_cost_sensitivity cannot do (it
+        # replays the real strategy). So the baseline is judged on the criteria
+        # that ARE computable from its own result, and the cost criterion is
+        # simply not supplied for it rather than borrowed from another subject.
+        subject_bootstrap = (
+            bootstrap_round_trip_pnl(
+                [rt.realized_pnl for rt in subject.round_trips],
+                num_draws=criteria_config.bootstrap_num_draws,
+                confidence_level=criteria_config.bootstrap_confidence_level,
+                seed=SEED,
+            )
+            if subject.round_trips
+            else None
+        )
+        report = evaluate_strategy_for_rejection(
+            subject,
+            cost_sensitivity=subject_cost,
+            stability=stability if subject_name == "calendar_spread_strategy" else None,
+            bootstrap=subject_bootstrap,
+            max_drawdown_threshold=criteria_config.max_drawdown_threshold,
+            min_round_trip_count=criteria_config.min_round_trip_count,
+            instability_coefficient_of_variation_threshold=(
+                criteria_config.instability_coefficient_of_variation_threshold
+            ),
+        )
+        verdicts[subject_name] = report.as_record()
+
     _write("AEGIS-155", "rejection_report", {
-        "strategy_name": "random_shuffled_signal_baseline", **rejection.as_record(),
+        "criteria_config_source": "configs/validation/rejection_criteria.yaml",
+        "criteria_config": {k: str(v) for k, v in asdict(criteria_config).items()},
+        "verdicts_by_subject": verdicts,
         "claim": (
-            "AEGIS-155: the intentionally weak shuffled-signal baseline (AEGIS-150), run through the "
-            "identical rejection pipeline, receives a genuine REJECT verdict."
+            "AEGIS-155: two subjects are put through the identical rejection pipeline -- the "
+            "intentionally weak seeded shuffled-signal baseline (AEGIS-150) and the calendar-spread "
+            "strategy itself. Every criterion for each subject is computed from THAT subject's own "
+            "results, and every threshold comes from configs/validation/rejection_criteria.yaml; no "
+            "statistic is borrowed from another subject and no threshold is invented at the call "
+            "site. The recorded verdicts are whatever the criteria actually produced."
         ),
+        "not_evidence_for": [
+            "any claim that the weak baseline is guaranteed to be rejected -- the verdict recorded "
+            "above is the one the criteria produced on this dataset, whatever it is",
+        ],
     })
 
     return 0

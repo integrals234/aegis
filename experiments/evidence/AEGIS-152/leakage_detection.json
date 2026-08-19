@@ -1,11 +1,11 @@
 {
   "claim": "AEGIS-152: the detector passes the honest documented windowing convention and CATCHES a seeded leaky fixture.",
-  "dirty": false,
+  "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
-  "generated_on": "2026-08-18",
+  "generated_on": "2026-08-19",
   "honest_path_passed": true,
   "honest_path_violation_count": 0,
-  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "repository_commit": "f3fbfa147d2f07cf53cc7e417c7a24c0df5b210b",
   "requirements": [
     "AEGIS-152"
   ],

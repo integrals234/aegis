@@ -1,8 +1,8 @@
 {
   "claim": "AEGIS-145: real sweep over slippage AND two distinct fill assumptions (TOUCH, CROSS_OR_NEXT).",
-  "dirty": false,
+  "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
-  "generated_on": "2026-08-18",
+  "generated_on": "2026-08-19",
   "points": [
     {
       "dropped_signal_count": 0,
@@ -47,7 +47,7 @@
       "total_pnl": "-106.3252"
     }
   ],
-  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "repository_commit": "f3fbfa147d2f07cf53cc7e417c7a24c0df5b210b",
   "requirements": [
     "AEGIS-145"
   ]

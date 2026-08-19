@@ -52,12 +52,20 @@ def test_dataset_partitions_rejects_overlapping_construction() -> None:
         DatasetPartitions(train=tuple(dates[0:3]), validation=tuple(dates[2:4]), test=tuple(dates[4:5]))
 
 
-def test_guard_test_set_access_blocks_tuning_purpose_only() -> None:
+def test_only_final_evaluation_may_read_the_test_partition() -> None:
+    # Both non-final purposes are refused. A TRAINING run that peeks at the
+    # test split has contaminated it exactly as thoroughly as a TUNING run --
+    # an earlier version of this test cemented that hole by asserting
+    # TRAINING was allowed through, which the independent M5 quant review
+    # correctly flagged.
     with pytest.raises(LockedTestPartitionError):
         guard_test_set_access(RunPurpose.TUNING, PartitionName.TEST)
-    guard_test_set_access(RunPurpose.TUNING, PartitionName.TRAIN)  # Does not raise.
-    guard_test_set_access(RunPurpose.FINAL_EVALUATION, PartitionName.TEST)  # Does not raise.
-    guard_test_set_access(RunPurpose.TRAINING, PartitionName.TEST)  # Does not raise.
+    with pytest.raises(LockedTestPartitionError):
+        guard_test_set_access(RunPurpose.TRAINING, PartitionName.TEST)
+    guard_test_set_access(RunPurpose.FINAL_EVALUATION, PartitionName.TEST)  # The only allowed read.
+    # Non-test partitions are never gated, for any purpose.
+    guard_test_set_access(RunPurpose.TUNING, PartitionName.TRAIN)
+    guard_test_set_access(RunPurpose.TRAINING, PartitionName.VALIDATION)
 
 
 def test_dataset_partitions_get_enforces_the_lock() -> None:

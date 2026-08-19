@@ -27,7 +27,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 from enum import StrEnum
+from pathlib import Path
 
+import yaml
 from research.strategy_replay import StrategyReplayResult
 
 from validation.resampling import BootstrapResult
@@ -35,10 +37,12 @@ from validation.sensitivity import CostSweepResult
 from validation.stability import StabilitySurface
 
 __all__ = [
+    "RejectionCriteriaConfig",
     "RejectionCriterion",
     "RejectionReport",
     "RejectionVerdict",
     "evaluate_strategy_for_rejection",
+    "load_rejection_criteria",
     "realized_trade_sequence_max_drawdown",
 ]
 
@@ -155,3 +159,34 @@ def evaluate_strategy_for_rejection(
 
     verdict = RejectionVerdict.REJECT if any(c.triggered for c in criteria) else RejectionVerdict.ACCEPT
     return RejectionReport(verdict=verdict, criteria=tuple(criteria))
+
+
+@dataclass(frozen=True, slots=True)
+class RejectionCriteriaConfig:
+    min_round_trip_count: int
+    instability_coefficient_of_variation_threshold: float
+    bootstrap_confidence_level: float
+    bootstrap_num_draws: int
+    monte_carlo_num_paths: int
+    max_drawdown_threshold: Decimal
+
+
+def load_rejection_criteria(repo_root: Path) -> RejectionCriteriaConfig:
+    """Reads ``configs/validation/rejection_criteria.yaml``.
+
+    Same reason as :func:`validation.partitions.load_partition_boundaries`:
+    the M5 closure quant review found this config was read by no code, so the
+    thresholds an evidence artifact claimed to apply were in fact hardcoded
+    at the call site. The evidence producer now takes them from here.
+    """
+    doc = yaml.safe_load((repo_root / "configs" / "validation" / "rejection_criteria.yaml").read_text())
+    return RejectionCriteriaConfig(
+        min_round_trip_count=int(doc["min_round_trip_count"]),
+        instability_coefficient_of_variation_threshold=float(
+            doc["instability_coefficient_of_variation_threshold"]
+        ),
+        bootstrap_confidence_level=float(doc["bootstrap_confidence_level"]),
+        bootstrap_num_draws=int(doc["bootstrap_num_draws"]),
+        monte_carlo_num_paths=int(doc["monte_carlo_num_paths"]),
+        max_drawdown_threshold=Decimal(str(doc["max_drawdown_threshold"])),
+    )
