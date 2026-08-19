@@ -1,11 +1,14 @@
 {
-  "claim": "AEGIS-153: timestamp/fitting-scope/partition-boundary audit over feature timing records collected from the real estimator's own execution (see AEGIS-152); zero violations on the honest path.",
+  "claim": "AEGIS-153: timestamp/fitting-scope/partition-boundary audit over feature timing records collected from the real estimator's own execution (see AEGIS-152); zero violations on the honest path. The detector consumes only FeatureTimingRecord's index fields -- never the estimator's z-score, mean or variance arithmetic -- so it remains independent of the implementation under test (the AEGIS-107 lesson).",
   "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-19",
+  "not_evidence_for": [
+    "any claim about live-market profitability -- the underlying series is synthetic and committed in-repository; this evidence is about partition-boundary software behaviour only"
+  ],
   "passed": true,
   "record_count": 120,
-  "repository_commit": "6ceeefe29e3e1901c9a343a9c26da4ece703d9bc",
+  "repository_commit": "5c810027b2c93fe822c9e7637544258a5912205c",
   "requirements": [
     "AEGIS-153"
   ],

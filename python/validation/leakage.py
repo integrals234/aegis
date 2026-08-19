@@ -4,39 +4,52 @@ AEGIS-153).
 The detector (:func:`audit_feature_timing`) consumes RECORDED
 relationships -- a feature's own index/time, and the index range of the
 data actually used to compute it -- never the estimator's arithmetic
-itself. This is deliberate (the AEGIS-107 lesson, ADR-0029): a detector
-built by re-executing or transliterating the implementation under test
-would agree with it by construction and catch nothing.
+itself. `FeatureTimingRecord` carries no z-score, mean, variance or window-
+length field, so the detector cannot read or reproduce the estimator's math
+even in principle. This is deliberate (the AEGIS-107 lesson, ADR-0029): a
+detector built by re-executing or transliterating the implementation under
+test would agree with it by construction and catch nothing.
 
-# Where the records come from (M5 closure correction)
+# Where the records come from (M5 closure correction, twice)
 
 An earlier version of this module fabricated timing records from the
 *documented* windowing convention rather than from what an estimator
-actually did -- a detector that would still pass if the real estimator
-started leaking, since nothing connected the two. That defect is fixed:
-:func:`collect_timing_records_from_real_estimator` drives the REAL
-`research.signal_reference.rolling_zscore_reference` with a `timing_sink`
-and collects the `WindowProvenance` it emits from its own live execution
-state (`len(history)` at the moment of scoring), converted to
-`FeatureTimingRecord` unchanged. The detector still never reads the
-z-score values or reimplements the mean/variance arithmetic -- only the
-window's index boundaries, which is what makes it independent.
+actually did. That was fixed once by giving `rolling_zscore_reference` a
+`timing_sink`, but the first fix still computed
+`fitting_window_end_index = index - 1` as a constant expression rather than
+reading it from execution state -- true for a correctly-behaving call, but
+never actually checked, so a future leak in the real estimator still would
+not have been caught. `research.signal_reference` now tracks
+`(index, value)` pairs in its sliding window and reads BOTH boundaries
+directly off that structure (see that module's docstring), so
+:func:`collect_timing_records_from_real_estimator` here collects a
+`WindowProvenance` that is a genuine readout of what execution held, not an
+arithmetic restatement of what it should have held. The detector still
+never reads the z-score values themselves -- only the window's index
+boundaries, which is what makes it independent.
 
 :func:`run_seeded_leaky_estimator_for_falsifiability_check` is the negative
-counterpart: a deliberately buggy re-implementation of the same rolling-
-window shape, used ONLY to prove the detector can catch a genuine leaking
-EXECUTION (not hand-authored metadata describing one). It is never used to
-score a real signal; `research.signal_reference` remains the only estimator
-any AEGIS strategy or validation module is scored against.
+counterpart: it drives
+`research.signal_reference.rolling_zscore_reference_with_seeded_leak_for_falsifiability_check`,
+which runs the SAME execution engine as the honest path with one
+sequencing difference (the current observation joins the window before,
+not after, being scored) -- so the leak's effect on the emitted provenance
+is a natural consequence of shared arithmetic, never a hand-authored
+violation. It is never used to score a real signal;
+`research.signal_reference.rolling_zscore_reference` remains the only
+estimator any AEGIS strategy or validation module is scored against.
 """
 
 from __future__ import annotations
 
-from collections import deque
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from research.signal_reference import WindowProvenance, rolling_zscore_reference
+from research.signal_reference import (
+    WindowProvenance,
+    rolling_zscore_reference,
+    rolling_zscore_reference_with_seeded_leak_for_falsifiability_check,
+)
 
 __all__ = [
     "FeatureTimingRecord",
@@ -148,7 +161,9 @@ def collect_timing_records_from_real_estimator(
     """Drives the REAL `research.signal_reference.rolling_zscore_reference`
     over `values` and collects the `WindowProvenance` it emits from its own
     live execution -- never a formula re-deriving what the estimator
-    *should* have read. If that estimator were ever modified to leak, this
+    *should* have read (see that module's docstring for how the provenance
+    itself is now read from the same `(index, value)` structure the score
+    is computed from). If that estimator were ever modified to leak, this
     collector would automatically surface it, because the records it
     returns are the estimator's own account of what it consumed, not a
     restatement of its documented contract.
@@ -179,28 +194,31 @@ def run_seeded_leaky_estimator_for_falsifiability_check(
     catch a genuinely leaking EXECUTION, not merely a hand-authored leaky
     record.
 
-    This is a deliberately buggy re-implementation of the same rolling-
-    window shape `rolling_zscore_reference` uses -- with exactly one bug:
-    the current observation is appended to the window BEFORE its size is
-    read, so every emitted record truthfully reports a window that includes
-    the current index. The provenance below is read from this function's
-    own live `history` state, exactly like the honest collector above; nothing
-    here is a formula describing what a leak would look like.
+    Drives
+    `research.signal_reference.rolling_zscore_reference_with_seeded_leak_for_falsifiability_check`
+    -- the SAME execution engine `rolling_zscore_reference` uses, with one
+    sequencing difference (the current observation joins the window before
+    it is scored, instead of after). The provenance below is collected from
+    that real (leaking) execution's own sink callback, identically to the
+    honest collector above; nothing here is a formula describing what a
+    leak would look like, and this module contains no separate loop that
+    could drift from the production estimator's behaviour.
 
-    Never call this to score a real signal. `research.signal_reference` is
-    the only estimator any AEGIS strategy or validation module is judged
-    against.
+    Never call this to score a real signal. `research.signal_reference`'s
+    `rolling_zscore_reference` is the only estimator any AEGIS strategy or
+    validation module is judged against.
     """
     records: list[FeatureTimingRecord] = []
-    history: deque[float] = deque(maxlen=window)
-    for index, value in enumerate(values):
-        history.append(value)  # THE BUG: joins the window before being counted below.
-        observed_count = len(history)
+
+    def sink(provenance: WindowProvenance) -> None:
         records.append(
             FeatureTimingRecord(
-                feature_index=index,
-                fitting_window_start_index=index - observed_count + 1,
-                fitting_window_end_index=index,  # Leaks: truthfully includes the current index.
+                feature_index=provenance.feature_index,
+                fitting_window_start_index=provenance.fitting_window_start_index,
+                fitting_window_end_index=provenance.fitting_window_end_index,
             )
         )
+
+    for _ in rolling_zscore_reference_with_seeded_leak_for_falsifiability_check(values, window, timing_sink=sink):
+        pass
     return tuple(records)

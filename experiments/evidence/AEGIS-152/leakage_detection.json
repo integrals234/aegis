@@ -1,12 +1,15 @@
 {
-  "claim": "AEGIS-152: the detector, given provenance from the REAL rolling_zscore_reference estimator's own execution, passes with zero violations, and given provenance from a deliberately leaking estimator's own execution, CATCHES every one of its violations. Neither record set is reconstructed from a documented convention -- both are the estimator's own account of what it read, so a future regression in the real estimator would be caught here automatically.",
+  "claim": "AEGIS-152: the detector, given provenance read directly from the REAL rolling_zscore_reference estimator's own live window state, passes with zero violations, and given provenance from the identical execution engine run with one sequencing change (the canonical look-ahead bug: the current observation joins the window before, not after, being scored), CATCHES every one of its violations. Both window boundaries -- start AND end -- are read from the same (index, value) structure the score itself is computed from, never recomputed from index arithmetic, so a future regression in the real estimator's window handling would be caught here automatically.",
   "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-19",
   "honest_path_passed": true,
   "honest_path_violation_count": 0,
-  "provenance_source": "honest: research.signal_reference.rolling_zscore_reference's own timing_sink, driven by its real execution over the replay's spread series. leaky: validation.leakage.run_seeded_leaky_estimator_for_falsifiability_check's own real (buggy) execution over the identical series. Neither is hand-authored metadata.",
-  "repository_commit": "6ceeefe29e3e1901c9a343a9c26da4ece703d9bc",
+  "not_evidence_for": [
+    "any claim about live-market profitability or execution realism -- the spread series audited above is synthetic and committed in-repository (data_samples/futures/bars/**); this evidence demonstrates temporal/software correctness of the estimator and detector, not trading results"
+  ],
+  "provenance_source": "honest: research.signal_reference.rolling_zscore_reference's own timing_sink, driven by its real execution over the replay's spread series, with both window boundaries read from the (index, value) pairs its sliding window actually holds. leaky: research.signal_reference.rolling_zscore_reference_with_seeded_leak_for_falsifiability_check's own real execution over the identical series -- the SAME execution engine as the honest path, differing only in whether the current observation joins the window before or after being scored. Neither record set is hand-authored metadata, and the leaky path is not a separate re-implementation that could drift from the honest one.",
+  "repository_commit": "5c810027b2c93fe822c9e7637544258a5912205c",
   "requirements": [
     "AEGIS-152"
   ],

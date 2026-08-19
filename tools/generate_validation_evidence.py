@@ -227,10 +227,23 @@ def main() -> int:
 
     # AEGIS-152/153: leakage. Both record sets below are collected from a REAL
     # estimator's own live execution (research.signal_reference.
-    # rolling_zscore_reference for the honest path; the deliberately buggy
-    # run_seeded_leaky_estimator_for_falsifiability_check for the negative
-    # path) -- never hand-authored metadata describing what each SHOULD
-    # produce. The spread series driving both is the real replay input.
+    # rolling_zscore_reference for the honest path; its seeded-leak
+    # counterpart, run through the SAME execution engine with one
+    # sequencing difference, for the negative path) -- never hand-authored
+    # metadata describing what each SHOULD produce. The spread series
+    # driving both is the real replay input.
+    #
+    # Correction (M5 closure repair, round 2): the first repair gave
+    # fitting_window_start_index a live readout but left
+    # fitting_window_end_index = index - 1 as a constant expression, so it
+    # could never disagree with a leaking estimator -- the independent quant
+    # review proved this by mutating rolling_zscore_reference's append order
+    # while leaving the provenance block untouched, and the detector still
+    # reported zero violations. research.signal_reference now tracks
+    # (index, value) pairs in its sliding window and reads BOTH boundaries
+    # directly off that structure, so the provenance below is a genuine
+    # readout of what execution held, not an arithmetic restatement of what
+    # it should have held.
     spread_series = [float(o.spread) for o in observations]
     honest_records = collect_timing_records_from_real_estimator(spread_series, CONFIG.zscore_window)
     leaky_records = run_seeded_leaky_estimator_for_falsifiability_check(spread_series, CONFIG.zscore_window)
@@ -239,19 +252,30 @@ def main() -> int:
     _write("AEGIS-152", "leakage_detection", {
         "provenance_source": (
             "honest: research.signal_reference.rolling_zscore_reference's own timing_sink, driven by its "
-            "real execution over the replay's spread series. leaky: "
-            "validation.leakage.run_seeded_leaky_estimator_for_falsifiability_check's own real (buggy) "
-            "execution over the identical series. Neither is hand-authored metadata."
+            "real execution over the replay's spread series, with both window boundaries read from the "
+            "(index, value) pairs its sliding window actually holds. leaky: "
+            "research.signal_reference.rolling_zscore_reference_with_seeded_leak_for_falsifiability_check's "
+            "own real execution over the identical series -- the SAME execution engine as the honest path, "
+            "differing only in whether the current observation joins the window before or after being "
+            "scored. Neither record set is hand-authored metadata, and the leaky path is not a separate "
+            "re-implementation that could drift from the honest one."
         ),
         "honest_path_passed": honest_audit.passed, "honest_path_violation_count": len(honest_audit.violations),
         "seeded_leak_caught": not leaky_audit.passed, "seeded_leak_violation_count": len(leaky_audit.violations),
         "claim": (
-            "AEGIS-152: the detector, given provenance from the REAL rolling_zscore_reference estimator's "
-            "own execution, passes with zero violations, and given provenance from a deliberately leaking "
-            "estimator's own execution, CATCHES every one of its violations. Neither record set is "
-            "reconstructed from a documented convention -- both are the estimator's own account of what it "
-            "read, so a future regression in the real estimator would be caught here automatically."
+            "AEGIS-152: the detector, given provenance read directly from the REAL rolling_zscore_reference "
+            "estimator's own live window state, passes with zero violations, and given provenance from the "
+            "identical execution engine run with one sequencing change (the canonical look-ahead bug: the "
+            "current observation joins the window before, not after, being scored), CATCHES every one of "
+            "its violations. Both window boundaries -- start AND end -- are read from the same (index, "
+            "value) structure the score itself is computed from, never recomputed from index arithmetic, so "
+            "a future regression in the real estimator's window handling would be caught here automatically."
         ),
+        "not_evidence_for": [
+            "any claim about live-market profitability or execution realism -- the spread series audited "
+            "above is synthetic and committed in-repository (data_samples/futures/bars/**); this evidence "
+            "demonstrates temporal/software correctness of the estimator and detector, not trading results",
+        ],
     })
     partition_audit = audit_partition_boundary_consistency(honest_records, train_end_index=split)
     _write("AEGIS-153", "leakage_audit", {
@@ -260,8 +284,14 @@ def main() -> int:
         "claim": (
             "AEGIS-153: timestamp/fitting-scope/partition-boundary audit over feature timing records "
             "collected from the real estimator's own execution (see AEGIS-152); zero violations on the "
-            "honest path."
+            "honest path. The detector consumes only FeatureTimingRecord's index fields -- never the "
+            "estimator's z-score, mean or variance arithmetic -- so it remains independent of the "
+            "implementation under test (the AEGIS-107 lesson)."
         ),
+        "not_evidence_for": [
+            "any claim about live-market profitability -- the underlying series is synthetic and "
+            "committed in-repository; this evidence is about partition-boundary software behaviour only",
+        ],
     })
 
     # AEGIS-154: roll-method sensitivity -- reuses M4's own module and dataset.

@@ -299,20 +299,47 @@ not yet `verified` in the requirement catalogue; promotion is closure work.
   each other: calendar-spread strategy REJECT, shuffled baseline ACCEPT,
   intentionally-weak-by-construction baseline REJECT.
 
-  **Also fixed in this repair (B2):** the AEGIS-152/153 leakage detector was
-  found to audit provenance *reconstructed from the documented windowing
-  convention*, never connected to the real estimator's own execution -- a
-  future regression in `research.signal_reference.rolling_zscore_reference`
-  would not have been caught. `rolling_zscore_reference` now accepts an
-  optional `timing_sink` observer that emits a `WindowProvenance` record from
-  its own live `history` state at the moment of scoring (numerically
-  unchanged; regression-tested). `validation.leakage` no longer contains any
-  metadata-generating formula: `collect_timing_records_from_real_estimator`
-  drives the real estimator and collects what it actually emits, and
-  `run_seeded_leaky_estimator_for_falsifiability_check` is a genuinely
-  buggy standalone execution (not hand-authored data) used only to prove the
-  detector can catch a real leaking run. The honest path passes with zero
-  violations; the seeded leaky execution is caught in full.
+  **B2, attempt 1 (this repair's first pass, since corrected):** the
+  AEGIS-152/153 leakage detector was found to audit provenance
+  *reconstructed from the documented windowing convention*, never connected
+  to the real estimator's own execution. The first fix gave
+  `rolling_zscore_reference` an optional `timing_sink` observer, but only
+  `fitting_window_start_index` was read from live state --
+  `fitting_window_end_index = index - 1` remained a constant expression, true
+  for a correctly-behaving call but never actually checked. The claim written
+  here at the time -- "a future regression... would not have been caught" (as
+  now fixed) -- was **itself false**: the independent quant re-review proved
+  it by mutating `rolling_zscore_reference` so the current observation joined
+  the window before scoring (the canonical look-ahead bug) while leaving the
+  provenance block untouched; the numeric scores changed (a real leak) but
+  the detector still reported zero violations, because `end` never read the
+  window that actually produced the score. The seeded-leaky counterpart had
+  the mirrored defect: its "caught" result was driven by a hardcoded
+  `end_index = index` literal, not by its seeded structural bug -- an
+  ablation confirmed removing the bug while keeping that literal still
+  produced the same 50/50 violations.
+
+  **B2, attempt 2 (this fix).** `research.signal_reference` now tracks
+  `(index, value)` pairs in its sliding window (`_execute_rolling_zscore`'s
+  `consumed: deque[tuple[int, float]]`) instead of bare values, and BOTH
+  `fitting_window_start_index` and `fitting_window_end_index` are read
+  directly off that structure (`consumed[0][0]` / `consumed[-1][0]`) -- the
+  same structure the mean/variance are computed from, so score and
+  provenance cannot disagree. The honest path
+  (`rolling_zscore_reference`) and the negative-test path
+  (`rolling_zscore_reference_with_seeded_leak_for_falsifiability_check`)
+  share one execution engine, differing only in whether the current
+  observation joins the window before or after being scored -- so the
+  leak's effect on both the numeric output and the emitted provenance is a
+  consequence of shared arithmetic, not two independently hand-authored
+  loops. Re-running the reviewer's exact attack against this version:
+  numeric scores diverge under the leak exactly as before (confirming the
+  leak is real), the honest path's provenance still passes with zero
+  violations, and the leaky path's provenance is now caught in full (120/120
+  violations on the AEGIS-152/153 evidence dataset). A provenance-integrity
+  test (`test_provenance_reports_the_actual_consumed_window_not_a_feature_
+  index_formula`) checks emitted boundaries against a hand-worked ground
+  truth for a small fixture, independent of the production formula.
 * `python/reports/`: `validation_report.py`, `rejection_report.py`,
   `portfolio_risk_report.py` (independently RECOMPUTES gross/net exposure
   from position/price accounting values and reconciles against the C++
