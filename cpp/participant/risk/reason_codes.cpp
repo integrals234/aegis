@@ -62,6 +62,8 @@ std::string_view describe(ReasonCode reason) {
       return "broker_disconnected";
     case ReasonCode::kUnexpectedOrder:
       return "unexpected_order";
+    case ReasonCode::kIdentityMismatch:
+      return "identity_mismatch";
   }
   return "unknown";
 }

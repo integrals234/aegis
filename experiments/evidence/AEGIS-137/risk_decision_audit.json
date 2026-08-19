@@ -6,13 +6,31 @@
     ],
     "cases": [
       {
-        "line": 435,
+        "line": 202,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ReservationRepairAuditIntegrity.MisattributionCannotCrossProposalIdentities"
+      },
+      {
+        "line": 238,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ReservationRepairAuditIntegrity.ReplayingAProposalIdNeverAppendsASecondTerminalDecision"
+      },
+      {
+        "line": 377,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ReservationRepairExactIdentity.RegisteredIdentityWithDisagreeingEconomicsIsRejected"
+      },
+      {
+        "line": 491,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineAuditInvariant.ExactlyOneProposalDecisionAndOneOrderDecisionPerLeg"
       },
       {
-        "line": 456,
+        "line": 516,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineAuditInvariant.RejectedProposalReportsEveryLegRejectedAndArmsNoOrder"
@@ -20,20 +38,22 @@
     ],
     "failure_count": 0,
     "filters": [
-      "RiskEngineAuditInvariant.*"
+      "RiskEngineAuditInvariant.*",
+      "ReservationRepairAuditIntegrity.*",
+      "ReservationRepairExactIdentity.RegisteredIdentityWithDisagreeingEconomicsIsRejected"
     ],
-    "test_count": 2
+    "test_count": 5
   },
   "artifact": "AEGIS-137/risk_decision_audit",
-  "claim": "Exactly ONE terminal ProposalRiskDecision per proposal_id (asserted via RiskAuditLog::proposal_decision_count), with subordinate per-order OrderRiskDecision records that each carry the proposal_id/leg_index that authorised them. A two-leg spread therefore never produces two objects both claiming to be the proposal decision. A rejected proposal arms no pending leg, and an order reaching the seam anyway is rejected kUnexpectedOrder.",
+  "claim": "Exactly ONE terminal ProposalRiskDecision per proposal_id (asserted via RiskAuditLog::proposal_decision_count), with subordinate per-order OrderRiskDecision records that each carry the proposal_id/leg_index that authorised them. A two-leg spread therefore never produces two objects both claiming to be the proposal decision. A rejected proposal arms no pending leg, and an order reaching the seam anyway is rejected kUnexpectedOrder. Identity resolution is exact (M5 closure repair): a client_order_id is registered against its precise strategy/proposal/leg identity before submission, so an order can never be mis-attributed to a different, economically-identical proposal, and a replayed proposal_id can never append a second terminal decision.",
   "deterministic_config": {
     "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
     "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
   },
-  "dirty": false,
+  "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Every proposal has exactly one auditable risk decision.",
-  "generated_on": "2026-08-18",
+  "generated_on": "2026-08-19",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -53,7 +73,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "repository_commit": "335bf2bc7cac159217d2e8666356bc4b60075616",
   "requirements": [
     "AEGIS-137"
   ],

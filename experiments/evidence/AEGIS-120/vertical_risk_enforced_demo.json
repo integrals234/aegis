@@ -21,9 +21,9 @@
   },
   "artifact": "AEGIS-120/vertical_risk_enforced_demo",
   "claim": "The production CLI (aegis_participant_run --calendar-spread --risk-config) routes every proposal through the real risk::RiskEngine. Under configs/risk/limits.json the proposals are approved and real orders and fills occur (final_order_count > 0); under configs/risk/limits_reject_demo.json -- identical except the per-instrument quantity cap -- the SAME stream produces kMaxOrderQuantity rejections and final_order_count == 0. Two runs of the allow configuration are identical. Against a real, unmodified M1 ExchangeNode with real FIFO matching (tests/, outside covered_roots), the four acceptance tests prove allow (real fill), reject (zero adapter submit, zero exchange order, unchanged portfolio), resize (the exchange sees exactly the approved quantity) and global kill switch (live order cancelled, next proposal blocked).",
-  "dirty": false,
+  "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
-  "generated_on": "2026-08-18",
+  "generated_on": "2026-08-19",
   "implementation": [
     "cpp/participant/app/participant_run.cpp",
     "cpp/participant/app/risk_engine_gate.hpp",
@@ -53,25 +53,25 @@
     "binary": "build/debug/tests/cpp/unit/aegis_unit_tests",
     "cases": [
       {
-        "line": 206,
+        "line": 216,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.AllowedProposalReachesRealFifoMatchingAndUpdatesPortfolio"
       },
       {
-        "line": 393,
+        "line": 412,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.GlobalKillSwitchCancelsLiveOrdersAndBlocksNewSubmissions"
       },
       {
-        "line": 266,
+        "line": 280,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.RejectedProposalNeverReachesTheExchangeOrThePortfolio"
       },
       {
-        "line": 326,
+        "line": 340,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.ResizedProposalSubmitsExactlyTheApprovedQuantity"
@@ -102,7 +102,7 @@
     ]
   },
   "repeat_run_matches_allow_run": true,
-  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "repository_commit": "335bf2bc7cac159217d2e8666356bc4b60075616",
   "requirements": [
     "AEGIS-120",
     "AEGIS-121",

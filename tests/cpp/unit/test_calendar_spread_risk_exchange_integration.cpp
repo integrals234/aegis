@@ -1,4 +1,5 @@
 #include <array>
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -15,6 +16,7 @@
 #include "cpp/participant/strategy/calendar_spread_strategy.hpp"
 #include "tests/cpp/optional_access.hpp"
 #include "tests/cpp/support/in_process_exchange_transport.hpp"
+#include "tests/cpp/support/risk_seam_test_helpers.hpp"
 
 /// M5's real risk engine, wired through the mandatory oms::RiskGate seam
 /// (app::RiskEngineGate, ADR-0027) against a real, unmodified M1
@@ -61,6 +63,7 @@ using aegis::participant::strategy::SpreadPosition;
 using aegis::participant::strategy::StrategyLeg;
 using aegis::participant::strategy::StrategyProposal;
 using aegis::testing::InProcessExchangeTransport;
+using aegis::testing::submit_registered_new_order;
 
 constexpr std::uint32_t kNearInstrumentId = 10;
 constexpr std::uint32_t kFarInstrumentId = 20;
@@ -126,10 +129,12 @@ RiskLimitsConfig permissive_config() {
 /// decode them from the wire.
 void execute_leg_against_real_exchange(const StrategyLeg& leg, OrderManager& manager,
                                        Portfolio& portfolio, RiskEngine& risk_engine,
-                                       InProcessExchangeTransport& transport) {
-  const auto client_order_id = manager.submit_new_order(leg.instrument_id, /*participant_id=*/1,
-                                                        leg.side, OrderType::kMarket,
-                                                        /*price_units=*/0, leg.quantity_units);
+                                       InProcessExchangeTransport& transport,
+                                       const std::string& strategy_id,
+                                       const std::string& proposal_id, std::uint32_t leg_index) {
+  const auto client_order_id = submit_registered_new_order(
+      manager, risk_engine, strategy_id, proposal_id, leg_index, leg.instrument_id, leg.side,
+      OrderType::kMarket, /*price_units=*/0, leg.quantity_units);
   const auto* tracked = manager.find_by_client_order_id(client_order_id);
   ASSERT_NE(tracked, nullptr);
   if (tracked->lifecycle.state() == OrderState::kRejected) {
@@ -254,9 +259,11 @@ TEST(CalendarSpreadRiskExchangeIntegration,
 
   const std::uint64_t next_order_id_before = harness.node.next_order_id();
   execute_leg_against_real_exchange(proposal.near, manager, portfolio, risk_engine,
-                                    harness.transport);
+                                    harness.transport, "calendar_spread", "allow-1",
+                                    /*leg_index=*/0);
   execute_leg_against_real_exchange(proposal.far, manager, portfolio, risk_engine,
-                                    harness.transport);
+                                    harness.transport, "calendar_spread", "allow-1",
+                                    /*leg_index=*/1);
 
   // Real FIFO matching filled both legs completely.
   EXPECT_GT(harness.node.next_order_id(), next_order_id_before + 1);
@@ -386,9 +393,11 @@ TEST(CalendarSpreadRiskExchangeIntegration, ResizedProposalSubmitsExactlyTheAppr
   ASSERT_EQ(decision.verdict, aegis::participant::risk::RiskVerdict::kResize);
 
   execute_leg_against_real_exchange(proposal.near, manager, portfolio, risk_engine,
-                                    harness.transport);
+                                    harness.transport, "calendar_spread", "resize-1",
+                                    /*leg_index=*/0);
   execute_leg_against_real_exchange(proposal.far, manager, portfolio, risk_engine,
-                                    harness.transport);
+                                    harness.transport, "calendar_spread", "resize-1",
+                                    /*leg_index=*/1);
 
   const auto tracked_orders = manager.all_tracked_orders();
   ASSERT_EQ(tracked_orders.size(), 2U);
@@ -436,9 +445,9 @@ TEST(CalendarSpreadRiskExchangeIntegration,
                                               .price_units = 100'050,
                                               .quantity_units = kQuantityUnits}},
       0);
-  const auto client_order_id =
-      manager.submit_new_order(kNearInstrumentId, /*participant_id=*/1, Side::kSell,
-                               OrderType::kLimit, 100'050, kQuantityUnits);
+  const auto client_order_id = submit_registered_new_order(
+      manager, risk_engine, "calendar_spread", "resting-1", /*leg_index=*/0, kNearInstrumentId,
+      Side::kSell, OrderType::kLimit, 100'050, kQuantityUnits);
   const auto* tracked = manager.find_by_client_order_id(client_order_id);
   ASSERT_NE(tracked, nullptr);
   const auto emitted = harness.transport.drain();

@@ -6,13 +6,25 @@
     ],
     "cases": [
       {
-        "line": 393,
+        "line": 412,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.GlobalKillSwitchCancelsLiveOrdersAndBlocksNewSubmissions"
       },
       {
-        "line": 484,
+        "line": 162,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ReservationRepairExactIdentity.LookAlikeLegFromAnotherStrategyCannotBorrowItsRiskState"
+      },
+      {
+        "line": 260,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ReservationRepairSeamRevalidation.KillSwitchTrippedAfterCommitStopsTheOrderAtTheSeam"
+      },
+      {
+        "line": 546,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineKillSwitch.StrategyAndGlobalTripsAreIdempotentAndScopedCorrectly"
@@ -21,20 +33,22 @@
     "failure_count": 0,
     "filters": [
       "RiskEngineKillSwitch.*",
-      "CalendarSpreadRiskExchangeIntegration.GlobalKillSwitchCancelsLiveOrdersAndBlocksNewSubmissions"
+      "CalendarSpreadRiskExchangeIntegration.GlobalKillSwitchCancelsLiveOrdersAndBlocksNewSubmissions",
+      "ReservationRepairExactIdentity.LookAlikeLegFromAnotherStrategyCannotBorrowItsRiskState",
+      "ReservationRepairSeamRevalidation.KillSwitchTrippedAfterCommitStopsTheOrderAtTheSeam"
     ],
-    "test_count": 2
+    "test_count": 4
   },
   "artifact": "AEGIS-135/kill_switches",
-  "claim": "Strategy-level and global kill switches are idempotent (a second trip is a no-op returning false), strategy-scoped tripping leaves other strategies unaffected, live orders receive safety cancels that bypass the ordinary cancel throttle, and every subsequent proposal is rejected. Proven end to end against a real unmodified M1 ExchangeNode: the exchange order count does not move after the trip.",
+  "claim": "Strategy-level and global kill switches are idempotent (a second trip is a no-op returning false), strategy-scoped tripping leaves other strategies unaffected, live orders receive safety cancels that bypass the ordinary cancel throttle, and every subsequent proposal is rejected. Proven end to end against a real unmodified M1 ExchangeNode: the exchange order count does not move after the trip. An order resolves to its EXACT registered proposal/leg identity, never to a look-alike armed leg from another strategy sharing the same economics (M5 closure repair) -- a tripped strategy cannot be bypassed by an order that happens to match a DIFFERENT, non-halted strategy's leg by coincidence.",
   "deterministic_config": {
     "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
     "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
   },
-  "dirty": false,
+  "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Kill-switch tests cancel/disable safely and prevent new orders.",
-  "generated_on": "2026-08-18",
+  "generated_on": "2026-08-19",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -56,7 +70,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "repository_commit": "335bf2bc7cac159217d2e8666356bc4b60075616",
   "requirements": [
     "AEGIS-135"
   ],

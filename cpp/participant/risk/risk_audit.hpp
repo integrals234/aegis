@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "cpp/common/time.hpp"
@@ -72,9 +73,19 @@ class RiskAuditLog {
   /// `proposal_id` -- the AEGIS-137 invariant asserts this is always 1.
   [[nodiscard]] std::size_t proposal_decision_count(const std::string& proposal_id) const;
 
+  /// O(1) lookup for `commit_proposal_decision`'s replay guard (M5 closure
+  /// repair): `proposal_id` already has its ONE terminal decision iff this
+  /// returns non-null. `proposal_id` is treated as globally unique (ADR-0027;
+  /// the composition root already embeds `strategy_id` into the string it
+  /// generates), matching `proposal_decision_count`'s existing bare-string
+  /// key -- not a new, narrower contract introduced by this lookup.
+  [[nodiscard]] const ProposalRiskDecision* find_proposal_decision(
+      const std::string& proposal_id) const;
+
  private:
   std::vector<ProposalRiskDecision> proposal_decisions_;
   std::vector<OrderRiskDecision> order_decisions_;
+  std::unordered_map<std::string, std::size_t> proposal_index_by_id_;
   std::uint64_t next_sequence_{1};
 };
 

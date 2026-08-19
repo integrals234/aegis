@@ -39,6 +39,13 @@ enum class ReasonCode : std::uint8_t {
   kExchangeDisconnected = 26,
   kBrokerDisconnected = 27,
   kUnexpectedOrder = 28,  ///< Seam saw an order no proposal-level decision armed (safety net).
+  /// The seam resolved a registered identity to an armed leg, but the
+  /// order's own instrument/side/quantity disagree with what that leg was
+  /// actually reserved for (M5 closure repair) -- e.g. a caller bug that
+  /// registered the right identity but submitted different economics. Never
+  /// a look-alike-economics match: identity resolution never searches by
+  /// instrument/side/quantity in the first place.
+  kIdentityMismatch = 29,
 };
 
 [[nodiscard]] std::string_view describe(ReasonCode reason);

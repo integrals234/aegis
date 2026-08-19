@@ -45,6 +45,57 @@ class RiskState {
                                                  .strategy_id = std::move(strategy_id)};
     reserved_by_instrument_[instrument_id] += signed_quantity;
   }
+
+  // ---- leg reservations (M5 closure repair: AEGIS-121..124/129/135/137) --
+  // Exposure a committed-but-not-yet-submitted proposal leg already
+  // consumes, keyed by `PendingLegKey` because no `client_order_id` exists
+  // until the composition root actually submits the order. Folded into
+  // `reserved_by_instrument_` the SAME running total `reserve`/
+  // `reserved_units`/`all_reservations` already read, so every cumulative
+  // control (position, notional, market/sector exposure, concentration,
+  // margin, leverage) sees this exposure immediately at proposal-commit
+  // time -- a second, concurrently-committed proposal can no longer be
+  // blind to capacity the first one already claimed.
+  void reserve_leg(const PendingLegKey& key, std::uint32_t instrument_id, Side side,
+                   std::int64_t quantity_units, std::string strategy_id) {
+    const std::int64_t signed_quantity = side == Side::kBuy ? quantity_units : -quantity_units;
+    leg_reservations_[key] = Reservation{.instrument_id = instrument_id,
+                                         .signed_quantity_units = signed_quantity,
+                                         .strategy_id = std::move(strategy_id)};
+    reserved_by_instrument_[instrument_id] += signed_quantity;
+  }
+  /// Moves a leg-keyed reservation to become an order-keyed one once the OMS
+  /// has assigned a `client_order_id` for it, so the ordinary fill/release
+  /// lifecycle (`on_fill`/`on_order_terminated`/`on_order_rejected`, all
+  /// `client_order_id`-keyed) can take over. Does NOT touch
+  /// `reserved_by_instrument_` -- the exposure was already counted once at
+  /// `reserve_leg` time; moving which map tracks it must never count it
+  /// again. Returns false (no-op) if `key` has no leg reservation, which a
+  /// correct caller never triggers (decide_order only calls this after
+  /// resolving `key` from `pending_legs_`, whose entries and
+  /// `leg_reservations_` entries are created together in the same commit).
+  bool transition_leg_reservation_to_order(const PendingLegKey& key,
+                                           std::uint64_t client_order_id) {
+    const auto found = leg_reservations_.find(key);
+    if (found == leg_reservations_.end()) {
+      return false;
+    }
+    reservations_[client_order_id] = std::move(found->second);
+    leg_reservations_.erase(found);
+    return true;
+  }
+  /// Releases a leg-keyed reservation that will never reach an order (the
+  /// leg was resolved at the seam but then rejected there -- a late-tripped
+  /// kill switch, a since-changed exposure limit, or an identity/economics
+  /// mismatch). No-op if `key` has no leg reservation.
+  void release_leg_reservation(const PendingLegKey& key) {
+    const auto found = leg_reservations_.find(key);
+    if (found == leg_reservations_.end()) {
+      return;
+    }
+    reserved_by_instrument_[found->second.instrument_id] -= found->second.signed_quantity_units;
+    leg_reservations_.erase(found);
+  }
   /// A fill converts part of a reservation into confirmed position (the
   /// caller applies the fill via `apply_fill` separately); this only shrinks
   /// the outstanding reserved amount so the same exposure is never counted
@@ -81,6 +132,7 @@ class RiskState {
     return reserved_by_instrument_;
   }
   [[nodiscard]] std::size_t reservation_count() const { return reservations_.size(); }
+  [[nodiscard]] std::size_t leg_reservation_count() const { return leg_reservations_.size(); }
 
   // ---- idempotency ---------------------------------------------------
   [[nodiscard]] bool seen_before(const std::string& key) const {
@@ -175,6 +227,7 @@ class RiskState {
  private:
   std::unordered_map<std::uint32_t, std::int64_t> position_by_instrument_;
   std::unordered_map<std::uint64_t, Reservation> reservations_;
+  std::unordered_map<PendingLegKey, Reservation, PendingLegKeyHash> leg_reservations_;
   std::unordered_map<std::uint32_t, std::int64_t> reserved_by_instrument_;
   std::unordered_set<std::string> dedupe_keys_;
   std::unordered_set<std::string> halted_strategies_;

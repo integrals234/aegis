@@ -539,29 +539,51 @@ ProposalDecisionResult RiskEngine::evaluate_proposal(const std::string& strategy
 const ProposalRiskDecision& RiskEngine::commit_proposal_decision(
     const std::string& strategy_id, const std::string& proposal_id,
     const std::vector<OrderRequest>& legs, common::Nanos decided_at_nanos) {
+  // AEGIS-137 replay guard: proposal_id already has its ONE terminal
+  // decision. Return it unchanged -- never re-decide, never re-arm, never
+  // re-reserve, never append a second ProposalRiskDecision. A prior version
+  // relied on the per-leg dedupe check inside evaluate_leg to reject a
+  // replay, but that still fell through to an unconditional record_proposal
+  // call below, appending a second record for the SAME proposal_id (the
+  // AEGIS-137 defect an independent review found this exact test path
+  // never asserted against).
+  if (const ProposalRiskDecision* existing = audit_log_.find_proposal_decision(proposal_id)) {
+    return *existing;
+  }
+
   const ProposalDecisionResult result = evaluate_proposal(strategy_id, proposal_id, legs);
 
   if (result.verdict != RiskVerdict::kReject) {
-    // Commit side effects only now -- rate-limit tokens, dedupe keys and
-    // pending-leg arming happen exactly once, after the pure preflight
-    // above has already proven the whole proposal is admissible.
+    // Commit side effects only now -- rate-limit tokens, dedupe keys,
+    // pending-leg arming AND exposure reservation all happen exactly once,
+    // atomically, after the pure preflight above has already proven the
+    // WHOLE proposal is admissible. Reserving here (not at decide_order) is
+    // the fix for AEGIS-121..124/129: every cumulative control reads
+    // state_.reserved_units/all_reservations, so a second proposal
+    // committed before this one's orders reach the seam now correctly sees
+    // this exposure already claimed.
     for (std::size_t index = 0; index < legs.size(); ++index) {
       const OrderRequest& leg = legs[index];
       const LegDecision& decision = result.legs[index];
       state_.mark_seen(dedupe_key(strategy_id, proposal_id, leg.leg_index));
       state_.record_order_event(leg.request_time_nanos);
-      pending_legs_.push_back(PendingLeg{
+      const PendingLegKey key{
+          .strategy_id = strategy_id, .proposal_id = proposal_id, .leg_index = leg.leg_index};
+      state_.reserve_leg(key, leg.instrument_id, leg.side, decision.approved_quantity_units,
+                         strategy_id);
+      pending_legs_[key] = PendingLeg{
           .strategy_id = strategy_id,
           .proposal_id = proposal_id,
           .leg_index = leg.leg_index,
           .instrument_id = leg.instrument_id,
           .side = leg.side,
+          .price_units = leg.price_units,
           .requested_quantity_units = leg.quantity_units,
           .approved_quantity_units = decision.approved_quantity_units,
           .verdict = decision.verdict,
           .reason_code = decision.reason_code,
           .reason = decision.reason,
-      });
+      };
     }
   }
 
@@ -569,14 +591,90 @@ const ProposalRiskDecision& RiskEngine::commit_proposal_decision(
                                     result.reason, result.legs, decided_at_nanos);
 }
 
+bool RiskEngine::register_pending_order_identity(std::uint64_t client_order_id,
+                                                 const std::string& strategy_id,
+                                                 const std::string& proposal_id,
+                                                 std::uint32_t leg_index) {
+  const PendingLegKey key{
+      .strategy_id = strategy_id, .proposal_id = proposal_id, .leg_index = leg_index};
+  if (!pending_legs_.contains(key)) {
+    return false;
+  }
+  order_identity_by_client_order_id_[client_order_id] = key;
+  return true;
+}
+
+std::optional<LegDecision> RiskEngine::revalidate_at_seam(const PendingLeg& pending,
+                                                          common::Nanos now_nanos) const {
+  const OrderRequest as_request{.strategy_id = pending.strategy_id,
+                                .proposal_id = pending.proposal_id,
+                                .leg_index = pending.leg_index,
+                                .instrument_id = pending.instrument_id,
+                                .side = pending.side,
+                                .price_units = pending.price_units,
+                                .quantity_units = pending.approved_quantity_units,
+                                .request_time_nanos = now_nanos};
+
+  // Halts/connectivity and market staleness/collar: these can change at any
+  // moment between commit and seam arrival, and the seam is the LAST point
+  // before adapter_->submit(), so this is where a late-breaking change must
+  // actually bite. Deliberately NOT re-run here: idempotency (this leg's own
+  // dedupe key was already marked seen at commit -- re-checking would always
+  // reject) and the order-count rate limit (this leg's own event was already
+  // recorded at commit -- re-checking double-counts a message that already
+  // happened once). Neither omission reopens a safety gap: idempotency's
+  // purpose (reject a REPLAYED submission) is already served by the
+  // proposal-level replay guard in commit_proposal_decision, and the rate
+  // limit's purpose (throttle a BURST of NEW admissions) was already served
+  // when this leg was admitted at commit time.
+  if (auto rejected = check_halts_and_connectivity(as_request)) {
+    return rejected;
+  }
+  const MarketQuote* quote = nullptr;
+  if (auto rejected = check_market_state(as_request, quote)) {
+    return rejected;
+  }
+
+  // Cumulative exposure/margin/leverage, against CURRENT state -- but with
+  // this leg's own already-reserved contribution subtracted out of the
+  // overlay before being added back in as the candidate, so it is counted
+  // exactly once (its own existing reservation), never twice (existing
+  // reservation PLUS itself as a "new" candidate) and never zero times.
+  const std::int64_t own_signed_reserved = pending.side == Side::kBuy
+                                               ? pending.approved_quantity_units
+                                               : -pending.approved_quantity_units;
+  EvaluationOverlay overlay;
+  overlay.extra_reserved_by_instrument[pending.instrument_id] -= own_signed_reserved;
+
+  EvaluationOverlay portfolio_overlay;
+  std::int64_t portfolio_notional = 0;
+  if (auto rejected =
+          check_position_and_notional(as_request, overlay, pending.approved_quantity_units,
+                                      portfolio_overlay, portfolio_notional)) {
+    return rejected;
+  }
+  if (auto rejected = check_group_exposure(as_request, portfolio_overlay)) {
+    return rejected;
+  }
+  if (auto rejected = check_concentration(as_request, pending.approved_quantity_units,
+                                          portfolio_overlay, portfolio_notional)) {
+    return rejected;
+  }
+  if (auto rejected = check_margin_and_leverage(portfolio_overlay, portfolio_notional)) {
+    return rejected;
+  }
+  return std::nullopt;
+}
+
 OmsDecision RiskEngine::decide_order(std::uint32_t instrument_id, Side side,
                                      std::int64_t quantity_units, std::uint64_t client_order_id,
                                      common::Nanos now_nanos) {
-  const auto found = std::ranges::find_if(pending_legs_, [&](const PendingLeg& pending) {
-    return pending.instrument_id == instrument_id && pending.side == side &&
-           pending.requested_quantity_units == quantity_units;
-  });
-  if (found == pending_legs_.end()) {
+  // Exact identity resolution: a registered client_order_id maps to the ONE
+  // PendingLegKey the composition root named when it registered it, never
+  // to whichever pending leg happens to share this order's economics (the
+  // look-alike-leg cross-strategy defect an independent review found).
+  const auto identity_found = order_identity_by_client_order_id_.find(client_order_id);
+  if (identity_found == order_identity_by_client_order_id_.end()) {
     audit_log_.record_order("", 0, client_order_id, instrument_id, RiskVerdict::kReject,
                             quantity_units, 0, ReasonCode::kUnexpectedOrder,
                             "no armed proposal decision for this order", now_nanos);
@@ -585,33 +683,69 @@ OmsDecision RiskEngine::decide_order(std::uint32_t instrument_id, Side side,
                        .reason_code = ReasonCode::kUnexpectedOrder,
                        .reason = "no armed proposal decision for this order"};
   }
+  const PendingLegKey key = identity_found->second;
+  order_identity_by_client_order_id_.erase(identity_found);
+
+  const auto found = pending_legs_.find(key);
+  if (found == pending_legs_.end()) {
+    // A registered identity whose leg is no longer armed (already resolved
+    // by a prior decide_order call for the same client_order_id, which
+    // cannot happen through the normal seam, or a caller bug) -- reject
+    // rather than fabricate a decision for a leg that no longer exists.
+    audit_log_.record_order(key.proposal_id, key.leg_index, client_order_id, instrument_id,
+                            RiskVerdict::kReject, quantity_units, 0, ReasonCode::kUnexpectedOrder,
+                            "registered identity has no armed leg", now_nanos);
+    return OmsDecision{.verdict = RiskVerdict::kReject,
+                       .approved_quantity_units = 0,
+                       .reason_code = ReasonCode::kUnexpectedOrder,
+                       .reason = "registered identity has no armed leg"};
+  }
   // Moved out before the erase, not referenced: `erase` invalidates `found`,
-  // so the leg's data has to be owned here before the vector is modified.
-  const PendingLeg pending = std::move(*found);
+  // so the leg's data has to be owned here before the map is modified.
+  const PendingLeg pending = std::move(found->second);
   pending_legs_.erase(found);
 
-  // A halt that tripped after commit_proposal_decision but before this order
-  // actually reached the OMS still stops it here -- the seam is the last
-  // point before adapter_->submit(), so it is where a late-breaking halt
-  // must actually bite.
+  // Immutable economics must agree with what was actually reserved: identity
+  // resolved correctly, but this order's own instrument/side/quantity
+  // disagree with the leg it resolved to (a caller bug, never a look-alike
+  // match -- identity resolution above never searched by economics at all).
+  if (pending.instrument_id != instrument_id || pending.side != side ||
+      pending.requested_quantity_units != quantity_units) {
+    state_.release_leg_reservation(key);
+    audit_log_.record_order(pending.proposal_id, pending.leg_index, client_order_id, instrument_id,
+                            RiskVerdict::kReject, quantity_units, 0, ReasonCode::kIdentityMismatch,
+                            "order details disagree with the reserved leg's economics", now_nanos);
+    return OmsDecision{.verdict = RiskVerdict::kReject,
+                       .approved_quantity_units = 0,
+                       .reason_code = ReasonCode::kIdentityMismatch,
+                       .reason = "order details disagree with the reserved leg's economics"};
+  }
+
   RiskVerdict verdict = pending.verdict;
   ReasonCode reason_code = pending.reason_code;
   std::string reason = pending.reason;
   std::int64_t approved = pending.approved_quantity_units;
-  if (state_.is_globally_halted()) {
-    verdict = RiskVerdict::kReject;
-    reason_code = ReasonCode::kKillSwitchGlobal;
-    reason = "global kill switch tripped after proposal decision";
-    approved = 0;
-  } else if (state_.is_strategy_halted(pending.strategy_id)) {
-    verdict = RiskVerdict::kReject;
-    reason_code = ReasonCode::kKillSwitchStrategy;
-    reason = "strategy kill switch tripped after proposal decision";
-    approved = 0;
+
+  // Revalidate mutable safety state that can have changed between commit and
+  // seam arrival -- the seam is the last point before adapter_->submit(), so
+  // this is where a late-breaking halt, disconnect, stale quote or exposure
+  // change must actually bite. Proposal commit is not permission forever.
+  if (verdict != RiskVerdict::kReject) {
+    if (auto rejected = revalidate_at_seam(pending, now_nanos)) {
+      verdict = RiskVerdict::kReject;
+      reason_code = rejected->reason_code;
+      reason = rejected->reason;
+      approved = 0;
+    }
   }
 
   if (verdict != RiskVerdict::kReject) {
-    state_.reserve(client_order_id, instrument_id, side, approved, pending.strategy_id);
+    // Consume, not create: the reservation already exists (from
+    // commit_proposal_decision); this only transitions it to be
+    // client_order_id-keyed for the ordinary fill/release lifecycle.
+    state_.transition_leg_reservation_to_order(key, client_order_id);
+  } else {
+    state_.release_leg_reservation(key);
   }
 
   audit_log_.record_order(pending.proposal_id, pending.leg_index, client_order_id, instrument_id,

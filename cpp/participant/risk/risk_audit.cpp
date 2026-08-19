@@ -8,6 +8,12 @@ namespace aegis::participant::risk {
 const ProposalRiskDecision& RiskAuditLog::record_proposal(
     std::string strategy_id, std::string proposal_id, RiskVerdict verdict, ReasonCode reason_code,
     std::string reason, std::vector<LegDecision> legs, common::Nanos decided_at_nanos) {
+  // The caller (RiskEngine::commit_proposal_decision) is responsible for the
+  // AEGIS-137 replay guard -- this method's own contract is simply "append
+  // one record and index it", so the invariant holds regardless of caller
+  // discipline as long as no caller ever calls this twice for the same
+  // proposal_id (which the guard above ensures).
+  const std::string proposal_id_key = proposal_id;
   proposal_decisions_.push_back(ProposalRiskDecision{
       .sequence = next_sequence_++,
       .decided_at_nanos = decided_at_nanos,
@@ -18,6 +24,7 @@ const ProposalRiskDecision& RiskAuditLog::record_proposal(
       .reason = std::move(reason),
       .legs = std::move(legs),
   });
+  proposal_index_by_id_[proposal_id_key] = proposal_decisions_.size() - 1;
   return proposal_decisions_.back();
 }
 
@@ -47,6 +54,15 @@ std::size_t RiskAuditLog::proposal_decision_count(const std::string& proposal_id
       proposal_decisions_, [&proposal_id](const ProposalRiskDecision& decision) {
         return decision.proposal_id == proposal_id;
       }));
+}
+
+const ProposalRiskDecision* RiskAuditLog::find_proposal_decision(
+    const std::string& proposal_id) const {
+  const auto found = proposal_index_by_id_.find(proposal_id);
+  if (found == proposal_index_by_id_.end()) {
+    return nullptr;
+  }
+  return &proposal_decisions_[found->second];
 }
 
 }  // namespace aegis::participant::risk

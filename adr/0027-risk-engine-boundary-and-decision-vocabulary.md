@@ -94,6 +94,92 @@ one proposal decision that authorised it. Neither record is ever mistaken
 for the other: they are distinct types, appended to distinct append-only
 vectors in `RiskAuditLog`.
 
+## Correction (M5 closure repair)
+
+An independent risk-safety review found the ORIGINAL version of this
+decision -- reserve exposure at `decide_order`, match a pending leg by
+`(instrument_id, side, requested_quantity_units)` -- unsafe in two ways this
+section retracts and replaces. The "`decide_order` is the seam's actual
+enforcement point" paragraph above, and the "matches against the pending
+legs... by `(instrument_id, side, requested_quantity_units)`" sentence in
+particular, describe the ORIGINAL (defective) design; they are superseded by
+this section, not deleted, so the record of what changed and why stays
+legible.
+
+**Defect 1: two individually-safe proposals could jointly breach a
+cumulative limit.** Nothing counted a committed proposal's exposure until
+its order physically reached `decide_order`. Two `+60`-unit proposals
+against a `100`-unit position limit, committed before either's order
+reached the seam, both passed preflight and jointly reserved `120`.
+
+**Defect 2: an order could resolve to a look-alike armed leg from a
+different strategy/proposal.** Matching by economics alone cannot
+distinguish two proposals whose legs happen to share the same instrument,
+side and quantity -- a strategy-B order could match strategy-A's armed leg
+and inherit A's non-halted state, defeating AEGIS-135's strategy-scoped
+kill switch.
+
+A related gap surfaced in the same review: `commit_proposal_decision`
+called `RiskAuditLog::record_proposal` unconditionally, even when the
+per-leg idempotency check (`AEGIS-127`) rejected a replayed `proposal_id` --
+so a replay appended a SECOND `ProposalRiskDecision` for the same
+`proposal_id`, violating the "exactly one" invariant this ADR's "One
+canonical terminal decision per proposal" section states, in a code path
+the existing test suite exercised but never asserted the count against.
+
+**The fix changes WHEN and BY WHAT KEY a leg's exposure and identity are
+tracked, not what each cumulative control computes:**
+
+- `commit_proposal_decision` now reserves ALL of an approved/resized
+  proposal's legs' exposure IMMEDIATELY, keyed by
+  `PendingLegKey{strategy_id, proposal_id, leg_index}` (no `client_order_id`
+  exists yet at this point). Every cumulative control already reads
+  `RiskState::reserved_units`/`all_reservations`, so a second proposal
+  committed before the first's orders reach the seam now correctly sees the
+  first's reservation -- closing Defect 1 without changing any control's own
+  arithmetic.
+- `commit_proposal_decision` also now checks `RiskAuditLog::
+  find_proposal_decision(proposal_id)` FIRST: a `proposal_id` that already
+  has a terminal decision returns that SAME decision, unconditionally,
+  before `evaluate_proposal` even runs -- so a replay can never re-arm,
+  re-reserve, or append a second record. `proposal_id` remains treated as
+  globally unique (the composition root already embeds `strategy_id` into
+  the string it generates, `strategy_id + "-" + sequence`); this is the
+  existing contract this correction relies on, not a new, narrower one.
+- The composition root registers each leg's future `client_order_id`
+  (`OrderManager::next_client_order_id()`, peeked immediately before
+  `submit_new_order`) against its exact `PendingLegKey` via
+  `RiskEngine::register_pending_order_identity`, BEFORE the order reaches
+  the OMS. `decide_order` resolves a `client_order_id` to its EXACT
+  `PendingLegKey` through that registration -- never by searching economics
+  -- closing Defect 2. It then verifies the order's own
+  instrument/side/quantity agree with what was actually reserved
+  (`kIdentityMismatch` if not -- a caller-bug signal, never a look-alike
+  match, since identity resolution never searched by economics in the first
+  place), revalidates mutable safety state that can have changed since
+  commit (`revalidate_at_seam`: halts, connectivity, market
+  staleness/collar, and every cumulative control -- excluding this leg's own
+  already-counted reservation via an `EvaluationOverlay` populated with its
+  negation, so the leg is counted exactly once, never twice, never zero
+  times), and only then TRANSITIONS the existing leg reservation to be
+  `client_order_id`-keyed for the ordinary fill/release lifecycle. It never
+  reserves a second time.
+
+Deliberately NOT revalidated at the seam: idempotency (this leg's own
+dedupe key was already marked seen at commit; re-checking would reject
+every order, since it is unconditionally "seen" by then) and the
+order-count rate limit (this leg's own event was already recorded at
+commit; re-checking would double-count a message that happened once).
+Neither omission reopens a gap: idempotency's purpose (reject a REPLAYED
+submission) is served by the proposal-level replay guard above, and the
+rate limit's purpose (throttle a BURST of NEW admissions) was already
+served when the leg was admitted at commit time.
+
+`tests/cpp/unit/test_risk_engine_reservation_repair.cpp` reproduces both
+original attacks (and the duplicate-proposal/mis-attribution defect) and
+asserts the fixed behavior; every test in that file fails against the
+engine as it stood before this correction.
+
 ## Alternatives considered
 
 - **Risk implements `oms::RiskGate` directly.** Rejected: creates the
@@ -152,6 +238,24 @@ vectors in `RiskAuditLog`.
   `ExchangeNode` -- reject means zero adapter submit, zero exchange order,
   zero portfolio change; resize means the exchange sees exactly the approved
   quantity.
+- `tests/cpp/unit/test_risk_engine_reservation_repair.cpp` (M5 closure
+  repair): two individually-safe concurrent proposals jointly breach a
+  cumulative limit only until the SECOND one's commit, which now correctly
+  rejects; a look-alike leg from another strategy cannot borrow its
+  non-halted state; a replayed `proposal_id` never appends a second terminal
+  decision; an order cannot be mis-attributed to the wrong proposal in
+  either submission order; mutable safety state revalidated at the seam
+  (kill switch, out-of-band exposure change) genuinely rejects without
+  double-counting the leg's own reservation; a rejected two-leg proposal
+  arms and reserves nothing for either leg; an identity/economics mismatch
+  is rejected and releases its reservation.
+- `aegis_participant_run --calendar-spread --stream
+  tests/unit/fixtures/participant/calendar_spread_stream.jsonl --risk-config
+  configs/risk/limits.json`: the real composition root, both proposals
+  approve and fill, byte-identical across two runs; `--risk-config
+  configs/risk/limits_reject_demo.json` rejects both proposals with zero
+  orders, proving the corrected lifecycle end to end, not only inside unit
+  tests.
 
 ## Owner approval
 

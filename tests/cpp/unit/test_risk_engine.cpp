@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "cpp/participant/risk/risk_engine.hpp"
+#include "tests/cpp/support/risk_seam_test_helpers.hpp"
 
 /// AEGIS-121..137: the M5 risk engine's pre-trade controls and audit
 /// invariant, exercised directly against `RiskEngine`'s public API -- the
@@ -24,6 +25,7 @@ using aegis::participant::risk::RiskLimitsConfig;
 using aegis::participant::risk::RiskVerdict;
 using aegis::participant::risk::Side;
 using aegis::participant::risk::VolatilityReductionConfig;
+using aegis::testing::decide_registered_order;
 
 constexpr std::uint32_t kNear = 2001;
 constexpr std::uint32_t kFar = 2002;
@@ -118,7 +120,9 @@ TEST(RiskEnginePositionLimits, TwoIndividuallyAcceptableOrdersJointlyBreach) {
   const auto& decision = engine.commit_proposal_decision(
       "strat", "reserve-1", {make_request(kNear, Side::kBuy, 100, 60, 0, "strat", "reserve-1")}, 0);
   ASSERT_EQ(decision.verdict, RiskVerdict::kApprove);
-  const auto oms_decision = engine.decide_order(kNear, Side::kBuy, 60, /*client_order_id=*/1, 0);
+  const auto oms_decision =
+      decide_registered_order(engine, "strat", "reserve-1", /*leg_index=*/0, kNear, Side::kBuy, 60,
+                              /*client_order_id=*/1, 0);
   ASSERT_EQ(oms_decision.verdict, RiskVerdict::kApprove);
 
   const LegDecision second = engine.evaluate(make_request(kNear, Side::kBuy, 100, 60, 0));
@@ -136,7 +140,8 @@ TEST(RiskEnginePositionLimits, PartialFillCancelAndRejectAllReleaseTheReservatio
     engine.commit_proposal_decision(
         "strat", proposal_id, {make_request(kNear, Side::kBuy, 100, 100, 0, "strat", proposal_id)},
         0);
-    return engine.decide_order(kNear, Side::kBuy, 100, client_order_id, 0);
+    return decide_registered_order(engine, "strat", proposal_id, /*leg_index=*/0, kNear, Side::kBuy,
+                                   100, client_order_id, 0);
   };
 
   // Cancel releases fully.
@@ -172,7 +177,9 @@ TEST(RiskEnginePositionLimits, PartialFillCancelAndRejectAllReleaseTheReservatio
   engine.commit_proposal_decision(
       "strat", "p-explicit-release",
       {make_request(kNear, Side::kBuy, 100, 60, 0, "strat", "p-explicit-release")}, 0);
-  ASSERT_EQ(engine.decide_order(kNear, Side::kBuy, 60, /*client_order_id=*/4, 0).verdict,
+  ASSERT_EQ(decide_registered_order(engine, "strat", "p-explicit-release", /*leg_index=*/0, kNear,
+                                    Side::kBuy, 60, /*client_order_id=*/4, 0)
+                .verdict,
             RiskVerdict::kApprove);
   EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).reason_code,
             ReasonCode::kMaxPositionLong);
@@ -289,7 +296,15 @@ TEST(RiskEngineStaleData, RejectsStaleAndInvalidMarketState) {
 
 // ---------------------------------------------------------------- AEGIS-127
 
-TEST(RiskEngineIdempotency, RejectsDuplicateAndReplayedProposals) {
+TEST(RiskEngineIdempotency, ReplayedProposalReturnsTheSameDecisionAndNeverDoubles) {
+  // M5 closure repair (AEGIS-137): a replayed proposal_id must not create a
+  // SECOND ProposalRiskDecision -- an independent risk-safety review found
+  // the previous version did exactly that (the per-leg dedupe check
+  // rejected the replay's legs, but commit_proposal_decision still
+  // unconditionally appended a second, reject, record for the same
+  // proposal_id -- and this very test never asserted the count, so it
+  // passed anyway). The fix returns the ORIGINAL terminal decision
+  // unchanged on replay, so proposal_decision_count can never exceed 1.
   RiskEngine engine(base_config());
   seed_valid_quote(engine, kNear, 100, 0);
 
@@ -297,11 +312,17 @@ TEST(RiskEngineIdempotency, RejectsDuplicateAndReplayedProposals) {
       make_request(kNear, Side::kBuy, 100, 1, 0, "strat", "dup-1")};
   const auto& first = engine.commit_proposal_decision("strat", "dup-1", legs, 0);
   EXPECT_EQ(first.verdict, RiskVerdict::kApprove);
+  const std::uint64_t first_sequence = first.sequence;
 
-  // A replayed submission of the identical proposal_id/leg is rejected.
   const auto& replay = engine.commit_proposal_decision("strat", "dup-1", legs, 1);
-  EXPECT_EQ(replay.verdict, RiskVerdict::kReject);
-  EXPECT_EQ(replay.reason_code, ReasonCode::kDuplicateRequest);
+  EXPECT_EQ(replay.sequence, first_sequence);  // The SAME record, not a new one.
+  EXPECT_EQ(replay.verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.audit_log().proposal_decision_count("dup-1"), 1U);
+
+  // AEGIS-127's actual substance -- a replay consumes no NEW risk capacity --
+  // still holds: the replay armed no second pending leg, so the one leg
+  // "dup-1" ever armed is still there, resolvable exactly once.
+  EXPECT_EQ(engine.state().leg_reservation_count(), 1U);
 }
 
 // ---------------------------------------------------------------- AEGIS-128
@@ -480,8 +501,12 @@ TEST(RiskEngineAuditInvariant, ExactlyOneProposalDecisionAndOneOrderDecisionPerL
   engine.commit_proposal_decision("spread_strategy", proposal_id, legs, 0);
   EXPECT_EQ(engine.audit_log().proposal_decision_count(proposal_id), 1U);
 
-  static_cast<void>(engine.decide_order(kNear, Side::kSell, 1, /*client_order_id=*/1, 0));
-  static_cast<void>(engine.decide_order(kFar, Side::kBuy, 1, /*client_order_id=*/2, 0));
+  static_cast<void>(decide_registered_order(engine, "spread_strategy", proposal_id,
+                                            /*leg_index=*/0, kNear, Side::kSell, 1,
+                                            /*client_order_id=*/1, 0));
+  static_cast<void>(decide_registered_order(engine, "spread_strategy", proposal_id,
+                                            /*leg_index=*/1, kFar, Side::kBuy, 1,
+                                            /*client_order_id=*/2, 0));
   EXPECT_EQ(engine.audit_log().order_decisions().size(), 2U);
   for (const auto& order_decision : engine.audit_log().order_decisions()) {
     EXPECT_EQ(order_decision.proposal_id, proposal_id);

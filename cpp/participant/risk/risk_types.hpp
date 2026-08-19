@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -67,6 +69,41 @@ struct ProposalDecisionResult {
   ReasonCode reason_code{ReasonCode::kNone};
   std::string reason;
   std::vector<LegDecision> legs;
+};
+
+/// The exact identity a proposal-approved leg is reserved and armed under
+/// (M5 closure repair: AEGIS-122/135/137). Deliberately NOT economics
+/// (instrument/side/quantity) -- multiple legs, from different proposals or
+/// different strategies, may legitimately share identical economics, and an
+/// identity built from economics cannot tell them apart (the defect an
+/// independent risk-safety review found: a strategy-B order could match a
+/// look-alike strategy-A armed leg and inherit A's non-halted state). This
+/// triple is the one thing that is guaranteed unique per armed leg: the
+/// proposal that armed it, and which leg of that proposal it is.
+struct PendingLegKey {
+  std::string strategy_id;
+  std::string proposal_id;
+  std::uint32_t leg_index{0};
+
+  friend bool operator==(const PendingLegKey&, const PendingLegKey&) = default;
+};
+
+/// Combines three already-good hashes (`std::hash<std::string>` and
+/// `std::hash<std::uint32_t>`) with the boost-style mixing constant, rather
+/// than concatenating the fields into one string key -- no allocation per
+/// lookup, and no risk of two distinct triples colliding through
+/// concatenation ambiguity (e.g. `("a","b",1)` vs `("a","b1",...)`-style
+/// string-boundary collisions).
+struct PendingLegKeyHash {
+  [[nodiscard]] std::size_t operator()(const PendingLegKey& key) const noexcept {
+    std::size_t seed = std::hash<std::string>{}(key.strategy_id);
+    auto mix = [&seed](std::size_t value) {
+      seed ^= value + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+    };
+    mix(std::hash<std::string>{}(key.proposal_id));
+    mix(std::hash<std::uint32_t>{}(key.leg_index));
+    return seed;
+  }
 };
 
 /// A market observation the engine is told about (AEGIS-125, AEGIS-126).

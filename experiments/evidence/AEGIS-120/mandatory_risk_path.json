@@ -6,13 +6,13 @@
     ],
     "cases": [
       {
-        "line": 266,
+        "line": 280,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.RejectedProposalNeverReachesTheExchangeOrThePortfolio"
       },
       {
-        "line": 456,
+        "line": 516,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineAuditInvariant.RejectedProposalReportsEveryLegRejectedAndArmsNoOrder"
@@ -27,10 +27,10 @@
   },
   "artifact": "AEGIS-120/mandatory_risk_path",
   "claim": "The bypass is rejected structurally, in both directions. NEGATIVE: tools/check_architecture.py FAILS on the committed arch_violation fixture, whose cpp/participant/strategy/rogue.hpp holds a gateway header and reaches the exchange book directly -- exactly the strategy->OMS/exchange bypass this requirement forbids. POSITIVE: the same checker passes on the real tree, where cpp-participant-strategy's may_depend_on carries no OMS, exchange or gateway edge. At runtime the seam is also closed: an order reaching RiskEngine::decide_order with no armed proposal decision is rejected kUnexpectedOrder, and a rejected proposal never reaches the exchange at all.",
-  "dirty": false,
+  "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Architecture test rejects bypass dependencies.",
-  "generated_on": "2026-08-18",
+  "generated_on": "2026-08-19",
   "implementation": [
     "configs/architecture_rules.yaml",
     "tools/check_architecture.py",
@@ -61,7 +61,7 @@
   ],
   "positive_architecture_check_passed": true,
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "repository_commit": "335bf2bc7cac159217d2e8666356bc4b60075616",
   "requirements": [
     "AEGIS-120"
   ],

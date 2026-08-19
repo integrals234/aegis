@@ -79,33 +79,52 @@ SPECS: dict[str, dict[str, Any]] = {
             "ExecutionStressIntegration.PartialFillReducesReservationWithoutDoubleCounting",
             "ExecutionStressIntegration.BackpressureAutomaticallyReleasesTheReservationThroughTheNormalLifecycle",
             "ExecutionStressIntegration.ReleaseReservationRemainsAvailableForOtherRecoveryPaths",
+            "ReservationRepairConcurrentProposals.TwoIndividuallySafeProposalsRejectAtCommitNotJustAtSeam",
+            "ReservationRepairSeamRevalidation.*",
+            "ReservationRepairAtomicity.*",
         ],
         "claim": "Long and short caps enforced against the PROJECTED position (confirmed position "
                  "+ every outstanding reservation + the candidate), so two orders that each pass "
-                 "alone but jointly breach are rejected. Reservations are released automatically "
-                 "on fill, partial fill, cancel, downstream rejection and failed/backpressured "
-                 "submission -- the last via app::RiskReleasingExecutionAdapter, with no manual "
-                 "caller cleanup required.",
+                 "alone but jointly breach are rejected -- AT PROPOSAL COMMIT, not only once an "
+                 "order physically reaches the seam (M5 closure repair: reservation now happens in "
+                 "commit_proposal_decision, keyed by PendingLegKey, so a second proposal committed "
+                 "before the first's orders reach the seam already sees the first's exposure). "
+                 "Reservations are released automatically on fill, partial fill, cancel, downstream "
+                 "rejection and failed/backpressured submission -- the last via "
+                 "app::RiskReleasingExecutionAdapter, with no manual caller cleanup required. Mutable "
+                 "safety state (including this leg's own, correctly-not-double-counted exposure) is "
+                 "revalidated again at the seam, since proposal commit is not permission forever.",
         "implementation": SEAM_IMPL,
     },
     "AEGIS-123": {
         "artifact": "max_notional_and_currency",
         "title": "Maximum notional",
         "acceptance": "Multi-currency normalization tests pass or unsupported scope is explicit.",
-        "filters": ["RiskEngineNotional.*"],
+        "filters": [
+            "RiskEngineNotional.*",
+            "ReservationRepairConcurrentProposals.PortfolioNotionalSeesAnEarlierProposalsReservation",
+        ],
         "claim": "Per-order and portfolio notional caps enforced. An instrument whose currency has "
                  "no configured FX rate is rejected explicitly (kUnsupportedCurrency), never "
                  "silently treated as 1:1 with base; a configured non-base rate normalizes "
                  "correctly. Every in-repo product is USD, so the multi-currency path is exercised "
-                 "only against a synthetic fixture -- stated, not implied.",
+                 "only against a synthetic fixture -- stated, not implied. Portfolio notional is "
+                 "read from CURRENT reservation state, so an earlier proposal's reservation "
+                 "(committed before this one, M5 closure repair) is correctly included, not just "
+                 "the filled position.",
     },
     "AEGIS-124": {
         "artifact": "market_and_sector_exposure",
         "title": "Per-market and sector exposure",
         "acceptance": "Portfolio fixtures pass.",
-        "filters": ["RiskEngineExposure.*"],
+        "filters": [
+            "RiskEngineExposure.*",
+            "ReservationRepairConcurrentProposals.MarketExposureSeesAnEarlierProposalsReservation",
+        ],
         "claim": "Grouped market/sector exposure limits enforced over the combined position + "
-                 "reservation view, using instrument metadata from configuration.",
+                 "reservation view, using instrument metadata from configuration -- including an "
+                 "earlier proposal's reservation for a DIFFERENT instrument in the same group, "
+                 "committed before this proposal (M5 closure repair).",
     },
     "AEGIS-125": {
         "artifact": "price_collars",
@@ -131,9 +150,15 @@ SPECS: dict[str, dict[str, Any]] = {
         "artifact": "duplicate_order_protection",
         "title": "Duplicate-order protection",
         "acceptance": "Idempotency tests pass.",
-        "filters": ["RiskEngineIdempotency.*"],
-        "claim": "A replayed proposal leg (same strategy_id|proposal_id|leg_index) is rejected "
-                 "kDuplicateRequest within the engine's lifetime. No cross-process persistence is "
+        "filters": [
+            "RiskEngineIdempotency.*",
+            "ReservationRepairAuditIntegrity.ReplayingAProposalIdNeverAppendsASecondTerminalDecision",
+        ],
+        "claim": "A replayed proposal_id returns the SAME terminal decision commit_proposal_decision "
+                 "already recorded (M5 closure repair) rather than re-deciding, re-arming or "
+                 "re-reserving -- so RiskAuditLog::proposal_decision_count never exceeds 1 for a "
+                 "replayed identity (the AEGIS-137 defect an independent review found the prior "
+                 "per-leg-only dedupe check did not prevent). No cross-process persistence is "
                  "claimed; the frozen acceptance does not require it (ADR-0028).",
     },
     "AEGIS-128": {
@@ -150,9 +175,13 @@ SPECS: dict[str, dict[str, Any]] = {
         "artifact": "margin_availability",
         "title": "Margin availability",
         "acceptance": "Scenario fixtures pass and limitations are stated.",
-        "filters": ["RiskEngineMarginAndLeverage.RejectsInsufficientMargin"],
+        "filters": [
+            "RiskEngineMarginAndLeverage.RejectsInsufficientMargin",
+            "ReservationRepairConcurrentProposals.MarginSeesAnEarlierProposalsReservation",
+        ],
         "claim": "Available margin enforced against equity using the documented Model A. Boundary "
-                 "verified at exactly-equal and one-contract-over.",
+                 "verified at exactly-equal and one-contract-over, including an earlier proposal's "
+                 "reservation committed before this one (M5 closure repair).",
         "extra_limitations": [MARGIN_NOTE],
     },
     "AEGIS-130": {
@@ -212,13 +241,18 @@ SPECS: dict[str, dict[str, Any]] = {
         "filters": [
             "RiskEngineKillSwitch.*",
             "CalendarSpreadRiskExchangeIntegration.GlobalKillSwitchCancelsLiveOrdersAndBlocksNewSubmissions",
+            "ReservationRepairExactIdentity.LookAlikeLegFromAnotherStrategyCannotBorrowItsRiskState",
+            "ReservationRepairSeamRevalidation.KillSwitchTrippedAfterCommitStopsTheOrderAtTheSeam",
         ],
         "claim": "Strategy-level and global kill switches are idempotent (a second trip is a "
                  "no-op returning false), strategy-scoped tripping leaves other strategies "
                  "unaffected, live orders receive safety cancels that bypass the ordinary cancel "
                  "throttle, and every subsequent proposal is rejected. Proven end to end against "
                  "a real unmodified M1 ExchangeNode: the exchange order count does not move after "
-                 "the trip.",
+                 "the trip. An order resolves to its EXACT registered proposal/leg identity, never "
+                 "to a look-alike armed leg from another strategy sharing the same economics (M5 "
+                 "closure repair) -- a tripped strategy cannot be bypassed by an order that happens "
+                 "to match a DIFFERENT, non-halted strategy's leg by coincidence.",
         "implementation": SEAM_IMPL,
     },
     "AEGIS-136": {
@@ -234,13 +268,21 @@ SPECS: dict[str, dict[str, Any]] = {
         "artifact": "risk_decision_audit",
         "title": "Risk decision audit",
         "acceptance": "Every proposal has exactly one auditable risk decision.",
-        "filters": ["RiskEngineAuditInvariant.*"],
+        "filters": [
+            "RiskEngineAuditInvariant.*",
+            "ReservationRepairAuditIntegrity.*",
+            "ReservationRepairExactIdentity.RegisteredIdentityWithDisagreeingEconomicsIsRejected",
+        ],
         "claim": "Exactly ONE terminal ProposalRiskDecision per proposal_id (asserted via "
                  "RiskAuditLog::proposal_decision_count), with subordinate per-order "
                  "OrderRiskDecision records that each carry the proposal_id/leg_index that "
                  "authorised them. A two-leg spread therefore never produces two objects both "
                  "claiming to be the proposal decision. A rejected proposal arms no pending leg, "
-                 "and an order reaching the seam anyway is rejected kUnexpectedOrder.",
+                 "and an order reaching the seam anyway is rejected kUnexpectedOrder. Identity "
+                 "resolution is exact (M5 closure repair): a client_order_id is registered against "
+                 "its precise strategy/proposal/leg identity before submission, so an order can "
+                 "never be mis-attributed to a different, economically-identical proposal, and a "
+                 "replayed proposal_id can never append a second terminal decision.",
     },
     "AEGIS-138": {
         "artifact": "portfolio_risk_analytics",

@@ -1,6 +1,7 @@
 #include "cpp/participant/app/participant_run.hpp"
 
 #include <array>
+#include <cassert>
 #include <cstdint>
 #include <fstream>
 #include <sstream>
@@ -544,10 +545,25 @@ struct MarketDataStep {
 /// disagreed with the already-committed proposal decision, which a
 /// well-formed run never produces but this function still handles safely
 /// rather than fabricate a fill.
+///
+/// `strategy_id`/`proposal_id`/`leg_index` identify which armed
+/// `commit_proposal_decision` leg this order is for (M5 closure repair):
+/// `OrderManager::next_client_order_id()` is peeked BEFORE `submit_new_order`
+/// so the exact future `client_order_id` can be registered against that
+/// identity first -- `decide_order` (called synchronously inside
+/// `submit_new_order`) then resolves this order to its own reservation
+/// exactly, never by searching economics.
 std::uint64_t execute_leg(const StrategyLeg& leg, OrderManager& manager, Portfolio& ledger,
                           risk::RiskEngine& risk_engine, std::int64_t bid_price_units,
-                          std::int64_t ask_price_units, std::uint64_t& next_exchange_order_id) {
+                          std::int64_t ask_price_units, std::uint64_t& next_exchange_order_id,
+                          const std::string& strategy_id, const std::string& proposal_id,
+                          std::uint32_t leg_index) {
   const std::int64_t limit_price_units = leg.side == Side::kBuy ? ask_price_units : bid_price_units;
+  const bool registered = risk_engine.register_pending_order_identity(
+      manager.next_client_order_id(), strategy_id, proposal_id, leg_index);
+  assert(registered && "execute_leg called for a leg commit_proposal_decision never armed");
+  static_cast<void>(
+      registered);  // NOLINT: asserted above; avoids an unused-variable warning in NDEBUG builds.
   const auto client_order_id =
       manager.submit_new_order(leg.instrument_id, /*participant_id=*/1, leg.side, OrderType::kLimit,
                                limit_price_units, leg.quantity_units);
@@ -751,9 +767,9 @@ CalendarSpreadRunResult run_calendar_spread_scenario(const std::string& stream_p
       decision_ptr = &decision;
       if (decision.verdict != risk::RiskVerdict::kReject) {
         execute_leg(proposal.near, manager, ledger, risk_engine, near_bid, near_ask,
-                    next_exchange_order_id);
+                    next_exchange_order_id, strategy_id, proposal_id, /*leg_index=*/0);
         execute_leg(proposal.far, manager, ledger, risk_engine, far_bid, far_ask,
-                    next_exchange_order_id);
+                    next_exchange_order_id, strategy_id, proposal_id, /*leg_index=*/1);
       }
     }
 

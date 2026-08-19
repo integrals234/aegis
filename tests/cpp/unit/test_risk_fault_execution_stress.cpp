@@ -9,6 +9,7 @@
 #include "cpp/participant/risk/risk_engine.hpp"
 #include "cpp/replay/fault_injection.hpp"
 #include "tests/cpp/optional_access.hpp"
+#include "tests/cpp/support/risk_seam_test_helpers.hpp"
 
 /// AEGIS-063 M5 residual: OMS/risk INTEGRATION tests covering each
 /// execution-stress fault kind M2 already delivers deterministically
@@ -40,6 +41,7 @@ using aegis::participant::risk::InstrumentInfo;
 using aegis::participant::risk::RiskEngine;
 using aegis::participant::risk::RiskLimitsConfig;
 using aegis::replay::FaultKind;
+using aegis::testing::submit_registered_new_order;
 namespace risk = aegis::participant::risk;
 
 constexpr std::uint32_t kInstrumentId = 6001;
@@ -103,8 +105,9 @@ TEST(ExecutionStressIntegration, RejectionReleasesTheReservation) {
   OrderManager manager(adapter, risk_gate);
 
   risk_engine.commit_proposal_decision("s", "p", {proposal_leg()}, 0);
-  const auto client_order_id = manager.submit_new_order(kInstrumentId, /*participant_id=*/1,
-                                                        Side::kBuy, OrderType::kLimit, 100, 10);
+  const auto client_order_id =
+      submit_registered_new_order(manager, risk_engine, "s", "p", /*leg_index=*/0, kInstrumentId,
+                                  Side::kBuy, OrderType::kLimit, 100, 10);
   ASSERT_EQ(manager.find_by_client_order_id(client_order_id)->lifecycle.state(),
             OrderState::kSubmitted);
   ASSERT_EQ(risk_engine.state().reservation_count(), 1U);
@@ -139,9 +142,10 @@ TEST(ExecutionStressIntegration, LatencySpikeDoesNotDisturbTheRiskDecision) {
   OrderManager manager(adapter, risk_gate, /*fees=*/{}, latency);
 
   risk_engine.commit_proposal_decision("s", "p", {proposal_leg()}, 0);
-  const auto client_order_id = manager.submit_new_order(
-      kInstrumentId, /*participant_id=*/1, Side::kBuy, OrderType::kLimit, 100, 10,
-      /*market_event_time=*/aegis::common::EventTime{1'000});
+  const auto client_order_id =
+      submit_registered_new_order(manager, risk_engine, "s", "p", /*leg_index=*/0, kInstrumentId,
+                                  Side::kBuy, OrderType::kLimit, 100, 10,
+                                  /*market_event_time=*/aegis::common::EventTime{1'000});
 
   const auto* tracked = manager.find_by_client_order_id(client_order_id);
   ASSERT_NE(tracked, nullptr);
@@ -161,8 +165,9 @@ TEST(ExecutionStressIntegration, PartialFillReducesReservationWithoutDoubleCount
   OrderManager manager(adapter, risk_gate);
 
   risk_engine.commit_proposal_decision("s", "p", {proposal_leg()}, 0);
-  const auto client_order_id = manager.submit_new_order(kInstrumentId, /*participant_id=*/1,
-                                                        Side::kBuy, OrderType::kLimit, 100, 10);
+  const auto client_order_id =
+      submit_registered_new_order(manager, risk_engine, "s", "p", /*leg_index=*/0, kInstrumentId,
+                                  Side::kBuy, OrderType::kLimit, 100, 10);
   ASSERT_EQ(risk_engine.state().reserved_units(kInstrumentId), 10);
 
   // kPartialFill: the exchange fills part, not all, of the order.
@@ -214,14 +219,17 @@ TEST(ExecutionStressIntegration,
   RiskReleasingExecutionAdapter tight_adapter(backpressured_transport, tight_engine);
   OrderManager tight_manager(tight_adapter, tight_risk_gate);
 
-  // decide_order creates the reservation and adapter.submit() discovers the
-  // backpressure synchronously, inside this one call -- there is no
+  // commit_proposal_decision reserves the exposure (M5 closure repair);
+  // decide_order (inside submit_new_order) transitions that same
+  // reservation to be client_order_id-keyed, and adapter.submit() discovers
+  // the backpressure synchronously, inside this one call -- there is no
   // externally observable moment where the reservation exists but has not
   // yet been released, so steps 1-4 are verified together, on the state
   // submit_new_order leaves behind, rather than as separate snapshots.
   tight_engine.commit_proposal_decision("s", "p1", {proposal_leg()}, 0);
-  const auto client_order_id = tight_manager.submit_new_order(
-      kInstrumentId, /*participant_id=*/1, Side::kBuy, OrderType::kLimit, 100, 10);
+  const auto client_order_id =
+      submit_registered_new_order(tight_manager, tight_engine, "s", "p1", /*leg_index=*/0,
+                                  kInstrumentId, Side::kBuy, OrderType::kLimit, 100, 10);
 
   // 2. Transport returns backpressure/failure (submit() -> false).
   EXPECT_EQ(backpressured_transport.submit_calls(), 1);
@@ -266,8 +274,9 @@ TEST(ExecutionStressIntegration, ReleaseReservationRemainsAvailableForOtherRecov
   RiskEngineGate risk_gate(risk_engine, clock);
   FaultInjectableAdapter adapter(/*simulate_backpressure=*/false);
   OrderManager manager(adapter, risk_gate);
-  const auto client_order_id = manager.submit_new_order(kInstrumentId, /*participant_id=*/1,
-                                                        Side::kBuy, OrderType::kLimit, 100, 10);
+  const auto client_order_id =
+      submit_registered_new_order(manager, risk_engine, "s", "p", /*leg_index=*/0, kInstrumentId,
+                                  Side::kBuy, OrderType::kLimit, 100, 10);
   ASSERT_EQ(risk_engine.state().reservation_count(), 1U);
 
   risk_engine.release_reservation(client_order_id);

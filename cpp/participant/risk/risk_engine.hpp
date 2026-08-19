@@ -22,20 +22,51 @@
 ///   * `evaluate`/`evaluate_proposal` are pure preflight -- they read
 ///     `state_` but never mutate it, so a caller can ask "would this be
 ///     allowed" any number of times with no side effect.
-///   * `commit_proposal_decision`/`decide_order` are the enforcing path:
-///     they record audit entries, consume rate-limit budget, mark
-///     idempotency keys and reserve exposure. `commit_proposal_decision` is
-///     what makes the whole-proposal check in `evaluate_proposal` atomic in
-///     practice -- it is called once, before either leg reaches the OMS, and
-///     records the ONE terminal `ProposalRiskDecision` a proposal_id ever
-///     gets. `decide_order` is the OMS seam entry point
-///     (`app::RiskEngineGate::decide`): it consumes the pending leg
-///     `commit_proposal_decision` armed, reserves exposure now that a
-///     `client_order_id` exists, and records the subordinate
-///     `OrderRiskDecision`. An order that reaches `decide_order` with no
-///     matching armed leg is rejected with `kUnexpectedOrder` -- the
-///     structural defence against a caller that tried to skip the
-///     proposal-level decision.
+///   * `commit_proposal_decision`/`decide_order` are the enforcing path.
+///
+/// # Reservation timing and exact identity (M5 closure repair)
+///
+/// An independent risk-safety review found the ORIGINAL split -- reserve
+/// exposure at `decide_order`, match a pending leg by
+/// `(instrument_id, side, quantity_units)` -- unsafe: two proposals
+/// individually within a limit could jointly breach it (nothing counted the
+/// first proposal's exposure until its order physically reached the seam),
+/// and an order could match a look-alike ARMED LEG from a different
+/// strategy/proposal purely by coincidence of economics. Both are fixed by
+/// changing WHEN and BY WHAT KEY a leg's exposure is tracked, not by adding
+/// checks:
+///
+///   * `commit_proposal_decision` reserves ALL of an approved/resized
+///     proposal's legs' exposure IMMEDIATELY -- before either leg reaches
+///     the OMS -- keyed by `PendingLegKey{strategy_id, proposal_id,
+///     leg_index}`, since no `client_order_id` exists yet. Every cumulative
+///     control already reads `RiskState::reserved_units`/
+///     `all_reservations`, so a second proposal committed before the
+///     first's orders reach the seam now correctly sees the first's
+///     reservation. This also makes replay/duplicate handling exact:
+///     `proposal_id` (already globally unique by convention, ADR-0027) that
+///     already has a terminal decision returns that SAME decision rather
+///     than re-deciding, so `RiskAuditLog::proposal_decision_count` can
+///     never exceed 1 and a replay can never re-arm or re-reserve.
+///   * The composition root registers each leg's future `client_order_id`
+///     (`OrderManager::next_client_order_id()`, peeked immediately before
+///     `submit_new_order`) against its `PendingLegKey` via
+///     `register_pending_order_identity`, BEFORE the order reaches the OMS.
+///     `decide_order` resolves a `client_order_id` to its EXACT
+///     `PendingLegKey` through that registration -- never by searching
+///     economics -- then verifies the order's instrument/side/quantity
+///     agree with what was actually reserved (an `kIdentityMismatch`
+///     reject, not a silent fall-through, if they do not), revalidates
+///     mutable safety state that can have changed since commit (halts,
+///     connectivity, market staleness/collar, and every cumulative control
+///     excluding this leg's own already-counted reservation), and only then
+///     TRANSITIONS the existing leg reservation to be `client_order_id`-keyed
+///     for the ordinary fill/release lifecycle -- it never reserves a
+///     second time.
+///
+/// An order that reaches `decide_order` with no registered identity is
+/// rejected with `kUnexpectedOrder` -- the structural defence against a
+/// caller that tried to skip the proposal-level decision.
 namespace aegis::participant::risk {
 
 /// The seam-facing verdict `decide_order` returns; `app::RiskEngineGate`
@@ -67,6 +98,18 @@ class RiskEngine {
   [[nodiscard]] OmsDecision decide_order(std::uint32_t instrument_id, Side side,
                                          std::int64_t quantity_units, std::uint64_t client_order_id,
                                          common::Nanos now_nanos);
+
+  /// Binds a `client_order_id` the OMS is ABOUT TO assign (the composition
+  /// root peeks it via `OrderManager::next_client_order_id()` before calling
+  /// `submit_new_order`) to the exact armed leg `{strategy_id, proposal_id,
+  /// leg_index}` names, so `decide_order` can resolve that `client_order_id`
+  /// to its reservation without searching by economics. Returns false (and
+  /// registers nothing) if no such leg is currently armed -- a caller
+  /// error `decide_order` then reports as `kUnexpectedOrder`, never as a
+  /// match against some other leg.
+  bool register_pending_order_identity(std::uint64_t client_order_id,
+                                       const std::string& strategy_id,
+                                       const std::string& proposal_id, std::uint32_t leg_index);
 
   /// AEGIS-128's cancel half. `bypass_safety = true` (a kill-switch or
   /// connectivity-loss cancel) is never subject to the rate limit and never
@@ -180,6 +223,7 @@ class RiskEngine {
     std::uint32_t leg_index{0};
     std::uint32_t instrument_id{0};
     Side side{Side::kBuy};
+    std::int64_t price_units{0};  ///< The leg's own limit/reference price, for seam revalidation.
     std::int64_t requested_quantity_units{0};
     std::int64_t approved_quantity_units{0};
     RiskVerdict verdict{RiskVerdict::kReject};
@@ -187,13 +231,32 @@ class RiskEngine {
     std::string reason;
   };
 
+  /// Re-checks the mutable safety state `decide_order` must not trust
+  /// forever (halts, connectivity, market staleness/collar, and every
+  /// cumulative exposure/margin/leverage control) against CURRENT `state_`,
+  /// excluding `pending`'s own already-reserved contribution so it is
+  /// counted exactly once, not twice. Deliberately does NOT re-run
+  /// order-quantity-cap/volatility-resize (sizing is immutable once
+  /// approved) or idempotency/rate-limit admission (already consumed at
+  /// commit time; re-running either would reject every order, since the
+  /// dedupe key is already marked seen and the rate-limit event already
+  /// recorded) -- see risk_engine.cpp's `revalidate_at_seam` for the exact
+  /// reasoning per control.
+  [[nodiscard]] std::optional<LegDecision> revalidate_at_seam(const PendingLeg& pending,
+                                                              common::Nanos now_nanos) const;
+
   RiskLimitsConfig config_;
   RiskState state_;
   RiskAuditLog audit_log_;
   std::unordered_map<std::uint32_t, stats::RollingRealizedVolatility> volatility_by_instrument_;
   std::unordered_map<std::uint32_t, std::int64_t> last_price_by_instrument_;
   stats::DrawdownTracker drawdown_;
-  std::vector<PendingLeg> pending_legs_;
+  std::unordered_map<PendingLegKey, PendingLeg, PendingLegKeyHash> pending_legs_;
+  /// `client_order_id -> PendingLegKey`, populated by
+  /// `register_pending_order_identity` and consumed (erased) by
+  /// `decide_order` the moment it resolves an order -- never searched by
+  /// economics.
+  std::unordered_map<std::uint64_t, PendingLegKey> order_identity_by_client_order_id_;
 };
 
 }  // namespace aegis::participant::risk

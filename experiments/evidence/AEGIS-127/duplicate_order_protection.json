@@ -6,28 +6,35 @@
     ],
     "cases": [
       {
-        "line": 268,
+        "line": 238,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ReservationRepairAuditIntegrity.ReplayingAProposalIdNeverAppendsASecondTerminalDecision"
+      },
+      {
+        "line": 299,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
-        "test": "RiskEngineIdempotency.RejectsDuplicateAndReplayedProposals"
+        "test": "RiskEngineIdempotency.ReplayedProposalReturnsTheSameDecisionAndNeverDoubles"
       }
     ],
     "failure_count": 0,
     "filters": [
-      "RiskEngineIdempotency.*"
+      "RiskEngineIdempotency.*",
+      "ReservationRepairAuditIntegrity.ReplayingAProposalIdNeverAppendsASecondTerminalDecision"
     ],
-    "test_count": 1
+    "test_count": 2
   },
   "artifact": "AEGIS-127/duplicate_order_protection",
-  "claim": "A replayed proposal leg (same strategy_id|proposal_id|leg_index) is rejected kDuplicateRequest within the engine's lifetime. No cross-process persistence is claimed; the frozen acceptance does not require it (ADR-0028).",
+  "claim": "A replayed proposal_id returns the SAME terminal decision commit_proposal_decision already recorded (M5 closure repair) rather than re-deciding, re-arming or re-reserving -- so RiskAuditLog::proposal_decision_count never exceeds 1 for a replayed identity (the AEGIS-137 defect an independent review found the prior per-leg-only dedupe check did not prevent). No cross-process persistence is claimed; the frozen acceptance does not require it (ADR-0028).",
   "deterministic_config": {
     "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
     "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
   },
-  "dirty": false,
+  "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Idempotency tests pass.",
-  "generated_on": "2026-08-18",
+  "generated_on": "2026-08-19",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -47,7 +54,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "repository_commit": "335bf2bc7cac159217d2e8666356bc4b60075616",
   "requirements": [
     "AEGIS-127"
   ],

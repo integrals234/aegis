@@ -6,13 +6,13 @@
     ],
     "cases": [
       {
-        "line": 79,
+        "line": 87,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_fault_market_stress.cpp",
         "test": "MarketStressRisk.LiquidityVanishTripsStaleness"
       },
       {
-        "line": 92,
+        "line": 103,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_fault_market_stress.cpp",
         "test": "MarketStressRisk.ResponsesAreReproducibleAcrossIndependentEngines"
@@ -24,13 +24,13 @@
         "test": "MarketStressRisk.SpreadWideningTripsThePriceCollar"
       },
       {
-        "line": 52,
+        "line": 55,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_fault_market_stress.cpp",
         "test": "MarketStressRisk.SpreadWideningWithinCollarStillApproves"
       },
       {
-        "line": 63,
+        "line": 68,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_fault_market_stress.cpp",
         "test": "MarketStressRisk.VolatilitySpikeResizesOrRejects"
@@ -44,10 +44,10 @@
   },
   "artifact": "AEGIS-062/market_stress_risk_response",
   "claim": "The M5 residual is paid: every market-stress fault kind M2 delivers (kSpreadWidening, kVolatilitySpike, kLiquidityVanish) now produces a REAL risk::RiskEngine response through run_market_stress_risk_scenario -- a genuine evaluate() call, not a report generated afterward -- and two independently constructed engines fed the identical rule set produce identical verdicts and reason codes. No fault kind was added and replay::DeterministicFaultInjector is consumed unmodified.",
-  "dirty": false,
+  "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Scenario results and risk responses are reproducible.",
-  "generated_on": "2026-08-18",
+  "generated_on": "2026-08-19",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -69,7 +69,7 @@
     "any claim that these are the only faults that could occur -- they are the fault kinds M2 deterministically injects, not an exhaustive taxonomy"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "repository_commit": "335bf2bc7cac159217d2e8666356bc4b60075616",
   "requirements": [
     "AEGIS-062"
   ],

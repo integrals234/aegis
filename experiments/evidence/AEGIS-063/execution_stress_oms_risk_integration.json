@@ -6,37 +6,37 @@
     ],
     "cases": [
       {
-        "line": 174,
+        "line": 199,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
         "test": "ExecutionStressIntegration.BackpressureAutomaticallyReleasesTheReservationThroughTheNormalLifecycle"
       },
       {
-        "line": 256,
+        "line": 286,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
         "test": "ExecutionStressIntegration.EachExecutionStressKindIsExercisedByExactlyOneTestAbove"
       },
       {
-        "line": 106,
+        "line": 128,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
         "test": "ExecutionStressIntegration.LatencySpikeDoesNotDisturbTheRiskDecision"
       },
       {
-        "line": 136,
+        "line": 159,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
         "test": "ExecutionStressIntegration.PartialFillReducesReservationWithoutDoubleCounting"
       },
       {
-        "line": 81,
+        "line": 99,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
         "test": "ExecutionStressIntegration.RejectionReleasesTheReservation"
       },
       {
-        "line": 235,
+        "line": 264,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_fault_execution_stress.cpp",
         "test": "ExecutionStressIntegration.ReleaseReservationRemainsAvailableForOtherRecoveryPaths"
@@ -50,10 +50,10 @@
   },
   "artifact": "AEGIS-063/execution_stress_oms_risk_integration",
   "claim": "The M5 residual is paid: all four execution-stress fault kinds (kRejection, kLatencySpike, kPartialFill, kBackpressure) are covered by integration tests driving the real risk::RiskEngine through the real mandatory OMS seam (RiskEngineGate -> OrderManager), asserting risk reservation/audit state stays coherent with what actually happened at the OMS. Backpressure releases its reservation automatically.",
-  "dirty": false,
+  "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "OMS/risk integration tests cover each fault.",
-  "generated_on": "2026-08-18",
+  "generated_on": "2026-08-19",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -75,7 +75,7 @@
     "any claim that these are the only faults that could occur -- they are the fault kinds M2 deterministically injects, not an exhaustive taxonomy"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "repository_commit": "335bf2bc7cac159217d2e8666356bc4b60075616",
   "requirements": [
     "AEGIS-063"
   ],

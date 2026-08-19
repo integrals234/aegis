@@ -12,19 +12,19 @@
         "test": "PortfolioRiskAnalytics.GrossNetAndGroupExposureReconcileWithPortfolioState"
       },
       {
-        "line": 76,
+        "line": 84,
         "passed": true,
         "source": "tests/cpp/unit/test_portfolio_risk_analytics.cpp",
         "test": "PortfolioRiskAnalytics.InstrumentsAbsentFromConfigAreExcludedNotFabricated"
       },
       {
-        "line": 44,
+        "line": 48,
         "passed": true,
         "source": "tests/cpp/unit/test_portfolio_risk_analytics.cpp",
         "test": "PortfolioRiskAnalytics.ScriptedStressScenariosAreDeterministicParallelShocks"
       },
       {
-        "line": 64,
+        "line": 71,
         "passed": true,
         "source": "tests/cpp/unit/test_portfolio_risk_analytics.cpp",
         "test": "PortfolioRiskAnalytics.VolatilityAndDrawdownContributionArePassedThroughUnmodified"
@@ -42,10 +42,10 @@
     "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
     "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
   },
-  "dirty": false,
+  "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Dashboard/report fixture reconciles with portfolio state.",
-  "generated_on": "2026-08-18",
+  "generated_on": "2026-08-19",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -70,7 +70,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "repository_commit": "335bf2bc7cac159217d2e8666356bc4b60075616",
   "requirements": [
     "AEGIS-138"
   ],

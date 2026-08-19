@@ -6,7 +6,13 @@
     ],
     "cases": [
       {
-        "line": 208,
+        "line": 118,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ReservationRepairConcurrentProposals.MarketExposureSeesAnEarlierProposalsReservation"
+      },
+      {
+        "line": 235,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineExposure.RejectsAboveMarketAndSectorLimits"
@@ -14,20 +20,21 @@
     ],
     "failure_count": 0,
     "filters": [
-      "RiskEngineExposure.*"
+      "RiskEngineExposure.*",
+      "ReservationRepairConcurrentProposals.MarketExposureSeesAnEarlierProposalsReservation"
     ],
-    "test_count": 1
+    "test_count": 2
   },
   "artifact": "AEGIS-124/market_and_sector_exposure",
-  "claim": "Grouped market/sector exposure limits enforced over the combined position + reservation view, using instrument metadata from configuration.",
+  "claim": "Grouped market/sector exposure limits enforced over the combined position + reservation view, using instrument metadata from configuration -- including an earlier proposal's reservation for a DIFFERENT instrument in the same group, committed before this proposal (M5 closure repair).",
   "deterministic_config": {
     "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
     "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
   },
-  "dirty": false,
+  "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Portfolio fixtures pass.",
-  "generated_on": "2026-08-18",
+  "generated_on": "2026-08-19",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -47,7 +54,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "repository_commit": "335bf2bc7cac159217d2e8666356bc4b60075616",
   "requirements": [
     "AEGIS-124"
   ],

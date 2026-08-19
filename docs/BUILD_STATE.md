@@ -231,6 +231,34 @@ catalogue -- promotion is closure work):
   full-tree clang-tidy file set (`AEGIS_TIDY_JOBS`, default `nproc`), proven
   by `tests/unit/test_check_cpp_style_parallel.py` against a stub toolchain.
 
+**Correction (M5 closure repair).** An independent risk-safety review found
+the risk engine's original reservation/identity design unsafe: exposure was
+reserved only at `decide_order` (not at proposal commit), so two
+individually-safe proposals committed before either's order reached the
+seam could jointly breach a cumulative limit; and `decide_order` matched a
+pending leg by `(instrument_id, side, requested_quantity_units)`, so an
+order could resolve to a look-alike armed leg from a DIFFERENT
+strategy/proposal and inherit that other proposal's non-halted state. A
+related defect in the same area: a replayed `proposal_id` could append a
+second terminal `ProposalRiskDecision` (AEGIS-137), a path the existing
+test suite exercised without asserting the count.
+
+The fix (`RiskEngine::commit_proposal_decision` now reserves ALL of an
+approved proposal's legs immediately, keyed by `PendingLegKey{strategy_id,
+proposal_id, leg_index}`; the composition root registers each leg's future
+`client_order_id` against that exact key before submission via
+`register_pending_order_identity`; `decide_order` resolves identity through
+that registration only, verifies immutable economics agree, revalidates
+mutable safety state at the seam without double-counting the leg's own
+reservation, and transitions -- never re-creates -- the reservation; a
+replayed `proposal_id` returns the cached terminal decision instead of
+re-deciding) is detailed in ADR-0027's "Correction (M5 closure repair)"
+section and proven by `tests/cpp/unit/test_risk_engine_reservation_repair.cpp`
+plus the real `aegis_participant_run --calendar-spread` CLI path (both the
+allow and reject configs, byte-identical across runs). Neither
+AEGIS-139..155 (Batch 2) nor `python/validation/**` is touched by this
+repair.
+
 Not yet done (Batch 2): AEGIS-139..155's remaining validation modules,
 AEGIS-238's observability integration, evidence generation, and the
 independent audit. `requirements/implementation_status.json` is untouched by
