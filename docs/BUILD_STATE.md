@@ -271,10 +271,48 @@ not yet `verified` in the requirement catalogue; promotion is closure work.
   **calendar-spread strategy is REJECTED** (unprofitable at the lowest swept
   cost; bootstrap CI excludes a positive mean) and the **shuffled baseline is
   ACCEPTED** (it happens to make +30.22 here). That result is preserved, not
-  tuned away. It also means AEGIS-155's frozen acceptance -- "at least one
-  *intentionally weak* strategy produces a rejection report" -- is **not yet
-  demonstrated**: the criteria demonstrably work, but the subject they reject
-  is the real strategy rather than a strategy that is weak by construction.
+  tuned away, and it is still the recorded verdict after the follow-up fix
+  below.
+
+  **Follow-up (M5 closure repair).** AEGIS-155's frozen acceptance -- "at
+  least one *intentionally weak* strategy produces a rejection report" --
+  was not yet demonstrated at the point above: the criteria demonstrably
+  worked, but the only subject they rejected was the real strategy, not one
+  weak by construction. A third subject,
+  `intentionally_weak_concentrated_baseline`, was added: identical window,
+  exit threshold, quantity, partitions, costs and execution assumptions as
+  the real strategy's own config, differing only in `entry_threshold=3.0` --
+  a standard, dataset-independent 3-standard-deviation statistical
+  extremity, not a value searched against this series. Demanding that rare
+  a signal structurally produces too few round trips (2, against the
+  `min_round_trip_count=5` floor already in
+  `configs/validation/rejection_criteria.yaml`) for the pre-existing
+  `trade_concentration_too_few_round_trips` criterion in
+  `evaluate_strategy_for_rejection` to trigger honestly -- no new rejection
+  criterion or portfolio-concentration mechanism was added for this
+  subject. The recorded verdict is **REJECT**, with
+  `trade_concentration_too_few_round_trips` among the triggering criteria.
+  A falsifiability test (`test_the_concentration_verdict_is_computed_not_
+  hardcoded`) proves this is computed, not hard-coded: relaxing
+  `min_round_trip_count` to the subject's own round-trip count flips the
+  same result to ACCEPT. All three verdicts stand together, unaltered from
+  each other: calendar-spread strategy REJECT, shuffled baseline ACCEPT,
+  intentionally-weak-by-construction baseline REJECT.
+
+  **Also fixed in this repair (B2):** the AEGIS-152/153 leakage detector was
+  found to audit provenance *reconstructed from the documented windowing
+  convention*, never connected to the real estimator's own execution -- a
+  future regression in `research.signal_reference.rolling_zscore_reference`
+  would not have been caught. `rolling_zscore_reference` now accepts an
+  optional `timing_sink` observer that emits a `WindowProvenance` record from
+  its own live `history` state at the moment of scoring (numerically
+  unchanged; regression-tested). `validation.leakage` no longer contains any
+  metadata-generating formula: `collect_timing_records_from_real_estimator`
+  drives the real estimator and collects what it actually emits, and
+  `run_seeded_leaky_estimator_for_falsifiability_check` is a genuinely
+  buggy standalone execution (not hand-authored data) used only to prove the
+  detector can catch a real leaking run. The honest path passes with zero
+  violations; the seeded leaky execution is caught in full.
 * `python/reports/`: `validation_report.py`, `rejection_report.py`,
   `portfolio_risk_report.py` (independently RECOMPUTES gross/net exposure
   from position/price accounting values and reconciles against the C++

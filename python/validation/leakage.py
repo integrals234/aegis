@@ -1,22 +1,42 @@
 """Look-ahead-bias detection and feature/data leakage audit (AEGIS-152,
 AEGIS-153).
 
-Both consume RECORDED relationships -- a feature's own index/time, and the
-index range of the data actually used to compute it -- never the
-estimator's arithmetic itself. This is deliberate (the AEGIS-107 lesson,
-ADR-0029): a detector built by re-executing or transliterating the
-implementation under test would agree with it by construction and catch
-nothing. :func:`honest_rolling_zscore_timing_records` derives its records
-from the DOCUMENTED windowing convention
-(:mod:`research.signal_reference`'s "scored against the prior window
-only") -- structural metadata about what the convention promises, not a
-recomputation of any z-score value.
+The detector (:func:`audit_feature_timing`) consumes RECORDED
+relationships -- a feature's own index/time, and the index range of the
+data actually used to compute it -- never the estimator's arithmetic
+itself. This is deliberate (the AEGIS-107 lesson, ADR-0029): a detector
+built by re-executing or transliterating the implementation under test
+would agree with it by construction and catch nothing.
+
+# Where the records come from (M5 closure correction)
+
+An earlier version of this module fabricated timing records from the
+*documented* windowing convention rather than from what an estimator
+actually did -- a detector that would still pass if the real estimator
+started leaking, since nothing connected the two. That defect is fixed:
+:func:`collect_timing_records_from_real_estimator` drives the REAL
+`research.signal_reference.rolling_zscore_reference` with a `timing_sink`
+and collects the `WindowProvenance` it emits from its own live execution
+state (`len(history)` at the moment of scoring), converted to
+`FeatureTimingRecord` unchanged. The detector still never reads the
+z-score values or reimplements the mean/variance arithmetic -- only the
+window's index boundaries, which is what makes it independent.
+
+:func:`run_seeded_leaky_estimator_for_falsifiability_check` is the negative
+counterpart: a deliberately buggy re-implementation of the same rolling-
+window shape, used ONLY to prove the detector can catch a genuine leaking
+EXECUTION (not hand-authored metadata describing one). It is never used to
+score a real signal; `research.signal_reference` remains the only estimator
+any AEGIS strategy or validation module is scored against.
 """
 
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import Sequence
 from dataclasses import dataclass
+
+from research.signal_reference import WindowProvenance, rolling_zscore_reference
 
 __all__ = [
     "FeatureTimingRecord",
@@ -24,8 +44,8 @@ __all__ = [
     "LeakageViolation",
     "audit_feature_timing",
     "audit_partition_boundary_consistency",
-    "honest_rolling_zscore_timing_records",
-    "seeded_leaky_timing_records",
+    "collect_timing_records_from_real_estimator",
+    "run_seeded_leaky_estimator_for_falsifiability_check",
 ]
 
 
@@ -122,29 +142,65 @@ def audit_partition_boundary_consistency(
     return LeakageAuditResult(record_count=len(records), violations=tuple(violations))
 
 
-def honest_rolling_zscore_timing_records(num_observations: int, window: int) -> tuple[FeatureTimingRecord, ...]:
-    """The documented convention `research.signal_reference.
-    rolling_zscore_reference` and `cpp::RollingZScore` both commit to:
-    index ``i``'s score is computed from the PRIOR window
-    ``[max(0, i - window), i - 1]``, never including ``i`` itself. This
-    function encodes that documented promise as timing metadata; it does
-    not call the z-score function or reproduce its arithmetic."""
-    records = []
-    for i in range(num_observations):
-        start = max(0, i - window)
-        end = i - 1  # Strictly prior; a fresh series (i == 0) yields end < start, which passes trivially.
+def collect_timing_records_from_real_estimator(
+    values: Sequence[float], window: int
+) -> tuple[FeatureTimingRecord, ...]:
+    """Drives the REAL `research.signal_reference.rolling_zscore_reference`
+    over `values` and collects the `WindowProvenance` it emits from its own
+    live execution -- never a formula re-deriving what the estimator
+    *should* have read. If that estimator were ever modified to leak, this
+    collector would automatically surface it, because the records it
+    returns are the estimator's own account of what it consumed, not a
+    restatement of its documented contract.
+
+    The z-score values themselves are not needed here and are discarded;
+    only the timing provenance the sink receives is kept.
+    """
+    records: list[FeatureTimingRecord] = []
+
+    def sink(provenance: WindowProvenance) -> None:
         records.append(
-            FeatureTimingRecord(feature_index=i, fitting_window_start_index=start, fitting_window_end_index=end)
+            FeatureTimingRecord(
+                feature_index=provenance.feature_index,
+                fitting_window_start_index=provenance.fitting_window_start_index,
+                fitting_window_end_index=provenance.fitting_window_end_index,
+            )
         )
+
+    for _ in rolling_zscore_reference(values, window, timing_sink=sink):
+        pass
     return tuple(records)
 
 
-def seeded_leaky_timing_records(num_observations: int, window: int) -> tuple[FeatureTimingRecord, ...]:
-    """A deliberately leaky variant, for exercising the detector itself
-    (never used to score anything real): the fitting window incorrectly
-    includes the CURRENT index -- the exact shape of bug a rolling
-    computation that forgot to exclude "now" would produce."""
-    return tuple(
-        FeatureTimingRecord(feature_index=i, fitting_window_start_index=max(0, i - window), fitting_window_end_index=i)
-        for i in range(num_observations)
-    )
+def run_seeded_leaky_estimator_for_falsifiability_check(
+    values: Sequence[float], window: int
+) -> tuple[FeatureTimingRecord, ...]:
+    """NEGATIVE-TEST-ONLY. Exists solely to prove `audit_feature_timing` can
+    catch a genuinely leaking EXECUTION, not merely a hand-authored leaky
+    record.
+
+    This is a deliberately buggy re-implementation of the same rolling-
+    window shape `rolling_zscore_reference` uses -- with exactly one bug:
+    the current observation is appended to the window BEFORE its size is
+    read, so every emitted record truthfully reports a window that includes
+    the current index. The provenance below is read from this function's
+    own live `history` state, exactly like the honest collector above; nothing
+    here is a formula describing what a leak would look like.
+
+    Never call this to score a real signal. `research.signal_reference` is
+    the only estimator any AEGIS strategy or validation module is judged
+    against.
+    """
+    records: list[FeatureTimingRecord] = []
+    history: deque[float] = deque(maxlen=window)
+    for index, value in enumerate(values):
+        history.append(value)  # THE BUG: joins the window before being counted below.
+        observed_count = len(history)
+        records.append(
+            FeatureTimingRecord(
+                feature_index=index,
+                fitting_window_start_index=index - observed_count + 1,
+                fitting_window_end_index=index,  # Leaks: truthfully includes the current index.
+            )
+        )
+    return tuple(records)

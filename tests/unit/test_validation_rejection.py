@@ -50,20 +50,42 @@ def test_every_criterion_is_recorded_whether_or_not_it_triggers(observations, co
     assert len(report.criteria) == len(names)
 
 
-def test_the_weak_shuffled_baseline_receives_a_genuine_reject(observations, config) -> None:
-    # AEGIS-150's baseline, reused through the identical pipeline -- not a
-    # separately invented strategy hard-coded to fail.
-    baseline = run_random_signal_baseline(observations, config, seed=99)
-    cost = compute_transaction_cost_sensitivity(observations, config, cost_levels=(Decimal(0),))
+def test_the_intentionally_weak_concentrated_strategy_receives_a_genuine_reject(observations) -> None:
+    # AEGIS-155's weak-by-construction subject: identical window, exit
+    # threshold, quantity, partitions, costs and execution assumptions as
+    # the real strategy's own config, restricted to enter only on a
+    # 3-standard-deviation signal -- a standard, dataset-independent
+    # statistical extremity, not a value searched against this series to
+    # hit a target count. Demanding that rare a signal structurally starves
+    # the strategy of round trips.
+    weak_config = ReplayConfig(zscore_window=20, entry_threshold=3.0, exit_threshold=0.5, quantity_units=Decimal(1))
+    weak_result = replay_strategy(observations, weak_config)
+    assert len(weak_result.round_trips) < 5  # Structurally sparse, not tuned to hit an exact count.
 
-    # min_round_trip_count is set absurdly high to force the concentration
-    # criterion to trigger deterministically for this assertion.
-    report = evaluate_strategy_for_rejection(
-        baseline.result, cost_sensitivity=cost, min_round_trip_count=1_000_000,
-    )
+    # min_round_trip_count=5 matches configs/validation/rejection_criteria.yaml --
+    # the same floor every other AEGIS-155 subject is judged against, not a
+    # threshold invented at this call site to force the outcome.
+    report = evaluate_strategy_for_rejection(weak_result, min_round_trip_count=5)
     assert report.verdict == RejectionVerdict.REJECT
-    assert report.triggering_criteria  # At least one real criterion actually fired.
     assert any(c.name == "trade_concentration_too_few_round_trips" for c in report.triggering_criteria)
+
+
+def test_the_concentration_verdict_is_computed_not_hardcoded(observations) -> None:
+    # Falsifiability proof: the SAME weak-by-construction result, evaluated
+    # with the concentration floor relaxed to admit its own round-trip
+    # count, must ACCEPT -- proving the REJECT above comes from the
+    # criterion actually being evaluated against real data, not from a
+    # fixed outcome.
+    weak_config = ReplayConfig(zscore_window=20, entry_threshold=3.0, exit_threshold=0.5, quantity_units=Decimal(1))
+    weak_result = replay_strategy(observations, weak_config)
+    round_trip_count = len(weak_result.round_trips)
+
+    just_above = evaluate_strategy_for_rejection(weak_result, min_round_trip_count=round_trip_count + 1)
+    just_at = evaluate_strategy_for_rejection(weak_result, min_round_trip_count=round_trip_count)
+    assert just_above.verdict == RejectionVerdict.REJECT
+    assert any(c.name == "trade_concentration_too_few_round_trips" for c in just_above.triggering_criteria)
+    assert just_at.verdict == RejectionVerdict.ACCEPT
+    assert not just_at.triggering_criteria
 
 
 def test_accept_is_possible_when_no_criterion_triggers() -> None:

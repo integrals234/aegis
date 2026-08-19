@@ -1,5 +1,5 @@
 {
-  "claim": "AEGIS-155: two subjects are put through the identical rejection pipeline -- the intentionally weak seeded shuffled-signal baseline (AEGIS-150) and the calendar-spread strategy itself. Every criterion for each subject is computed from THAT subject's own results, and every threshold comes from configs/validation/rejection_criteria.yaml; no statistic is borrowed from another subject and no threshold is invented at the call site. The recorded verdicts are whatever the criteria actually produced.",
+  "claim": "AEGIS-155: three subjects are put through the identical rejection pipeline -- the intentionally weak seeded shuffled-signal baseline (AEGIS-150), the calendar-spread strategy itself, and an intentionally weak-by-construction concentrated baseline (see weak_concentrated_baseline_design above). Every criterion for each subject is computed from THAT subject's own results, and every threshold comes from configs/validation/rejection_criteria.yaml; no statistic is borrowed from another subject and no threshold is invented at the call site. The recorded verdicts are whatever the criteria actually produced -- including the fact that the shuffled baseline's own verdict here is ACCEPT, not REJECT.",
   "criteria_config": {
     "bootstrap_confidence_level": "0.9",
     "bootstrap_num_draws": "2000",
@@ -13,9 +13,9 @@
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-19",
   "not_evidence_for": [
-    "any claim that the weak baseline is guaranteed to be rejected -- the verdict recorded above is the one the criteria produced on this dataset, whatever it is"
+    "any claim that a shuffled-signal or randomly-selected strategy is guaranteed to be rejected -- random_shuffled_signal_baseline's own verdict above is ACCEPT on this dataset/seed, reported honestly rather than hidden or tuned away"
   ],
-  "repository_commit": "f3fbfa147d2f07cf53cc7e417c7a24c0df5b210b",
+  "repository_commit": "6ceeefe29e3e1901c9a343a9c26da4ece703d9bc",
   "requirements": [
     "AEGIS-155"
   ],
@@ -50,6 +50,26 @@
       ],
       "verdict": "reject"
     },
+    "intentionally_weak_concentrated_baseline": {
+      "criteria": [
+        {
+          "detail": "round_trip_count=2 min_required=5",
+          "name": "trade_concentration_too_few_round_trips",
+          "triggered": true
+        },
+        {
+          "detail": "bootstrap_ci=[-17.5771, -9.1297]",
+          "name": "statistical_test_failure_ci_excludes_no_positive_mean",
+          "triggered": true
+        },
+        {
+          "detail": "observed=26.7068 threshold=500",
+          "name": "max_drawdown_exceeds_threshold",
+          "triggered": false
+        }
+      ],
+      "verdict": "reject"
+    },
     "random_shuffled_signal_baseline": {
       "criteria": [
         {
@@ -70,5 +90,6 @@
       ],
       "verdict": "accept"
     }
-  }
+  },
+  "weak_concentrated_baseline_design": "Same zscore_window, exit_threshold, quantity_units, partitions, costs and execution assumptions as calendar_spread_strategy's own CONFIG; the only difference is entry_threshold=3.0 (a standard, dataset-independent 3-standard-deviation statistical extremity, not a value searched against this series). Demanding that rare a signal structurally produces too few round trips for the existing trade_concentration_too_few_round_trips criterion (already in evaluate_strategy_for_rejection before this milestone closure) to evaluate honestly -- no new rejection criterion or portfolio-concentration mechanism was added for this subject; see validation/rejection.py's module docstring for why that pre-existing criterion is the correct fit at this layer."
 }

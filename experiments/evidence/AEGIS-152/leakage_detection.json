@@ -1,11 +1,12 @@
 {
-  "claim": "AEGIS-152: the detector passes the honest documented windowing convention and CATCHES a seeded leaky fixture.",
+  "claim": "AEGIS-152: the detector, given provenance from the REAL rolling_zscore_reference estimator's own execution, passes with zero violations, and given provenance from a deliberately leaking estimator's own execution, CATCHES every one of its violations. Neither record set is reconstructed from a documented convention -- both are the estimator's own account of what it read, so a future regression in the real estimator would be caught here automatically.",
   "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-19",
   "honest_path_passed": true,
   "honest_path_violation_count": 0,
-  "repository_commit": "f3fbfa147d2f07cf53cc7e417c7a24c0df5b210b",
+  "provenance_source": "honest: research.signal_reference.rolling_zscore_reference's own timing_sink, driven by its real execution over the replay's spread series. leaky: validation.leakage.run_seeded_leaky_estimator_for_falsifiability_check's own real (buggy) execution over the identical series. Neither is hand-authored metadata.",
+  "repository_commit": "6ceeefe29e3e1901c9a343a9c26da4ece703d9bc",
   "requirements": [
     "AEGIS-152"
   ],
