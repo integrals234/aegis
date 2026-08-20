@@ -364,23 +364,33 @@ std::optional<LegDecision> RiskEngine::check_group_exposure(
 
 /// Control group 11: single-instrument concentration and configuration-supplied
 /// correlated-group exposure (never an online-estimated correlation, ADR-0028).
+///
+/// M5 closure repair: the single-instrument numerator used to be computed
+/// directly from `state_.position_units + state_.reserved_units +
+/// signed_candidate` -- a hand-rolled shadow of the exact projected-exposure
+/// computation `group_gross_notional_units` already performs for market/
+/// sector/correlated-group exposure below. That duplication was the defect:
+/// `portfolio_overlay` already carries the candidate's own contribution
+/// counted exactly once (added by `check_position_and_notional`, and with
+/// the leg's own committed reservation excluded first when called from
+/// `revalidate_at_seam`), so re-adding `signed_candidate` on top of
+/// `state_.reserved_units` double-counted it at the seam (where
+/// `reserved_units` already includes this leg's own reservation) and,
+/// during ordinary multi-leg preflight, ignored a same-instrument SIBLING
+/// leg's contribution entirely (`overlay`/`portfolio_overlay`, not
+/// `signed_candidate`, is what carries a sibling leg's exposure). Routing
+/// through `group_gross_notional_units({request.instrument_id},
+/// portfolio_overlay)` -- the identical function and identical overlay the
+/// correlated-group branch two lines below already uses correctly -- fixes
+/// both by construction: one shared projected-exposure model for every
+/// cumulative control, never a second one for concentration alone.
 std::optional<LegDecision> RiskEngine::check_concentration(
-    const OrderRequest& request, std::int64_t effective_quantity,
-    const EvaluationOverlay& portfolio_overlay, std::int64_t portfolio_notional) const {
-  const std::int64_t signed_candidate =
-      request.side == Side::kBuy ? effective_quantity : -effective_quantity;
+    const OrderRequest& request, const EvaluationOverlay& portfolio_overlay,
+    std::int64_t portfolio_notional) const {
   // 11. Concentration and correlated-group exposure.
   if (config_.concentration.max_concentration_share < 1.0 && portfolio_notional > 0) {
-    const auto* quote_for_candidate = state_.valid_quote(request.instrument_id);
-    std::int64_t instrument_exposure = state_.position_units(request.instrument_id) +
-                                       state_.reserved_units(request.instrument_id) +
-                                       signed_candidate;
-    bool unsupported = false;
     const std::int64_t instrument_notional =
-        quote_for_candidate == nullptr
-            ? 0
-            : notional_units_base_currency(request.instrument_id, instrument_exposure,
-                                           quote_for_candidate->reference_price_units, unsupported);
+        group_gross_notional_units({request.instrument_id}, portfolio_overlay);
     if (static_cast<double>(instrument_notional) / static_cast<double>(portfolio_notional) >
         config_.concentration.max_concentration_share) {
       return LegDecision{.verdict = RiskVerdict::kReject,
@@ -475,8 +485,7 @@ LegDecision RiskEngine::evaluate_leg(const OrderRequest& request,
   if (auto rejected = check_group_exposure(request, portfolio_overlay)) {
     return *rejected;
   }
-  if (auto rejected =
-          check_concentration(request, effective_quantity, portfolio_overlay, portfolio_notional)) {
+  if (auto rejected = check_concentration(request, portfolio_overlay, portfolio_notional)) {
     return *rejected;
   }
   if (auto rejected = check_margin_and_leverage(portfolio_overlay, portfolio_notional)) {
@@ -656,8 +665,7 @@ std::optional<LegDecision> RiskEngine::revalidate_at_seam(const PendingLeg& pend
   if (auto rejected = check_group_exposure(as_request, portfolio_overlay)) {
     return rejected;
   }
-  if (auto rejected = check_concentration(as_request, pending.approved_quantity_units,
-                                          portfolio_overlay, portfolio_notional)) {
+  if (auto rejected = check_concentration(as_request, portfolio_overlay, portfolio_notional)) {
     return rejected;
   }
   if (auto rejected = check_margin_and_leverage(portfolio_overlay, portfolio_notional)) {

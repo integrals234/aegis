@@ -228,11 +228,23 @@ SPECS: dict[str, dict[str, Any]] = {
         "artifact": "concentration_and_correlation",
         "title": "Concentration and correlation limits",
         "acceptance": "Portfolio scenarios pass.",
-        "filters": ["RiskEngineConcentration.*"],
+        "filters": [
+            "RiskEngineConcentration.*",
+            "ConcentrationOverlayAccounting.*",
+            "CalendarSpreadRiskExchangeIntegration.ConcentrationWithinLimitLetsBothLegsSurviveSeamRevalidationInTheRealSeam",
+        ],
         "claim": "Single-instrument concentration share and configuration-supplied correlated-group "
                  "exposure limits enforced. Correlation is never estimated inside the decision "
                  "path (ADR-0028): a risk decision must not depend on a statistic derived from "
-                 "the same stream the decision is about.",
+                 "the same stream the decision is about. Concentration closure repair: the "
+                 "single-instrument numerator is now routed through the same "
+                 "group_gross_notional_units/EvaluationOverlay projected-exposure model every "
+                 "other cumulative control uses (ADR-0028), fixing both a seam double-count "
+                 "(this leg's own already-committed reservation counted twice) and a preflight "
+                 "under-count (a same-instrument sibling leg's staged exposure ignored) that were "
+                 "two symptoms of one hand-rolled accounting path. Boundary, seam-revalidation, "
+                 "same-instrument multi-leg, prior-proposal-visibility and real-composition-root "
+                 "cases are all covered with literal, hand-checkable numbers.",
     },
     "AEGIS-135": {
         "artifact": "kill_switches",

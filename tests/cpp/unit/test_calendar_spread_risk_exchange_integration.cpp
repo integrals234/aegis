@@ -67,7 +67,8 @@ using aegis::testing::submit_registered_new_order;
 
 constexpr std::uint32_t kNearInstrumentId = 10;
 constexpr std::uint32_t kFarInstrumentId = 20;
-constexpr std::int64_t kQuantityUnits = 25;  // One lot at lot_size_units below.
+constexpr std::uint32_t kBackgroundInstrumentId = 30;  // Concentration-test dilution only.
+constexpr std::int64_t kQuantityUnits = 25;            // One lot at lot_size_units below.
 
 InstrumentSpec make_spec(std::uint32_t instrument_id) {
   InstrumentSpec spec;
@@ -494,6 +495,96 @@ TEST(CalendarSpreadRiskExchangeIntegration,
   EXPECT_EQ(manager.find_by_client_order_id(blocked_client_order_id)->lifecycle.state(),
             OrderState::kRejected);
   EXPECT_EQ(harness.node.next_order_id(), next_order_id_before_new_submit);
+}
+
+TEST(CalendarSpreadRiskExchangeIntegration,
+     ConcentrationWithinLimitLetsBothLegsSurviveSeamRevalidationInTheRealSeam) {
+  // M5 closure repair: check_concentration used to compute its numerator by
+  // re-adding the candidate on top of state_.reserved_units, which ALREADY
+  // included this same leg's own reservation by the time decide_order (the
+  // real seam, reached synchronously inside submit_new_order) revalidated
+  // it -- a genuine double-count reachable through this exact production
+  // composition-root path, not only inside a unit-test harness.
+  //
+  // A background position (30 units of a third instrument @ 100'000 =
+  // 3'000'000) is seeded first so the concentration DENOMINATOR is not
+  // itself an artifact of proposal-evaluation leg order (a brand-new,
+  // otherwise-empty portfolio's very first evaluated leg sees a denominator
+  // that does not yet include its own not-yet-staged sibling -- a real,
+  // pre-existing, orthogonal property of the per-leg overlay walk, unrelated
+  // to the double-counting defect this test targets; well-established
+  // background exposure removes that artifact from this test's numbers).
+  // With the background: total = 3'000'000 (bg) + 2'500'000 (near, 25 *
+  // 100'000) + 2'501'500 (far, 25 * 100'060) = 8'001'500. near share =
+  // 2'500'000 / 8'001'500 = 0.3124..., far share = 2'501'500 / 8'001'500 =
+  // 0.3126... -- both safely under the configured 0.51 limit, so BOTH legs
+  // must survive seam revalidation and fill; neither may be spuriously
+  // rejected while its sibling executes alone (the naked-leg hazard
+  // ADR-0027's atomicity exists to prevent).
+  Harness harness;
+  seed_counterparty_liquidity(harness);
+
+  BookBuilder near_book(kNearInstrumentId);
+  BookBuilder far_book(kFarInstrumentId);
+  const CalendarSpreadConfig config{.near_instrument_id = kNearInstrumentId,
+                                    .far_instrument_id = kFarInstrumentId,
+                                    .zscore_window = 20,
+                                    .entry_threshold = 2.0,
+                                    .exit_threshold = 0.5,
+                                    .quantity_units = kQuantityUnits};
+  CalendarSpreadStrategy strategy(config);
+  const StrategyProposal proposal = build_short_spread_proposal(near_book, far_book, strategy);
+  ASSERT_TRUE(proposal.has_action);
+
+  RiskLimitsConfig limits = permissive_config();
+  limits.instruments[kBackgroundInstrumentId] = aegis::participant::risk::InstrumentInfo{
+      .multiplier_units = 1, .currency = "USD", .market = "", .sector = ""};
+  limits.concentration.max_concentration_share = 0.51;
+  RiskEngine risk_engine(limits);
+  risk_engine.on_market_data(kNearInstrumentId, 100'000, 0, true);
+  risk_engine.on_market_data(kFarInstrumentId, 100'060, 0, true);
+  risk_engine.on_market_data(kBackgroundInstrumentId, 100'000, 0, true);
+  risk_engine.on_fill(/*client_order_id=*/999, kBackgroundInstrumentId, Side::kBuy, 30);
+  RiskEngineGate risk_gate(risk_engine, harness.clock);
+  TransportExecutionAdapter adapter(harness.transport, harness.clock, /*stream_id=*/1);
+  OrderManager manager(adapter, risk_gate);
+  Portfolio portfolio;
+
+  const auto& decision = risk_engine.commit_proposal_decision(
+      "calendar_spread", "concentration-ok",
+      {aegis::participant::risk::OrderRequest{.strategy_id = "calendar_spread",
+                                              .proposal_id = "concentration-ok",
+                                              .leg_index = 0,
+                                              .instrument_id = kNearInstrumentId,
+                                              .side = proposal.near.side,
+                                              .price_units = 100'000,
+                                              .quantity_units = proposal.near.quantity_units},
+       aegis::participant::risk::OrderRequest{.strategy_id = "calendar_spread",
+                                              .proposal_id = "concentration-ok",
+                                              .leg_index = 1,
+                                              .instrument_id = kFarInstrumentId,
+                                              .side = proposal.far.side,
+                                              .price_units = 100'060,
+                                              .quantity_units = proposal.far.quantity_units}},
+      0);
+  ASSERT_NE(decision.verdict, aegis::participant::risk::RiskVerdict::kReject);
+
+  execute_leg_against_real_exchange(proposal.near, manager, portfolio, risk_engine,
+                                    harness.transport, "calendar_spread", "concentration-ok",
+                                    /*leg_index=*/0);
+  execute_leg_against_real_exchange(proposal.far, manager, portfolio, risk_engine,
+                                    harness.transport, "calendar_spread", "concentration-ok",
+                                    /*leg_index=*/1);
+
+  // BOTH legs filled -- neither was spuriously rejected by seam
+  // revalidation double-counting its own already-committed reservation.
+  const auto tracked_orders = manager.all_tracked_orders();
+  ASSERT_EQ(tracked_orders.size(), 2U);
+  for (const auto& tracked : tracked_orders) {
+    EXPECT_EQ(tracked.lifecycle.state(), OrderState::kFilled);
+  }
+  EXPECT_EQ(portfolio.position(kNearInstrumentId).quantity_units, -kQuantityUnits);
+  EXPECT_EQ(portfolio.position(kFarInstrumentId).quantity_units, kQuantityUnits);
 }
 
 }  // namespace

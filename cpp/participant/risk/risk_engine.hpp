@@ -204,8 +204,8 @@ class RiskEngine {
       const EvaluationOverlay& portfolio_overlay, ReasonCode reason_code,
       const std::string& reason) const;
   [[nodiscard]] std::optional<LegDecision> check_concentration(
-      const OrderRequest& request, std::int64_t effective_quantity,
-      const EvaluationOverlay& portfolio_overlay, std::int64_t portfolio_notional) const;
+      const OrderRequest& request, const EvaluationOverlay& portfolio_overlay,
+      std::int64_t portfolio_notional) const;
   [[nodiscard]] std::optional<LegDecision> check_margin_and_leverage(
       const EvaluationOverlay& portfolio_overlay, std::int64_t portfolio_notional) const;
   [[nodiscard]] std::int64_t notional_units_base_currency(std::uint32_t instrument_id,

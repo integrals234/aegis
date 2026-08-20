@@ -6,6 +6,36 @@
     ],
     "cases": [
       {
+        "line": 501,
+        "passed": true,
+        "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
+        "test": "CalendarSpreadRiskExchangeIntegration.ConcentrationWithinLimitLetsBothLegsSurviveSeamRevalidationInTheRealSeam"
+      },
+      {
+        "line": 520,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ConcentrationOverlayAccounting.ANewProposalSeesAnEarlierProposalsReservedConcentration"
+      },
+      {
+        "line": 423,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ConcentrationOverlayAccounting.ExactBoundaryApprovesOneUnitOverRejects"
+      },
+      {
+        "line": 488,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ConcentrationOverlayAccounting.PreflightSameInstrumentStagedSiblingLegIsNotUnderCounted"
+      },
+      {
+        "line": 448,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ConcentrationOverlayAccounting.SeamRevalidationDoesNotDoubleCountItsOwnReservationAndBothLegsOfASafeProposalSurvive"
+      },
+      {
         "line": 475,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
@@ -14,12 +44,14 @@
     ],
     "failure_count": 0,
     "filters": [
-      "RiskEngineConcentration.*"
+      "RiskEngineConcentration.*",
+      "ConcentrationOverlayAccounting.*",
+      "CalendarSpreadRiskExchangeIntegration.ConcentrationWithinLimitLetsBothLegsSurviveSeamRevalidationInTheRealSeam"
     ],
-    "test_count": 1
+    "test_count": 6
   },
   "artifact": "AEGIS-134/concentration_and_correlation",
-  "claim": "Single-instrument concentration share and configuration-supplied correlated-group exposure limits enforced. Correlation is never estimated inside the decision path (ADR-0028): a risk decision must not depend on a statistic derived from the same stream the decision is about.",
+  "claim": "Single-instrument concentration share and configuration-supplied correlated-group exposure limits enforced. Correlation is never estimated inside the decision path (ADR-0028): a risk decision must not depend on a statistic derived from the same stream the decision is about. Concentration closure repair: the single-instrument numerator is now routed through the same group_gross_notional_units/EvaluationOverlay projected-exposure model every other cumulative control uses (ADR-0028), fixing both a seam double-count (this leg's own already-committed reservation counted twice) and a preflight under-count (a same-instrument sibling leg's staged exposure ignored) that were two symptoms of one hand-rolled accounting path. Boundary, seam-revalidation, same-instrument multi-leg, prior-proposal-visibility and real-composition-root cases are all covered with literal, hand-checkable numbers.",
   "deterministic_config": {
     "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
     "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
@@ -27,7 +59,7 @@
   "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Portfolio scenarios pass.",
-  "generated_on": "2026-08-19",
+  "generated_on": "2026-08-20",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -47,7 +79,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "335bf2bc7cac159217d2e8666356bc4b60075616",
+  "repository_commit": "1b88c8e0554b1bb270607d39050823746f1c73b5",
   "requirements": [
     "AEGIS-134"
   ],

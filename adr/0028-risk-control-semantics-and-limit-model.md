@@ -123,6 +123,29 @@ correlation estimation should build and validate the estimator in
 `python/research` or `cpp/statistics` first, then feed its output into this
 config as a periodically-refreshed input -- never compute it inline here.
 
+**Concentration uses the SAME projected-exposure model as every other
+cumulative control (M5 closure repair).** `check_concentration`'s
+single-instrument numerator is `group_gross_notional_units({instrument_id},
+portfolio_overlay)` -- the identical function and identical
+`EvaluationOverlay` the correlated-group branch immediately below it, and
+`check_group_exposure`'s market/sector checks, already used. There is no
+concentration-specific accounting: "projected exposure" everywhere in this
+engine means confirmed state (`RiskState::position_units`/`reserved_units`)
+plus whatever the current evaluation context's overlay carries (a sibling
+leg already staged within the same proposal at preflight; the negated,
+then re-added, current leg at seam revalidation, so it counts exactly
+once). An earlier version hand-computed the concentration numerator
+directly from `state_.reserved_units(instrument_id) + signed_candidate`,
+which agreed with the shared model only by coincidence during ordinary
+single-leg preflight evaluation; it double-counted the candidate once
+commit-time reservation was introduced (the leg's own reservation was
+already in `reserved_units` by the time `decide_order` revalidated it) and
+under-counted a same-instrument sibling leg staged earlier in the same
+multi-leg proposal (the hand-rolled formula never read the overlay at
+all). Both were symptoms of the same root cause -- a second, parallel
+accounting path for one specific control -- fixed by deleting it, not by
+patching either symptom independently.
+
 **AEGIS-135/136 kill switches and connectivity: symmetric idempotent
 latches, three independent connectivity flags.** Strategy-level and global
 kill switches use the same `trip_*`-returns-`true`-once-only pattern as

@@ -35,6 +35,7 @@ using aegis::testing::decide_registered_order;
 
 constexpr std::uint32_t kNear = 3001;
 constexpr std::uint32_t kFar = 3002;
+constexpr std::uint32_t kBg = 3003;  // A third instrument, used only to dilute portfolio_notional.
 
 RiskLimitsConfig base_config() {
   RiskLimitsConfig config;
@@ -43,6 +44,18 @@ RiskLimitsConfig base_config() {
       InstrumentInfo{.multiplier_units = 1, .currency = "USD", .market = "EQX", .sector = "index"};
   config.instruments[kFar] =
       InstrumentInfo{.multiplier_units = 1, .currency = "USD", .market = "EQX", .sector = "index"};
+  return config;
+}
+
+// Adds a third instrument (kBg) to base_config() -- concentration is a SHARE
+// of the whole portfolio, so a meaningful concentration test needs exposure
+// to dilute against, not just the one or two instruments a proposal itself
+// touches.
+RiskLimitsConfig concentration_config(double max_concentration_share) {
+  RiskLimitsConfig config = base_config();
+  config.instruments[kBg] =
+      InstrumentInfo{.multiplier_units = 1, .currency = "USD", .market = "EQX", .sector = "index"};
+  config.concentration.max_concentration_share = max_concentration_share;
   return config;
 }
 
@@ -391,6 +404,143 @@ TEST(ReservationRepairExactIdentity, RegisteredIdentityWithDisagreeingEconomicsI
   EXPECT_EQ(oms_decision.verdict, RiskVerdict::kReject);
   EXPECT_EQ(oms_decision.reason_code, ReasonCode::kIdentityMismatch);
   EXPECT_EQ(engine.state().leg_reservation_count(), 0U);  // Released, not left dangling.
+}
+
+// =================================================================
+// Concentration overlay accounting (repair of the blocker the risk-safety
+// re-review found in THIS repair): check_concentration used to compute its
+// numerator directly from state_.reserved_units + signed_candidate instead
+// of through the SAME EvaluationOverlay/group_gross_notional_units every
+// other cumulative control (position, notional, market/sector, correlated
+// groups, margin, leverage) already uses. That caused two distinct defects:
+// seam double-counting (this leg's own already-committed reservation was
+// counted, then the candidate was added AGAIN) and preflight under-counting
+// (a same-instrument sibling leg's staged exposure, carried in the overlay
+// parameter, was never read at all). All accounting below uses literal,
+// hand-checkable numbers.
+// =================================================================
+
+TEST(ConcentrationOverlayAccounting, ExactBoundaryApprovesOneUnitOverRejects) {
+  // Background: 700 units of kBg filled @ 100 = 70,000 notional.
+  // Proposal: 300 units of kNear @ 100 = 30,000 notional.
+  // Total = 100,000. kNear's share = 30,000 / 100,000 = 0.30 EXACTLY --
+  // the configured limit itself, which the documented policy (">", not
+  // ">=") treats as still safe.
+  RiskEngine engine(concentration_config(0.30));
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kBg, 100);
+  engine.on_fill(/*client_order_id=*/900, kBg, Side::kBuy, 700);
+
+  const auto& at_boundary = engine.commit_proposal_decision(
+      "strat", "conc-boundary",
+      {make_request(kNear, Side::kBuy, 100, 300, "strat", "conc-boundary")}, 0);
+  EXPECT_EQ(at_boundary.verdict, RiskVerdict::kApprove);
+
+  // One more unit of quantity: 301 * 100 = 30,100; total = 100,100; share =
+  // 30,100 / 100,100 = 0.300699... > 0.30 -- must now reject.
+  const auto& over_boundary = engine.commit_proposal_decision(
+      "strat", "conc-over", {make_request(kNear, Side::kBuy, 100, 301, "strat", "conc-over")}, 0);
+  EXPECT_EQ(over_boundary.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(over_boundary.reason_code, ReasonCode::kConcentration);
+}
+
+TEST(ConcentrationOverlayAccounting,
+     SeamRevalidationDoesNotDoubleCountItsOwnReservationAndBothLegsOfASafeProposalSurvive) {
+  // The reviewer's exact reproduction shape: a two-leg proposal whose TRUE
+  // combined concentration is safe must have BOTH legs survive seam
+  // revalidation -- neither may be spuriously rejected because its own
+  // already-committed reservation got counted twice.
+  //
+  // Background: 400 units of kBg filled @ 100 = 40,000.
+  // Leg 0 (near): 100 units @ 100 = 10,000.
+  // Leg 1 (far):  150 units @ 100 = 15,000.
+  // Total = 65,000. near share = 10,000/65,000 = 0.1538..., far share =
+  // 15,000/65,000 = 0.2307... Both comfortably under the 0.30 limit.
+  //
+  // Before this repair: at the seam, near's stale computation would have
+  // been reserved_units(100, already reserved at commit) + candidate(100
+  // again) = 200 units = 20,000 notional; share = 20,000/65,000 = 0.3077 >
+  // 0.30 -- a SPURIOUS reject of the near leg while far still approves,
+  // exactly the naked-single-leg hazard this test proves is now closed.
+  RiskEngine engine(concentration_config(0.30));
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+  seed_valid_quote(engine, kBg, 100);
+  engine.on_fill(/*client_order_id=*/900, kBg, Side::kBuy, 400);
+
+  const std::vector<OrderRequest> legs{
+      make_request(kNear, Side::kBuy, 100, 100, "strat", "conc-both-legs", 0),
+      make_request(kFar, Side::kBuy, 100, 150, "strat", "conc-both-legs", 1),
+  };
+  const auto& decision = engine.commit_proposal_decision("strat", "conc-both-legs", legs, 0);
+  ASSERT_EQ(decision.verdict, RiskVerdict::kApprove);
+
+  const auto near_decision = decide_registered_order(engine, "strat", "conc-both-legs",
+                                                     /*leg_index=*/0, kNear, Side::kBuy, 100,
+                                                     /*client_order_id=*/1, 0);
+  const auto far_decision = decide_registered_order(engine, "strat", "conc-both-legs",
+                                                    /*leg_index=*/1, kFar, Side::kBuy, 150,
+                                                    /*client_order_id=*/2, 0);
+  EXPECT_EQ(near_decision.verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(far_decision.verdict, RiskVerdict::kApprove);
+}
+
+TEST(ConcentrationOverlayAccounting, PreflightSameInstrumentStagedSiblingLegIsNotUnderCounted) {
+  // Two legs of ONE proposal, both on the SAME instrument -- the shape that
+  // exposed the preflight half of the defect: the old numerator never read
+  // the overlay a sibling leg stages, only state_.reserved_units (which is
+  // zero for both legs until the WHOLE proposal is approved and committed).
+  //
+  // Background: 600 units of kBg filled @ 100 = 60,000.
+  // Leg 0: 200 units of kNear @ 100 = 20,000. Alone: share vs (60,000 +
+  //   20,000) = 20,000/80,000 = 0.25 <= 0.30 -- looks safe in isolation.
+  // Leg 1: another 200 units of kNear @ 100 = 20,000, STAGED on top of leg
+  //   0 via the proposal's own overlay.
+  // TRUE combined kNear exposure = 400 units = 40,000; total = 100,000;
+  // combined share = 40,000/100,000 = 0.40 > 0.30 -- must reject, because
+  // leg 1's own evaluation must see leg 0's staged 200 units, not just its
+  // own 200.
+  RiskEngine engine(concentration_config(0.30));
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kBg, 100);
+  engine.on_fill(/*client_order_id=*/900, kBg, Side::kBuy, 600);
+
+  const std::vector<OrderRequest> legs{
+      make_request(kNear, Side::kBuy, 100, 200, "strat", "conc-same-instrument", 0),
+      make_request(kNear, Side::kBuy, 100, 200, "strat", "conc-same-instrument", 1),
+  };
+  const auto& decision = engine.commit_proposal_decision("strat", "conc-same-instrument", legs, 0);
+  EXPECT_EQ(decision.verdict, RiskVerdict::kReject);
+  ASSERT_EQ(decision.legs.size(), 2U);
+  // Atomicity: a same-instrument sibling breach rejects the WHOLE proposal,
+  // arming and reserving neither leg.
+  EXPECT_EQ(engine.state().leg_reservation_count(), 0U);
+}
+
+TEST(ConcentrationOverlayAccounting, ANewProposalSeesAnEarlierProposalsReservedConcentration) {
+  // Background: 600 units of kBg filled @ 100 = 60,000.
+  // Proposal A: 100 units of kNear @ 100 = 10,000. Alone: 10,000/70,000 =
+  //   0.1428... <= 0.30 -- approves and reserves.
+  // Proposal B: another 200 units of kNear @ 100 = 20,000. Individually
+  //   against FILLED state alone (60,000 + 20,000 = 80,000), 20,000/80,000
+  //   = 0.25 <= 0.30 would look safe -- but A's reservation (10,000) is
+  //   already live: TRUE combined = 30,000/90,000 = 0.3333... > 0.30, so B
+  //   must reject.
+  RiskEngine engine(concentration_config(0.30));
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kBg, 100);
+  engine.on_fill(/*client_order_id=*/900, kBg, Side::kBuy, 600);
+
+  const auto& first = engine.commit_proposal_decision(
+      "strat", "conc-prior-a", {make_request(kNear, Side::kBuy, 100, 100, "strat", "conc-prior-a")},
+      0);
+  ASSERT_EQ(first.verdict, RiskVerdict::kApprove);
+
+  const auto& second = engine.commit_proposal_decision(
+      "strat", "conc-prior-b", {make_request(kNear, Side::kBuy, 100, 200, "strat", "conc-prior-b")},
+      0);
+  EXPECT_EQ(second.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(second.reason_code, ReasonCode::kConcentration);
 }
 
 }  // namespace
