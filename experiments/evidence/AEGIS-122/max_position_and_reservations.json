@@ -30,37 +30,37 @@
         "test": "ExecutionStressIntegration.ReleaseReservationRemainsAvailableForOtherRecoveryPaths"
       },
       {
-        "line": 605,
+        "line": 611,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
-        "test": "ProposalAtomicSeamRevalidation.ALateStateChangeMakingOnlyOneLegUnsafeRejectsTheWholeProposalAtTheSeam"
+        "test": "ProposalAtomicSeamRevalidation.ALateStateChangeMakingOnlyOneLegUnsafeRejectsTheWholeProposalAtRelease"
       },
       {
-        "line": 680,
+        "line": 681,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
-        "test": "ProposalAtomicSeamRevalidation.ALookAlikeProposalCannotBorrowAnotherProposalsSeamApproval"
+        "test": "ProposalAtomicSeamRevalidation.ALookAlikeProposalCannotBorrowAnotherProposalsAuthorization"
       },
       {
-        "line": 748,
+        "line": 746,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
         "test": "ProposalAtomicSeamRevalidation.FlatBookConcentrationBelowOneRejectsTheFirstPositionHonestly"
       },
       {
-        "line": 555,
+        "line": 561,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
         "test": "ProposalAtomicSeamRevalidation.N6ExposureReductionRejectsAtomicallyAtCommit"
       },
       {
-        "line": 716,
+        "line": 714,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
         "test": "ProposalAtomicSeamRevalidation.PortfolioNotionalFinalOverlayApprovesAGenuinelySafeReducingProposal"
       },
       {
-        "line": 652,
+        "line": 653,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
         "test": "ProposalAtomicSeamRevalidation.SafeTwoLegProposalWithNoLateChangeStillApprovesBothLegs"
@@ -159,7 +159,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "1fb935bcf9b36909730b2f873bbbe3d8456f51ea",
+  "repository_commit": "d6bbf133084938e6b067f23a64583ada4b6f1fc9",
   "requirements": [
     "AEGIS-122"
   ],

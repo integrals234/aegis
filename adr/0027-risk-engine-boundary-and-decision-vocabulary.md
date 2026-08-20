@@ -246,9 +246,13 @@ accounting path:**
   before) or a single-leg proposal would be invisible to its own
   revalidation and vacuously "pass."
 
-This guarantees risk-DECISION atomicity: risk approves the whole proposal
-or rejects the whole proposal, never a mix, regardless of leg order or
-which leg's order reaches the seam first.
+**Superseded in part by "Correction 3" below.** This paragraph originally
+claimed unqualified whole-proposal atomicity. A further review showed the
+claim was too strong for the design as it then stood: caching the seam
+verdict from the FIRST leg's arrival left later legs unchecked against
+kill switches, connectivity and staleness, and `kIdentityMismatch` still
+rejected a single leg while a sibling remained executable. Correction 3
+qualifies the guarantee to the release epoch and makes it true.
 
 **What this does NOT guarantee: atomic EXCHANGE execution.** Once risk
 approves both legs, a transport or exchange failure on ONE leg after
@@ -264,6 +268,94 @@ while leg B's instrument and control are completely untouched; submitting
 B FIRST still rejects the whole proposal, not just A.
 `CalendarSpreadRiskExchangeIntegration.ConcentrationBreachRejectsBothLegsAtomicallyInTheRealSeamNeverJustOne`
 proves the same property through the real composition root.
+
+## Correction 3 (M5 closure repair): the proposal release epoch
+
+An independent risk-safety review of Correction 2 reproduced two remaining
+defects, both from the same mistake: the whole-proposal seam revalidation
+was correct in shape but began at the wrong MOMENT -- when the first
+constituent reached `decide_order`, i.e. when that constituent was already
+being released.
+
+**Blocker A -- over-cached safety.** Caching the entire revalidation meant
+every LATER constituent re-checked nothing. Differential probes against the
+parent commit confirmed a global kill switch, an exchange disconnect and a
+hard position-limit breach arriving between two legs each stopped leg 1
+before Correction 2 and stopped nothing after it. That contradicted
+AEGIS-135's "prevents new orders" and this ADR's own claim that the seam is
+where a late-breaking change bites.
+
+**Blocker B -- identity mismatch stranded a sibling.** `decide_order`
+released only the mismatched leg's reservation, leaving a correctly-staged
+sibling free to execute alone.
+
+**The naive repair is wrong and was deliberately not taken.** Caching the
+cumulative verdict while re-running hard safety per leg merely relocates
+the hazard: leg 0 released, state changes, leg 1 rejects, naked leg. Any
+design in which a per-leg check can fire AFTER a sibling is executable can
+produce a mixed verdict.
+
+**Decision: move the epoch earlier, to a point where nothing is released.**
+
+1. `commit_proposal_decision` reserves and arms every leg (Correction 1).
+2. The composition root builds all N constituent commands and calls
+   `RiskEngine::stage_proposal_release` with every one of them --
+   `client_order_id` (predictable: `OrderManager` assigns consecutively
+   from `next_client_order_id()`, and it is the sole mutator), leg index,
+   and the economics that order will carry. Staging is NOT permission; the
+   proposal sits in `kStaging` and nothing is executable.
+3. `RiskEngine::authorize_proposal_release` performs ONE fresh
+   whole-proposal authorization: every committed leg must have a staged
+   constituent whose economics match it (closing Blocker B structurally,
+   before any release), and every leg must pass `revalidate_at_seam`
+   against CURRENT state -- halts, connectivity, staleness/collar, and
+   every cumulative control over the final combined overlay. Either ALL
+   constituents become authorized (`kAuthorizedForRelease`) or NONE do
+   (`kRejectedAtRelease`, every reservation released, every leg
+   invalidated, permanently). The decision is terminal and idempotent: a
+   proposal has at most one, recorded as a `ProposalReleaseRiskDecision`.
+4. Individual `decide_order` calls then CONSUME that authorization. They
+   check only what cannot split a proposal's verdict: exact
+   `PendingLegKey`, exact immutable economics (a defensive backstop --
+   already validated at step 3), and not-already-consumed. They compute no
+   second proposal-level safety verdict, which is precisely what closes
+   Blocker A without recreating the naked leg.
+
+An unauthorized constituent is rejected `kProposalNotAuthorized`; an
+incompletely staged proposal is rejected `kIncompleteProposalStaging`.
+Both are fail-closed defaults, so a caller that skips the epoch gets
+nothing executable rather than silently bypassing it.
+
+**Kill-switch timing semantics, stated explicitly.** A kill switch tripping
+BEFORE the release epoch rejects the whole proposal and releases zero
+orders. A kill switch tripping AFTER authorization does NOT retroactively
+reject a remaining constituent: the proposal is already one authorized risk
+action, and splitting it now is the very hazard this design prevents. The
+switch blocks all SUBSEQUENT proposals (proven by test) and the existing
+emergency-cancel path handles live orders. This is a deliberate choice,
+pinned by
+`ProposalReleaseEpoch.AKillSwitchAfterAuthorizationDoesNotSplitTheProposalsVerdict`
+so a future refactor cannot silently restore the per-leg conflict.
+
+**What is and is not claimed.** RISK-DECISION atomicity: before any
+constituent of a proposal is released, AEGIS makes one all-or-none
+authorization, and afterwards never produces a contradictory per-leg risk
+verdict for that proposal. NOT exchange/broker execution atomicity: after
+authorization the transport or exchange can still accept one leg and fail
+another, because AEGIS has no basket/atomic multi-leg execution primitive.
+That residual is execution risk, not a contradictory risk verdict
+(`docs/LIMITATIONS.md`).
+
+**Limit semantics (the reviewer's Finding 3), stated rather than implied.**
+Cumulative limits are evaluated against the proposal's FINAL NET PROJECTED
+state -- the portfolio transition the proposal intends -- not against every
+sequential intermediate state its legs could pass through during non-atomic
+execution. A proposal that adds exposure on one leg and reduces it on
+another is judged on the net result; if the adding leg fills before the
+reducing leg is sent, true instantaneous gross exposure can exceed what
+risk authorized. This follows from evaluating a multi-leg proposal as one
+intended portfolio transition, and M5 does not claim worst-path or basket
+execution-risk protection. Documented in `docs/LIMITATIONS.md`.
 
 ## Alternatives considered
 

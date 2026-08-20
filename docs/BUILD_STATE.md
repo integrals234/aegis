@@ -291,10 +291,30 @@ per `proposal_id` (`ensure_proposal_seam_revalidated`) -- risk now approves
 the whole proposal or rejects the whole proposal, never a mix. Detailed in
 ADR-0027's "Correction 2" section; retracts that section's original
 description of the preflight overlay as "folds in each already-evaluated
-sibling leg" (a prefix, not the final projection). Risk-DECISION atomicity
-is now guaranteed; atomic EXCHANGE execution across legs is explicitly NOT
-claimed (`docs/LIMITATIONS.md`) -- this system has no basket/atomic
-multi-leg execution primitive. Both shipped risk configs
+sibling leg" (a prefix, not the final projection).
+
+**Follow-up correction 3 (M5 closure repair): the proposal release epoch.**
+A review of correction 2 found its seam cache began at the wrong moment --
+when the FIRST constituent reached `decide_order`, i.e. once that leg was
+already being released. Caching the whole revalidation from there left
+every LATER leg unchecked against kill switches, connectivity and
+staleness (a global kill switch between two legs no longer stopped the
+second, contradicting AEGIS-135), and `kIdentityMismatch` still rejected
+one leg while a correctly-staged sibling stayed executable. The naive
+repair -- cache cumulative controls, re-run hard safety per leg -- was
+deliberately NOT taken, because it merely relocates the naked leg. Instead
+the epoch moved earlier: the composition root stages ALL constituent order
+identities (`stage_proposal_release`), then one fresh whole-proposal
+`authorize_proposal_release` runs while ZERO legs have been released,
+validating every constituent's economics and every leg's current safety;
+either all become executable or none do and all reservations are released.
+`decide_order` afterwards only CONSUMES that authorization. Risk-DECISION
+atomicity is guaranteed at that epoch; atomic EXCHANGE execution across
+legs is explicitly NOT claimed (`docs/LIMITATIONS.md`), a post-
+authorization kill switch does not retract an authorization already
+granted, and cumulative limits are enforced on the proposal's final net
+projected state rather than every intermediate state -- all three now
+stated rather than implied. Both shipped risk configs
 (`configs/risk/limits.json`, `limits_reject_demo.json`) leave
 `max_concentration_share` at its disabling default (`1.0`), so neither the
 original defect nor this fix changes the demo's own recorded output; the

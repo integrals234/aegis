@@ -387,7 +387,7 @@ TEST(ReservationRepairAtomicity, RejectedProposalArmsAndReservesNothingForEither
 // Identity/economics mismatch (a caller bug, never a look-alike match)
 // =================================================================
 
-TEST(ReservationRepairExactIdentity, RegisteredIdentityWithDisagreeingEconomicsIsRejected) {
+TEST(ReservationRepairExactIdentity, StagedIdentityWithDisagreeingEconomicsIsRejected) {
   RiskEngine engine(base_config());
   seed_valid_quote(engine, kNear, 100);
 
@@ -395,10 +395,14 @@ TEST(ReservationRepairExactIdentity, RegisteredIdentityWithDisagreeingEconomicsI
       "strat", "mismatch-1", {make_request(kNear, Side::kBuy, 100, 10, "strat", "mismatch-1")}, 0);
   ASSERT_EQ(decision.verdict, RiskVerdict::kApprove);
 
-  engine.register_pending_order_identity(/*client_order_id=*/1, "strat", "mismatch-1",
-                                         /*leg_index=*/0);
-  // The registered identity is correct, but the order itself carries a
-  // DIFFERENT quantity than what was actually reserved.
+  // The staged identity names the right leg, but its economics disagree with
+  // what the proposal actually committed. Since ALL constituents are checked
+  // at the release epoch (before anything is executable), this is caught
+  // there rather than leg-by-leg at the seam.
+  aegis::testing::stage_and_authorize(
+      engine, "strat", "mismatch-1",
+      {aegis::testing::staged_leg(/*client_order_id=*/1, /*leg_index=*/0, kNear, Side::kBuy,
+                                  /*quantity_units=*/999)});
   const auto oms_decision = engine.decide_order(kNear, Side::kBuy, /*quantity_units=*/999,
                                                 /*client_order_id=*/1, 0);
   EXPECT_EQ(oms_decision.verdict, RiskVerdict::kReject);
@@ -475,12 +479,14 @@ TEST(ConcentrationOverlayAccounting,
   const auto& decision = engine.commit_proposal_decision("strat", "conc-both-legs", legs, 0);
   ASSERT_EQ(decision.verdict, RiskVerdict::kApprove);
 
-  const auto near_decision = decide_registered_order(engine, "strat", "conc-both-legs",
-                                                     /*leg_index=*/0, kNear, Side::kBuy, 100,
-                                                     /*client_order_id=*/1, 0);
-  const auto far_decision = decide_registered_order(engine, "strat", "conc-both-legs",
-                                                    /*leg_index=*/1, kFar, Side::kBuy, 150,
-                                                    /*client_order_id=*/2, 0);
+  ASSERT_EQ(
+      aegis::testing::stage_and_authorize(engine, "strat", "conc-both-legs",
+                                          {aegis::testing::staged_leg(1, 0, kNear, Side::kBuy, 100),
+                                           aegis::testing::staged_leg(2, 1, kFar, Side::kBuy, 150)})
+          .state,
+      aegis::participant::risk::ProposalReleaseState::kAuthorizedForRelease);
+  const auto near_decision = engine.decide_order(kNear, Side::kBuy, 100, /*client_order_id=*/1, 0);
+  const auto far_decision = engine.decide_order(kFar, Side::kBuy, 150, /*client_order_id=*/2, 0);
   EXPECT_EQ(near_decision.verdict, RiskVerdict::kApprove);
   EXPECT_EQ(far_decision.verdict, RiskVerdict::kApprove);
 }
@@ -602,13 +608,15 @@ TEST(ProposalAtomicSeamRevalidation, N6ExposureReductionRejectsAtomicallyAtCommi
 }
 
 TEST(ProposalAtomicSeamRevalidation,
-     ALateStateChangeMakingOnlyOneLegUnsafeRejectsTheWholeProposalAtTheSeam) {
+     ALateStateChangeMakingOnlyOneLegUnsafeRejectsTheWholeProposalAtRelease) {
   // The generic version of the naked-leg hazard, unrelated to concentration:
   // a two-leg proposal commits safely; an out-of-band fill then pushes ONE
   // leg's OWN instrument over its position limit, while the other leg's
   // instrument is completely untouched and would individually still pass.
-  // Submitting the UNAFFECTED leg's order first must not let it execute
-  // alone -- the whole proposal is one seam-revalidation unit.
+  // Under the release-epoch architecture the whole proposal is authorized or
+  // not as a unit, so neither leg can execute -- and the order in which the
+  // constituents would have been submitted is irrelevant, because nothing is
+  // submittable at all.
   RiskLimitsConfig config = base_config();
   config.position_limits[kNear] = PositionLimit{.max_long_units = 100, .max_short_units = 100};
   // No limit configured for kFar: leg B's own control would pass in isolation.
@@ -624,36 +632,29 @@ TEST(ProposalAtomicSeamRevalidation,
   ASSERT_EQ(decision.verdict, RiskVerdict::kApprove);  // Both safe at commit time.
 
   // Out-of-band: some OTHER, already-terminal order fills 60 more units of
-  // kNear, landing directly on the books between commit and either leg
-  // reaching the seam. leg A's TRUE projected exposure is now 60 (filled) +
-  // 50 (its own reservation) = 110 > 100 -- unsafe. leg B's own instrument
-  // (kFar) is completely unaffected and has no limit at all.
+  // kNear between commit and the release epoch. leg A's TRUE projected
+  // exposure is now 60 (filled) + 50 (its own reservation) = 110 > 100.
   engine.on_fill(/*client_order_id=*/999, kNear, Side::kBuy, 60);
 
-  // Submit B FIRST -- the leg whose OWN control would pass in isolation.
-  const auto b_decision = decide_registered_order(engine, "strat", "late-change", /*leg_index=*/1,
-                                                  kFar, Side::kBuy, 50, /*client_order_id=*/2, 0);
-  EXPECT_EQ(b_decision.verdict, RiskVerdict::kReject);  // Not naked: the WHOLE proposal is unsafe.
-  EXPECT_EQ(b_decision.reason_code,
-            ReasonCode::kMaxPositionLong);  // A's control, correctly attributed.
+  const auto release =
+      aegis::testing::stage_and_authorize(engine, "strat", "late-change",
+                                          {aegis::testing::staged_leg(1, 0, kNear, Side::kBuy, 50),
+                                           aegis::testing::staged_leg(2, 1, kFar, Side::kBuy, 50)});
+  EXPECT_EQ(release.state, aegis::participant::risk::ProposalReleaseState::kRejectedAtRelease);
+  EXPECT_EQ(release.reason_code, ReasonCode::kMaxPositionLong);
 
-  // A, submitted afterward, also rejects with the same cached proposal-level
-  // outcome -- not re-evaluated independently a second time.
-  const auto a_decision = decide_registered_order(engine, "strat", "late-change", /*leg_index=*/0,
-                                                  kNear, Side::kBuy, 50, /*client_order_id=*/1, 0);
-  EXPECT_EQ(a_decision.verdict, RiskVerdict::kReject);
-  EXPECT_EQ(a_decision.reason_code, ReasonCode::kMaxPositionLong);
-
-  // Both reservations released; neither leg executes.
+  // Neither constituent can execute, in either submission order.
+  EXPECT_EQ(engine.decide_order(kFar, Side::kBuy, 50, 2, 0).verdict, RiskVerdict::kReject);
+  EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kReject);
   EXPECT_EQ(engine.state().leg_reservation_count(), 0U);
   EXPECT_EQ(engine.state().reservation_count(), 0U);
 }
 
 TEST(ProposalAtomicSeamRevalidation, SafeTwoLegProposalWithNoLateChangeStillApprovesBothLegs) {
   // Negative control for the test above: with NO out-of-band change, the
-  // same shape of two-leg proposal must still approve both legs -- proving
-  // proposal-level revalidation does not spuriously reject when nothing is
-  // actually wrong.
+  // same shape of two-leg proposal must still authorize and let both legs
+  // through -- proving release authorization does not spuriously reject when
+  // nothing is actually wrong.
   RiskLimitsConfig config = base_config();
   config.position_limits[kNear] = PositionLimit{.max_long_units = 100, .max_short_units = 100};
   RiskEngine engine(config);
@@ -667,24 +668,22 @@ TEST(ProposalAtomicSeamRevalidation, SafeTwoLegProposalWithNoLateChangeStillAppr
   const auto& decision = engine.commit_proposal_decision("strat", "no-late-change", legs, 0);
   ASSERT_EQ(decision.verdict, RiskVerdict::kApprove);
 
-  const auto a_decision = decide_registered_order(engine, "strat", "no-late-change",
-                                                  /*leg_index=*/0, kNear, Side::kBuy, 50,
-                                                  /*client_order_id=*/1, 0);
-  const auto b_decision = decide_registered_order(engine, "strat", "no-late-change",
-                                                  /*leg_index=*/1, kFar, Side::kBuy, 50,
-                                                  /*client_order_id=*/2, 0);
-  EXPECT_EQ(a_decision.verdict, RiskVerdict::kApprove);
-  EXPECT_EQ(b_decision.verdict, RiskVerdict::kApprove);
+  const auto release =
+      aegis::testing::stage_and_authorize(engine, "strat", "no-late-change",
+                                          {aegis::testing::staged_leg(1, 0, kNear, Side::kBuy, 50),
+                                           aegis::testing::staged_leg(2, 1, kFar, Side::kBuy, 50)});
+  ASSERT_EQ(release.state, aegis::participant::risk::ProposalReleaseState::kAuthorizedForRelease);
+
+  EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.decide_order(kFar, Side::kBuy, 50, 2, 0).verdict, RiskVerdict::kApprove);
 }
 
-TEST(ProposalAtomicSeamRevalidation, ALookAlikeProposalCannotBorrowAnotherProposalsSeamApproval) {
+TEST(ProposalAtomicSeamRevalidation, ALookAlikeProposalCannotBorrowAnotherProposalsAuthorization) {
   // Attack D: two proposals with economically identical legs. Proposal A
-  // becomes unsafe (out-of-band fill) and is correctly rejected at the
-  // seam; proposal B, genuinely safe, must still independently approve --
-  // proposal_seam_state_by_id_ is keyed by the EXACT proposal_id, resolved
-  // only through the registered client_order_id identity, never by
-  // searching economics, so neither proposal can read or "borrow" the
-  // other's cached seam verdict.
+  // becomes unsafe (out-of-band fill) and is correctly rejected at its
+  // release epoch; proposal B must be judged on ITS OWN authorization, never
+  // riding on A's -- the release state is keyed by the exact proposal_id,
+  // resolved only through staged client_order_id identities.
   RiskLimitsConfig config = base_config();
   config.position_limits[kNear] = PositionLimit{.max_long_units = 100, .max_short_units = 100};
   RiskEngine engine(config);
@@ -695,21 +694,20 @@ TEST(ProposalAtomicSeamRevalidation, ALookAlikeProposalCannotBorrowAnotherPropos
   engine.commit_proposal_decision(
       "strat-b", "look-b", {make_request(kNear, Side::kBuy, 100, 50, "strat-b", "look-b")}, 0);
 
-  // Push kNear's filled position up so that EITHER reservation, added to
-  // it, would breach -- but only proposal A's order will actually be
-  // submitted while B's has not yet reached the seam.
+  // Push kNear's filled position up so that either reservation would breach.
   engine.on_fill(/*client_order_id=*/999, kNear, Side::kBuy, 60);
 
-  const auto a_decision = decide_registered_order(engine, "strat-a", "look-a", /*leg_index=*/0,
-                                                  kNear, Side::kBuy, 50, /*client_order_id=*/1, 0);
-  EXPECT_EQ(a_decision.verdict, RiskVerdict::kReject);
-  EXPECT_EQ(a_decision.reason_code, ReasonCode::kMaxPositionLong);
+  const auto a_release = aegis::testing::stage_and_authorize(
+      engine, "strat-a", "look-a", {aegis::testing::staged_leg(1, 0, kNear, Side::kBuy, 50)});
+  EXPECT_EQ(a_release.state, aegis::participant::risk::ProposalReleaseState::kRejectedAtRelease);
+  EXPECT_EQ(a_release.reason_code, ReasonCode::kMaxPositionLong);
+  EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kReject);
 
   // B's own reservation is untouched by A's rejection (a DIFFERENT
-  // proposal_id, never released by A's seam revalidation), and B's own
-  // fate is not yet decided -- it must be judged on ITS OWN seam
-  // revalidation, not inherit A's.
-  EXPECT_EQ(engine.state().leg_reservation_count(), 1U);  // Only B's leg remains armed.
+  // proposal_id) and B has its own, still-undecided release epoch.
+  EXPECT_EQ(engine.state().leg_reservation_count(), 1U);
+  EXPECT_EQ(engine.proposal_release_state("look-b"),
+            aegis::participant::risk::ProposalReleaseState::kCommitted);
 }
 
 TEST(ProposalAtomicSeamRevalidation,

@@ -46,6 +46,15 @@ enum class ReasonCode : std::uint8_t {
   /// a look-alike-economics match: identity resolution never searches by
   /// instrument/side/quantity in the first place.
   kIdentityMismatch = 29,
+  /// A constituent order of a committed proposal reached the seam before
+  /// that proposal received its one whole-proposal release authorization
+  /// (M5 closure repair) -- staging alone is never permission to execute.
+  kProposalNotAuthorized = 30,
+  /// Release authorization was attempted while some committed leg of the
+  /// proposal had no staged constituent order (or a staged order named a
+  /// leg the proposal never committed): the proposal cannot be authorized
+  /// as a unit, so it is rejected as a unit.
+  kIncompleteProposalStaging = 31,
 };
 
 [[nodiscard]] std::string_view describe(ReasonCode reason);

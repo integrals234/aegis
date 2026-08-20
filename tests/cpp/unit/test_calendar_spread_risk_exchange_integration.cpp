@@ -63,7 +63,7 @@ using aegis::participant::strategy::SpreadPosition;
 using aegis::participant::strategy::StrategyLeg;
 using aegis::participant::strategy::StrategyProposal;
 using aegis::testing::InProcessExchangeTransport;
-using aegis::testing::submit_registered_new_order;
+using aegis::testing::submit_staged_new_order;
 
 constexpr std::uint32_t kNearInstrumentId = 10;
 constexpr std::uint32_t kFarInstrumentId = 20;
@@ -128,14 +128,27 @@ RiskLimitsConfig permissive_config() {
 /// real FIFO matching, feeding every resulting event back into
 /// manager/portfolio/risk_engine exactly as a production feed handler would
 /// decode them from the wire.
+/// Stages BOTH constituents of a two-leg spread and takes the proposal's one
+/// release authorization, exactly as `participant_run.cpp` does -- before
+/// either order is submitted. Returns the release decision.
+aegis::participant::risk::ProposalReleaseDecision stage_and_authorize_spread(
+    OrderManager& manager, RiskEngine& risk_engine, const std::string& strategy_id,
+    const std::string& proposal_id, const StrategyProposal& proposal) {
+  const std::uint64_t first = manager.next_client_order_id();
+  return aegis::testing::stage_and_authorize(
+      risk_engine, strategy_id, proposal_id,
+      {aegis::testing::staged_leg(first, 0, proposal.near.instrument_id, proposal.near.side,
+                                  proposal.near.quantity_units),
+       aegis::testing::staged_leg(first + 1, 1, proposal.far.instrument_id, proposal.far.side,
+                                  proposal.far.quantity_units)});
+}
+
 void execute_leg_against_real_exchange(const StrategyLeg& leg, OrderManager& manager,
                                        Portfolio& portfolio, RiskEngine& risk_engine,
-                                       InProcessExchangeTransport& transport,
-                                       const std::string& strategy_id,
-                                       const std::string& proposal_id, std::uint32_t leg_index) {
-  const auto client_order_id = submit_registered_new_order(
-      manager, risk_engine, strategy_id, proposal_id, leg_index, leg.instrument_id, leg.side,
-      OrderType::kMarket, /*price_units=*/0, leg.quantity_units);
+                                       InProcessExchangeTransport& transport) {
+  const auto client_order_id =
+      submit_staged_new_order(manager, leg.instrument_id, leg.side, OrderType::kMarket,
+                              /*price_units=*/0, leg.quantity_units);
   const auto* tracked = manager.find_by_client_order_id(client_order_id);
   ASSERT_NE(tracked, nullptr);
   if (tracked->lifecycle.state() == OrderState::kRejected) {
@@ -258,13 +271,15 @@ TEST(CalendarSpreadRiskExchangeIntegration,
       0);
   ASSERT_NE(decision.verdict, aegis::participant::risk::RiskVerdict::kReject);
 
+  ASSERT_EQ(stage_and_authorize_spread(manager, risk_engine, "calendar_spread", "allow-1", proposal)
+                .state,
+            aegis::participant::risk::ProposalReleaseState::kAuthorizedForRelease);
+
   const std::uint64_t next_order_id_before = harness.node.next_order_id();
   execute_leg_against_real_exchange(proposal.near, manager, portfolio, risk_engine,
-                                    harness.transport, "calendar_spread", "allow-1",
-                                    /*leg_index=*/0);
+                                    harness.transport);
   execute_leg_against_real_exchange(proposal.far, manager, portfolio, risk_engine,
-                                    harness.transport, "calendar_spread", "allow-1",
-                                    /*leg_index=*/1);
+                                    harness.transport);
 
   // Real FIFO matching filled both legs completely.
   EXPECT_GT(harness.node.next_order_id(), next_order_id_before + 1);
@@ -392,13 +407,15 @@ TEST(CalendarSpreadRiskExchangeIntegration, ResizedProposalSubmitsExactlyTheAppr
                                               .quantity_units = proposal.far.quantity_units}},
       0);
   ASSERT_EQ(decision.verdict, aegis::participant::risk::RiskVerdict::kResize);
+  ASSERT_EQ(
+      stage_and_authorize_spread(manager, risk_engine, "calendar_spread", "resize-1", proposal)
+          .state,
+      aegis::participant::risk::ProposalReleaseState::kAuthorizedForRelease);
 
   execute_leg_against_real_exchange(proposal.near, manager, portfolio, risk_engine,
-                                    harness.transport, "calendar_spread", "resize-1",
-                                    /*leg_index=*/0);
+                                    harness.transport);
   execute_leg_against_real_exchange(proposal.far, manager, portfolio, risk_engine,
-                                    harness.transport, "calendar_spread", "resize-1",
-                                    /*leg_index=*/1);
+                                    harness.transport);
 
   const auto tracked_orders = manager.all_tracked_orders();
   ASSERT_EQ(tracked_orders.size(), 2U);
@@ -446,7 +463,7 @@ TEST(CalendarSpreadRiskExchangeIntegration,
                                               .price_units = 100'050,
                                               .quantity_units = kQuantityUnits}},
       0);
-  const auto client_order_id = submit_registered_new_order(
+  const auto client_order_id = aegis::testing::submit_registered_new_order(
       manager, risk_engine, "calendar_spread", "resting-1", /*leg_index=*/0, kNearInstrumentId,
       Side::kSell, OrderType::kLimit, 100'050, kQuantityUnits);
   const auto* tracked = manager.find_by_client_order_id(client_order_id);
@@ -568,13 +585,15 @@ TEST(CalendarSpreadRiskExchangeIntegration,
                                               .quantity_units = proposal.far.quantity_units}},
       0);
   ASSERT_NE(decision.verdict, aegis::participant::risk::RiskVerdict::kReject);
+  ASSERT_EQ(stage_and_authorize_spread(manager, risk_engine, "calendar_spread", "concentration-ok",
+                                       proposal)
+                .state,
+            aegis::participant::risk::ProposalReleaseState::kAuthorizedForRelease);
 
   execute_leg_against_real_exchange(proposal.near, manager, portfolio, risk_engine,
-                                    harness.transport, "calendar_spread", "concentration-ok",
-                                    /*leg_index=*/0);
+                                    harness.transport);
   execute_leg_against_real_exchange(proposal.far, manager, portfolio, risk_engine,
-                                    harness.transport, "calendar_spread", "concentration-ok",
-                                    /*leg_index=*/1);
+                                    harness.transport);
 
   // BOTH legs filled -- neither was spuriously rejected by seam
   // revalidation double-counting its own already-committed reservation.
@@ -659,6 +678,164 @@ TEST(CalendarSpreadRiskExchangeIntegration,
   EXPECT_TRUE(manager.all_tracked_orders().empty());
   EXPECT_EQ(harness.node.next_order_id(), next_order_id_before);
   EXPECT_EQ(portfolio.position(kNearInstrumentId).quantity_units, 0);
+  EXPECT_EQ(portfolio.position(kFarInstrumentId).quantity_units, 0);
+}
+
+TEST(CalendarSpreadRiskExchangeIntegration,
+     LateKillSwitchBeforeReleaseAuthorizationStopsBothLegsInTheRealSeam) {
+  // ADR-0027 "Correction 3" through the real composition-root path: the
+  // proposal commits, both constituents are staged, and only THEN does the
+  // kill switch trip -- before the release authorization. The whole spread
+  // must die: zero adapter submits, zero exchange orders, zero portfolio
+  // change. Neither leg may go out alone.
+  Harness harness;
+  seed_counterparty_liquidity(harness);
+
+  BookBuilder near_book(kNearInstrumentId);
+  BookBuilder far_book(kFarInstrumentId);
+  const CalendarSpreadConfig config{.near_instrument_id = kNearInstrumentId,
+                                    .far_instrument_id = kFarInstrumentId,
+                                    .zscore_window = 20,
+                                    .entry_threshold = 2.0,
+                                    .exit_threshold = 0.5,
+                                    .quantity_units = kQuantityUnits};
+  CalendarSpreadStrategy strategy(config);
+  const StrategyProposal proposal = build_short_spread_proposal(near_book, far_book, strategy);
+  ASSERT_TRUE(proposal.has_action);
+
+  RiskEngine risk_engine(permissive_config());
+  risk_engine.on_market_data(kNearInstrumentId, 100'000, 0, true);
+  risk_engine.on_market_data(kFarInstrumentId, 100'060, 0, true);
+  RiskEngineGate risk_gate(risk_engine, harness.clock);
+  TransportExecutionAdapter adapter(harness.transport, harness.clock, /*stream_id=*/1);
+  OrderManager manager(adapter, risk_gate);
+  Portfolio portfolio;
+
+  const auto& decision = risk_engine.commit_proposal_decision(
+      "calendar_spread", "kill-before-release",
+      {aegis::participant::risk::OrderRequest{.strategy_id = "calendar_spread",
+                                              .proposal_id = "kill-before-release",
+                                              .leg_index = 0,
+                                              .instrument_id = kNearInstrumentId,
+                                              .side = proposal.near.side,
+                                              .price_units = 100'000,
+                                              .quantity_units = proposal.near.quantity_units},
+       aegis::participant::risk::OrderRequest{.strategy_id = "calendar_spread",
+                                              .proposal_id = "kill-before-release",
+                                              .leg_index = 1,
+                                              .instrument_id = kFarInstrumentId,
+                                              .side = proposal.far.side,
+                                              .price_units = 100'060,
+                                              .quantity_units = proposal.far.quantity_units}},
+      0);
+  ASSERT_NE(decision.verdict, aegis::participant::risk::RiskVerdict::kReject);
+
+  const std::uint64_t next_order_id_before = harness.node.next_order_id();
+  const std::uint64_t first_client_order_id = manager.next_client_order_id();
+  risk_engine.stage_proposal_release(
+      "calendar_spread", "kill-before-release",
+      {aegis::testing::staged_leg(first_client_order_id, 0, proposal.near.instrument_id,
+                                  proposal.near.side, proposal.near.quantity_units),
+       aegis::testing::staged_leg(first_client_order_id + 1, 1, proposal.far.instrument_id,
+                                  proposal.far.side, proposal.far.quantity_units)});
+
+  ASSERT_TRUE(risk_engine.trip_global());  // Trips AFTER staging, BEFORE authorization.
+
+  const auto release =
+      risk_engine.authorize_proposal_release("calendar_spread", "kill-before-release", 0);
+  EXPECT_EQ(release.state, aegis::participant::risk::ProposalReleaseState::kRejectedAtRelease);
+  EXPECT_EQ(release.reason_code, aegis::participant::risk::ReasonCode::kKillSwitchGlobal);
+
+  // The composition root submits nothing for an unauthorized proposal. Even
+  // if a buggy caller tried, the seam refuses both constituents.
+  EXPECT_EQ(manager
+                .find_by_client_order_id(aegis::testing::submit_staged_new_order(
+                    manager, proposal.near.instrument_id, proposal.near.side, OrderType::kMarket, 0,
+                    proposal.near.quantity_units))
+                ->lifecycle.state(),
+            OrderState::kRejected);
+  EXPECT_EQ(manager
+                .find_by_client_order_id(aegis::testing::submit_staged_new_order(
+                    manager, proposal.far.instrument_id, proposal.far.side, OrderType::kMarket, 0,
+                    proposal.far.quantity_units))
+                ->lifecycle.state(),
+            OrderState::kRejected);
+  EXPECT_EQ(harness.node.next_order_id(), next_order_id_before);
+  EXPECT_EQ(portfolio.position(kNearInstrumentId).quantity_units, 0);
+  EXPECT_EQ(portfolio.position(kFarInstrumentId).quantity_units, 0);
+}
+
+TEST(CalendarSpreadRiskExchangeIntegration,
+     StagedIdentityMismatchStopsBothLegsInTheRealSeamNeverStrandingASibling) {
+  // Blocker B through the real composition root: one constituent is staged
+  // with economics that disagree with what the proposal committed. The
+  // release epoch validates ALL constituents before ANY is released, so the
+  // correctly-staged sibling can never execute alone.
+  Harness harness;
+  seed_counterparty_liquidity(harness);
+
+  BookBuilder near_book(kNearInstrumentId);
+  BookBuilder far_book(kFarInstrumentId);
+  const CalendarSpreadConfig config{.near_instrument_id = kNearInstrumentId,
+                                    .far_instrument_id = kFarInstrumentId,
+                                    .zscore_window = 20,
+                                    .entry_threshold = 2.0,
+                                    .exit_threshold = 0.5,
+                                    .quantity_units = kQuantityUnits};
+  CalendarSpreadStrategy strategy(config);
+  const StrategyProposal proposal = build_short_spread_proposal(near_book, far_book, strategy);
+  ASSERT_TRUE(proposal.has_action);
+
+  RiskEngine risk_engine(permissive_config());
+  risk_engine.on_market_data(kNearInstrumentId, 100'000, 0, true);
+  risk_engine.on_market_data(kFarInstrumentId, 100'060, 0, true);
+  RiskEngineGate risk_gate(risk_engine, harness.clock);
+  TransportExecutionAdapter adapter(harness.transport, harness.clock, /*stream_id=*/1);
+  OrderManager manager(adapter, risk_gate);
+  Portfolio portfolio;
+
+  const auto& decision = risk_engine.commit_proposal_decision(
+      "calendar_spread", "mismatch-real",
+      {aegis::participant::risk::OrderRequest{.strategy_id = "calendar_spread",
+                                              .proposal_id = "mismatch-real",
+                                              .leg_index = 0,
+                                              .instrument_id = kNearInstrumentId,
+                                              .side = proposal.near.side,
+                                              .price_units = 100'000,
+                                              .quantity_units = proposal.near.quantity_units},
+       aegis::participant::risk::OrderRequest{.strategy_id = "calendar_spread",
+                                              .proposal_id = "mismatch-real",
+                                              .leg_index = 1,
+                                              .instrument_id = kFarInstrumentId,
+                                              .side = proposal.far.side,
+                                              .price_units = 100'060,
+                                              .quantity_units = proposal.far.quantity_units}},
+      0);
+  ASSERT_NE(decision.verdict, aegis::participant::risk::RiskVerdict::kReject);
+
+  const std::uint64_t next_order_id_before = harness.node.next_order_id();
+  const std::uint64_t first_client_order_id = manager.next_client_order_id();
+  risk_engine.stage_proposal_release(
+      "calendar_spread", "mismatch-real",
+      {// Leg 0 staged with the WRONG quantity.
+       aegis::testing::staged_leg(first_client_order_id, 0, proposal.near.instrument_id,
+                                  proposal.near.side, proposal.near.quantity_units + 1),
+       aegis::testing::staged_leg(first_client_order_id + 1, 1, proposal.far.instrument_id,
+                                  proposal.far.side, proposal.far.quantity_units)});
+
+  const auto release =
+      risk_engine.authorize_proposal_release("calendar_spread", "mismatch-real", 0);
+  EXPECT_EQ(release.state, aegis::participant::risk::ProposalReleaseState::kRejectedAtRelease);
+  EXPECT_EQ(release.reason_code, aegis::participant::risk::ReasonCode::kIdentityMismatch);
+
+  // The CORRECTLY staged far leg must not reach the exchange.
+  EXPECT_EQ(manager
+                .find_by_client_order_id(aegis::testing::submit_staged_new_order(
+                    manager, proposal.far.instrument_id, proposal.far.side, OrderType::kMarket, 0,
+                    proposal.far.quantity_units))
+                ->lifecycle.state(),
+            OrderState::kRejected);
+  EXPECT_EQ(harness.node.next_order_id(), next_order_id_before);
   EXPECT_EQ(portfolio.position(kFarInstrumentId).quantity_units, 0);
 }
 

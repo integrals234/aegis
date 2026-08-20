@@ -6,7 +6,7 @@
     ],
     "cases": [
       {
-        "line": 569,
+        "line": 575,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineConnectivity.DisconnectsEachBlockNewOrdersUntilReconnected"
@@ -27,7 +27,7 @@
   "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Fault scenarios pass.",
-  "generated_on": "2026-08-19",
+  "generated_on": "2026-08-20",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -47,7 +47,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "335bf2bc7cac159217d2e8666356bc4b60075616",
+  "repository_commit": "d6bbf133084938e6b067f23a64583ada4b6f1fc9",
   "requirements": [
     "AEGIS-136"
   ],

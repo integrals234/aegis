@@ -53,45 +53,57 @@
     "binary": "build/debug/tests/cpp/unit/aegis_unit_tests",
     "cases": [
       {
-        "line": 217,
+        "line": 230,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.AllowedProposalReachesRealFifoMatchingAndUpdatesPortfolio"
       },
       {
-        "line": 591,
+        "line": 610,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.ConcentrationBreachRejectsBothLegsAtomicallyInTheRealSeamNeverJustOne"
       },
       {
-        "line": 501,
+        "line": 518,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.ConcentrationWithinLimitLetsBothLegsSurviveSeamRevalidationInTheRealSeam"
       },
       {
-        "line": 413,
+        "line": 430,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.GlobalKillSwitchCancelsLiveOrdersAndBlocksNewSubmissions"
       },
       {
-        "line": 281,
+        "line": 685,
+        "passed": true,
+        "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
+        "test": "CalendarSpreadRiskExchangeIntegration.LateKillSwitchBeforeReleaseAuthorizationStopsBothLegsInTheRealSeam"
+      },
+      {
+        "line": 296,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.RejectedProposalNeverReachesTheExchangeOrThePortfolio"
       },
       {
-        "line": 341,
+        "line": 356,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.ResizedProposalSubmitsExactlyTheApprovedQuantity"
+      },
+      {
+        "line": 769,
+        "passed": true,
+        "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
+        "test": "CalendarSpreadRiskExchangeIntegration.StagedIdentityMismatchStopsBothLegsInTheRealSeamNeverStrandingASibling"
       }
     ],
     "failure_count": 0,
     "filter": "CalendarSpreadRiskExchangeIntegration.*",
-    "test_count": 6
+    "test_count": 8
   },
   "reject_run": {
     "exit_code": 0,
@@ -114,7 +126,7 @@
     ]
   },
   "repeat_run_matches_allow_run": true,
-  "repository_commit": "1fb935bcf9b36909730b2f873bbbe3d8456f51ea",
+  "repository_commit": "d6bbf133084938e6b067f23a64583ada4b6f1fc9",
   "requirements": [
     "AEGIS-120",
     "AEGIS-121",

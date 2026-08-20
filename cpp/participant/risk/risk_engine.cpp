@@ -657,6 +657,7 @@ const ProposalRiskDecision& RiskEngine::commit_proposal_decision(
           .strategy_id = strategy_id, .proposal_id = proposal_id, .leg_index = leg.leg_index};
       state_.reserve_leg(key, leg.instrument_id, leg.side, decision.approved_quantity_units,
                          strategy_id);
+      proposal_release_by_id_[proposal_id].strategy_id = strategy_id;
       pending_legs_[key] = PendingLeg{
           .strategy_id = strategy_id,
           .proposal_id = proposal_id,
@@ -677,17 +678,24 @@ const ProposalRiskDecision& RiskEngine::commit_proposal_decision(
                                     result.reason, result.legs, decided_at_nanos);
 }
 
-bool RiskEngine::register_pending_order_identity(std::uint64_t client_order_id,
-                                                 const std::string& strategy_id,
-                                                 const std::string& proposal_id,
-                                                 std::uint32_t leg_index) {
-  const PendingLegKey key{
-      .strategy_id = strategy_id, .proposal_id = proposal_id, .leg_index = leg_index};
-  if (!pending_legs_.contains(key)) {
-    return false;
+void RiskEngine::stage_proposal_release(const std::string& strategy_id,
+                                        const std::string& proposal_id,
+                                        const std::vector<StagedOrderIdentity>& staged) {
+  ProposalReleaseRecord& record = proposal_release_by_id_[proposal_id];
+  if (record.state != ProposalReleaseState::kCommitted &&
+      record.state != ProposalReleaseState::kStaging) {
+    return;  // Already authorized, rejected or completed: staging is over.
   }
-  order_identity_by_client_order_id_[client_order_id] = key;
-  return true;
+  record.strategy_id = strategy_id;
+  record.state = ProposalReleaseState::kStaging;
+  for (const StagedOrderIdentity& identity : staged) {
+    record.staged_by_leg_index[identity.leg_index] = identity;
+    // Bind the id now so decide_order can resolve it later WITHOUT ever
+    // searching by economics. Binding is not authorization -- an order
+    // whose proposal never reached kAuthorizedForRelease is rejected.
+    order_identity_by_client_order_id_[identity.client_order_id] = PendingLegKey{
+        .strategy_id = strategy_id, .proposal_id = proposal_id, .leg_index = identity.leg_index};
+  }
 }
 
 std::optional<LegDecision> RiskEngine::revalidate_at_seam(const PendingLeg& pending,
@@ -735,152 +743,214 @@ std::optional<LegDecision> RiskEngine::revalidate_at_seam(const PendingLeg& pend
   return check_cumulative_controls(as_request, pending.approved_quantity_units, overlay);
 }
 
-void RiskEngine::ensure_proposal_seam_revalidated(const std::string& proposal_id,
-                                                  common::Nanos now_nanos) {
-  ProposalSeamRecord& record = proposal_seam_state_by_id_[proposal_id];
-  if (record.state != ProposalSeamState::kNotRevalidated) {
-    return;  // Already decided for this proposal's one seam-revalidation epoch.
+ProposalReleaseDecision RiskEngine::reject_proposal_release(const std::string& proposal_id,
+                                                            ProposalReleaseRecord& record,
+                                                            ReasonCode reason_code,
+                                                            std::string reason,
+                                                            common::Nanos now_nanos) {
+  // One rejection path for every failure mode, so "the proposal was
+  // rejected at release" always means exactly the same thing: nothing of
+  // this proposal is armed, reserved or resolvable any more.
+  for (auto it = pending_legs_.begin(); it != pending_legs_.end();) {
+    if (it->first.proposal_id == proposal_id) {
+      state_.release_leg_reservation(it->first);
+      it = pending_legs_.erase(it);
+    } else {
+      ++it;
+    }
+  }
+  record.state = ProposalReleaseState::kRejectedAtRelease;
+  record.reason_code = reason_code;
+  record.reason = std::move(reason);
+  record.outstanding_authorized_legs = 0;
+  audit_log_.record_proposal_release(record.strategy_id, proposal_id, /*authorized=*/false,
+                                     reason_code, record.reason, now_nanos);
+  return ProposalReleaseDecision{
+      .state = record.state, .reason_code = record.reason_code, .reason = record.reason};
+}
+
+ProposalReleaseDecision RiskEngine::authorize_proposal_release(const std::string& strategy_id,
+                                                               const std::string& proposal_id,
+                                                               common::Nanos now_nanos) {
+  ProposalReleaseRecord& record = proposal_release_by_id_[proposal_id];
+  if (record.strategy_id.empty()) {
+    record.strategy_id = strategy_id;
+  }
+  // Terminal and idempotent: a proposal gets at most ONE release decision,
+  // so a second call can never upgrade a rejection or re-open an
+  // authorization (AEGIS-137's release half).
+  if (record.state == ProposalReleaseState::kAuthorizedForRelease ||
+      record.state == ProposalReleaseState::kRejectedAtRelease ||
+      record.state == ProposalReleaseState::kCompleted) {
+    return ProposalReleaseDecision{
+        .state = record.state, .reason_code = record.reason_code, .reason = record.reason};
   }
 
-  // Every leg of this proposal still armed -- the set commit_proposal_
-  // decision reserved together, atomically, and no leg outside this set can
-  // belong to this proposal_id (PendingLegKey's proposal_id field is exact).
-  std::vector<PendingLegKey> proposal_leg_keys;
+  // Every leg this proposal actually committed.
+  std::vector<PendingLegKey> leg_keys;
   for (const auto& [key, leg] : pending_legs_) {
     if (key.proposal_id == proposal_id) {
-      proposal_leg_keys.push_back(key);
+      leg_keys.push_back(key);
+    }
+  }
+  if (leg_keys.empty()) {
+    return reject_proposal_release(proposal_id, record, ReasonCode::kUnexpectedOrder,
+                                   "no committed legs to authorize for release", now_nanos);
+  }
+
+  // 1. Completeness: every committed leg needs a staged constituent, and no
+  // staged constituent may name a leg this proposal never committed.
+  if (record.staged_by_leg_index.size() != leg_keys.size()) {
+    return reject_proposal_release(proposal_id, record, ReasonCode::kIncompleteProposalStaging,
+                                   "staged constituent orders do not cover every committed leg",
+                                   now_nanos);
+  }
+  for (const PendingLegKey& key : leg_keys) {
+    if (!record.staged_by_leg_index.contains(key.leg_index)) {
+      return reject_proposal_release(proposal_id, record, ReasonCode::kIncompleteProposalStaging,
+                                     "a committed leg has no staged constituent order", now_nanos);
     }
   }
 
-  for (const PendingLegKey& key : proposal_leg_keys) {
+  // 2. Identity/economics: validated for EVERY constituent before ANY is
+  // released, so a mismatch on one can never strand a correct sibling.
+  for (const PendingLegKey& key : leg_keys) {
     const PendingLeg& leg = pending_legs_.at(key);
-    if (auto rejected = revalidate_at_seam(leg, now_nanos)) {
-      // ONE unsafe leg condemns the WHOLE proposal: release every other
-      // still-pending leg's reservation NOW, not deferred until each leg's
-      // own decide_order call -- by the time we know the proposal is unsafe,
-      // holding capacity for legs that will never execute serves no one,
-      // and a sibling leg's order must never be allowed to independently
-      // pass a revalidation this proposal has already failed.
-      for (const PendingLegKey& release_key : proposal_leg_keys) {
-        state_.release_leg_reservation(release_key);
-      }
-      record.state = ProposalSeamState::kRejectedAtSeam;
-      record.reject_reason_code = rejected->reason_code;
-      record.reject_reason = rejected->reason;
-      return;
+    const StagedOrderIdentity& staged = record.staged_by_leg_index.at(key.leg_index);
+    if (staged.instrument_id != leg.instrument_id || staged.side != leg.side ||
+        staged.quantity_units != leg.requested_quantity_units) {
+      return reject_proposal_release(proposal_id, record, ReasonCode::kIdentityMismatch,
+                                     "a staged constituent's economics disagree with its "
+                                     "committed leg",
+                                     now_nanos);
     }
   }
-  record.state = ProposalSeamState::kApprovedForRelease;
+
+  // 3. Fresh whole-proposal safety, at a moment when rejecting is still free.
+  for (const PendingLegKey& key : leg_keys) {
+    const PendingLeg& leg = pending_legs_.at(key);
+    if (auto rejected = revalidate_at_seam(leg, now_nanos)) {
+      return reject_proposal_release(proposal_id, record, rejected->reason_code, rejected->reason,
+                                     now_nanos);
+    }
+  }
+
+  record.state = ProposalReleaseState::kAuthorizedForRelease;
+  record.reason_code = ReasonCode::kNone;
+  record.reason.clear();
+  record.outstanding_authorized_legs = leg_keys.size();
+  audit_log_.record_proposal_release(record.strategy_id, proposal_id, /*authorized=*/true,
+                                     ReasonCode::kNone, "", now_nanos);
+  return ProposalReleaseDecision{
+      .state = record.state, .reason_code = ReasonCode::kNone, .reason = ""};
+}
+
+ProposalReleaseState RiskEngine::proposal_release_state(const std::string& proposal_id) const {
+  const auto found = proposal_release_by_id_.find(proposal_id);
+  return found == proposal_release_by_id_.end() ? ProposalReleaseState::kCommitted
+                                                : found->second.state;
 }
 
 OmsDecision RiskEngine::decide_order(std::uint32_t instrument_id, Side side,
                                      std::int64_t quantity_units, std::uint64_t client_order_id,
                                      common::Nanos now_nanos) {
-  // Exact identity resolution: a registered client_order_id maps to the ONE
-  // PendingLegKey the composition root named when it registered it, never
-  // to whichever pending leg happens to share this order's economics (the
-  // look-alike-leg cross-strategy defect an independent review found).
+  // decide_order is CONSUMPTION ONLY (ADR-0027 "Correction 3"). Every
+  // proposal-level safety question was answered by
+  // authorize_proposal_release, at a moment when no constituent of this
+  // proposal had been released. Re-asking any of them here -- kill switch,
+  // connectivity, staleness, or any cumulative control -- is exactly what
+  // would let this leg contradict a sibling that already went out, which is
+  // the naked-leg hazard the release epoch exists to prevent.
   const auto identity_found = order_identity_by_client_order_id_.find(client_order_id);
   if (identity_found == order_identity_by_client_order_id_.end()) {
     audit_log_.record_order("", 0, client_order_id, instrument_id, RiskVerdict::kReject,
                             quantity_units, 0, ReasonCode::kUnexpectedOrder,
-                            "no armed proposal decision for this order", now_nanos);
+                            "no staged proposal constituent for this order", now_nanos);
     return OmsDecision{.verdict = RiskVerdict::kReject,
                        .approved_quantity_units = 0,
                        .reason_code = ReasonCode::kUnexpectedOrder,
-                       .reason = "no armed proposal decision for this order"};
+                       .reason = "no staged proposal constituent for this order"};
   }
   const PendingLegKey key = identity_found->second;
-  order_identity_by_client_order_id_.erase(identity_found);
+
+  // The proposal's ONE release decision governs this order absolutely.
+  const auto release_found = proposal_release_by_id_.find(key.proposal_id);
+  const ProposalReleaseState release_state = release_found == proposal_release_by_id_.end()
+                                                 ? ProposalReleaseState::kCommitted
+                                                 : release_found->second.state;
+  if (release_state != ProposalReleaseState::kAuthorizedForRelease) {
+    // Staged-but-unauthorized, rejected at release, or already completed --
+    // none of which is permission. A rejected proposal reports the reason
+    // its release authorization actually failed for, so the audit trail
+    // says why rather than merely that.
+    ReasonCode reason_code = ReasonCode::kProposalNotAuthorized;
+    std::string reason = "proposal has no release authorization";
+    if (release_state == ProposalReleaseState::kRejectedAtRelease) {
+      reason_code = release_found->second.reason_code;
+      reason = release_found->second.reason;
+    }
+    audit_log_.record_order(key.proposal_id, key.leg_index, client_order_id, instrument_id,
+                            RiskVerdict::kReject, quantity_units, 0, reason_code, reason,
+                            now_nanos);
+    return OmsDecision{.verdict = RiskVerdict::kReject,
+                       .approved_quantity_units = 0,
+                       .reason_code = reason_code,
+                       .reason = reason};
+  }
 
   const auto found = pending_legs_.find(key);
   if (found == pending_legs_.end()) {
-    // A registered identity whose leg is no longer armed (already resolved
-    // by a prior decide_order call for the same client_order_id, which
-    // cannot happen through the normal seam, or a caller bug) -- reject
-    // rather than fabricate a decision for a leg that no longer exists.
+    // An authorized constituent consumed twice: the authorization is
+    // per-leg single-use, so the second attempt is not executable.
     audit_log_.record_order(key.proposal_id, key.leg_index, client_order_id, instrument_id,
                             RiskVerdict::kReject, quantity_units, 0, ReasonCode::kUnexpectedOrder,
-                            "registered identity has no armed leg", now_nanos);
+                            "this proposal constituent already consumed its authorization",
+                            now_nanos);
     return OmsDecision{.verdict = RiskVerdict::kReject,
                        .approved_quantity_units = 0,
                        .reason_code = ReasonCode::kUnexpectedOrder,
-                       .reason = "registered identity has no armed leg"};
+                       .reason = "this proposal constituent already consumed its authorization"};
   }
-  // Copied, not erased yet: ensure_proposal_seam_revalidated below must
-  // still find THIS leg in pending_legs_ to include it in its proposal-wide
-  // walk -- erasing here first (the previous per-leg version's order) would
-  // make a proposal invisible to its OWN revalidation on exactly the leg
-  // whose arrival triggered it, silently skipping it (empty proposal ->
-  // vacuously "approved"). `pending_legs_[key]` is erased once, at the very
-  // end of this function, by which point every check that needs to observe
-  // it has already run.
   const PendingLeg pending = found->second;
 
-  // Immutable economics must agree with what was actually reserved: identity
-  // resolved correctly, but this order's own instrument/side/quantity
-  // disagree with the leg it resolved to (a caller bug, never a look-alike
-  // match -- identity resolution above never searched by economics at all).
+  // Defensive backstop only: authorize_proposal_release already verified
+  // every constituent's economics against its committed leg, so reaching
+  // this branch means the OMS submitted something other than what was
+  // staged. Blocker B is closed structurally at the epoch above, not here.
   if (pending.instrument_id != instrument_id || pending.side != side ||
       pending.requested_quantity_units != quantity_units) {
-    pending_legs_.erase(key);
-    state_.release_leg_reservation(key);
     audit_log_.record_order(pending.proposal_id, pending.leg_index, client_order_id, instrument_id,
                             RiskVerdict::kReject, quantity_units, 0, ReasonCode::kIdentityMismatch,
-                            "order details disagree with the reserved leg's economics", now_nanos);
-    return OmsDecision{.verdict = RiskVerdict::kReject,
-                       .approved_quantity_units = 0,
-                       .reason_code = ReasonCode::kIdentityMismatch,
-                       .reason = "order details disagree with the reserved leg's economics"};
+                            "submitted order disagrees with the staged, authorized constituent",
+                            now_nanos);
+    return OmsDecision{
+        .verdict = RiskVerdict::kReject,
+        .approved_quantity_units = 0,
+        .reason_code = ReasonCode::kIdentityMismatch,
+        .reason = "submitted order disagrees with the staged, authorized constituent"};
   }
 
-  RiskVerdict verdict = pending.verdict;
-  ReasonCode reason_code = pending.reason_code;
-  std::string reason = pending.reason;
-  std::int64_t approved = pending.approved_quantity_units;
-
-  // Proposal-atomic seam revalidation: mutable safety state that can have
-  // changed between commit and seam arrival must still bite (the seam is
-  // the last point before adapter_->submit()), but the WHOLE proposal is
-  // judged together, once, and cached -- never leg by leg independently,
-  // which is what previously let one sibling fail a late revalidation while
-  // the other passed. Proposal commit is not permission forever, and it is
-  // never permission for JUST ONE leg of a multi-leg proposal either. This
-  // leg is still present in pending_legs_ at this point, so it is included
-  // in its own proposal's walk.
-  if (verdict != RiskVerdict::kReject) {
-    ensure_proposal_seam_revalidated(pending.proposal_id, now_nanos);
-    const ProposalSeamRecord& seam_record = proposal_seam_state_by_id_.at(pending.proposal_id);
-    if (seam_record.state == ProposalSeamState::kRejectedAtSeam) {
-      verdict = RiskVerdict::kReject;
-      reason_code = seam_record.reject_reason_code;
-      reason = seam_record.reject_reason;
-      approved = 0;
+  // Consume: the reservation already exists (commit_proposal_decision); this
+  // only re-keys it to client_order_id for the ordinary fill/release
+  // lifecycle. Never a second reservation.
+  pending_legs_.erase(key);
+  order_identity_by_client_order_id_.erase(client_order_id);
+  state_.transition_leg_reservation_to_order(key, client_order_id);
+  if (release_found != proposal_release_by_id_.end() &&
+      release_found->second.outstanding_authorized_legs > 0) {
+    release_found->second.outstanding_authorized_legs -= 1;
+    if (release_found->second.outstanding_authorized_legs == 0) {
+      release_found->second.state = ProposalReleaseState::kCompleted;
     }
   }
 
-  pending_legs_.erase(key);
-  if (verdict != RiskVerdict::kReject) {
-    // Consume, not create: the reservation already exists (from
-    // commit_proposal_decision); this only transitions it to be
-    // client_order_id-keyed for the ordinary fill/release lifecycle.
-    state_.transition_leg_reservation_to_order(key, client_order_id);
-  } else {
-    // Idempotent: ensure_proposal_seam_revalidated already released every
-    // still-pending leg's reservation the moment the proposal was found
-    // unsafe -- this is a defensive no-op in that case, not the primary
-    // release path. If THIS leg's own verdict was already kReject from
-    // commit time (never armed a reservation to begin with), it is also a
-    // no-op.
-    state_.release_leg_reservation(key);
-  }
-
   audit_log_.record_order(pending.proposal_id, pending.leg_index, client_order_id, instrument_id,
-                          verdict, quantity_units, approved, reason_code, reason, now_nanos);
-  return OmsDecision{.verdict = verdict,
-                     .approved_quantity_units = approved,
-                     .reason_code = reason_code,
-                     .reason = reason};
+                          pending.verdict, quantity_units, pending.approved_quantity_units,
+                          pending.reason_code, pending.reason, now_nanos);
+  return OmsDecision{.verdict = pending.verdict,
+                     .approved_quantity_units = pending.approved_quantity_units,
+                     .reason_code = pending.reason_code,
+                     .reason = pending.reason};
 }
 
 bool RiskEngine::allow_cancel(common::Nanos now_nanos, bool bypass_safety) {

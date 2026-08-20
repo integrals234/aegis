@@ -32,6 +32,22 @@ struct ProposalRiskDecision {
   std::vector<LegDecision> legs;
 };
 
+/// The single terminal outcome of a committed proposal's RELEASE
+/// authorization (M5 closure repair, ADR-0027 "Correction 3"). Distinct from
+/// `ProposalRiskDecision`, which records whether the proposal was admissible
+/// when it was committed: this records whether, at the later moment just
+/// before ANY of its constituent orders was released, the whole proposal was
+/// still safe. A committed proposal has at most one of these.
+struct ProposalReleaseRiskDecision {
+  std::uint64_t sequence{0};
+  common::Nanos decided_at_nanos{0};
+  std::string strategy_id;
+  std::string proposal_id;
+  bool authorized{false};
+  ReasonCode reason_code{ReasonCode::kNone};
+  std::string reason;
+};
+
 struct OrderRiskDecision {
   std::uint64_t sequence{0};
   common::Nanos decided_at_nanos{0};
@@ -65,9 +81,18 @@ class RiskAuditLog {
   [[nodiscard]] const std::vector<ProposalRiskDecision>& proposal_decisions() const {
     return proposal_decisions_;
   }
+  const ProposalReleaseRiskDecision& record_proposal_release(
+      std::string strategy_id, std::string proposal_id, bool authorized, ReasonCode reason_code,
+      std::string reason, common::Nanos decided_at_nanos);
+
   [[nodiscard]] const std::vector<OrderRiskDecision>& order_decisions() const {
     return order_decisions_;
   }
+  [[nodiscard]] const std::vector<ProposalReleaseRiskDecision>& proposal_release_decisions() const {
+    return proposal_release_decisions_;
+  }
+  /// AEGIS-137's release invariant asserts this is never above 1.
+  [[nodiscard]] std::size_t proposal_release_decision_count(const std::string& proposal_id) const;
 
   /// Test/report helper: how many terminal proposal decisions exist for
   /// `proposal_id` -- the AEGIS-137 invariant asserts this is always 1.
@@ -85,6 +110,7 @@ class RiskAuditLog {
  private:
   std::vector<ProposalRiskDecision> proposal_decisions_;
   std::vector<OrderRiskDecision> order_decisions_;
+  std::vector<ProposalReleaseRiskDecision> proposal_release_decisions_;
   std::unordered_map<std::string, std::size_t> proposal_index_by_id_;
   std::uint64_t next_sequence_{1};
 };

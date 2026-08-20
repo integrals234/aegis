@@ -6,13 +6,13 @@
     ],
     "cases": [
       {
-        "line": 281,
+        "line": 296,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.RejectedProposalNeverReachesTheExchangeOrThePortfolio"
       },
       {
-        "line": 516,
+        "line": 522,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineAuditInvariant.RejectedProposalReportsEveryLegRejectedAndArmsNoOrder"
@@ -61,7 +61,7 @@
   ],
   "positive_architecture_check_passed": true,
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "1b88c8e0554b1bb270607d39050823746f1c73b5",
+  "repository_commit": "d6bbf133084938e6b067f23a64583ada4b6f1fc9",
   "requirements": [
     "AEGIS-120"
   ],

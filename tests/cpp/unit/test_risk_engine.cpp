@@ -501,12 +501,18 @@ TEST(RiskEngineAuditInvariant, ExactlyOneProposalDecisionAndOneOrderDecisionPerL
   engine.commit_proposal_decision("spread_strategy", proposal_id, legs, 0);
   EXPECT_EQ(engine.audit_log().proposal_decision_count(proposal_id), 1U);
 
-  static_cast<void>(decide_registered_order(engine, "spread_strategy", proposal_id,
-                                            /*leg_index=*/0, kNear, Side::kSell, 1,
-                                            /*client_order_id=*/1, 0));
-  static_cast<void>(decide_registered_order(engine, "spread_strategy", proposal_id,
-                                            /*leg_index=*/1, kFar, Side::kBuy, 1,
-                                            /*client_order_id=*/2, 0));
+  // Both constituents staged and the proposal authorized ONCE, before either
+  // leg is released (ADR-0027 "Correction 3").
+  ASSERT_EQ(
+      aegis::testing::stage_and_authorize(engine, "spread_strategy", proposal_id,
+                                          {aegis::testing::staged_leg(1, 0, kNear, Side::kSell, 1),
+                                           aegis::testing::staged_leg(2, 1, kFar, Side::kBuy, 1)})
+          .state,
+      aegis::participant::risk::ProposalReleaseState::kAuthorizedForRelease);
+  EXPECT_EQ(engine.audit_log().proposal_release_decision_count(proposal_id), 1U);
+
+  static_cast<void>(engine.decide_order(kNear, Side::kSell, 1, /*client_order_id=*/1, 0));
+  static_cast<void>(engine.decide_order(kFar, Side::kBuy, 1, /*client_order_id=*/2, 0));
   EXPECT_EQ(engine.audit_log().order_decisions().size(), 2U);
   for (const auto& order_decision : engine.audit_log().order_decisions()) {
     EXPECT_EQ(order_decision.proposal_id, proposal_id);

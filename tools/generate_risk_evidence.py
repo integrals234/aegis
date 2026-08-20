@@ -280,6 +280,11 @@ SPECS: dict[str, dict[str, Any]] = {
             "CalendarSpreadRiskExchangeIntegration.GlobalKillSwitchCancelsLiveOrdersAndBlocksNewSubmissions",
             "ReservationRepairExactIdentity.LookAlikeLegFromAnotherStrategyCannotBorrowItsRiskState",
             "ReservationRepairSeamRevalidation.KillSwitchTrippedAfterCommitStopsTheOrderAtTheSeam",
+            "ProposalReleaseEpoch.GlobalKillSwitchBeforeReleaseRejectsTheWholeProposal",
+            "ProposalReleaseEpoch.ExchangeDisconnectBeforeReleaseRejectsTheWholeProposal",
+            "ProposalReleaseEpoch.StaleMarketBeforeReleaseRejectsTheWholeProposal",
+            "ProposalReleaseEpoch.AKillSwitchAfterAuthorizationDoesNotSplitTheProposalsVerdict",
+            "CalendarSpreadRiskExchangeIntegration.LateKillSwitchBeforeReleaseAuthorizationStopsBothLegsInTheRealSeam",
         ],
         "claim": "Strategy-level and global kill switches are idempotent (a second trip is a "
                  "no-op returning false), strategy-scoped tripping leaves other strategies "
@@ -289,7 +294,14 @@ SPECS: dict[str, dict[str, Any]] = {
                  "the trip. An order resolves to its EXACT registered proposal/leg identity, never "
                  "to a look-alike armed leg from another strategy sharing the same economics (M5 "
                  "closure repair) -- a tripped strategy cannot be bypassed by an order that happens "
-                 "to match a DIFFERENT, non-halted strategy's leg by coincidence.",
+                 "to match a DIFFERENT, non-halted strategy's leg by coincidence. Release-epoch "
+                 "semantics (M5 closure repair, round 3): a kill switch, disconnect or stale quote "
+                 "arriving BEFORE a committed proposal's release authorization rejects the WHOLE "
+                 "proposal and releases every reservation, so no constituent reaches execution. A "
+                 "kill switch arriving AFTER authorization does not retroactively split that "
+                 "already-granted authorization -- it blocks every SUBSEQUENT proposal (asserted) "
+                 "and the emergency-cancel path handles live orders. Both halves are pinned by "
+                 "test so neither can be silently changed.",
         "implementation": SEAM_IMPL,
     },
     "AEGIS-136": {
@@ -308,8 +320,9 @@ SPECS: dict[str, dict[str, Any]] = {
         "filters": [
             "RiskEngineAuditInvariant.*",
             "ReservationRepairAuditIntegrity.*",
-            "ReservationRepairExactIdentity.RegisteredIdentityWithDisagreeingEconomicsIsRejected",
+            "ReservationRepairExactIdentity.StagedIdentityWithDisagreeingEconomicsIsRejected",
             "ProposalAtomicSeamRevalidation.*",
+            "ProposalReleaseEpoch.*",
         ],
         "claim": "Exactly ONE terminal ProposalRiskDecision per proposal_id (asserted via "
                  "RiskAuditLog::proposal_decision_count), with subordinate per-order "
@@ -326,7 +339,13 @@ SPECS: dict[str, dict[str, Any]] = {
                  "cached and consulted by every subsequent leg of that proposal, so an order that "
                  "reaches decide_order can approve only if it resolves to its exact "
                  "already-prevalidated PendingLegKey AND the whole proposal was found safe -- never "
-                 "a mix of one sibling approved and another rejected within the same proposal.",
+                 "a mix of one sibling approved and another rejected within the same proposal. "
+                 "Round 3 adds the release-decision half: authorize_proposal_release records at most "
+                 "ONE ProposalReleaseRiskDecision per proposal (AUTHORIZED or REJECTED, asserted via "
+                 "RiskAuditLog::proposal_release_decision_count), taken while zero constituents have "
+                 "been released; a rejected release yields zero executable constituents, and an "
+                 "authorized one may be consumed only by its exact staged constituents, each at most "
+                 "once.",
     },
     "AEGIS-138": {
         "artifact": "portfolio_risk_analytics",

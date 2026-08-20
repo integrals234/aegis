@@ -547,23 +547,23 @@ struct MarketDataStep {
 /// rather than fabricate a fill.
 ///
 /// `strategy_id`/`proposal_id`/`leg_index` identify which armed
-/// `commit_proposal_decision` leg this order is for (M5 closure repair):
-/// `OrderManager::next_client_order_id()` is peeked BEFORE `submit_new_order`
-/// so the exact future `client_order_id` can be registered against that
-/// identity first -- `decide_order` (called synchronously inside
-/// `submit_new_order`) then resolves this order to its own reservation
-/// exactly, never by searching economics.
+/// `commit_proposal_decision` leg this order is for. The proposal's
+/// constituents were ALL staged and the proposal ALREADY authorized for
+/// release before this is called (see `stage_and_authorize_release` and
+/// ADR-0027 "Correction 3"), so `decide_order` -- reached synchronously
+/// inside `submit_new_order` -- merely consumes that authorization for this
+/// exact leg. `expected_client_order_id` is what staging predicted; the
+/// assert catches any future `OrderManager` change that broke the
+/// consecutive-id assumption loudly in Debug (a silent break is already
+/// fail-closed: an unstaged id is rejected `kUnexpectedOrder`).
 std::uint64_t execute_leg(const StrategyLeg& leg, OrderManager& manager, Portfolio& ledger,
                           risk::RiskEngine& risk_engine, std::int64_t bid_price_units,
                           std::int64_t ask_price_units, std::uint64_t& next_exchange_order_id,
-                          const std::string& strategy_id, const std::string& proposal_id,
-                          std::uint32_t leg_index) {
+                          std::uint64_t expected_client_order_id) {
   const std::int64_t limit_price_units = leg.side == Side::kBuy ? ask_price_units : bid_price_units;
-  const bool registered = risk_engine.register_pending_order_identity(
-      manager.next_client_order_id(), strategy_id, proposal_id, leg_index);
-  assert(registered && "execute_leg called for a leg commit_proposal_decision never armed");
-  static_cast<void>(
-      registered);  // NOLINT: asserted above; avoids an unused-variable warning in NDEBUG builds.
+  assert(manager.next_client_order_id() == expected_client_order_id &&
+         "staged client_order_id no longer matches what OrderManager will assign");
+  static_cast<void>(expected_client_order_id);
   const auto client_order_id =
       manager.submit_new_order(leg.instrument_id, /*participant_id=*/1, leg.side, OrderType::kLimit,
                                limit_price_units, leg.quantity_units);
@@ -766,10 +766,36 @@ CalendarSpreadRunResult run_calendar_spread_scenario(const std::string& stream_p
           risk_engine.commit_proposal_decision(strategy_id, proposal_id, legs, clock.now_utc());
       decision_ptr = &decision;
       if (decision.verdict != risk::RiskVerdict::kReject) {
-        execute_leg(proposal.near, manager, ledger, risk_engine, near_bid, near_ask,
-                    next_exchange_order_id, strategy_id, proposal_id, /*leg_index=*/0);
-        execute_leg(proposal.far, manager, ledger, risk_engine, far_bid, far_ask,
-                    next_exchange_order_id, strategy_id, proposal_id, /*leg_index=*/1);
+        // THE PROPOSAL RELEASE EPOCH (ADR-0027 "Correction 3"): stage BOTH
+        // constituents, then take one fresh whole-proposal authorization,
+        // all before either order is submitted. Only if that authorization
+        // succeeds does any leg execute -- so a late kill switch, disconnect,
+        // stale quote or exposure change between commit and release stops
+        // the WHOLE spread, and can never stop one leg after its sibling has
+        // already gone out. OrderManager assigns client_order_ids
+        // consecutively from next_client_order_id(), so both are known here
+        // before the first submit.
+        const std::uint64_t first_client_order_id = manager.next_client_order_id();
+        risk_engine.stage_proposal_release(
+            strategy_id, proposal_id,
+            {risk::StagedOrderIdentity{.client_order_id = first_client_order_id,
+                                       .leg_index = 0,
+                                       .instrument_id = proposal.near.instrument_id,
+                                       .side = proposal.near.side,
+                                       .quantity_units = proposal.near.quantity_units},
+             risk::StagedOrderIdentity{.client_order_id = first_client_order_id + 1,
+                                       .leg_index = 1,
+                                       .instrument_id = proposal.far.instrument_id,
+                                       .side = proposal.far.side,
+                                       .quantity_units = proposal.far.quantity_units}});
+        const risk::ProposalReleaseDecision release =
+            risk_engine.authorize_proposal_release(strategy_id, proposal_id, clock.now_utc());
+        if (release.state == risk::ProposalReleaseState::kAuthorizedForRelease) {
+          execute_leg(proposal.near, manager, ledger, risk_engine, near_bid, near_ask,
+                      next_exchange_order_id, first_client_order_id);
+          execute_leg(proposal.far, manager, ledger, risk_engine, far_bid, far_ask,
+                      next_exchange_order_id, first_client_order_id + 1);
+        }
       }
     }
 

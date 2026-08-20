@@ -6,7 +6,7 @@
     ],
     "cases": [
       {
-        "line": 716,
+        "line": 714,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
         "test": "ProposalAtomicSeamRevalidation.PortfolioNotionalFinalOverlayApprovesAGenuinelySafeReducingProposal"
@@ -73,7 +73,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "1fb935bcf9b36909730b2f873bbbe3d8456f51ea",
+  "repository_commit": "d6bbf133084938e6b067f23a64583ada4b6f1fc9",
   "requirements": [
     "AEGIS-123"
   ],

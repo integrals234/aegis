@@ -49,6 +49,28 @@ const OrderRiskDecision& RiskAuditLog::record_order(
   return order_decisions_.back();
 }
 
+const ProposalReleaseRiskDecision& RiskAuditLog::record_proposal_release(
+    std::string strategy_id, std::string proposal_id, bool authorized, ReasonCode reason_code,
+    std::string reason, common::Nanos decided_at_nanos) {
+  proposal_release_decisions_.push_back(ProposalReleaseRiskDecision{
+      .sequence = next_sequence_++,
+      .decided_at_nanos = decided_at_nanos,
+      .strategy_id = std::move(strategy_id),
+      .proposal_id = std::move(proposal_id),
+      .authorized = authorized,
+      .reason_code = reason_code,
+      .reason = std::move(reason),
+  });
+  return proposal_release_decisions_.back();
+}
+
+std::size_t RiskAuditLog::proposal_release_decision_count(const std::string& proposal_id) const {
+  return static_cast<std::size_t>(std::ranges::count_if(
+      proposal_release_decisions_, [&proposal_id](const ProposalReleaseRiskDecision& decision) {
+        return decision.proposal_id == proposal_id;
+      }));
+}
+
 std::size_t RiskAuditLog::proposal_decision_count(const std::string& proposal_id) const {
   return static_cast<std::size_t>(std::ranges::count_if(
       proposal_decisions_, [&proposal_id](const ProposalRiskDecision& decision) {

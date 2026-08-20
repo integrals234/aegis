@@ -49,6 +49,7 @@ aegis_add_test(aegis_unit_tests unit
   test_replay_stream.cpp
   test_risk_engine.cpp
   test_risk_engine_reservation_repair.cpp
+  test_risk_proposal_release_epoch.cpp
   test_risk_fault_execution_stress.cpp
   test_risk_fault_market_stress.cpp
   test_drawdown_tracker.cpp

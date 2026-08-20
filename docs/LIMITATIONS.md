@@ -213,15 +213,34 @@ the following is a production risk system:
   (`CalendarSpreadRunConfig::starting_capital_units`) is an arbitrary,
   documented constant**, not a claim about how much capital a real deployment
   would carry.
-- **Risk-decision atomicity is guaranteed; exchange-execution atomicity is
-  not.** A committed proposal's legs are evaluated against one final
-  combined projection and revalidated at the seam as one atomic unit
-  (ADR-0027's "Correction 2") -- risk approves the whole proposal or
-  rejects the whole proposal, never a mix. But once risk approves both
-  legs, this system has no basket/atomic multi-leg execution primitive: a
-  transport or exchange failure on one leg after submission can still
-  leave the other filled alone. That residual leg-execution risk is not
+- **Risk-decision atomicity is guaranteed at the release epoch;
+  exchange-execution atomicity is not.** Before ANY constituent order of a
+  committed proposal is released, `RiskEngine::authorize_proposal_release`
+  performs one whole-proposal authorization against current state
+  (ADR-0027's "Correction 3"). That authorization is all-or-none: either
+  every constituent becomes executable or none does, and afterwards AEGIS
+  never produces a contradictory per-leg risk verdict for that proposal.
+  After release, this system has no basket/atomic multi-leg execution
+  primitive: a transport or exchange failure on one leg can still leave
+  the other filled alone. That residual leg-execution risk is not
   eliminated by this repair and is not claimed to be.
+- **A kill switch tripping after release authorization does not retract
+  that authorization.** It blocks every SUBSEQUENT proposal, and live
+  orders are handled by the existing emergency-cancel path -- but a
+  constituent of an already-authorized proposal is not retroactively
+  rejected, because rejecting it while a sibling was already sent is
+  exactly the mixed verdict (and resulting naked leg) the release epoch
+  exists to prevent. A kill switch tripping BEFORE the epoch rejects the
+  whole proposal and releases nothing.
+- **Cumulative limits are enforced on a proposal's FINAL NET PROJECTED
+  state, not on every intermediate state its legs pass through.** A
+  multi-leg proposal is judged as one intended portfolio transition: a
+  proposal that adds exposure on one leg and reduces it on another is
+  evaluated on the net result. Because execution is not atomic, if the
+  adding leg fills before the reducing leg is sent, true instantaneous
+  gross exposure can exceed what risk authorized. M5 does not claim
+  worst-path or basket execution-risk protection; this is a documented
+  semantic choice (ADR-0027 "Correction 3"), not an oversight.
 - **Concentration is a share of the WHOLE portfolio, so a lone first
   position from a flat book is mathematically 100% concentrated.** A
   configured `max_concentration_share` below `1.0` therefore honestly

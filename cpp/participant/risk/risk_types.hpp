@@ -106,6 +106,60 @@ struct PendingLegKeyHash {
   }
 };
 
+/// One constituent order the composition root is ABOUT to submit for an
+/// already-committed proposal, staged before ANY of that proposal's orders is
+/// released (M5 closure repair, ADR-0027 "Correction 3"). `client_order_id`
+/// is the id the OMS will assign -- the composition root peeks
+/// `OrderManager::next_client_order_id()` and knows the ids are consecutive,
+/// so all N constituents can be staged before the first `submit_new_order`.
+/// The economics are what that order will actually carry, so
+/// `authorize_proposal_release` can verify every constituent against its
+/// committed leg BEFORE anything becomes executable, rather than discovering
+/// a mismatch on one leg after a sibling has already gone out.
+struct StagedOrderIdentity {
+  std::uint64_t client_order_id{0};
+  std::uint32_t leg_index{0};
+  std::uint32_t instrument_id{0};
+  Side side{Side::kBuy};
+  /// The quantity the submitted command will carry -- the REQUESTED
+  /// quantity, matching `OrderRequest::quantity_units`, not a resized
+  /// approval. `OrderManager` applies a `kResize` verdict only after the
+  /// risk seam returns, so this is what actually arrives at `decide_order`.
+  std::int64_t quantity_units{0};
+};
+
+/// Where a committed proposal sits on its way to execution (M5 closure
+/// repair). The whole point of this state machine is that
+/// `kAuthorizedForRelease` is reached -- or not -- while ZERO of the
+/// proposal's constituent orders have been released, so risk never has to
+/// contradict itself later by rejecting one sibling after another was
+/// already sent.
+///
+/// NOLINTNEXTLINE(performance-enum-size)
+enum class ProposalReleaseState : std::uint8_t {
+  /// Reserved and armed by `commit_proposal_decision`, no constituent
+  /// identities staged yet.
+  kCommitted = 0,
+  /// At least one constituent staged; not yet authorized. NOT executable.
+  kStaging = 1,
+  /// One fresh whole-proposal authorization passed. Every constituent may
+  /// now consume it; no further proposal-level safety verdict is computed.
+  kAuthorizedForRelease = 2,
+  /// The authorization failed. All reservations released, all legs
+  /// invalidated, zero constituents executable -- permanently.
+  kRejectedAtRelease = 3,
+  /// Every authorized constituent has consumed its authorization.
+  kCompleted = 4,
+};
+
+/// The single terminal outcome of a proposal's release authorization
+/// (AEGIS-137's release half): at most one of these per committed proposal.
+struct ProposalReleaseDecision {
+  ProposalReleaseState state{ProposalReleaseState::kCommitted};
+  ReasonCode reason_code{ReasonCode::kNone};
+  std::string reason;
+};
+
 /// A market observation the engine is told about (AEGIS-125, AEGIS-126).
 /// `valid` is false for a structurally invalid update (crossed book,
 /// non-positive price) -- an invalid update never becomes the new reference

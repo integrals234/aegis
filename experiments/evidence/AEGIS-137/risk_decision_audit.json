@@ -6,40 +6,100 @@
     ],
     "cases": [
       {
-        "line": 605,
+        "line": 611,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
-        "test": "ProposalAtomicSeamRevalidation.ALateStateChangeMakingOnlyOneLegUnsafeRejectsTheWholeProposalAtTheSeam"
+        "test": "ProposalAtomicSeamRevalidation.ALateStateChangeMakingOnlyOneLegUnsafeRejectsTheWholeProposalAtRelease"
       },
       {
-        "line": 680,
+        "line": 681,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
-        "test": "ProposalAtomicSeamRevalidation.ALookAlikeProposalCannotBorrowAnotherProposalsSeamApproval"
+        "test": "ProposalAtomicSeamRevalidation.ALookAlikeProposalCannotBorrowAnotherProposalsAuthorization"
       },
       {
-        "line": 748,
+        "line": 746,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
         "test": "ProposalAtomicSeamRevalidation.FlatBookConcentrationBelowOneRejectsTheFirstPositionHonestly"
       },
       {
-        "line": 555,
+        "line": 561,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
         "test": "ProposalAtomicSeamRevalidation.N6ExposureReductionRejectsAtomicallyAtCommit"
       },
       {
-        "line": 716,
+        "line": 714,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
         "test": "ProposalAtomicSeamRevalidation.PortfolioNotionalFinalOverlayApprovesAGenuinelySafeReducingProposal"
       },
       {
-        "line": 652,
+        "line": 653,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
         "test": "ProposalAtomicSeamRevalidation.SafeTwoLegProposalWithNoLateChangeStillApprovesBothLegs"
+      },
+      {
+        "line": 288,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.AFullyValidProposalAuthorizesOnceAndBothLegsConsumeIt"
+      },
+      {
+        "line": 347,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.AKillSwitchAfterAuthorizationDoesNotSplitTheProposalsVerdict"
+      },
+      {
+        "line": 312,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.ALookAlikeProposalCannotConsumeAnothersAuthorization"
+      },
+      {
+        "line": 248,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.AnIncompletelyStagedProposalIsNeverAuthorized"
+      },
+      {
+        "line": 270,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.AnUnauthorizedProposalsLegCannotReachExecution"
+      },
+      {
+        "line": 137,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.ExchangeDisconnectBeforeReleaseRejectsTheWholeProposal"
+      },
+      {
+        "line": 183,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.ExposureChangeBeforeReleaseRejectsTheWholeProposal"
+      },
+      {
+        "line": 108,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.GlobalKillSwitchBeforeReleaseRejectsTheWholeProposal"
+      },
+      {
+        "line": 214,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.IdentityMismatchAtStagingRejectsTheWholeProposalAndStrandsNoSibling"
+      },
+      {
+        "line": 159,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.StaleMarketBeforeReleaseRejectsTheWholeProposal"
       },
       {
         "line": 215,
@@ -57,7 +117,7 @@
         "line": 390,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
-        "test": "ReservationRepairExactIdentity.RegisteredIdentityWithDisagreeingEconomicsIsRejected"
+        "test": "ReservationRepairExactIdentity.StagedIdentityWithDisagreeingEconomicsIsRejected"
       },
       {
         "line": 491,
@@ -66,7 +126,7 @@
         "test": "RiskEngineAuditInvariant.ExactlyOneProposalDecisionAndOneOrderDecisionPerLeg"
       },
       {
-        "line": 516,
+        "line": 522,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineAuditInvariant.RejectedProposalReportsEveryLegRejectedAndArmsNoOrder"
@@ -76,13 +136,14 @@
     "filters": [
       "RiskEngineAuditInvariant.*",
       "ReservationRepairAuditIntegrity.*",
-      "ReservationRepairExactIdentity.RegisteredIdentityWithDisagreeingEconomicsIsRejected",
-      "ProposalAtomicSeamRevalidation.*"
+      "ReservationRepairExactIdentity.StagedIdentityWithDisagreeingEconomicsIsRejected",
+      "ProposalAtomicSeamRevalidation.*",
+      "ProposalReleaseEpoch.*"
     ],
-    "test_count": 11
+    "test_count": 21
   },
   "artifact": "AEGIS-137/risk_decision_audit",
-  "claim": "Exactly ONE terminal ProposalRiskDecision per proposal_id (asserted via RiskAuditLog::proposal_decision_count), with subordinate per-order OrderRiskDecision records that each carry the proposal_id/leg_index that authorised them. A two-leg spread therefore never produces two objects both claiming to be the proposal decision. A rejected proposal arms no pending leg, and an order reaching the seam anyway is rejected kUnexpectedOrder. Identity resolution is exact (M5 closure repair): a client_order_id is registered against its precise strategy/proposal/leg identity before submission, so an order can never be mis-attributed to a different, economically-identical proposal, and a replayed proposal_id can never append a second terminal decision. Seam revalidation is also proposal-atomic (M5 closure repair, round 2): ensure_proposal_seam_revalidated computes AT MOST ONE outcome per proposal_id, cached and consulted by every subsequent leg of that proposal, so an order that reaches decide_order can approve only if it resolves to its exact already-prevalidated PendingLegKey AND the whole proposal was found safe -- never a mix of one sibling approved and another rejected within the same proposal.",
+  "claim": "Exactly ONE terminal ProposalRiskDecision per proposal_id (asserted via RiskAuditLog::proposal_decision_count), with subordinate per-order OrderRiskDecision records that each carry the proposal_id/leg_index that authorised them. A two-leg spread therefore never produces two objects both claiming to be the proposal decision. A rejected proposal arms no pending leg, and an order reaching the seam anyway is rejected kUnexpectedOrder. Identity resolution is exact (M5 closure repair): a client_order_id is registered against its precise strategy/proposal/leg identity before submission, so an order can never be mis-attributed to a different, economically-identical proposal, and a replayed proposal_id can never append a second terminal decision. Seam revalidation is also proposal-atomic (M5 closure repair, round 2): ensure_proposal_seam_revalidated computes AT MOST ONE outcome per proposal_id, cached and consulted by every subsequent leg of that proposal, so an order that reaches decide_order can approve only if it resolves to its exact already-prevalidated PendingLegKey AND the whole proposal was found safe -- never a mix of one sibling approved and another rejected within the same proposal. Round 3 adds the release-decision half: authorize_proposal_release records at most ONE ProposalReleaseRiskDecision per proposal (AUTHORIZED or REJECTED, asserted via RiskAuditLog::proposal_release_decision_count), taken while zero constituents have been released; a rejected release yields zero executable constituents, and an authorized one may be consumed only by its exact staged constituents, each at most once.",
   "deterministic_config": {
     "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
     "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
@@ -110,7 +171,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "1fb935bcf9b36909730b2f873bbbe3d8456f51ea",
+  "repository_commit": "d6bbf133084938e6b067f23a64583ada4b6f1fc9",
   "requirements": [
     "AEGIS-137"
   ],

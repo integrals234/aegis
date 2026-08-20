@@ -6,49 +6,49 @@
     ],
     "cases": [
       {
-        "line": 591,
+        "line": 610,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.ConcentrationBreachRejectsBothLegsAtomicallyInTheRealSeamNeverJustOne"
       },
       {
-        "line": 501,
+        "line": 518,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.ConcentrationWithinLimitLetsBothLegsSurviveSeamRevalidationInTheRealSeam"
       },
       {
-        "line": 520,
+        "line": 526,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
         "test": "ConcentrationOverlayAccounting.ANewProposalSeesAnEarlierProposalsReservedConcentration"
       },
       {
-        "line": 423,
+        "line": 427,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
         "test": "ConcentrationOverlayAccounting.ExactBoundaryApprovesOneUnitOverRejects"
       },
       {
-        "line": 488,
+        "line": 494,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
         "test": "ConcentrationOverlayAccounting.PreflightSameInstrumentStagedSiblingLegIsNotUnderCounted"
       },
       {
-        "line": 448,
+        "line": 452,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
         "test": "ConcentrationOverlayAccounting.SeamRevalidationDoesNotDoubleCountItsOwnReservationAndBothLegsOfASafeProposalSurvive"
       },
       {
-        "line": 748,
+        "line": 746,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
         "test": "ProposalAtomicSeamRevalidation.FlatBookConcentrationBelowOneRejectsTheFirstPositionHonestly"
       },
       {
-        "line": 555,
+        "line": 561,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
         "test": "ProposalAtomicSeamRevalidation.N6ExposureReductionRejectsAtomicallyAtCommit"
@@ -100,7 +100,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "1fb935bcf9b36909730b2f873bbbe3d8456f51ea",
+  "repository_commit": "d6bbf133084938e6b067f23a64583ada4b6f1fc9",
   "requirements": [
     "AEGIS-134"
   ],

@@ -64,6 +64,10 @@ std::string_view describe(ReasonCode reason) {
       return "unexpected_order";
     case ReasonCode::kIdentityMismatch:
       return "identity_mismatch";
+    case ReasonCode::kProposalNotAuthorized:
+      return "proposal_not_authorized";
+    case ReasonCode::kIncompleteProposalStaging:
+      return "incomplete_proposal_staging";
   }
   return "unknown";
 }

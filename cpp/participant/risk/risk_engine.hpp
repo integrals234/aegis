@@ -48,77 +48,91 @@
 ///     already has a terminal decision returns that SAME decision rather
 ///     than re-deciding, so `RiskAuditLog::proposal_decision_count` can
 ///     never exceed 1 and a replay can never re-arm or re-reserve.
-///   * The composition root registers each leg's future `client_order_id`
-///     (`OrderManager::next_client_order_id()`, peeked immediately before
-///     `submit_new_order`) against its `PendingLegKey` via
-///     `register_pending_order_identity`, BEFORE the order reaches the OMS.
-///     `decide_order` resolves a `client_order_id` to its EXACT
-///     `PendingLegKey` through that registration -- never by searching
-///     economics -- then verifies the order's instrument/side/quantity
-///     agree with what was actually reserved (an `kIdentityMismatch`
-///     reject, not a silent fall-through, if they do not), revalidates
-///     mutable safety state that can have changed since commit (halts,
-///     connectivity, market staleness/collar, and every cumulative control
-///     excluding this leg's own already-counted reservation), and only then
-///     TRANSITIONS the existing leg reservation to be `client_order_id`-keyed
-///     for the ordinary fill/release lifecycle -- it never reserves a
-///     second time.
+///   * The composition root STAGES each leg's future `client_order_id`
+///     (`OrderManager::next_client_order_id()`, whose ids are consecutive,
+///     so all N are known before the first `submit_new_order`) against its
+///     `PendingLegKey` via `stage_proposal_release`, BEFORE any order
+///     reaches the OMS. `decide_order` resolves a `client_order_id` to its
+///     EXACT `PendingLegKey` through that staging -- never by searching
+///     economics -- and only then TRANSITIONS the existing leg reservation
+///     to be `client_order_id`-keyed for the ordinary fill/release
+///     lifecycle. It never reserves a second time.
 ///
-/// An order that reaches `decide_order` with no registered identity is
-/// rejected with `kUnexpectedOrder` -- the structural defence against a
-/// caller that tried to skip the proposal-level decision.
+/// An order that reaches `decide_order` with no staged identity is rejected
+/// with `kUnexpectedOrder` -- the structural defence against a caller that
+/// tried to skip the proposal-level decision.
 ///
-/// # Proposal-atomic final-overlay evaluation and seam revalidation (M5
-/// closure repair)
+/// # The proposal release epoch (M5 closure repair, ADR-0027 "Correction 3")
 ///
-/// A risk-safety review found the reservation/identity repair above still
-/// permitted a naked leg through a different door. `evaluate_proposal`
-/// evaluated each leg against a PREFIX overlay -- only the legs staged
-/// *before* it in iteration order -- so a later leg that REDUCES exposure
-/// (a closing or rolling trade) was invisible to an earlier leg's own
-/// cumulative-control check. A proposal could therefore commit as APPROVE
-/// even though its true, fully-combined projection was unsafe. Separately,
-/// `decide_order`/`revalidate_at_seam` judged each leg's safety
-/// independently at the seam: one leg could fail a late-breaking
-/// revalidation while its sibling, evaluated moments later against
-/// different (already-mutated) state, passed -- producing exactly the
-/// naked single leg ADR-0027's atomicity exists to prevent, even when both
-/// legs were individually "correct" against the state each happened to see
-/// at the instant it was checked.
+/// Two earlier repairs moved toward proposal atomicity and each fell short
+/// in a way an independent risk-safety review reproduced:
 ///
-/// Both are fixed by making evaluation, not just reservation, proposal-wide:
+///   * `evaluate_proposal` originally judged each leg against a PREFIX
+///     overlay, so a later leg REDUCING exposure was invisible to an
+///     earlier leg's cumulative check. Fixed (and still fixed here): Phase
+///     A resolves every leg's non-cumulative admission and builds ONE final
+///     combined `EvaluationOverlay` from every leg's resolved quantity;
+///     Phase B judges each leg's cumulative controls
+///     (`check_cumulative_controls`) against that SAME final overlay with
+///     only that leg's own contribution excluded first, so it counts
+///     exactly once.
+///   * The seam then cached a whole-proposal revalidation -- but the epoch
+///     began when the FIRST leg reached `decide_order`, i.e. at a moment
+///     that leg was already being released. That bought atomicity by
+///     giving up freshness: every LATER leg re-checked nothing, so a kill
+///     switch, a disconnect, or an exposure breach arriving between two
+///     legs did not stop the second one (contradicting AEGIS-135's
+///     "prevents new orders"). And `kIdentityMismatch` rejected and
+///     released only the offending leg, leaving a correct sibling free to
+///     execute alone.
 ///
-///   * `evaluate_proposal` now runs in two phases. Phase A resolves every
-///     leg's non-cumulative admission (halts, connectivity, market state,
-///     idempotency/rate-limit, order-quantity-cap/volatility sizing) and
-///     builds ONE final combined `EvaluationOverlay` from every leg's own
-///     resolved quantity -- the complete proposed portfolio, not a
-///     leg-by-leg accumulation. Phase B then judges each leg's cumulative
-///     controls (`check_cumulative_controls`) against that SAME final
-///     overlay, with only that leg's own contribution excluded first (so
-///     re-adding it as the candidate counts it exactly once) -- the
-///     identical exclude-then-readd technique `revalidate_at_seam` already
-///     used. A proposal whose true combined effect is unsafe now rejects
-///     atomically at commit, before anything is armed or reserved,
-///     regardless of leg order.
-///   * `decide_order` no longer calls `revalidate_at_seam` per leg
-///     directly. It first calls `ensure_proposal_seam_revalidated`, which
-///     runs (once per proposal, cached in `proposal_seam_state_by_id_`) a
-///     single revalidation pass over EVERY still-pending leg of that
-///     proposal against current mutable state. If any leg would fail, the
-///     WHOLE proposal is marked `kRejectedAtSeam` and every one of its
-///     reservations is released immediately -- no leg of that proposal can
-///     ever reach `kApprove`/`kResize` after that, regardless of which
-///     leg's order happens to arrive at the seam first or what state
-///     changes afterward. `decide_order` then only applies that one cached
-///     proposal-level outcome to the exact `PendingLegKey` it resolved.
+/// The naive repair -- cache the cumulative verdict but re-run hard safety
+/// per leg -- is deliberately NOT what this engine does, because it merely
+/// relocates the hazard: leg 0 released, state changes, leg 1 rejects,
+/// naked leg. Instead the epoch moves EARLIER, to a point where nothing has
+/// been released yet:
 ///
-/// This guarantees risk-DECISION atomicity: risk approves the whole
-/// proposal or rejects the whole proposal, never a mix. It does NOT
-/// guarantee atomic EXCHANGE execution -- once risk approves both legs,
-/// a transport or exchange failure on one leg after submission can still
-/// leave the other filled alone, because this system has no basket/atomic
-/// multi-leg execution primitive. That boundary is stated, not implied.
+///   1. `commit_proposal_decision` reserves and arms every leg (above).
+///   2. The composition root builds all N constituent commands and calls
+///      `stage_proposal_release` with every one of them. Staging is not
+///      permission; the proposal sits in `kStaging` and no constituent is
+///      executable.
+///   3. `authorize_proposal_release` performs ONE fresh whole-proposal
+///      authorization while ZERO legs have been released: every committed
+///      leg must have a staged constituent whose economics match it, and
+///      every leg must pass `revalidate_at_seam` against CURRENT state.
+///      Either ALL constituents become authorized (`kAuthorizedForRelease`)
+///      or NONE do (`kRejectedAtRelease`, every reservation released, every
+///      leg invalidated, permanently).
+///   4. Only then may individual `decide_order` calls CONSUME that
+///      authorization. They perform per-order consumption checks only --
+///      exact `PendingLegKey`, exact immutable economics, not-already-
+///      consumed -- and compute no second proposal-level safety verdict.
+///
+/// Step 4 deliberately does not re-run kill switches, connectivity,
+/// staleness or any cumulative control: those were checked at step 3, when
+/// rejecting was still free. Re-running them here is precisely what would
+/// let leg 1 contradict leg 0.
+///
+/// # What this does and does not guarantee
+///
+/// RISK-DECISION atomicity: before any constituent of a proposal is
+/// released, AEGIS makes one all-or-none authorization; afterwards it never
+/// produces a contradictory per-leg risk verdict for that proposal.
+///
+/// NOT exchange/broker execution atomicity: after authorization, the
+/// transport or the exchange can still accept one leg and fail another --
+/// AEGIS has no basket/atomic multi-leg execution primitive. A kill switch
+/// tripping after authorization blocks all SUBSEQUENT proposals and drives
+/// the existing emergency-cancel path over live orders; it does not
+/// retroactively split an authorization already granted. That residual is
+/// execution risk, not a contradictory risk verdict, and is stated in
+/// `docs/LIMITATIONS.md` rather than implied away.
+///
+/// Cumulative limits are evaluated against the proposal's FINAL NET
+/// PROJECTED state, not against every sequential intermediate state its
+/// legs could pass through during non-atomic execution. See
+/// `docs/LIMITATIONS.md`.
 namespace aegis::participant::risk {
 
 /// The seam-facing verdict `decide_order` returns; `app::RiskEngineGate`
@@ -151,17 +165,40 @@ class RiskEngine {
                                          std::int64_t quantity_units, std::uint64_t client_order_id,
                                          common::Nanos now_nanos);
 
-  /// Binds a `client_order_id` the OMS is ABOUT TO assign (the composition
-  /// root peeks it via `OrderManager::next_client_order_id()` before calling
-  /// `submit_new_order`) to the exact armed leg `{strategy_id, proposal_id,
-  /// leg_index}` names, so `decide_order` can resolve that `client_order_id`
-  /// to its reservation without searching by economics. Returns false (and
-  /// registers nothing) if no such leg is currently armed -- a caller
-  /// error `decide_order` then reports as `kUnexpectedOrder`, never as a
-  /// match against some other leg.
-  bool register_pending_order_identity(std::uint64_t client_order_id,
-                                       const std::string& strategy_id,
-                                       const std::string& proposal_id, std::uint32_t leg_index);
+  /// Stages the constituent orders the composition root is about to submit
+  /// for an already-committed proposal, BEFORE any of them is released
+  /// (ADR-0027 "Correction 3"). Each entry binds a `client_order_id` the OMS
+  /// is about to assign to the exact armed leg it belongs to, plus the
+  /// economics that order will carry. Staging is not permission: it moves
+  /// the proposal to `kStaging`, and only `authorize_proposal_release` can
+  /// make any constituent executable. May be called once with every
+  /// constituent, or incrementally; either way authorization requires the
+  /// staged set to cover every committed leg exactly.
+  void stage_proposal_release(const std::string& strategy_id, const std::string& proposal_id,
+                              const std::vector<StagedOrderIdentity>& staged);
+
+  /// THE PROPOSAL RELEASE EPOCH: one fresh, whole-proposal risk
+  /// authorization performed while ZERO of the proposal's constituents have
+  /// been released. Verifies that every committed leg has a staged
+  /// constituent whose economics match it, then revalidates every leg
+  /// against CURRENT mutable state (halts, connectivity, market
+  /// staleness/collar, and every cumulative control over the final combined
+  /// overlay, each leg's own reservation counted exactly once). Either ALL
+  /// constituents become authorized, or NONE do and every reservation the
+  /// proposal held is released.
+  ///
+  /// Idempotent and terminal: the first call decides, and every later call
+  /// returns that same decision, so a proposal has at most one release
+  /// outcome. After `kAuthorizedForRelease`, `decide_order` performs NO
+  /// further proposal-level safety evaluation -- see the class docs for why
+  /// re-checking per leg would recreate the naked-leg hazard this exists to
+  /// prevent.
+  ProposalReleaseDecision authorize_proposal_release(const std::string& strategy_id,
+                                                     const std::string& proposal_id,
+                                                     common::Nanos now_nanos);
+
+  /// The proposal's current release state (`kCommitted` if it has none).
+  [[nodiscard]] ProposalReleaseState proposal_release_state(const std::string& proposal_id) const;
 
   /// AEGIS-128's cancel half. `bypass_safety = true` (a kill-switch or
   /// connectivity-loss cancel) is never subject to the rate limit and never
@@ -296,7 +333,7 @@ class RiskEngine {
     std::string reason;
   };
 
-  /// Re-checks the mutable safety state a single leg must not trust forever
+  /// Re-checks the mutable safety state a proposal must not trust forever
   /// (halts, connectivity, market staleness/collar, and every cumulative
   /// exposure/margin/leverage control) against CURRENT `state_`, excluding
   /// `pending`'s own already-reserved contribution so it is counted exactly
@@ -305,42 +342,36 @@ class RiskEngine {
   /// rate-limit admission (already consumed at commit time; re-running
   /// either would reject every order, since the dedupe key is already
   /// marked seen and the rate-limit event already recorded). Called ONLY
-  /// from `ensure_proposal_seam_revalidated`, once per pending leg of a
-  /// proposal being revalidated together -- never applied to just one leg
-  /// of a multi-leg proposal in isolation, which is what let one sibling
-  /// fail while the other passed (the naked-leg defect this repair closes).
+  /// from `authorize_proposal_release`, over every leg of one proposal, at
+  /// a moment when none of them has been released -- never against a single
+  /// leg of a multi-leg proposal in isolation, and never after a sibling is
+  /// already executable.
   [[nodiscard]] std::optional<LegDecision> revalidate_at_seam(const PendingLeg& pending,
                                                               common::Nanos now_nanos) const;
 
-  /// One committed proposal's seam-revalidation epoch: computed AT MOST
-  /// ONCE (by `ensure_proposal_seam_revalidated`, the first time any of its
-  /// legs reaches `decide_order`) and then trusted by every subsequent leg
-  /// of the same proposal, so risk can only ever approve the whole proposal
-  /// or reject the whole proposal at the seam -- never a mix.
-  enum class ProposalSeamState : std::uint8_t {
-    kNotRevalidated = 0,
-    kApprovedForRelease = 1,
-    kRejectedAtSeam = 2,
-  };
-  struct ProposalSeamRecord {
-    ProposalSeamState state{ProposalSeamState::kNotRevalidated};
-    ReasonCode reject_reason_code{ReasonCode::kNone};
-    std::string reject_reason;
+  /// Everything the engine tracks for one committed proposal between
+  /// `commit_proposal_decision` and the last constituent consuming its
+  /// authorization.
+  struct ProposalReleaseRecord {
+    ProposalReleaseState state{ProposalReleaseState::kCommitted};
+    ReasonCode reason_code{ReasonCode::kNone};
+    std::string reason;
+    std::string strategy_id;
+    /// leg_index -> the constituent order staged for it.
+    std::unordered_map<std::uint32_t, StagedOrderIdentity> staged_by_leg_index;
+    /// How many authorized constituents have not yet consumed the
+    /// authorization; reaching zero moves the proposal to `kCompleted`.
+    std::size_t outstanding_authorized_legs{0};
   };
 
-  /// Idempotent: a no-op if `proposal_id`'s seam epoch was already decided.
-  /// Otherwise revalidates every leg of `proposal_id` still in
-  /// `pending_legs_` (via `revalidate_at_seam`) and records ONE outcome for
-  /// the whole proposal. On the first leg that would fail, marks the
-  /// proposal `kRejectedAtSeam` and releases EVERY one of its remaining
-  /// leg reservations immediately -- not deferred until each leg's own
-  /// `decide_order` call, since by then the proposal's fate is already
-  /// known and holding reserved capacity for legs that will never execute
-  /// serves no one. If every leg passes, marks it `kApprovedForRelease`;
-  /// `decide_order` then still verifies each leg's own identity/economics
-  /// and transitions its reservation individually, but never re-runs the
-  /// cumulative controls this already decided.
-  void ensure_proposal_seam_revalidated(const std::string& proposal_id, common::Nanos now_nanos);
+  /// Rejects `record`'s whole proposal: releases every leg reservation it
+  /// still holds, drops every armed leg and staged identity, and records the
+  /// one terminal release decision. Used by every `authorize_proposal_release`
+  /// failure path so "reject" always means the same thing.
+  ProposalReleaseDecision reject_proposal_release(const std::string& proposal_id,
+                                                  ProposalReleaseRecord& record,
+                                                  ReasonCode reason_code, std::string reason,
+                                                  common::Nanos now_nanos);
 
   RiskLimitsConfig config_;
   RiskState state_;
@@ -354,11 +385,11 @@ class RiskEngine {
   /// `decide_order` the moment it resolves an order -- never searched by
   /// economics.
   std::unordered_map<std::uint64_t, PendingLegKey> order_identity_by_client_order_id_;
-  /// `proposal_id -> ProposalSeamRecord`, keyed the same way
+  /// `proposal_id -> ProposalReleaseRecord`, keyed the same way
   /// `RiskAuditLog::find_proposal_decision` already treats `proposal_id`
   /// (globally unique by convention, ADR-0027) -- not a second, narrower
   /// identity notion.
-  std::unordered_map<std::string, ProposalSeamRecord> proposal_seam_state_by_id_;
+  std::unordered_map<std::string, ProposalReleaseRecord> proposal_release_by_id_;
 };
 
 }  // namespace aegis::participant::risk

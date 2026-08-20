@@ -6,10 +6,40 @@
     ],
     "cases": [
       {
-        "line": 413,
+        "line": 430,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.GlobalKillSwitchCancelsLiveOrdersAndBlocksNewSubmissions"
+      },
+      {
+        "line": 685,
+        "passed": true,
+        "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
+        "test": "CalendarSpreadRiskExchangeIntegration.LateKillSwitchBeforeReleaseAuthorizationStopsBothLegsInTheRealSeam"
+      },
+      {
+        "line": 347,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.AKillSwitchAfterAuthorizationDoesNotSplitTheProposalsVerdict"
+      },
+      {
+        "line": 137,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.ExchangeDisconnectBeforeReleaseRejectsTheWholeProposal"
+      },
+      {
+        "line": 108,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.GlobalKillSwitchBeforeReleaseRejectsTheWholeProposal"
+      },
+      {
+        "line": 159,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.StaleMarketBeforeReleaseRejectsTheWholeProposal"
       },
       {
         "line": 175,
@@ -24,7 +54,7 @@
         "test": "ReservationRepairSeamRevalidation.KillSwitchTrippedAfterCommitStopsTheOrderAtTheSeam"
       },
       {
-        "line": 546,
+        "line": 552,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineKillSwitch.StrategyAndGlobalTripsAreIdempotentAndScopedCorrectly"
@@ -35,12 +65,17 @@
       "RiskEngineKillSwitch.*",
       "CalendarSpreadRiskExchangeIntegration.GlobalKillSwitchCancelsLiveOrdersAndBlocksNewSubmissions",
       "ReservationRepairExactIdentity.LookAlikeLegFromAnotherStrategyCannotBorrowItsRiskState",
-      "ReservationRepairSeamRevalidation.KillSwitchTrippedAfterCommitStopsTheOrderAtTheSeam"
+      "ReservationRepairSeamRevalidation.KillSwitchTrippedAfterCommitStopsTheOrderAtTheSeam",
+      "ProposalReleaseEpoch.GlobalKillSwitchBeforeReleaseRejectsTheWholeProposal",
+      "ProposalReleaseEpoch.ExchangeDisconnectBeforeReleaseRejectsTheWholeProposal",
+      "ProposalReleaseEpoch.StaleMarketBeforeReleaseRejectsTheWholeProposal",
+      "ProposalReleaseEpoch.AKillSwitchAfterAuthorizationDoesNotSplitTheProposalsVerdict",
+      "CalendarSpreadRiskExchangeIntegration.LateKillSwitchBeforeReleaseAuthorizationStopsBothLegsInTheRealSeam"
     ],
-    "test_count": 4
+    "test_count": 9
   },
   "artifact": "AEGIS-135/kill_switches",
-  "claim": "Strategy-level and global kill switches are idempotent (a second trip is a no-op returning false), strategy-scoped tripping leaves other strategies unaffected, live orders receive safety cancels that bypass the ordinary cancel throttle, and every subsequent proposal is rejected. Proven end to end against a real unmodified M1 ExchangeNode: the exchange order count does not move after the trip. An order resolves to its EXACT registered proposal/leg identity, never to a look-alike armed leg from another strategy sharing the same economics (M5 closure repair) -- a tripped strategy cannot be bypassed by an order that happens to match a DIFFERENT, non-halted strategy's leg by coincidence.",
+  "claim": "Strategy-level and global kill switches are idempotent (a second trip is a no-op returning false), strategy-scoped tripping leaves other strategies unaffected, live orders receive safety cancels that bypass the ordinary cancel throttle, and every subsequent proposal is rejected. Proven end to end against a real unmodified M1 ExchangeNode: the exchange order count does not move after the trip. An order resolves to its EXACT registered proposal/leg identity, never to a look-alike armed leg from another strategy sharing the same economics (M5 closure repair) -- a tripped strategy cannot be bypassed by an order that happens to match a DIFFERENT, non-halted strategy's leg by coincidence. Release-epoch semantics (M5 closure repair, round 3): a kill switch, disconnect or stale quote arriving BEFORE a committed proposal's release authorization rejects the WHOLE proposal and releases every reservation, so no constituent reaches execution. A kill switch arriving AFTER authorization does not retroactively split that already-granted authorization -- it blocks every SUBSEQUENT proposal (asserted) and the emergency-cancel path handles live orders. Both halves are pinned by test so neither can be silently changed.",
   "deterministic_config": {
     "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
     "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
@@ -70,7 +105,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "1b88c8e0554b1bb270607d39050823746f1c73b5",
+  "repository_commit": "d6bbf133084938e6b067f23a64583ada4b6f1fc9",
   "requirements": [
     "AEGIS-135"
   ],
