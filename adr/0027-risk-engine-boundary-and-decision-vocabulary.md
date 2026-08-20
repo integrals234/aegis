@@ -42,11 +42,16 @@ than reach across a layer boundary `may_depend_on` does not grant.
 
 **`evaluate`/`evaluate_proposal` are pure; `commit_proposal_decision`/
 `decide_order` enforce.** `evaluate_proposal` runs every leg of a proposal
-against the *current* committed state plus a working overlay that folds in
-each already-evaluated sibling leg -- so a spread that would jointly breach a
-portfolio-level limit rejects even though each leg passes in isolation. If
-any leg rejects, every leg in the result reports `kReject`: no partial
-information that could be read as "the other leg was fine".
+against the *current* committed state plus a working overlay -- so a spread
+that would jointly breach a portfolio-level limit rejects even though each
+leg passes in isolation. **Correction (see "Correction 2" below):** this
+overlay originally folded in only each *already-evaluated* sibling leg (a
+growing prefix), which could not see a later leg's exposure REDUCTION; it
+is now built from ALL of the proposal's legs before any leg's cumulative
+controls are judged, so every leg sees the SAME final combined projection
+regardless of leg order. If any leg rejects, every leg in the result
+reports `kReject`: no partial information that could be read as "the other
+leg was fine".
 `commit_proposal_decision` re-derives the same result and, only if it is not
 a reject, arms one "pending leg" per order and appends the ONE terminal
 `ProposalRiskDecision` this proposal_id will ever get. The composition root
@@ -180,6 +185,86 @@ original attacks (and the duplicate-proposal/mis-attribution defect) and
 asserts the fixed behavior; every test in that file fails against the
 engine as it stood before this correction.
 
+## Correction 2 (M5 closure repair): proposal-atomic final-overlay
+evaluation and seam revalidation
+
+A second risk-safety review, of the correction above, found it still
+permitted a naked leg through a different door: risk-CAPACITY atomicity
+(the reservation fix) is not the same thing as risk-DECISION atomicity, and
+this engine only had the former.
+
+**Defect A: `evaluate_proposal` judged each leg against a PREFIX overlay.**
+Legs were folded into the overlay in iteration order, so leg *i* only ever
+saw legs `0..i-1`. A later leg that REDUCES exposure (a closing or rolling
+trade) was invisible to an earlier leg's own cumulative check. Reproduced
+(`ProposalAtomicSeamRevalidation.N6ExposureReductionRejectsAtomicallyAtCommit`):
+background exposure in two instruments, a two-leg proposal whose leg 0 ADDS
+exposure to a third instrument and leg 1 REDUCES one of the background
+instruments. Leg 0's preflight, evaluated before leg 1's reduction was
+staged, saw a denominator that had not yet shrunk, understating its own
+concentration share and approving a proposal whose TRUE combined share
+(computed after leg 1's reduction) was well over the limit.
+
+**Defect B: `decide_order`/`revalidate_at_seam` judged each leg
+independently at the seam.** Even with Defect A fixed, mutable state can
+still change between commit and seam arrival. The prior correction's
+per-leg `revalidate_at_seam` was individually correct for the leg it was
+called on, but nothing stopped one sibling from failing that per-leg check
+while another sibling, checked moments later against by-then-different
+state, passed -- a naked leg, produced not by a wrong formula but by
+treating an atomic proposal's legs as independently revalidatable.
+
+**The fix makes evaluation, not just reservation, proposal-wide, reusing
+the SAME `EvaluationOverlay` abstraction rather than adding a second
+accounting path:**
+
+- `evaluate_proposal` now runs in two phases. Phase A resolves every leg's
+  non-cumulative admission (halts, connectivity, market state,
+  idempotency/rate-limit, order-quantity-cap/volatility sizing -- none of
+  which depend on a sibling's exposure, so leg-order evaluation there is
+  honest, not a prefix approximation) and builds ONE final combined
+  overlay from every leg's own resolved quantity. Phase B judges each
+  leg's cumulative controls (`check_cumulative_controls`, a new shared
+  helper `evaluate_leg` and `revalidate_at_seam` also call, so there is
+  exactly one implementation of control groups 8-12, not three) against
+  that SAME final overlay, with only that leg's own contribution excluded
+  first -- the identical exclude-then-readd technique the first correction
+  already used at the seam. A proposal whose true combined effect is
+  unsafe now rejects atomically at commit, before anything is armed or
+  reserved, regardless of leg order.
+- `decide_order` no longer calls `revalidate_at_seam` per leg. It first
+  calls `ensure_proposal_seam_revalidated`, which runs -- exactly once per
+  proposal, cached in `proposal_seam_state_by_id_` -- a single
+  revalidation pass over EVERY still-pending leg of that proposal against
+  current mutable state. The first leg found unsafe condemns the WHOLE
+  proposal: every one of its still-pending legs' reservations is released
+  immediately, and the cached `kRejectedAtSeam` outcome is what every
+  subsequent `decide_order` call for that proposal's legs consults --
+  never a fresh, independent check. A subtlety the implementation had to
+  get right: the leg whose arrival TRIGGERS revalidation must still be
+  present in `pending_legs_` at that moment (erased only after, not
+  before) or a single-leg proposal would be invisible to its own
+  revalidation and vacuously "pass."
+
+This guarantees risk-DECISION atomicity: risk approves the whole proposal
+or rejects the whole proposal, never a mix, regardless of leg order or
+which leg's order reaches the seam first.
+
+**What this does NOT guarantee: atomic EXCHANGE execution.** Once risk
+approves both legs, a transport or exchange failure on ONE leg after
+submission can still leave the other filled alone -- this system has no
+basket/atomic multi-leg execution primitive, and this repair does not add
+one. Risk atomicity: yes. Exchange/broker multi-leg atomicity: no, not
+claimed. (`docs/LIMITATIONS.md`.)
+
+`ProposalAtomicSeamRevalidation.ALateStateChangeMakingOnlyOneLegUnsafeRejectsTheWholeProposalAtTheSeam`
+proves Defect B's fix directly and generically (a position limit, not
+concentration): an out-of-band fill makes leg A's own instrument unsafe
+while leg B's instrument and control are completely untouched; submitting
+B FIRST still rejects the whole proposal, not just A.
+`CalendarSpreadRiskExchangeIntegration.ConcentrationBreachRejectsBothLegsAtomicallyInTheRealSeamNeverJustOne`
+proves the same property through the real composition root.
+
 ## Alternatives considered
 
 - **Risk implements `oms::RiskGate` directly.** Rejected: creates the
@@ -256,6 +341,24 @@ engine as it stood before this correction.
   configs/risk/limits_reject_demo.json` rejects both proposals with zero
   orders, proving the corrected lifecycle end to end, not only inside unit
   tests.
+- `tests/cpp/unit/test_risk_engine_reservation_repair.cpp`'s
+  `ProposalAtomicSeamRevalidation` suite (Correction 2): the reviewer's
+  exact exposure-reduction attack rejects atomically at commit, not just
+  eventually at the seam; an out-of-band change that makes only ONE leg of
+  a two-leg proposal unsafe rejects the WHOLE proposal, even when the
+  unaffected leg's own order is submitted first; the same safe proposal
+  with no late change still approves both legs (no spurious rejection); a
+  look-alike proposal cannot borrow another proposal's cached seam
+  verdict; a different cumulative control (portfolio notional) is proven
+  immune to the same prefix-denominator defect the concentration case
+  exposed; a flat-book first position under a sub-1.0 concentration limit
+  is proven to reject honestly, by definition, not by bug.
+- `tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp`'s
+  `ConcentrationBreachRejectsBothLegsAtomicallyInTheRealSeamNeverJustOne`:
+  the same proposal-atomicity property through the real composition root,
+  a real `RiskEngineGate`/`OrderManager` and a real exchange -- an unsafe
+  two-leg proposal is rejected before either leg is armed, reserved, or
+  submitted.
 
 ## Owner approval
 

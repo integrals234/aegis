@@ -6,6 +6,12 @@
     ],
     "cases": [
       {
+        "line": 591,
+        "passed": true,
+        "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
+        "test": "CalendarSpreadRiskExchangeIntegration.ConcentrationBreachRejectsBothLegsAtomicallyInTheRealSeamNeverJustOne"
+      },
+      {
         "line": 501,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
@@ -36,6 +42,18 @@
         "test": "ConcentrationOverlayAccounting.SeamRevalidationDoesNotDoubleCountItsOwnReservationAndBothLegsOfASafeProposalSurvive"
       },
       {
+        "line": 748,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ProposalAtomicSeamRevalidation.FlatBookConcentrationBelowOneRejectsTheFirstPositionHonestly"
+      },
+      {
+        "line": 555,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ProposalAtomicSeamRevalidation.N6ExposureReductionRejectsAtomicallyAtCommit"
+      },
+      {
         "line": 475,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
@@ -46,12 +64,15 @@
     "filters": [
       "RiskEngineConcentration.*",
       "ConcentrationOverlayAccounting.*",
-      "CalendarSpreadRiskExchangeIntegration.ConcentrationWithinLimitLetsBothLegsSurviveSeamRevalidationInTheRealSeam"
+      "CalendarSpreadRiskExchangeIntegration.ConcentrationWithinLimitLetsBothLegsSurviveSeamRevalidationInTheRealSeam",
+      "CalendarSpreadRiskExchangeIntegration.ConcentrationBreachRejectsBothLegsAtomicallyInTheRealSeamNeverJustOne",
+      "ProposalAtomicSeamRevalidation.N6ExposureReductionRejectsAtomicallyAtCommit",
+      "ProposalAtomicSeamRevalidation.FlatBookConcentrationBelowOneRejectsTheFirstPositionHonestly"
     ],
-    "test_count": 6
+    "test_count": 9
   },
   "artifact": "AEGIS-134/concentration_and_correlation",
-  "claim": "Single-instrument concentration share and configuration-supplied correlated-group exposure limits enforced. Correlation is never estimated inside the decision path (ADR-0028): a risk decision must not depend on a statistic derived from the same stream the decision is about. Concentration closure repair: the single-instrument numerator is now routed through the same group_gross_notional_units/EvaluationOverlay projected-exposure model every other cumulative control uses (ADR-0028), fixing both a seam double-count (this leg's own already-committed reservation counted twice) and a preflight under-count (a same-instrument sibling leg's staged exposure ignored) that were two symptoms of one hand-rolled accounting path. Boundary, seam-revalidation, same-instrument multi-leg, prior-proposal-visibility and real-composition-root cases are all covered with literal, hand-checkable numbers.",
+  "claim": "Single-instrument concentration share and configuration-supplied correlated-group exposure limits enforced. Correlation is never estimated inside the decision path (ADR-0028): a risk decision must not depend on a statistic derived from the same stream the decision is about. Concentration closure repair, round 1: the single-instrument numerator is now routed through the same group_gross_notional_units/EvaluationOverlay projected-exposure model every other cumulative control uses (ADR-0028), fixing both a seam double-count (this leg's own already-committed reservation counted twice) and a preflight under-count (a same-instrument sibling leg's staged exposure ignored) that were two symptoms of one hand-rolled accounting path. Round 2: a deeper, pre-existing defect in the same family -- preflight evaluated each leg against a growing PREFIX overlay, so a later leg's exposure REDUCTION was invisible to an earlier leg's own share, and a proposal whose true combined concentration was unsafe could approve at commit. evaluate_proposal now builds ONE final combined overlay from every leg's own resolved quantity before any leg's cumulative controls are judged, so the reviewer's exact exposure-reduction attack now rejects ATOMICALLY at commit -- reserving and arming neither leg -- rather than approving and only discovering the truth later, asymmetrically, at the seam. A flat-book first position under a sub-1.0 limit is proven to reject honestly, by the definition of concentration as a share of the whole portfolio, not by bug (docs/LIMITATIONS.md). Boundary, seam-revalidation, same-instrument multi-leg, prior-proposal-visibility and real-composition-root cases (both a safe-proposal-survives and an unsafe-proposal-rejects-atomically case) are all covered with literal, hand-checkable numbers.",
   "deterministic_config": {
     "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
     "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
@@ -79,7 +100,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "1b88c8e0554b1bb270607d39050823746f1c73b5",
+  "repository_commit": "1fb935bcf9b36909730b2f873bbbe3d8456f51ea",
   "requirements": [
     "AEGIS-134"
   ],

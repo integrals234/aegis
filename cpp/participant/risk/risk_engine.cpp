@@ -453,6 +453,27 @@ std::optional<LegDecision> RiskEngine::check_margin_and_leverage(
   return std::nullopt;
 }
 
+std::optional<LegDecision> RiskEngine::check_cumulative_controls(
+    const OrderRequest& request, std::int64_t effective_quantity,
+    const EvaluationOverlay& context_overlay) const {
+  EvaluationOverlay portfolio_overlay;
+  std::int64_t portfolio_notional = 0;
+  if (auto rejected = check_position_and_notional(request, context_overlay, effective_quantity,
+                                                  portfolio_overlay, portfolio_notional)) {
+    return rejected;
+  }
+  if (auto rejected = check_group_exposure(request, portfolio_overlay)) {
+    return rejected;
+  }
+  if (auto rejected = check_concentration(request, portfolio_overlay, portfolio_notional)) {
+    return rejected;
+  }
+  if (auto rejected = check_margin_and_leverage(portfolio_overlay, portfolio_notional)) {
+    return rejected;
+  }
+  return std::nullopt;
+}
+
 LegDecision RiskEngine::evaluate_leg(const OrderRequest& request,
                                      const EvaluationOverlay& overlay) const {
   // The control groups run in a fixed, documented order (ADR-0028): halts and
@@ -476,19 +497,7 @@ LegDecision RiskEngine::evaluate_leg(const OrderRequest& request,
     return *rejected;
   }
 
-  EvaluationOverlay portfolio_overlay;
-  std::int64_t portfolio_notional = 0;
-  if (auto rejected = check_position_and_notional(request, overlay, effective_quantity,
-                                                  portfolio_overlay, portfolio_notional)) {
-    return *rejected;
-  }
-  if (auto rejected = check_group_exposure(request, portfolio_overlay)) {
-    return *rejected;
-  }
-  if (auto rejected = check_concentration(request, portfolio_overlay, portfolio_notional)) {
-    return *rejected;
-  }
-  if (auto rejected = check_margin_and_leverage(portfolio_overlay, portfolio_notional)) {
+  if (auto rejected = check_cumulative_controls(request, effective_quantity, overlay)) {
     return *rejected;
   }
 
@@ -504,39 +513,107 @@ LegDecision RiskEngine::evaluate(const OrderRequest& request) const {
   return evaluate_leg(request, EvaluationOverlay{});
 }
 
+namespace {
+
+ProposalDecisionResult all_legs_rejected(std::size_t leg_count, const LegDecision& rejection) {
+  std::vector<LegDecision> all_rejected(leg_count, LegDecision{.verdict = RiskVerdict::kReject,
+                                                               .reason_code = rejection.reason_code,
+                                                               .reason = rejection.reason});
+  return ProposalDecisionResult{.verdict = RiskVerdict::kReject,
+                                .reason_code = rejection.reason_code,
+                                .reason = rejection.reason,
+                                .legs = std::move(all_rejected)};
+}
+
+}  // namespace
+
 ProposalDecisionResult RiskEngine::evaluate_proposal(const std::string& strategy_id,
                                                      const std::string& proposal_id,
                                                      const std::vector<OrderRequest>& legs) const {
-  EvaluationOverlay overlay;
-  std::vector<LegDecision> decisions;
-  decisions.reserve(legs.size());
+  // Phase A: per-leg non-cumulative admission (halts, connectivity, market
+  // state, idempotency/rate-limit, order-quantity-cap/volatility sizing) --
+  // none of these depend on a sibling leg's exposure, so evaluating them in
+  // leg order is honest, not a prefix approximation. `admission_overlay`
+  // stays a genuine running COUNT (rate limiting is a message-sequence
+  // control, not a point-in-time exposure snapshot: the i-th leg really is
+  // the i-th order in this burst). Alongside, build ONE final combined
+  // `EvaluationOverlay` from every leg's own resolved quantity -- the
+  // complete proposed portfolio, never a leg-by-leg accumulation that
+  // omits legs not yet visited (the defect an independent review found: an
+  // earlier leg could not see a LATER leg's exposure REDUCTION, so its own
+  // cumulative check ran against a denominator that would shrink once the
+  // later leg was accounted for, approving a proposal whose true combined
+  // effect was unsafe).
+  std::vector<OrderRequest> normalized_legs;
+  normalized_legs.reserve(legs.size());
+  std::vector<std::int64_t> effective_quantities;
+  effective_quantities.reserve(legs.size());
+  std::vector<bool> resized_flags;
+  resized_flags.reserve(legs.size());
+
+  EvaluationOverlay admission_overlay;
+  EvaluationOverlay final_overlay;
+
   for (const OrderRequest& raw_leg : legs) {
     OrderRequest leg = raw_leg;
     leg.strategy_id = strategy_id;
     leg.proposal_id = proposal_id;
-    const LegDecision decision = evaluate_leg(leg, overlay);
-    if (decision.verdict == RiskVerdict::kReject) {
-      // Atomicity (ADR-0027): the first rejecting leg makes the WHOLE
-      // proposal reject; every leg reports kReject, not just this one --
-      // a reader must never see one leg's decision imply the sibling leg
-      // was independently fine.
-      std::vector<LegDecision> all_rejected(legs.size(),
-                                            LegDecision{.verdict = RiskVerdict::kReject,
-                                                        .reason_code = decision.reason_code,
-                                                        .reason = decision.reason});
-      return ProposalDecisionResult{.verdict = RiskVerdict::kReject,
-                                    .reason_code = decision.reason_code,
-                                    .reason = decision.reason,
-                                    .legs = std::move(all_rejected)};
+
+    if (auto rejected = check_halts_and_connectivity(leg)) {
+      return all_legs_rejected(legs.size(), *rejected);
     }
-    decisions.push_back(decision);
-    const std::int64_t signed_qty = leg.side == Side::kBuy ? decision.approved_quantity_units
-                                                           : -decision.approved_quantity_units;
-    overlay.extra_reserved_by_instrument[leg.instrument_id] += signed_qty;
-    overlay.extra_orders_in_window += 1;
+    const MarketQuote* quote = nullptr;
+    if (auto rejected = check_market_state(leg, quote)) {
+      return all_legs_rejected(legs.size(), *rejected);
+    }
+    if (auto rejected = check_request_admission(leg, admission_overlay)) {
+      return all_legs_rejected(legs.size(), *rejected);
+    }
+    admission_overlay.extra_orders_in_window += 1;
+
+    std::int64_t effective_quantity = leg.quantity_units;
+    bool resized = false;
+    if (auto rejected = resolve_effective_quantity(leg, effective_quantity, resized)) {
+      return all_legs_rejected(legs.size(), *rejected);
+    }
+
+    const std::int64_t signed_quantity =
+        leg.side == Side::kBuy ? effective_quantity : -effective_quantity;
+    final_overlay.extra_reserved_by_instrument[leg.instrument_id] += signed_quantity;
+
+    normalized_legs.push_back(std::move(leg));
+    effective_quantities.push_back(effective_quantity);
+    resized_flags.push_back(resized);
   }
-  const bool any_resize = std::ranges::any_of(
-      decisions, [](const LegDecision& d) { return d.verdict == RiskVerdict::kResize; });
+
+  // Phase B: cumulative controls, each leg judged against the SAME final
+  // combined overlay -- with only ITS OWN contribution excluded first, so
+  // re-adding it as the candidate (inside check_cumulative_controls) counts
+  // it exactly once. Identical technique to `revalidate_at_seam`'s
+  // own-reservation exclusion; one shared model, not two.
+  std::vector<LegDecision> decisions;
+  decisions.reserve(normalized_legs.size());
+  for (std::size_t index = 0; index < normalized_legs.size(); ++index) {
+    const OrderRequest& leg = normalized_legs[index];
+    const std::int64_t effective_quantity = effective_quantities[index];
+    const std::int64_t signed_quantity =
+        leg.side == Side::kBuy ? effective_quantity : -effective_quantity;
+
+    EvaluationOverlay context_overlay = final_overlay;
+    context_overlay.extra_reserved_by_instrument[leg.instrument_id] -= signed_quantity;
+
+    if (auto rejected = check_cumulative_controls(leg, effective_quantity, context_overlay)) {
+      return all_legs_rejected(legs.size(), *rejected);
+    }
+    decisions.push_back(LegDecision{
+        .verdict = resized_flags[index] ? RiskVerdict::kResize : RiskVerdict::kApprove,
+        .approved_quantity_units = effective_quantity,
+        .reason_code = ReasonCode::kNone,
+        .reason = "",
+    });
+  }
+
+  const bool any_resize = std::ranges::any_of(resized_flags, [](bool r) { return r; });
   return ProposalDecisionResult{
       .verdict = any_resize ? RiskVerdict::kResize : RiskVerdict::kApprove,
       .reason_code = ReasonCode::kNone,
@@ -655,23 +732,45 @@ std::optional<LegDecision> RiskEngine::revalidate_at_seam(const PendingLeg& pend
   EvaluationOverlay overlay;
   overlay.extra_reserved_by_instrument[pending.instrument_id] -= own_signed_reserved;
 
-  EvaluationOverlay portfolio_overlay;
-  std::int64_t portfolio_notional = 0;
-  if (auto rejected =
-          check_position_and_notional(as_request, overlay, pending.approved_quantity_units,
-                                      portfolio_overlay, portfolio_notional)) {
-    return rejected;
+  return check_cumulative_controls(as_request, pending.approved_quantity_units, overlay);
+}
+
+void RiskEngine::ensure_proposal_seam_revalidated(const std::string& proposal_id,
+                                                  common::Nanos now_nanos) {
+  ProposalSeamRecord& record = proposal_seam_state_by_id_[proposal_id];
+  if (record.state != ProposalSeamState::kNotRevalidated) {
+    return;  // Already decided for this proposal's one seam-revalidation epoch.
   }
-  if (auto rejected = check_group_exposure(as_request, portfolio_overlay)) {
-    return rejected;
+
+  // Every leg of this proposal still armed -- the set commit_proposal_
+  // decision reserved together, atomically, and no leg outside this set can
+  // belong to this proposal_id (PendingLegKey's proposal_id field is exact).
+  std::vector<PendingLegKey> proposal_leg_keys;
+  for (const auto& [key, leg] : pending_legs_) {
+    if (key.proposal_id == proposal_id) {
+      proposal_leg_keys.push_back(key);
+    }
   }
-  if (auto rejected = check_concentration(as_request, portfolio_overlay, portfolio_notional)) {
-    return rejected;
+
+  for (const PendingLegKey& key : proposal_leg_keys) {
+    const PendingLeg& leg = pending_legs_.at(key);
+    if (auto rejected = revalidate_at_seam(leg, now_nanos)) {
+      // ONE unsafe leg condemns the WHOLE proposal: release every other
+      // still-pending leg's reservation NOW, not deferred until each leg's
+      // own decide_order call -- by the time we know the proposal is unsafe,
+      // holding capacity for legs that will never execute serves no one,
+      // and a sibling leg's order must never be allowed to independently
+      // pass a revalidation this proposal has already failed.
+      for (const PendingLegKey& release_key : proposal_leg_keys) {
+        state_.release_leg_reservation(release_key);
+      }
+      record.state = ProposalSeamState::kRejectedAtSeam;
+      record.reject_reason_code = rejected->reason_code;
+      record.reject_reason = rejected->reason;
+      return;
+    }
   }
-  if (auto rejected = check_margin_and_leverage(portfolio_overlay, portfolio_notional)) {
-    return rejected;
-  }
-  return std::nullopt;
+  record.state = ProposalSeamState::kApprovedForRelease;
 }
 
 OmsDecision RiskEngine::decide_order(std::uint32_t instrument_id, Side side,
@@ -708,10 +807,15 @@ OmsDecision RiskEngine::decide_order(std::uint32_t instrument_id, Side side,
                        .reason_code = ReasonCode::kUnexpectedOrder,
                        .reason = "registered identity has no armed leg"};
   }
-  // Moved out before the erase, not referenced: `erase` invalidates `found`,
-  // so the leg's data has to be owned here before the map is modified.
-  const PendingLeg pending = std::move(found->second);
-  pending_legs_.erase(found);
+  // Copied, not erased yet: ensure_proposal_seam_revalidated below must
+  // still find THIS leg in pending_legs_ to include it in its proposal-wide
+  // walk -- erasing here first (the previous per-leg version's order) would
+  // make a proposal invisible to its OWN revalidation on exactly the leg
+  // whose arrival triggered it, silently skipping it (empty proposal ->
+  // vacuously "approved"). `pending_legs_[key]` is erased once, at the very
+  // end of this function, by which point every check that needs to observe
+  // it has already run.
+  const PendingLeg pending = found->second;
 
   // Immutable economics must agree with what was actually reserved: identity
   // resolved correctly, but this order's own instrument/side/quantity
@@ -719,6 +823,7 @@ OmsDecision RiskEngine::decide_order(std::uint32_t instrument_id, Side side,
   // match -- identity resolution above never searched by economics at all).
   if (pending.instrument_id != instrument_id || pending.side != side ||
       pending.requested_quantity_units != quantity_units) {
+    pending_legs_.erase(key);
     state_.release_leg_reservation(key);
     audit_log_.record_order(pending.proposal_id, pending.leg_index, client_order_id, instrument_id,
                             RiskVerdict::kReject, quantity_units, 0, ReasonCode::kIdentityMismatch,
@@ -734,25 +839,39 @@ OmsDecision RiskEngine::decide_order(std::uint32_t instrument_id, Side side,
   std::string reason = pending.reason;
   std::int64_t approved = pending.approved_quantity_units;
 
-  // Revalidate mutable safety state that can have changed between commit and
-  // seam arrival -- the seam is the last point before adapter_->submit(), so
-  // this is where a late-breaking halt, disconnect, stale quote or exposure
-  // change must actually bite. Proposal commit is not permission forever.
+  // Proposal-atomic seam revalidation: mutable safety state that can have
+  // changed between commit and seam arrival must still bite (the seam is
+  // the last point before adapter_->submit()), but the WHOLE proposal is
+  // judged together, once, and cached -- never leg by leg independently,
+  // which is what previously let one sibling fail a late revalidation while
+  // the other passed. Proposal commit is not permission forever, and it is
+  // never permission for JUST ONE leg of a multi-leg proposal either. This
+  // leg is still present in pending_legs_ at this point, so it is included
+  // in its own proposal's walk.
   if (verdict != RiskVerdict::kReject) {
-    if (auto rejected = revalidate_at_seam(pending, now_nanos)) {
+    ensure_proposal_seam_revalidated(pending.proposal_id, now_nanos);
+    const ProposalSeamRecord& seam_record = proposal_seam_state_by_id_.at(pending.proposal_id);
+    if (seam_record.state == ProposalSeamState::kRejectedAtSeam) {
       verdict = RiskVerdict::kReject;
-      reason_code = rejected->reason_code;
-      reason = rejected->reason;
+      reason_code = seam_record.reject_reason_code;
+      reason = seam_record.reject_reason;
       approved = 0;
     }
   }
 
+  pending_legs_.erase(key);
   if (verdict != RiskVerdict::kReject) {
     // Consume, not create: the reservation already exists (from
     // commit_proposal_decision); this only transitions it to be
     // client_order_id-keyed for the ordinary fill/release lifecycle.
     state_.transition_leg_reservation_to_order(key, client_order_id);
   } else {
+    // Idempotent: ensure_proposal_seam_revalidated already released every
+    // still-pending leg's reservation the moment the proposal was found
+    // unsafe -- this is a defensive no-op in that case, not the primary
+    // release path. If THIS leg's own verdict was already kReject from
+    // commit time (never armed a reservation to begin with), it is also a
+    // no-op.
     state_.release_leg_reservation(key);
   }
 

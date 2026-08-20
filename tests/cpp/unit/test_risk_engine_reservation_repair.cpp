@@ -543,4 +543,227 @@ TEST(ConcentrationOverlayAccounting, ANewProposalSeesAnEarlierProposalsReservedC
   EXPECT_EQ(second.reason_code, ReasonCode::kConcentration);
 }
 
+// =================================================================
+// Proposal-atomic final-overlay evaluation and seam revalidation
+// (repair of the SECOND blocker a risk-safety re-review found: preflight
+// evaluated legs against a PREFIX overlay, so a later leg's REDUCTION of
+// exposure was invisible to an earlier leg's own cumulative check, and
+// decide_order revalidated each leg independently at the seam, so one
+// sibling could fail while the other passed -- a naked leg either way.)
+// =================================================================
+
+TEST(ProposalAtomicSeamRevalidation, N6ExposureReductionRejectsAtomicallyAtCommit) {
+  // The reviewer's exact attack shape: background exposure in B and C;
+  // proposal leg 0 ADDS A exposure, leg 1 REDUCES C exposure.
+  //
+  // Background: B (kBg) filled 300 @ 100 = 30,000. C (kFar) filled 1,000 @
+  // 100 = 100,000. Portfolio before the proposal: 130,000.
+  //
+  // Proposal: leg0 = A (kNear) buy 500 @ 100 = 50,000. leg1 = C sell 950,
+  // reducing C's position to 50 (5,000 notional).
+  //
+  // TRUE final combined portfolio = B(30,000) + A(50,000) + C-after-
+  // reduction(5,000) = 85,000. A's TRUE share = 50,000 / 85,000 = 0.588.
+  //
+  // Under the OLD prefix-only preflight, leg0 (A) was evaluated BEFORE
+  // leg1's reduction was staged, so it saw a denominator of B + C-BEFORE-
+  // reduction + A = 30,000 + 100,000 + 50,000 = 180,000, giving A a share
+  // of 50,000/180,000 = 0.278 -- safely under a 0.30 limit, wrongly
+  // approving a proposal whose TRUE combined share (0.588) is far over it.
+  // With the final-overlay fix, leg0 is judged against the SAME complete
+  // final projection leg1 sees, so the proposal now rejects ATOMICALLY at
+  // commit -- arming and reserving NEITHER leg -- rather than silently
+  // approving and only discovering the truth later, asymmetrically, at the
+  // seam.
+  RiskEngine engine(concentration_config(0.30));
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+  seed_valid_quote(engine, kBg, 100);
+  engine.on_fill(/*client_order_id=*/900, kBg, Side::kBuy, 300);
+  engine.on_fill(/*client_order_id=*/901, kFar, Side::kBuy, 1'000);
+
+  const std::vector<OrderRequest> legs{
+      make_request(kNear, Side::kBuy, 100, 500, "strat", "n6", 0),
+      make_request(kFar, Side::kSell, 100, 950, "strat", "n6", 1),
+  };
+  const auto& decision = engine.commit_proposal_decision("strat", "n6", legs, 0);
+  EXPECT_EQ(decision.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(decision.reason_code, ReasonCode::kConcentration);
+  ASSERT_EQ(decision.legs.size(), 2U);
+  EXPECT_EQ(decision.legs[0].verdict, RiskVerdict::kReject);
+  EXPECT_EQ(decision.legs[1].verdict, RiskVerdict::kReject);  // Never "leg0 reject, leg1 approve".
+
+  // Nothing armed or reserved for either leg.
+  EXPECT_EQ(engine.state().leg_reservation_count(), 0U);
+  const auto oms_decision = decide_registered_order(engine, "strat", "n6", /*leg_index=*/1, kFar,
+                                                    Side::kSell, 950, /*client_order_id=*/1, 0);
+  EXPECT_EQ(oms_decision.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(oms_decision.reason_code, ReasonCode::kUnexpectedOrder);  // No leg was ever armed.
+}
+
+TEST(ProposalAtomicSeamRevalidation,
+     ALateStateChangeMakingOnlyOneLegUnsafeRejectsTheWholeProposalAtTheSeam) {
+  // The generic version of the naked-leg hazard, unrelated to concentration:
+  // a two-leg proposal commits safely; an out-of-band fill then pushes ONE
+  // leg's OWN instrument over its position limit, while the other leg's
+  // instrument is completely untouched and would individually still pass.
+  // Submitting the UNAFFECTED leg's order first must not let it execute
+  // alone -- the whole proposal is one seam-revalidation unit.
+  RiskLimitsConfig config = base_config();
+  config.position_limits[kNear] = PositionLimit{.max_long_units = 100, .max_short_units = 100};
+  // No limit configured for kFar: leg B's own control would pass in isolation.
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  const std::vector<OrderRequest> legs{
+      make_request(kNear, Side::kBuy, 100, 50, "strat", "late-change", 0),  // leg A
+      make_request(kFar, Side::kBuy, 100, 50, "strat", "late-change", 1),   // leg B
+  };
+  const auto& decision = engine.commit_proposal_decision("strat", "late-change", legs, 0);
+  ASSERT_EQ(decision.verdict, RiskVerdict::kApprove);  // Both safe at commit time.
+
+  // Out-of-band: some OTHER, already-terminal order fills 60 more units of
+  // kNear, landing directly on the books between commit and either leg
+  // reaching the seam. leg A's TRUE projected exposure is now 60 (filled) +
+  // 50 (its own reservation) = 110 > 100 -- unsafe. leg B's own instrument
+  // (kFar) is completely unaffected and has no limit at all.
+  engine.on_fill(/*client_order_id=*/999, kNear, Side::kBuy, 60);
+
+  // Submit B FIRST -- the leg whose OWN control would pass in isolation.
+  const auto b_decision = decide_registered_order(engine, "strat", "late-change", /*leg_index=*/1,
+                                                  kFar, Side::kBuy, 50, /*client_order_id=*/2, 0);
+  EXPECT_EQ(b_decision.verdict, RiskVerdict::kReject);  // Not naked: the WHOLE proposal is unsafe.
+  EXPECT_EQ(b_decision.reason_code,
+            ReasonCode::kMaxPositionLong);  // A's control, correctly attributed.
+
+  // A, submitted afterward, also rejects with the same cached proposal-level
+  // outcome -- not re-evaluated independently a second time.
+  const auto a_decision = decide_registered_order(engine, "strat", "late-change", /*leg_index=*/0,
+                                                  kNear, Side::kBuy, 50, /*client_order_id=*/1, 0);
+  EXPECT_EQ(a_decision.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(a_decision.reason_code, ReasonCode::kMaxPositionLong);
+
+  // Both reservations released; neither leg executes.
+  EXPECT_EQ(engine.state().leg_reservation_count(), 0U);
+  EXPECT_EQ(engine.state().reservation_count(), 0U);
+}
+
+TEST(ProposalAtomicSeamRevalidation, SafeTwoLegProposalWithNoLateChangeStillApprovesBothLegs) {
+  // Negative control for the test above: with NO out-of-band change, the
+  // same shape of two-leg proposal must still approve both legs -- proving
+  // proposal-level revalidation does not spuriously reject when nothing is
+  // actually wrong.
+  RiskLimitsConfig config = base_config();
+  config.position_limits[kNear] = PositionLimit{.max_long_units = 100, .max_short_units = 100};
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  const std::vector<OrderRequest> legs{
+      make_request(kNear, Side::kBuy, 100, 50, "strat", "no-late-change", 0),
+      make_request(kFar, Side::kBuy, 100, 50, "strat", "no-late-change", 1),
+  };
+  const auto& decision = engine.commit_proposal_decision("strat", "no-late-change", legs, 0);
+  ASSERT_EQ(decision.verdict, RiskVerdict::kApprove);
+
+  const auto a_decision = decide_registered_order(engine, "strat", "no-late-change",
+                                                  /*leg_index=*/0, kNear, Side::kBuy, 50,
+                                                  /*client_order_id=*/1, 0);
+  const auto b_decision = decide_registered_order(engine, "strat", "no-late-change",
+                                                  /*leg_index=*/1, kFar, Side::kBuy, 50,
+                                                  /*client_order_id=*/2, 0);
+  EXPECT_EQ(a_decision.verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(b_decision.verdict, RiskVerdict::kApprove);
+}
+
+TEST(ProposalAtomicSeamRevalidation, ALookAlikeProposalCannotBorrowAnotherProposalsSeamApproval) {
+  // Attack D: two proposals with economically identical legs. Proposal A
+  // becomes unsafe (out-of-band fill) and is correctly rejected at the
+  // seam; proposal B, genuinely safe, must still independently approve --
+  // proposal_seam_state_by_id_ is keyed by the EXACT proposal_id, resolved
+  // only through the registered client_order_id identity, never by
+  // searching economics, so neither proposal can read or "borrow" the
+  // other's cached seam verdict.
+  RiskLimitsConfig config = base_config();
+  config.position_limits[kNear] = PositionLimit{.max_long_units = 100, .max_short_units = 100};
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100);
+
+  engine.commit_proposal_decision(
+      "strat-a", "look-a", {make_request(kNear, Side::kBuy, 100, 50, "strat-a", "look-a")}, 0);
+  engine.commit_proposal_decision(
+      "strat-b", "look-b", {make_request(kNear, Side::kBuy, 100, 50, "strat-b", "look-b")}, 0);
+
+  // Push kNear's filled position up so that EITHER reservation, added to
+  // it, would breach -- but only proposal A's order will actually be
+  // submitted while B's has not yet reached the seam.
+  engine.on_fill(/*client_order_id=*/999, kNear, Side::kBuy, 60);
+
+  const auto a_decision = decide_registered_order(engine, "strat-a", "look-a", /*leg_index=*/0,
+                                                  kNear, Side::kBuy, 50, /*client_order_id=*/1, 0);
+  EXPECT_EQ(a_decision.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(a_decision.reason_code, ReasonCode::kMaxPositionLong);
+
+  // B's own reservation is untouched by A's rejection (a DIFFERENT
+  // proposal_id, never released by A's seam revalidation), and B's own
+  // fate is not yet decided -- it must be judged on ITS OWN seam
+  // revalidation, not inherit A's.
+  EXPECT_EQ(engine.state().leg_reservation_count(), 1U);  // Only B's leg remains armed.
+}
+
+TEST(ProposalAtomicSeamRevalidation,
+     PortfolioNotionalFinalOverlayApprovesAGenuinelySafeReducingProposal) {
+  // The final-overlay fix is not only about preventing an unsafe proposal
+  // from wrongly approving (N6) -- a stale prefix denominator can just as
+  // easily cause a genuinely SAFE proposal to be wrongly rejected, which is
+  // exactly as dishonest an outcome. Same "add + reduce" shape as N6, a
+  // DIFFERENT cumulative control (portfolio notional, not concentration).
+  //
+  // Background: C (kFar) filled 1,000 @ 100 = 100,000.
+  // Proposal: leg0 = A (kNear) buy 200 @ 100 = 20,000 (ADDS). leg1 = C sell
+  //   950, reducing C to 50 units = 5,000 (REDUCES).
+  // TRUE final combined notional = 20,000 + 5,000 = 25,000 <= the 30,000
+  //   limit below -- genuinely safe.
+  //
+  // Under the OLD prefix-only preflight, leg0 (A) was evaluated BEFORE
+  // leg1's reduction was staged, so it saw C's PRE-reduction notional:
+  // 100,000 (C) + 20,000 (A) = 120,000 > 30,000 -- a spurious reject of a
+  // proposal that was never actually unsafe.
+  RiskLimitsConfig config = base_config();
+  config.max_portfolio_notional_units = 30'000;
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+  engine.on_fill(/*client_order_id=*/900, kFar, Side::kBuy, 1'000);
+
+  const std::vector<OrderRequest> legs{
+      make_request(kNear, Side::kBuy, 100, 200, "strat", "notional-reduce", 0),
+      make_request(kFar, Side::kSell, 100, 950, "strat", "notional-reduce", 1),
+  };
+  const auto& decision = engine.commit_proposal_decision("strat", "notional-reduce", legs, 0);
+  EXPECT_EQ(decision.verdict, RiskVerdict::kApprove);
+}
+
+TEST(ProposalAtomicSeamRevalidation, FlatBookConcentrationBelowOneRejectsTheFirstPositionHonestly) {
+  // Documented intended policy (ADR-0028; docs/LIMITATIONS.md), not a bug:
+  // concentration is a SHARE of the whole portfolio. From a genuinely flat
+  // book, the very first position any proposal takes IS, mathematically,
+  // 100% of the (soon-to-exist) portfolio -- there is nothing else for it
+  // to share space with. A configured max_concentration_share below 1.0
+  // therefore rejects a lone first position honestly; this is the
+  // mathematically correct reading of "share of portfolio", not an
+  // off-by-one or an under-tested edge case. Forcing an exception here
+  // (e.g. "concentration is disabled until N positions exist") would be
+  // inventing policy the frozen requirement does not state -- so this test
+  // exists to PIN the honest behavior, not to work around it.
+  RiskEngine engine(concentration_config(0.50));
+  seed_valid_quote(engine, kNear, 100);
+
+  const auto& decision = engine.commit_proposal_decision(
+      "strat", "flat-book", {make_request(kNear, Side::kBuy, 100, 10, "strat", "flat-book")}, 0);
+  EXPECT_EQ(decision.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(decision.reason_code, ReasonCode::kConcentration);
+}
+
 }  // namespace

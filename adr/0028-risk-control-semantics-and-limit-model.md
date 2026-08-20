@@ -131,19 +131,26 @@ portfolio_overlay)` -- the identical function and identical
 `check_group_exposure`'s market/sector checks, already used. There is no
 concentration-specific accounting: "projected exposure" everywhere in this
 engine means confirmed state (`RiskState::position_units`/`reserved_units`)
-plus whatever the current evaluation context's overlay carries (a sibling
-leg already staged within the same proposal at preflight; the negated,
-then re-added, current leg at seam revalidation, so it counts exactly
-once). An earlier version hand-computed the concentration numerator
+plus whatever the current evaluation context's overlay carries -- the
+proposal's FINAL combined effect (every leg's own resolved quantity, not
+only legs already visited in iteration order -- ADR-0027's "Correction 2")
+with the current leg's own contribution excluded first at both preflight
+and seam revalidation, so re-adding it as the candidate counts it exactly
+once. An earlier version hand-computed the concentration numerator
 directly from `state_.reserved_units(instrument_id) + signed_candidate`,
 which agreed with the shared model only by coincidence during ordinary
 single-leg preflight evaluation; it double-counted the candidate once
 commit-time reservation was introduced (the leg's own reservation was
 already in `reserved_units` by the time `decide_order` revalidated it) and
-under-counted a same-instrument sibling leg staged earlier in the same
-multi-leg proposal (the hand-rolled formula never read the overlay at
-all). Both were symptoms of the same root cause -- a second, parallel
-accounting path for one specific control -- fixed by deleting it, not by
+under-counted a same-instrument sibling leg in the same multi-leg proposal
+(the hand-rolled formula never read the overlay at all, and even the
+overlay-based version initially still under-counted a LATER sibling leg's
+exposure REDUCTION, since the overlay was at first only a growing prefix --
+ADR-0027's "Correction 2" fixes this for every cumulative control at once,
+not concentration alone). These were symptoms of the same two root causes
+-- a second, parallel accounting path for one specific control, and a
+preflight overlay that was a prefix rather than the proposal's true final
+state -- fixed by deleting the former and completing the latter, not by
 patching either symptom independently.
 
 **AEGIS-135/136 kill switches and connectivity: symmetric idempotent

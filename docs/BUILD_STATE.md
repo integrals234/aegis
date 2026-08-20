@@ -259,6 +259,50 @@ allow and reject configs, byte-identical across runs). Neither
 AEGIS-139..155 (Batch 2) nor `python/validation/**` is touched by this
 repair.
 
+**Follow-up correction 1 (M5 closure repair): concentration overlay
+accounting.** The reservation/identity repair above was itself re-reviewed
+and confirmed sound, but the re-review found a NEW defect it introduced:
+`check_concentration`'s single-instrument numerator bypassed the shared
+`EvaluationOverlay` model, computing `state_.reserved_units + candidate`
+directly. Once commit-time reservation existed, this double-counted a
+leg's own already-committed reservation at the seam (spuriously rejecting
+one leg of a safe multi-leg proposal while its sibling still executed) and
+separately under-counted a same-instrument sibling leg staged earlier in
+the same proposal at preflight. Routed through the SAME
+`group_gross_notional_units`/`EvaluationOverlay` model the correlated-group
+and market/sector checks already used correctly (ADR-0028); no new
+accounting path added.
+
+**Follow-up correction 2 (M5 closure repair): proposal-atomic final-overlay
+evaluation and seam revalidation.** A further re-review of correction 1
+found a DEEPER, pre-existing defect in the same family: `evaluate_proposal`
+judged each leg against a growing PREFIX overlay, so a later leg's exposure
+REDUCTION was invisible to an earlier leg's own cumulative check, and
+`decide_order`/`revalidate_at_seam` judged each leg independently at the
+seam, so one sibling could fail a late revalidation while another passed.
+Both let a proposal's true combined risk go unassessed as a whole -- a
+naked single leg either way, reachable whenever `max_concentration_share`
+(or, for the seam half, any cumulative control) was actually enabled below
+its disabling default. Fixed by making `evaluate_proposal` build ONE final
+combined overlay from every leg's own resolved quantity before any leg's
+cumulative controls are judged (Phase A/B), and by making `decide_order`
+revalidate an ENTIRE proposal's still-pending legs together, once, cached
+per `proposal_id` (`ensure_proposal_seam_revalidated`) -- risk now approves
+the whole proposal or rejects the whole proposal, never a mix. Detailed in
+ADR-0027's "Correction 2" section; retracts that section's original
+description of the preflight overlay as "folds in each already-evaluated
+sibling leg" (a prefix, not the final projection). Risk-DECISION atomicity
+is now guaranteed; atomic EXCHANGE execution across legs is explicitly NOT
+claimed (`docs/LIMITATIONS.md`) -- this system has no basket/atomic
+multi-leg execution primitive. Both shipped risk configs
+(`configs/risk/limits.json`, `limits_reject_demo.json`) leave
+`max_concentration_share` at its disabling default (`1.0`), so neither the
+original defect nor this fix changes the demo's own recorded output; the
+fix is proven by `tests/cpp/unit/test_risk_engine_reservation_repair.cpp`'s
+`ConcentrationOverlayAccounting`/`ProposalAtomicSeamRevalidation` suites and
+a real-composition-root test in
+`tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp`.
+
 Not yet done (Batch 2): AEGIS-139..155's remaining validation modules,
 AEGIS-238's observability integration, evidence generation, and the
 independent audit. `requirements/implementation_status.json` is untouched by

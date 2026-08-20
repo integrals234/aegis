@@ -82,6 +82,7 @@ SPECS: dict[str, dict[str, Any]] = {
             "ReservationRepairConcurrentProposals.TwoIndividuallySafeProposalsRejectAtCommitNotJustAtSeam",
             "ReservationRepairSeamRevalidation.*",
             "ReservationRepairAtomicity.*",
+            "ProposalAtomicSeamRevalidation.*",
         ],
         "claim": "Long and short caps enforced against the PROJECTED position (confirmed position "
                  "+ every outstanding reservation + the candidate), so two orders that each pass "
@@ -93,7 +94,11 @@ SPECS: dict[str, dict[str, Any]] = {
                  "rejection and failed/backpressured submission -- the last via "
                  "app::RiskReleasingExecutionAdapter, with no manual caller cleanup required. Mutable "
                  "safety state (including this leg's own, correctly-not-double-counted exposure) is "
-                 "revalidated again at the seam, since proposal commit is not permission forever.",
+                 "revalidated again at the seam, since proposal commit is not permission forever -- "
+                 "and revalidated for the WHOLE proposal at once (M5 closure repair, round 2): an "
+                 "out-of-band change making only ONE leg's position unsafe rejects the entire "
+                 "proposal, even when the unaffected sibling leg's order is submitted first, so "
+                 "risk can never approve one leg while rejecting the other.",
         "implementation": SEAM_IMPL,
     },
     "AEGIS-123": {
@@ -103,6 +108,7 @@ SPECS: dict[str, dict[str, Any]] = {
         "filters": [
             "RiskEngineNotional.*",
             "ReservationRepairConcurrentProposals.PortfolioNotionalSeesAnEarlierProposalsReservation",
+            "ProposalAtomicSeamRevalidation.PortfolioNotionalFinalOverlayApprovesAGenuinelySafeReducingProposal",
         ],
         "claim": "Per-order and portfolio notional caps enforced. An instrument whose currency has "
                  "no configured FX rate is rejected explicitly (kUnsupportedCurrency), never "
@@ -111,7 +117,11 @@ SPECS: dict[str, dict[str, Any]] = {
                  "only against a synthetic fixture -- stated, not implied. Portfolio notional is "
                  "read from CURRENT reservation state, so an earlier proposal's reservation "
                  "(committed before this one, M5 closure repair) is correctly included, not just "
-                 "the filled position.",
+                 "the filled position. A multi-leg proposal's own portfolio-notional check is judged "
+                 "against the FINAL combined effect of ALL its legs (M5 closure repair, round 2), so "
+                 "a later leg's exposure REDUCTION correctly lowers an earlier leg's own projection "
+                 "instead of a stale prefix denominator spuriously rejecting a genuinely safe "
+                 "proposal.",
     },
     "AEGIS-124": {
         "artifact": "market_and_sector_exposure",
@@ -232,19 +242,34 @@ SPECS: dict[str, dict[str, Any]] = {
             "RiskEngineConcentration.*",
             "ConcentrationOverlayAccounting.*",
             "CalendarSpreadRiskExchangeIntegration.ConcentrationWithinLimitLetsBothLegsSurviveSeamRevalidationInTheRealSeam",
+            "CalendarSpreadRiskExchangeIntegration.ConcentrationBreachRejectsBothLegsAtomicallyInTheRealSeamNeverJustOne",
+            "ProposalAtomicSeamRevalidation.N6ExposureReductionRejectsAtomicallyAtCommit",
+            "ProposalAtomicSeamRevalidation.FlatBookConcentrationBelowOneRejectsTheFirstPositionHonestly",
         ],
         "claim": "Single-instrument concentration share and configuration-supplied correlated-group "
                  "exposure limits enforced. Correlation is never estimated inside the decision "
                  "path (ADR-0028): a risk decision must not depend on a statistic derived from "
-                 "the same stream the decision is about. Concentration closure repair: the "
+                 "the same stream the decision is about. Concentration closure repair, round 1: the "
                  "single-instrument numerator is now routed through the same "
                  "group_gross_notional_units/EvaluationOverlay projected-exposure model every "
                  "other cumulative control uses (ADR-0028), fixing both a seam double-count "
                  "(this leg's own already-committed reservation counted twice) and a preflight "
                  "under-count (a same-instrument sibling leg's staged exposure ignored) that were "
-                 "two symptoms of one hand-rolled accounting path. Boundary, seam-revalidation, "
-                 "same-instrument multi-leg, prior-proposal-visibility and real-composition-root "
-                 "cases are all covered with literal, hand-checkable numbers.",
+                 "two symptoms of one hand-rolled accounting path. Round 2: a deeper, pre-existing "
+                 "defect in the same family -- preflight evaluated each leg against a growing "
+                 "PREFIX overlay, so a later leg's exposure REDUCTION was invisible to an earlier "
+                 "leg's own share, and a proposal whose true combined concentration was unsafe "
+                 "could approve at commit. evaluate_proposal now builds ONE final combined overlay "
+                 "from every leg's own resolved quantity before any leg's cumulative controls are "
+                 "judged, so the reviewer's exact exposure-reduction attack now rejects ATOMICALLY "
+                 "at commit -- reserving and arming neither leg -- rather than approving and only "
+                 "discovering the truth later, asymmetrically, at the seam. A flat-book first "
+                 "position under a sub-1.0 limit is proven to reject honestly, by the definition of "
+                 "concentration as a share of the whole portfolio, not by bug (docs/LIMITATIONS.md). "
+                 "Boundary, seam-revalidation, same-instrument multi-leg, prior-proposal-visibility "
+                 "and real-composition-root cases (both a safe-proposal-survives and an "
+                 "unsafe-proposal-rejects-atomically case) are all covered with literal, "
+                 "hand-checkable numbers.",
     },
     "AEGIS-135": {
         "artifact": "kill_switches",
@@ -284,6 +309,7 @@ SPECS: dict[str, dict[str, Any]] = {
             "RiskEngineAuditInvariant.*",
             "ReservationRepairAuditIntegrity.*",
             "ReservationRepairExactIdentity.RegisteredIdentityWithDisagreeingEconomicsIsRejected",
+            "ProposalAtomicSeamRevalidation.*",
         ],
         "claim": "Exactly ONE terminal ProposalRiskDecision per proposal_id (asserted via "
                  "RiskAuditLog::proposal_decision_count), with subordinate per-order "
@@ -294,7 +320,13 @@ SPECS: dict[str, dict[str, Any]] = {
                  "resolution is exact (M5 closure repair): a client_order_id is registered against "
                  "its precise strategy/proposal/leg identity before submission, so an order can "
                  "never be mis-attributed to a different, economically-identical proposal, and a "
-                 "replayed proposal_id can never append a second terminal decision.",
+                 "replayed proposal_id can never append a second terminal decision. Seam "
+                 "revalidation is also proposal-atomic (M5 closure repair, round 2): "
+                 "ensure_proposal_seam_revalidated computes AT MOST ONE outcome per proposal_id, "
+                 "cached and consulted by every subsequent leg of that proposal, so an order that "
+                 "reaches decide_order can approve only if it resolves to its exact "
+                 "already-prevalidated PendingLegKey AND the whole proposal was found safe -- never "
+                 "a mix of one sibling approved and another rejected within the same proposal.",
     },
     "AEGIS-138": {
         "artifact": "portfolio_risk_analytics",

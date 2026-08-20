@@ -67,6 +67,58 @@
 /// An order that reaches `decide_order` with no registered identity is
 /// rejected with `kUnexpectedOrder` -- the structural defence against a
 /// caller that tried to skip the proposal-level decision.
+///
+/// # Proposal-atomic final-overlay evaluation and seam revalidation (M5
+/// closure repair)
+///
+/// A risk-safety review found the reservation/identity repair above still
+/// permitted a naked leg through a different door. `evaluate_proposal`
+/// evaluated each leg against a PREFIX overlay -- only the legs staged
+/// *before* it in iteration order -- so a later leg that REDUCES exposure
+/// (a closing or rolling trade) was invisible to an earlier leg's own
+/// cumulative-control check. A proposal could therefore commit as APPROVE
+/// even though its true, fully-combined projection was unsafe. Separately,
+/// `decide_order`/`revalidate_at_seam` judged each leg's safety
+/// independently at the seam: one leg could fail a late-breaking
+/// revalidation while its sibling, evaluated moments later against
+/// different (already-mutated) state, passed -- producing exactly the
+/// naked single leg ADR-0027's atomicity exists to prevent, even when both
+/// legs were individually "correct" against the state each happened to see
+/// at the instant it was checked.
+///
+/// Both are fixed by making evaluation, not just reservation, proposal-wide:
+///
+///   * `evaluate_proposal` now runs in two phases. Phase A resolves every
+///     leg's non-cumulative admission (halts, connectivity, market state,
+///     idempotency/rate-limit, order-quantity-cap/volatility sizing) and
+///     builds ONE final combined `EvaluationOverlay` from every leg's own
+///     resolved quantity -- the complete proposed portfolio, not a
+///     leg-by-leg accumulation. Phase B then judges each leg's cumulative
+///     controls (`check_cumulative_controls`) against that SAME final
+///     overlay, with only that leg's own contribution excluded first (so
+///     re-adding it as the candidate counts it exactly once) -- the
+///     identical exclude-then-readd technique `revalidate_at_seam` already
+///     used. A proposal whose true combined effect is unsafe now rejects
+///     atomically at commit, before anything is armed or reserved,
+///     regardless of leg order.
+///   * `decide_order` no longer calls `revalidate_at_seam` per leg
+///     directly. It first calls `ensure_proposal_seam_revalidated`, which
+///     runs (once per proposal, cached in `proposal_seam_state_by_id_`) a
+///     single revalidation pass over EVERY still-pending leg of that
+///     proposal against current mutable state. If any leg would fail, the
+///     WHOLE proposal is marked `kRejectedAtSeam` and every one of its
+///     reservations is released immediately -- no leg of that proposal can
+///     ever reach `kApprove`/`kResize` after that, regardless of which
+///     leg's order happens to arrive at the seam first or what state
+///     changes afterward. `decide_order` then only applies that one cached
+///     proposal-level outcome to the exact `PendingLegKey` it resolved.
+///
+/// This guarantees risk-DECISION atomicity: risk approves the whole
+/// proposal or rejects the whole proposal, never a mix. It does NOT
+/// guarantee atomic EXCHANGE execution -- once risk approves both legs,
+/// a transport or exchange failure on one leg after submission can still
+/// leave the other filled alone, because this system has no basket/atomic
+/// multi-leg execution primitive. That boundary is stated, not implied.
 namespace aegis::participant::risk {
 
 /// The seam-facing verdict `decide_order` returns; `app::RiskEngineGate`
@@ -208,6 +260,19 @@ class RiskEngine {
       std::int64_t portfolio_notional) const;
   [[nodiscard]] std::optional<LegDecision> check_margin_and_leverage(
       const EvaluationOverlay& portfolio_overlay, std::int64_t portfolio_notional) const;
+  /// Control groups 8-12 (position, notional, market/sector, concentration,
+  /// margin/leverage) as one unit: the shared cumulative-control pipeline
+  /// `evaluate_leg`, `evaluate_proposal`'s Phase B, and `revalidate_at_seam`
+  /// all call, so there is exactly one place this sequence is written, not
+  /// three drifting copies. `context_overlay` is whatever the caller has
+  /// already established as "everything except this leg's own candidate,
+  /// counted once" -- an empty overlay for a lone `evaluate()` call, the
+  /// proposal's final combined overlay with this leg's own share excluded
+  /// for `evaluate_proposal`, or the seam's own-reservation-excluded overlay
+  /// for `revalidate_at_seam`.
+  [[nodiscard]] std::optional<LegDecision> check_cumulative_controls(
+      const OrderRequest& request, std::int64_t effective_quantity,
+      const EvaluationOverlay& context_overlay) const;
   [[nodiscard]] std::int64_t notional_units_base_currency(std::uint32_t instrument_id,
                                                           std::int64_t quantity_units,
                                                           std::int64_t price_units,
@@ -231,19 +296,51 @@ class RiskEngine {
     std::string reason;
   };
 
-  /// Re-checks the mutable safety state `decide_order` must not trust
-  /// forever (halts, connectivity, market staleness/collar, and every
-  /// cumulative exposure/margin/leverage control) against CURRENT `state_`,
-  /// excluding `pending`'s own already-reserved contribution so it is
-  /// counted exactly once, not twice. Deliberately does NOT re-run
-  /// order-quantity-cap/volatility-resize (sizing is immutable once
-  /// approved) or idempotency/rate-limit admission (already consumed at
-  /// commit time; re-running either would reject every order, since the
-  /// dedupe key is already marked seen and the rate-limit event already
-  /// recorded) -- see risk_engine.cpp's `revalidate_at_seam` for the exact
-  /// reasoning per control.
+  /// Re-checks the mutable safety state a single leg must not trust forever
+  /// (halts, connectivity, market staleness/collar, and every cumulative
+  /// exposure/margin/leverage control) against CURRENT `state_`, excluding
+  /// `pending`'s own already-reserved contribution so it is counted exactly
+  /// once, not twice. Deliberately does NOT re-run order-quantity-cap/
+  /// volatility-resize (sizing is immutable once approved) or idempotency/
+  /// rate-limit admission (already consumed at commit time; re-running
+  /// either would reject every order, since the dedupe key is already
+  /// marked seen and the rate-limit event already recorded). Called ONLY
+  /// from `ensure_proposal_seam_revalidated`, once per pending leg of a
+  /// proposal being revalidated together -- never applied to just one leg
+  /// of a multi-leg proposal in isolation, which is what let one sibling
+  /// fail while the other passed (the naked-leg defect this repair closes).
   [[nodiscard]] std::optional<LegDecision> revalidate_at_seam(const PendingLeg& pending,
                                                               common::Nanos now_nanos) const;
+
+  /// One committed proposal's seam-revalidation epoch: computed AT MOST
+  /// ONCE (by `ensure_proposal_seam_revalidated`, the first time any of its
+  /// legs reaches `decide_order`) and then trusted by every subsequent leg
+  /// of the same proposal, so risk can only ever approve the whole proposal
+  /// or reject the whole proposal at the seam -- never a mix.
+  enum class ProposalSeamState : std::uint8_t {
+    kNotRevalidated = 0,
+    kApprovedForRelease = 1,
+    kRejectedAtSeam = 2,
+  };
+  struct ProposalSeamRecord {
+    ProposalSeamState state{ProposalSeamState::kNotRevalidated};
+    ReasonCode reject_reason_code{ReasonCode::kNone};
+    std::string reject_reason;
+  };
+
+  /// Idempotent: a no-op if `proposal_id`'s seam epoch was already decided.
+  /// Otherwise revalidates every leg of `proposal_id` still in
+  /// `pending_legs_` (via `revalidate_at_seam`) and records ONE outcome for
+  /// the whole proposal. On the first leg that would fail, marks the
+  /// proposal `kRejectedAtSeam` and releases EVERY one of its remaining
+  /// leg reservations immediately -- not deferred until each leg's own
+  /// `decide_order` call, since by then the proposal's fate is already
+  /// known and holding reserved capacity for legs that will never execute
+  /// serves no one. If every leg passes, marks it `kApprovedForRelease`;
+  /// `decide_order` then still verifies each leg's own identity/economics
+  /// and transitions its reservation individually, but never re-runs the
+  /// cumulative controls this already decided.
+  void ensure_proposal_seam_revalidated(const std::string& proposal_id, common::Nanos now_nanos);
 
   RiskLimitsConfig config_;
   RiskState state_;
@@ -257,6 +354,11 @@ class RiskEngine {
   /// `decide_order` the moment it resolves an order -- never searched by
   /// economics.
   std::unordered_map<std::uint64_t, PendingLegKey> order_identity_by_client_order_id_;
+  /// `proposal_id -> ProposalSeamRecord`, keyed the same way
+  /// `RiskAuditLog::find_proposal_decision` already treats `proposal_id`
+  /// (globally unique by convention, ADR-0027) -- not a second, narrower
+  /// identity notion.
+  std::unordered_map<std::string, ProposalSeamRecord> proposal_seam_state_by_id_;
 };
 
 }  // namespace aegis::participant::risk

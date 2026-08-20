@@ -213,6 +213,28 @@ the following is a production risk system:
   (`CalendarSpreadRunConfig::starting_capital_units`) is an arbitrary,
   documented constant**, not a claim about how much capital a real deployment
   would carry.
+- **Risk-decision atomicity is guaranteed; exchange-execution atomicity is
+  not.** A committed proposal's legs are evaluated against one final
+  combined projection and revalidated at the seam as one atomic unit
+  (ADR-0027's "Correction 2") -- risk approves the whole proposal or
+  rejects the whole proposal, never a mix. But once risk approves both
+  legs, this system has no basket/atomic multi-leg execution primitive: a
+  transport or exchange failure on one leg after submission can still
+  leave the other filled alone. That residual leg-execution risk is not
+  eliminated by this repair and is not claimed to be.
+- **Concentration is a share of the WHOLE portfolio, so a lone first
+  position from a flat book is mathematically 100% concentrated.** A
+  configured `max_concentration_share` below `1.0` therefore honestly
+  rejects a strategy's very first position, unless other exposure already
+  exists to share the portfolio with. This is the correct reading of
+  "share of portfolio", not a bug or an under-tested edge case
+  (`tests/cpp/unit/test_risk_engine_reservation_repair.cpp`'s
+  `FlatBookConcentrationBelowOneRejectsTheFirstPositionHonestly` pins this
+  behavior); no exception is invented for it. Both shipped risk configs
+  (`configs/risk/limits.json`, `limits_reject_demo.json`) leave
+  `max_concentration_share` at its disabling default (`1.0`) precisely
+  because of this, so the demo's calendar-spread strategy never exercises
+  a live concentration limit.
 
 ## M5 validation-framework limitations
 

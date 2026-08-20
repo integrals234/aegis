@@ -587,4 +587,79 @@ TEST(CalendarSpreadRiskExchangeIntegration,
   EXPECT_EQ(portfolio.position(kFarInstrumentId).quantity_units, kQuantityUnits);
 }
 
+TEST(CalendarSpreadRiskExchangeIntegration,
+     ConcentrationBreachRejectsBothLegsAtomicallyInTheRealSeamNeverJustOne) {
+  // The negative counterpart to the "both legs survive" test above, through
+  // the same real composition-root path: with the SAME background dilution
+  // but a limit low enough that BOTH legs genuinely breach concentration
+  // (near share ~0.312, far share ~0.313, against a 0.10 limit), the whole
+  // proposal must reject ATOMICALLY at commit -- neither leg armed,
+  // reserved, or submitted. This is the real-seam proof that risk never
+  // creates an unintended single-leg spread by approving one sibling and
+  // rejecting the other.
+  Harness harness;
+  seed_counterparty_liquidity(harness);
+
+  BookBuilder near_book(kNearInstrumentId);
+  BookBuilder far_book(kFarInstrumentId);
+  const CalendarSpreadConfig config{.near_instrument_id = kNearInstrumentId,
+                                    .far_instrument_id = kFarInstrumentId,
+                                    .zscore_window = 20,
+                                    .entry_threshold = 2.0,
+                                    .exit_threshold = 0.5,
+                                    .quantity_units = kQuantityUnits};
+  CalendarSpreadStrategy strategy(config);
+  const StrategyProposal proposal = build_short_spread_proposal(near_book, far_book, strategy);
+  ASSERT_TRUE(proposal.has_action);
+
+  RiskLimitsConfig limits = permissive_config();
+  limits.instruments[kBackgroundInstrumentId] = aegis::participant::risk::InstrumentInfo{
+      .multiplier_units = 1, .currency = "USD", .market = "", .sector = ""};
+  limits.concentration.max_concentration_share = 0.10;
+  RiskEngine risk_engine(limits);
+  risk_engine.on_market_data(kNearInstrumentId, 100'000, 0, true);
+  risk_engine.on_market_data(kFarInstrumentId, 100'060, 0, true);
+  risk_engine.on_market_data(kBackgroundInstrumentId, 100'000, 0, true);
+  risk_engine.on_fill(/*client_order_id=*/999, kBackgroundInstrumentId, Side::kBuy, 30);
+  RiskEngineGate risk_gate(risk_engine, harness.clock);
+  TransportExecutionAdapter adapter(harness.transport, harness.clock, /*stream_id=*/1);
+  OrderManager manager(adapter, risk_gate);
+  Portfolio portfolio;
+
+  // Captured BEFORE the decision, not after -- a genuine before/after
+  // comparison, not two reads of an untouched value (the tautology an
+  // earlier review flagged in a sibling test).
+  const std::uint64_t next_order_id_before = harness.node.next_order_id();
+
+  const auto& decision = risk_engine.commit_proposal_decision(
+      "calendar_spread", "concentration-breach",
+      {aegis::participant::risk::OrderRequest{.strategy_id = "calendar_spread",
+                                              .proposal_id = "concentration-breach",
+                                              .leg_index = 0,
+                                              .instrument_id = kNearInstrumentId,
+                                              .side = proposal.near.side,
+                                              .price_units = 100'000,
+                                              .quantity_units = proposal.near.quantity_units},
+       aegis::participant::risk::OrderRequest{.strategy_id = "calendar_spread",
+                                              .proposal_id = "concentration-breach",
+                                              .leg_index = 1,
+                                              .instrument_id = kFarInstrumentId,
+                                              .side = proposal.far.side,
+                                              .price_units = 100'060,
+                                              .quantity_units = proposal.far.quantity_units}},
+      0);
+  ASSERT_EQ(decision.verdict, aegis::participant::risk::RiskVerdict::kReject);
+  ASSERT_EQ(decision.legs.size(), 2U);
+  EXPECT_EQ(decision.legs[0].verdict, aegis::participant::risk::RiskVerdict::kReject);
+  EXPECT_EQ(decision.legs[1].verdict, aegis::participant::risk::RiskVerdict::kReject);
+
+  // Composition-root atomicity: the demo never calls execute_leg for a
+  // rejected proposal, matching participant_run.cpp's own gate. Confirm the
+  // exchange and portfolio are exactly as if nothing happened.
+  EXPECT_TRUE(manager.all_tracked_orders().empty());
+  EXPECT_EQ(harness.node.next_order_id(), next_order_id_before);
+  EXPECT_EQ(portfolio.position(kNearInstrumentId).quantity_units, 0);
+  EXPECT_EQ(portfolio.position(kFarInstrumentId).quantity_units, 0);
+}
+
 }  // namespace

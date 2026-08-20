@@ -6,6 +6,12 @@
     ],
     "cases": [
       {
+        "line": 716,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ProposalAtomicSeamRevalidation.PortfolioNotionalFinalOverlayApprovesAGenuinelySafeReducingProposal"
+      },
+      {
         "line": 111,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
@@ -33,12 +39,13 @@
     "failure_count": 0,
     "filters": [
       "RiskEngineNotional.*",
-      "ReservationRepairConcurrentProposals.PortfolioNotionalSeesAnEarlierProposalsReservation"
+      "ReservationRepairConcurrentProposals.PortfolioNotionalSeesAnEarlierProposalsReservation",
+      "ProposalAtomicSeamRevalidation.PortfolioNotionalFinalOverlayApprovesAGenuinelySafeReducingProposal"
     ],
-    "test_count": 4
+    "test_count": 5
   },
   "artifact": "AEGIS-123/max_notional_and_currency",
-  "claim": "Per-order and portfolio notional caps enforced. An instrument whose currency has no configured FX rate is rejected explicitly (kUnsupportedCurrency), never silently treated as 1:1 with base; a configured non-base rate normalizes correctly. Every in-repo product is USD, so the multi-currency path is exercised only against a synthetic fixture -- stated, not implied. Portfolio notional is read from CURRENT reservation state, so an earlier proposal's reservation (committed before this one, M5 closure repair) is correctly included, not just the filled position.",
+  "claim": "Per-order and portfolio notional caps enforced. An instrument whose currency has no configured FX rate is rejected explicitly (kUnsupportedCurrency), never silently treated as 1:1 with base; a configured non-base rate normalizes correctly. Every in-repo product is USD, so the multi-currency path is exercised only against a synthetic fixture -- stated, not implied. Portfolio notional is read from CURRENT reservation state, so an earlier proposal's reservation (committed before this one, M5 closure repair) is correctly included, not just the filled position. A multi-leg proposal's own portfolio-notional check is judged against the FINAL combined effect of ALL its legs (M5 closure repair, round 2), so a later leg's exposure REDUCTION correctly lowers an earlier leg's own projection instead of a stale prefix denominator spuriously rejecting a genuinely safe proposal.",
   "deterministic_config": {
     "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
     "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
@@ -66,7 +73,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "1b88c8e0554b1bb270607d39050823746f1c73b5",
+  "repository_commit": "1fb935bcf9b36909730b2f873bbbe3d8456f51ea",
   "requirements": [
     "AEGIS-123"
   ],
