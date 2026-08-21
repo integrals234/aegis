@@ -192,6 +192,164 @@ TEST(RiskEngineQuantityValidity,
   EXPECT_EQ(engine.state().reserved_units(kFar), 0);
 }
 
+// ------------------------------------------------------------------- N2
+//
+// A malformed CONFIGURED order-quantity cap (non-positive, with
+// resize_on_breach) can make resolve_effective_quantity itself manufacture
+// a non-positive approved quantity. check_approved_quantity_postcondition
+// is the defense-in-depth backstop for exactly that -- proven here by
+// constructing the malformed RiskLimitsConfig directly (programmatically),
+// which load_risk_limits_config's own loader-side validation cannot see.
+
+TEST(RiskEngineQuantityValidity, MalformedNegativeConfiguredCapNeverProducesANonPositiveApproval) {
+  RiskLimitsConfig config = base_config();
+  config.order_quantity_limits[kNear] =
+      OrderQuantityLimit{.max_order_quantity_units = -100, .resize_on_breach = true};
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100, 0);
+
+  const LegDecision decision = engine.evaluate(make_request(kNear, Side::kBuy, 100, 150, 0));
+  EXPECT_EQ(decision.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(decision.reason_code, ReasonCode::kInvalidLimitConfiguration);
+  EXPECT_EQ(engine.state().reserved_units(kNear), 0);
+}
+
+TEST(RiskEngineQuantityValidity, MalformedZeroConfiguredCapNeverProducesANonPositiveApproval) {
+  RiskLimitsConfig config = base_config();
+  config.order_quantity_limits[kNear] =
+      OrderQuantityLimit{.max_order_quantity_units = 0, .resize_on_breach = true};
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100, 0);
+
+  const LegDecision decision = engine.evaluate(make_request(kNear, Side::kBuy, 100, 150, 0));
+  EXPECT_EQ(decision.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(decision.reason_code, ReasonCode::kInvalidLimitConfiguration);
+}
+
+TEST(RiskEngineQuantityValidity, AWellFormedResizeIsUnaffectedByThePostcondition) {
+  // Regression: the new postcondition must not interfere with an ordinary,
+  // well-formed resize (existing valid-resize behavior stays intact).
+  RiskLimitsConfig config = base_config();
+  config.order_quantity_limits[kNear] =
+      OrderQuantityLimit{.max_order_quantity_units = 100, .resize_on_breach = true};
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100, 0);
+
+  const LegDecision decision = engine.evaluate(make_request(kNear, Side::kBuy, 100, 150, 0));
+  EXPECT_EQ(decision.verdict, RiskVerdict::kResize);
+  EXPECT_EQ(decision.approved_quantity_units, 100);
+}
+
+TEST(RiskEngineQuantityValidity,
+     MultiLegProposalWithAMalformedConfiguredCapRejectsTheWholeProposalAtomically) {
+  RiskLimitsConfig config = base_config();
+  config.order_quantity_limits[kNear] =
+      OrderQuantityLimit{.max_order_quantity_units = -1, .resize_on_breach = true};
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100, 0);
+  seed_valid_quote(engine, kFar, 100, 0);
+
+  const std::string proposal_id = "spread-bad-config";
+  const std::vector<OrderRequest> legs{
+      make_request(kNear, Side::kBuy, 100, 10, 0, "spread_strategy", proposal_id, 0),
+      make_request(kFar, Side::kSell, 100, 10, 0, "spread_strategy", proposal_id, 1),
+  };
+  const auto& decision = engine.commit_proposal_decision("spread_strategy", proposal_id, legs, 0);
+  EXPECT_EQ(decision.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(decision.reason_code, ReasonCode::kInvalidLimitConfiguration);
+  EXPECT_EQ(engine.state().reserved_units(kNear), 0);
+  EXPECT_EQ(engine.state().reserved_units(kFar), 0);
+}
+
+// ------------------------------------------------------------------- N3
+//
+// A fill quantity is also a positive magnitude; side carries direction. An
+// invalid fill must mutate nothing -- no position, no reservation.
+
+TEST(RiskEngineQuantityValidity, NegativeFillMutatesNeitherPositionNorReservation) {
+  RiskLimitsConfig config = base_config();
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100, 0);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision(
+                    "strat", "fill-p1",
+                    {make_request(kNear, Side::kBuy, 100, 100, 0, "strat", "fill-p1")}, 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  const auto decision = decide_registered_order(engine, "strat", "fill-p1", 0, kNear, Side::kBuy,
+                                                100, /*client_order_id=*/1, 0);
+  ASSERT_EQ(decision.verdict, RiskVerdict::kApprove);
+  ASSERT_EQ(engine.state().reserved_units(kNear), 100);
+  ASSERT_EQ(engine.state().position_units(kNear), 0);
+
+  engine.on_fill(/*client_order_id=*/1, kNear, Side::kBuy, -50);
+  EXPECT_EQ(engine.state().reserved_units(kNear), 100);  // Unchanged.
+  EXPECT_EQ(engine.state().position_units(kNear), 0);    // Unchanged.
+}
+
+TEST(RiskEngineQuantityValidity, ZeroFillMutatesNeitherPositionNorReservation) {
+  RiskLimitsConfig config = base_config();
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100, 0);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision(
+                    "strat", "fill-p2",
+                    {make_request(kNear, Side::kBuy, 100, 100, 0, "strat", "fill-p2")}, 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  const auto decision = decide_registered_order(engine, "strat", "fill-p2", 0, kNear, Side::kBuy,
+                                                100, /*client_order_id=*/1, 0);
+  ASSERT_EQ(decision.verdict, RiskVerdict::kApprove);
+
+  engine.on_fill(/*client_order_id=*/1, kNear, Side::kBuy, 0);
+  EXPECT_EQ(engine.state().reserved_units(kNear), 100);  // Unchanged.
+  EXPECT_EQ(engine.state().position_units(kNear), 0);    // Unchanged.
+}
+
+TEST(RiskEngineQuantityValidity, PositiveFillBehavesExactlyAsBefore) {
+  RiskLimitsConfig config = base_config();
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100, 0);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision(
+                    "strat", "fill-p3",
+                    {make_request(kNear, Side::kBuy, 100, 100, 0, "strat", "fill-p3")}, 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  const auto decision = decide_registered_order(engine, "strat", "fill-p3", 0, kNear, Side::kBuy,
+                                                100, /*client_order_id=*/1, 0);
+  ASSERT_EQ(decision.verdict, RiskVerdict::kApprove);
+
+  engine.on_fill(/*client_order_id=*/1, kNear, Side::kBuy, 60);
+  EXPECT_EQ(engine.state().reserved_units(kNear), 40);
+  EXPECT_EQ(engine.state().position_units(kNear), 60);
+}
+
+TEST(RiskEngineQuantityValidity, PositiveOverfillStillSaturatesReservationAtZeroPerR2) {
+  // Regression: N3's validation must not disturb R2's over-fill clamp for a
+  // genuinely positive (just too large) fill.
+  RiskLimitsConfig config = base_config();
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100, 0);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision(
+                    "strat", "fill-p4",
+                    {make_request(kNear, Side::kBuy, 100, 100, 0, "strat", "fill-p4")}, 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  const auto decision = decide_registered_order(engine, "strat", "fill-p4", 0, kNear, Side::kBuy,
+                                                100, /*client_order_id=*/1, 0);
+  ASSERT_EQ(decision.verdict, RiskVerdict::kApprove);
+
+  engine.on_fill(/*client_order_id=*/1, kNear, Side::kBuy, 130);
+  EXPECT_EQ(engine.state().reserved_units(kNear), 0);    // Saturated, not negative (R2).
+  EXPECT_EQ(engine.state().position_units(kNear), 130);  // The actual fill still applies in full.
+}
+
 // ---------------------------------------------------------------- AEGIS-122
 
 TEST(RiskEnginePositionLimits, RejectsBeyondLongAndShortBoundaries) {

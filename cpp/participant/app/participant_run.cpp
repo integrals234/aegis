@@ -952,6 +952,23 @@ risk::RiskLimitsConfig load_risk_limits_config(const std::string& path) {
   parse_instrument_tables(doc, config);
   parse_scalar_and_currency_limits(doc, config);
   parse_volatility_and_concentration(doc, config);
+
+  // M5 closure repair, N2: the narrowest canonical configuration boundary.
+  // A configured order-quantity limit must be a positive magnitude -- a
+  // non-positive `max_order_quantity_units` with `resize_on_breach == true`
+  // would let RiskEngine itself manufacture a non-positive approved
+  // quantity (see OrderQuantityLimit's own doc). This is the loader-side
+  // half of the fix; RiskEngine::check_approved_quantity_postcondition is
+  // the defense-in-depth half for a config constructed programmatically,
+  // bypassing this loader entirely.
+  for (const auto& [instrument_id, limit] : config.order_quantity_limits) {
+    if (limit.max_order_quantity_units <= 0) {
+      throw std::runtime_error("risk config " + path + ": order_quantity_limits[" +
+                               std::to_string(instrument_id) +
+                               "].max_order_quantity_units must be a positive magnitude, got " +
+                               std::to_string(limit.max_order_quantity_units));
+    }
+  }
   return config;
 }
 

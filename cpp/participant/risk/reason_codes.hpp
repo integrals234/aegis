@@ -68,6 +68,14 @@ enum class ReasonCode : std::uint8_t {
   /// records that its remaining unconsumed reservations were deliberately
   /// released instead of left stranded.
   kProposalAborted = 33,
+  /// A computation that should only ever be able to produce a positive
+  /// approved/resized magnitude produced `<= 0` instead -- almost always the
+  /// symptom of a malformed limit configuration (e.g. a negative or zero
+  /// `OrderQuantityLimit::max_order_quantity_units` with `resize_on_breach`
+  /// set), never a legitimate market condition (M5 closure repair, N2/R1
+  /// follow-up). The defensive postcondition this guards is: no quantity
+  /// leaving `RiskEngine` as an executable magnitude is ever `<= 0`.
+  kInvalidLimitConfiguration = 34,
 };
 
 [[nodiscard]] std::string_view describe(ReasonCode reason);

@@ -70,6 +70,7 @@ SPECS: dict[str, dict[str, Any]] = {
             "RiskEngineQuantityValidity.*",
             "CalendarSpreadRiskExchangeIntegration."
             "NonPositiveStrategyConfigQuantityIsRejectedAndNeverReachesTheExchangeOrThePortfolio",
+            "LoadRiskLimitsConfig.*",
         ],
         "claim": "Per-instrument quantity caps enforced at, below and above the limit, in both "
                  "configured modes (reject, and resize-to-cap). M5 closure repair, R1: "
@@ -83,7 +84,15 @@ SPECS: dict[str, dict[str, Any]] = {
                  "(CalendarSpreadConfig::quantity_units, through the real production composition -- "
                  "strategies emit proposals only and perform no validation of their own) are "
                  "proven independently rejected, atomically across every leg of a multi-leg "
-                 "proposal, with zero OMS/exchange submission.",
+                 "proposal, with zero OMS/exchange submission. M5 closure repair, N2: the "
+                 "configuration boundary is also closed. load_risk_limits_config rejects a "
+                 "non-positive configured max_order_quantity_units at load time, and RiskEngine "
+                 "itself enforces a defense-in-depth postcondition (kInvalidLimitConfiguration) so "
+                 "that no quantity RiskEngine approves or resizes to is ever <= 0 even for a "
+                 "programmatically constructed RiskLimitsConfig that bypasses the loader entirely -- "
+                 "closing the residual the reviewer found: a malformed negative/zero configured cap "
+                 "with resize_on_breach could make RiskEngine itself manufacture the same hazard "
+                 "R1 closed for a malformed REQUEST quantity.",
     },
     "AEGIS-122": {
         "artifact": "max_position_and_reservations",
@@ -100,6 +109,10 @@ SPECS: dict[str, dict[str, Any]] = {
             "ReservationRepairAtomicity.*",
             "ProposalAtomicSeamRevalidation.*",
             "ReservationOverfill.*",
+            "RiskEngineQuantityValidity.NegativeFillMutatesNeitherPositionNorReservation",
+            "RiskEngineQuantityValidity.ZeroFillMutatesNeitherPositionNorReservation",
+            "RiskEngineQuantityValidity.PositiveFillBehavesExactlyAsBefore",
+            "RiskEngineQuantityValidity.PositiveOverfillStillSaturatesReservationAtZeroPerR2",
         ],
         "claim": "Long and short caps enforced against the PROJECTED position (confirmed position "
                  "+ every outstanding reservation + the candidate), so two orders that each pass "
@@ -119,7 +132,15 @@ SPECS: dict[str, dict[str, Any]] = {
                  "a fill larger than what remains reserved (an over-report, or the same fill "
                  "delivered twice) is capped at the reservation's own remaining magnitude -- it "
                  "shrinks to exactly zero and never crosses it, so an over-fill can no longer drive "
-                 "reserved_by_instrument_ negative and grant phantom capacity to a later order.",
+                 "reserved_by_instrument_ negative and grant phantom capacity to a later order. M5 "
+                 "closure repair, N3: a fill quantity is also enforced as a positive magnitude, "
+                 "exactly like a request/approved quantity (R1) -- side alone carries direction. A "
+                 "non-positive fill_quantity_units mutates neither confirmed position "
+                 "(RiskState::apply_fill) nor the reservation, closing the residual an independent "
+                 "review found: on_fill previously accepted an unvalidated fill quantity and could "
+                 "poison the position ledger every cumulative control reads. A genuinely positive "
+                 "fill, including one that over-fills a reservation, still behaves exactly as R2 "
+                 "fixed it.",
         "implementation": SEAM_IMPL,
     },
     "AEGIS-123": {
@@ -379,12 +400,31 @@ SPECS: dict[str, dict[str, Any]] = {
                  "authorized one may be consumed only by its exact staged constituents, each at most "
                  "once. Round 4 (M5 closure repair, R3/R5): abort_proposal_release adds a fourth, "
                  "deliberate way for a release decision to reach a terminal state (kAborted) without "
-                 "rolling back any leg that already consumed its authorization, still recording at "
-                 "most one release decision per proposal; and canonical strategy_id attribution is "
-                 "immutable once established -- a staging call naming a disagreeing strategy_id "
-                 "binds none of its own identities and permanently fails the release, so a "
-                 "proposal_id collision can never rewrite who the audit trail says actually "
-                 "committed a proposal.",
+                 "rolling back any leg that already consumed its authorization; and canonical "
+                 "strategy_id attribution is immutable once established -- a staging call naming a "
+                 "disagreeing strategy_id binds none of its own identities and permanently fails the "
+                 "release, so a proposal_id collision can never rewrite who the audit trail says "
+                 "actually committed a proposal. Round 5 (M5 closure repair, N1): Round 3's phrase "
+                 "'at most ONE ProposalReleaseRiskDecision per proposal' and Round 4's 'still "
+                 "recording at most one release decision per proposal' were both corrected -- an "
+                 "independent review found kAborted missing from authorize_proposal_release's own "
+                 "terminal-state check, so calling authorize AFTER a deliberate abort fell through "
+                 "and recorded a THIRD event that overwrote the abort with a spurious "
+                 "kUnexpectedOrder rejection (reproducibly, via the ordinary authorize-abort-"
+                 "authorize sequence, no attack needed). Fixed, and the claim corrected to what is "
+                 "actually true: a committed proposal has AT MOST ONE authorize-or-reject "
+                 "transition, and MAY separately have exactly one later abort transition if it was "
+                 "authorized and then deliberately abandoned -- authorize-then-abort is two real, "
+                 "truthfully audited lifecycle events, not a violation. What genuinely never exceeds "
+                 "one is proposal_decision_count (ProposalRiskDecision, this requirement's own "
+                 "invariant); proposal_release_decision_count counts release-lifecycle TRANSITIONS "
+                 "and is a separate, distinct count. Every one of authorize_proposal_release, "
+                 "abort_proposal_release now also requires its own strategy_id argument to match "
+                 "the proposal's canonical committed strategy_id (staging already did; authorizing "
+                 "and aborting did not), and neither can create persistent state -- let alone "
+                 "attribution -- for a proposal_id commit_proposal_decision has not genuinely "
+                 "committed yet, closing a pre-commit ownership race the previous round's "
+                 "'set once, never overwritten' language did not actually guarantee.",
     },
     "AEGIS-138": {
         "artifact": "portfolio_risk_analytics",

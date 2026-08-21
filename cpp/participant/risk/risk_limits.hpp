@@ -16,6 +16,16 @@ namespace aegis::participant::risk {
 /// caps the order at the limit instead of rejecting it outright -- both
 /// branches of the frozen "reject or resize" acceptance are real config, not
 /// a hardcoded choice.
+///
+/// `max_order_quantity_units` MUST be a positive magnitude when configured
+/// (M5 closure repair, N2): a non-positive value with `resize_on_breach ==
+/// true` would let `RiskEngine` itself manufacture a non-positive approved
+/// quantity, the same hazard R1 closed for a malformed REQUEST quantity, but
+/// from the configuration side instead. `app::load_risk_limits_config`
+/// rejects a non-positive value at load time; `RiskEngine` also enforces the
+/// postcondition defensively (`check_approved_quantity_postcondition`) so a
+/// programmatically constructed `RiskLimitsConfig` that bypasses the loader
+/// cannot reach the same hazard either.
 struct OrderQuantityLimit {
   std::int64_t max_order_quantity_units{0};
   bool resize_on_breach{false};
@@ -54,6 +64,21 @@ struct MarginConfig {
 /// (`requested * target_volatility / realized_volatility`, floored at 1
 /// unit); at or beyond `hard_reject_multiple * target_volatility` the whole
 /// order is rejected rather than resized to a token size.
+///
+/// Accepted config domain (M5 closure repair, N7): `hard_reject_multiple` is
+/// intended to be `>= 1.0` when `target_volatility > 0`, so the hard-reject
+/// threshold is never below the resize threshold. `resolve_effective_quantity`
+/// only evaluates the hard-reject condition inside its own
+/// `realized > target_volatility` guard, so a `hard_reject_multiple < 1.0`
+/// makes the hard-reject threshold LOWER than the resize threshold -- the
+/// commit-time resize path can then approve a quantity that
+/// `check_volatility_hard_reject` (re-run fresh at release, R6) immediately
+/// rejects, with volatility unchanged between the two. No frozen requirement
+/// constrains this value, so it is not validated at load time; the shipped
+/// configs and this struct's own default (`3.0`) stay well inside the
+/// intended domain. This is a documented config-domain boundary, not a
+/// promise that release-time and commit-time volatility checks always agree
+/// for every configurable value.
 struct VolatilityReductionConfig {
   std::size_t window{20};
   double target_volatility{0.0};

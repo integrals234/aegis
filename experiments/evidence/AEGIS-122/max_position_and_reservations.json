@@ -114,22 +114,46 @@
         "test": "ReservationRepairSeamRevalidation.PositionLimitLoweredAfterCommitStopsTheOrderAtTheSeamWithoutDoubleCountingItsOwnReservation"
       },
       {
-        "line": 236,
+        "line": 394,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEnginePositionLimits.PartialFillCancelAndRejectAllReleaseTheReservation"
       },
       {
-        "line": 197,
+        "line": 355,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEnginePositionLimits.RejectsBeyondLongAndShortBoundaries"
       },
       {
-        "line": 213,
+        "line": 371,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEnginePositionLimits.TwoIndividuallyAcceptableOrdersJointlyBreach"
+      },
+      {
+        "line": 269,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.NegativeFillMutatesNeitherPositionNorReservation"
+      },
+      {
+        "line": 311,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.PositiveFillBehavesExactlyAsBefore"
+      },
+      {
+        "line": 331,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.PositiveOverfillStillSaturatesReservationAtZeroPerR2"
+      },
+      {
+        "line": 291,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.ZeroFillMutatesNeitherPositionNorReservation"
       }
     ],
     "failure_count": 0,
@@ -143,12 +167,16 @@
       "ReservationRepairSeamRevalidation.*",
       "ReservationRepairAtomicity.*",
       "ProposalAtomicSeamRevalidation.*",
-      "ReservationOverfill.*"
+      "ReservationOverfill.*",
+      "RiskEngineQuantityValidity.NegativeFillMutatesNeitherPositionNorReservation",
+      "RiskEngineQuantityValidity.ZeroFillMutatesNeitherPositionNorReservation",
+      "RiskEngineQuantityValidity.PositiveFillBehavesExactlyAsBefore",
+      "RiskEngineQuantityValidity.PositiveOverfillStillSaturatesReservationAtZeroPerR2"
     ],
-    "test_count": 21
+    "test_count": 25
   },
   "artifact": "AEGIS-122/max_position_and_reservations",
-  "claim": "Long and short caps enforced against the PROJECTED position (confirmed position + every outstanding reservation + the candidate), so two orders that each pass alone but jointly breach are rejected -- AT PROPOSAL COMMIT, not only once an order physically reaches the seam (M5 closure repair: reservation now happens in commit_proposal_decision, keyed by PendingLegKey, so a second proposal committed before the first's orders reach the seam already sees the first's exposure). Reservations are released automatically on fill, partial fill, cancel, downstream rejection and failed/backpressured submission -- the last via app::RiskReleasingExecutionAdapter, with no manual caller cleanup required. Mutable safety state (including this leg's own, correctly-not-double-counted exposure) is revalidated again at the seam, since proposal commit is not permission forever -- and revalidated for the WHOLE proposal at once (M5 closure repair, round 2): an out-of-band change making only ONE leg's position unsafe rejects the entire proposal, even when the unaffected sibling leg's order is submitted first, so risk can never approve one leg while rejecting the other. M5 closure repair, R2: a fill larger than what remains reserved (an over-report, or the same fill delivered twice) is capped at the reservation's own remaining magnitude -- it shrinks to exactly zero and never crosses it, so an over-fill can no longer drive reserved_by_instrument_ negative and grant phantom capacity to a later order.",
+  "claim": "Long and short caps enforced against the PROJECTED position (confirmed position + every outstanding reservation + the candidate), so two orders that each pass alone but jointly breach are rejected -- AT PROPOSAL COMMIT, not only once an order physically reaches the seam (M5 closure repair: reservation now happens in commit_proposal_decision, keyed by PendingLegKey, so a second proposal committed before the first's orders reach the seam already sees the first's exposure). Reservations are released automatically on fill, partial fill, cancel, downstream rejection and failed/backpressured submission -- the last via app::RiskReleasingExecutionAdapter, with no manual caller cleanup required. Mutable safety state (including this leg's own, correctly-not-double-counted exposure) is revalidated again at the seam, since proposal commit is not permission forever -- and revalidated for the WHOLE proposal at once (M5 closure repair, round 2): an out-of-band change making only ONE leg's position unsafe rejects the entire proposal, even when the unaffected sibling leg's order is submitted first, so risk can never approve one leg while rejecting the other. M5 closure repair, R2: a fill larger than what remains reserved (an over-report, or the same fill delivered twice) is capped at the reservation's own remaining magnitude -- it shrinks to exactly zero and never crosses it, so an over-fill can no longer drive reserved_by_instrument_ negative and grant phantom capacity to a later order. M5 closure repair, N3: a fill quantity is also enforced as a positive magnitude, exactly like a request/approved quantity (R1) -- side alone carries direction. A non-positive fill_quantity_units mutates neither confirmed position (RiskState::apply_fill) nor the reservation, closing the residual an independent review found: on_fill previously accepted an unvalidated fill quantity and could poison the position ledger every cumulative control reads. A genuinely positive fill, including one that over-fills a reservation, still behaves exactly as R2 fixed it.",
   "deterministic_config": {
     "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
     "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
@@ -178,7 +206,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "dad73b18ee8dbe2b9f9b48c5485af765013c9a95",
+  "repository_commit": "76fbaefb59894ef95ce6064b92ac9af8ca428042",
   "requirements": [
     "AEGIS-122"
   ],

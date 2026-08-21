@@ -72,6 +72,8 @@ std::string_view describe(ReasonCode reason) {
       return "invalid_quantity";
     case ReasonCode::kProposalAborted:
       return "proposal_aborted";
+    case ReasonCode::kInvalidLimitConfiguration:
+      return "invalid_limit_configuration";
   }
   return "unknown";
 }

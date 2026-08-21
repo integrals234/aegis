@@ -232,19 +232,22 @@ accounting path:**
   already used at the seam. A proposal whose true combined effect is
   unsafe now rejects atomically at commit, before anything is armed or
   reserved, regardless of leg order.
-- `decide_order` no longer calls `revalidate_at_seam` per leg. It first
-  calls `ensure_proposal_seam_revalidated`, which runs -- exactly once per
+- (M5 closure repair, N8: historical -- **at Correction 2**, `decide_order`
+  no longer called `revalidate_at_seam` per leg. It instead first called
+  `ensure_proposal_seam_revalidated`, which ran -- exactly once per
   proposal, cached in `proposal_seam_state_by_id_` -- a single
   revalidation pass over EVERY still-pending leg of that proposal against
-  current mutable state. The first leg found unsafe condemns the WHOLE
-  proposal: every one of its still-pending legs' reservations is released
-  immediately, and the cached `kRejectedAtSeam` outcome is what every
-  subsequent `decide_order` call for that proposal's legs consults --
+  current mutable state. The first leg found unsafe condemned the WHOLE
+  proposal: every one of its still-pending legs' reservations was released
+  immediately, and the cached `kRejectedAtSeam` outcome was what every
+  subsequent `decide_order` call for that proposal's legs consulted --
   never a fresh, independent check. A subtlety the implementation had to
-  get right: the leg whose arrival TRIGGERS revalidation must still be
+  get right: the leg whose arrival TRIGGERED revalidation had to still be
   present in `pending_legs_` at that moment (erased only after, not
   before) or a single-leg proposal would be invisible to its own
-  revalidation and vacuously "pass."
+  revalidation and vacuously "pass." Neither `ensure_proposal_seam_revalidated`
+  nor `proposal_seam_state_by_id_` exist in the engine as of Correction 3;
+  see below.)
 
 **Superseded in part by "Correction 3" below.** This paragraph originally
 claimed unqualified whole-proposal atomicity. A further review showed the
@@ -470,6 +473,132 @@ that does not survive a restart. R8 is deliberately NOT fixed here -- it
 touches the `--fixture` CLI path's own composition, not the calendar-spread
 release epoch -- and remains flagged as a known, disclosed gap for a future
 turn to decide, rather than silently broadening this one.
+
+## Correction 5 (M5 closure repair): terminal audit state and risk boundary validation
+
+An independent re-review of Correction 4 confirmed the release epoch
+itself still sound (15/15 sampled attack categories, unchanged), but found
+one new blocker and five narrower residuals, all confined to the same
+input-integrity/reservation-lifecycle surface.
+
+**N1 (BLOCKER) -- `kAborted` was not terminal to
+`authorize_proposal_release`.** Its terminal-state check listed
+`kAuthorizedForRelease | kRejectedAtRelease | kCompleted`, omitting
+`kAborted`. Calling `authorize_proposal_release` again AFTER a deliberate
+`abort_proposal_release` therefore fell through, found `leg_keys` empty
+(the abort had already released them), and called `reject_proposal_release`
+-- overwriting the deliberate abort's terminal state and reason with a
+spurious `kUnexpectedOrder` rejection, and appending a THIRD
+`ProposalReleaseRiskDecision` for one proposal. Reproducible with the
+ordinary authorize-abort-authorize sequence; no attack construction
+needed. **Fix:** `kAborted` added to the terminal check.
+
+**This also forced a truthful correction to the audit model itself,
+rather than a code change that would have distorted it to preserve a
+false invariant.** `RiskAuditLog::proposal_release_decision_count`'s own
+doc previously claimed "AEGIS-137's release invariant asserts this is
+never above 1" -- already false before N1's fix, for the perfectly
+legitimate authorize-then-abort sequence (two real, distinct lifecycle
+events: one authorize, one abort). The corrected model, stated precisely:
+a committed proposal has AT MOST ONE authorize-or-reject transition
+(whichever happens first is terminal for that pair), and MAY separately
+have exactly one later abort transition if it was authorized and then
+deliberately abandoned. `ProposalReleaseRiskDecision`'s own doc, and
+`authorize_proposal_release`/`abort_proposal_release`'s header docs, now
+state this. What genuinely never exceeds one, for any `proposal_id`, is
+`RiskAuditLog::proposal_decision_count` (`ProposalRiskDecision`) --
+AEGIS-137's frozen "exactly one" requirement belongs there alone, and was
+never actually about the release-lifecycle count. The type
+`ProposalReleaseRiskDecision` itself is unrenamed (a contained fix,
+matching this correction's declared scope): its doc now describes it
+explicitly as one event in a release LIFECYCLE, not a single terminal
+"decision".
+
+**N2 -- `RiskEngine` could still manufacture a non-positive approved
+quantity, from the configuration side.** R1 (Correction 4) validated the
+REQUESTED quantity; a malformed configured `OrderQuantityLimit` (a
+non-positive `max_order_quantity_units` with `resize_on_breach == true`)
+let `resolve_effective_quantity` itself resize a request down to a
+non-positive `effective_quantity`, which `commit_proposal_decision` would
+then reserve and `decide_order` would then approve. **Fix, two layers, as
+directed rather than relying on one:** `app::load_risk_limits_config`
+rejects a non-positive configured `max_order_quantity_units` at load time
+(`std::runtime_error`, matching this loader's existing error-handling
+convention); `RiskEngine::check_approved_quantity_postcondition`
+(`ReasonCode::kInvalidLimitConfiguration`) is a defense-in-depth
+postcondition, called after every `resolve_effective_quantity`, that
+rejects regardless of how the config was constructed -- proven directly by
+constructing a malformed `RiskLimitsConfig` programmatically, which the
+loader-side validation cannot see.
+
+**N3 -- a fill quantity was not validated the same way a request/approved
+quantity now is.** `RiskEngine::on_fill` accepted any
+`fill_quantity_units`, including negative or zero. A negative fill moved
+`RiskState::apply_fill`'s confirmed position in the wrong direction --
+silently poisoning every cumulative control that reads position, the
+exact family of hazard R1/N2 close for quantity elsewhere in this engine.
+**Fix:** `on_fill` requires `fill_quantity_units > 0`; an invalid fill
+mutates neither position nor reservation, exactly as if no fill event had
+been reported at all. A genuinely positive over-fill still saturates the
+reservation at zero exactly as R2 (Correction 4) established -- this is
+additive to R2, not a change to it.
+
+**N4/N5/N6 -- the release lifecycle's identity boundary was inconsistent
+across its three mutating entry points.** R5 (Correction 4) made
+`stage_proposal_release` fail closed on a `strategy_id` mismatch, but left
+two gaps in the same boundary: `authorize_proposal_release` accepted ANY
+caller's `strategy_id` without comparing it to the proposal's canonical
+one (N4) -- a caller could authorize, or read the release decision for, a
+proposal it never committed, merely by knowing its `proposal_id`.
+`abort_proposal_release` took no `strategy_id` argument at all (N6) --
+the same gap, for abort. And underlying both: `commit_proposal_decision`'s
+own unconditional `record.strategy_id = strategy_id` assignment
+contradicted Correction 4's own documented "set exactly once, never
+overwritten" claim (N5) -- true in effect only because nothing else could
+reach the assignment first in the tested call order, not because the code
+actually prevented a pre-commit caller from racing to set it.
+
+**Fix, addressing the root cause rather than patching each symptom
+separately:** canonical strategy attribution now originates in EXACTLY
+ONE place -- `commit_proposal_decision` -- via a new
+`ProposalReleaseRecord::committed` flag, set `true` only there, alongside
+`strategy_id`. `stage_proposal_release`, `authorize_proposal_release` and
+`abort_proposal_release` all look up their record with `find()`, never
+`operator[]`, and treat `committed == false` (including "no record at
+all") identically to "unknown proposal": no persistent state is created,
+so none of the three can ever be the FIRST call to establish ownership,
+and a pre-commit call against any of them leaves nothing for a later
+legitimate commit to overwrite or be poisoned by. `authorize_proposal_release`
+and `abort_proposal_release` both now require their `strategy_id`
+argument to equal the proposal's canonical `record.strategy_id`: a
+mismatch on authorize fails the whole proposal closed
+(`kIdentityMismatch`, same semantics as a staging mismatch); a mismatch on
+abort is a pure no-op that mutates and audits nothing, leaving the
+canonical proposal completely unaffected.
+
+**N7 (documentation only) -- a false "can never disagree" claim.**
+`check_volatility_hard_reject`'s doc claimed a fresh release-time check
+"can never disagree with the one taken at commit for the same volatility
+reading." False for a misconfigured `hard_reject_multiple < 1.0`:
+`resolve_effective_quantity` only evaluates its hard-reject branch inside
+an `realized > target_volatility` guard, so a sub-1.0 multiple puts the
+hard-reject threshold BELOW the resize threshold, and commit-time sizing
+can approve a quantity release-time hard-reject immediately rejects, with
+volatility unchanged in between. No frozen requirement constrains this
+configuration value, so it is not validated at load time (unlike N2's
+`max_order_quantity_units`, which IS constrained by "reject or resize" --
+AEGIS-121's own frozen acceptance). **Fix:** the false claim is corrected;
+`VolatilityReductionConfig`'s own doc states the intended domain
+(`hard_reject_multiple >= 1.0` when `target_volatility > 0`) without
+adding a runtime validator for it.
+
+**N8 (documentation only) -- two surviving present-tense references to a
+retired mechanism.** This ADR's own "Correction 2" section, and
+`docs/BUILD_STATE.md`'s "Follow-up correction 2", both described
+`ensure_proposal_seam_revalidated` (retired at Correction 3) in the
+present tense. **Fix:** reworded to past tense with an explicit note that
+the mechanism does not exist in the engine as of Correction 3, in both
+files -- the historical narrative itself is not rewritten, only its tense.
 
 ## Alternatives considered
 

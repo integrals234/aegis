@@ -18,6 +18,12 @@
         "test": "ProposalAbort.AbortingAProposalAlreadyRejectedAtReleaseIsANoOp"
       },
       {
+        "line": 780,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAbort.AuthorizeAfterAbortRecordsNoNewEventAndDecideOrderReportsAborted"
+      },
+      {
         "line": 396,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
@@ -78,6 +84,48 @@
         "test": "ProposalAttribution.ALegitimateRestageAfterAPoisoningAttemptIsStillRejectedFailClosed"
       },
       {
+        "line": 680,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.APreCommitAuthorizeCallCreatesNoPersistentState"
+      },
+      {
+        "line": 653,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.APreCommitStageCallCannotEstablishCanonicalOwnership"
+      },
+      {
+        "line": 727,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.AbortByAWrongStrategyLeavesTheCanonicalProposalUnaffected"
+      },
+      {
+        "line": 753,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.AbortByTheCanonicalStrategyStillWorksNormally"
+      },
+      {
+        "line": 705,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.AbortOfAnUnknownProposalCreatesNoStateThatPoisonsALaterCommit"
+      },
+      {
+        "line": 601,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.AuthorizeWithAWrongStrategyIdFailsClosedAndLeavesAttributionCanonical"
+      },
+      {
+        "line": 628,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.AuthorizeWithTheCorrectStrategyIdStillWorksNormally"
+      },
+      {
         "line": 575,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
@@ -120,7 +168,7 @@
         "test": "ProposalReleaseEpoch.AnUnauthorizedProposalsLegCannotReachExecution"
       },
       {
-        "line": 633,
+        "line": 861,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
         "test": "ProposalReleaseEpoch.CalmVolatilityThroughReleaseStillAuthorizesNormally"
@@ -156,7 +204,7 @@
         "test": "ProposalReleaseEpoch.StaleMarketBeforeReleaseRejectsTheWholeProposal"
       },
       {
-        "line": 600,
+        "line": 828,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
         "test": "ProposalReleaseEpoch.VolatilitySpikeBeforeReleaseRejectsTheWholeProposal"
@@ -180,13 +228,13 @@
         "test": "ReservationRepairExactIdentity.StagedIdentityWithDisagreeingEconomicsIsRejected"
       },
       {
-        "line": 594,
+        "line": 752,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineAuditInvariant.ExactlyOneProposalDecisionAndOneOrderDecisionPerLeg"
       },
       {
-        "line": 625,
+        "line": 783,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineAuditInvariant.RejectedProposalReportsEveryLegRejectedAndArmsNoOrder"
@@ -202,10 +250,10 @@
       "ProposalAbort.*",
       "ProposalAttribution.*"
     ],
-    "test_count": 31
+    "test_count": 39
   },
   "artifact": "AEGIS-137/risk_decision_audit",
-  "claim": "Exactly ONE terminal ProposalRiskDecision per proposal_id (asserted via RiskAuditLog::proposal_decision_count), with subordinate per-order OrderRiskDecision records that each carry the proposal_id/leg_index that authorised them. A two-leg spread therefore never produces two objects both claiming to be the proposal decision. A rejected proposal arms no pending leg, and an order reaching the seam anyway is rejected kUnexpectedOrder. Identity resolution is exact (M5 closure repair): a client_order_id is registered against its precise strategy/proposal/leg identity before submission, so an order can never be mis-attributed to a different, economically-identical proposal, and a replayed proposal_id can never append a second terminal decision. Seam revalidation is also proposal-atomic. Round 2 first achieved this with a per-proposal cache (ensure_proposal_seam_revalidated); an independent review then found that mechanism began caching too late -- at the first leg's OWN arrival at decide_order, after that leg was already being released -- so round 3 replaced it entirely with the release epoch below. ensure_proposal_seam_revalidated no longer exists in this engine; the current guarantee is the release-epoch description that follows, not the superseded mechanism this sentence used to (incorrectly, as of round 3) still describe in present tense. Round 3 adds the release-decision half: authorize_proposal_release records at most ONE ProposalReleaseRiskDecision per proposal (AUTHORIZED or REJECTED, asserted via RiskAuditLog::proposal_release_decision_count), taken while zero constituents have been released; a rejected release yields zero executable constituents, and an authorized one may be consumed only by its exact staged constituents, each at most once. Round 4 (M5 closure repair, R3/R5): abort_proposal_release adds a fourth, deliberate way for a release decision to reach a terminal state (kAborted) without rolling back any leg that already consumed its authorization, still recording at most one release decision per proposal; and canonical strategy_id attribution is immutable once established -- a staging call naming a disagreeing strategy_id binds none of its own identities and permanently fails the release, so a proposal_id collision can never rewrite who the audit trail says actually committed a proposal.",
+  "claim": "Exactly ONE terminal ProposalRiskDecision per proposal_id (asserted via RiskAuditLog::proposal_decision_count), with subordinate per-order OrderRiskDecision records that each carry the proposal_id/leg_index that authorised them. A two-leg spread therefore never produces two objects both claiming to be the proposal decision. A rejected proposal arms no pending leg, and an order reaching the seam anyway is rejected kUnexpectedOrder. Identity resolution is exact (M5 closure repair): a client_order_id is registered against its precise strategy/proposal/leg identity before submission, so an order can never be mis-attributed to a different, economically-identical proposal, and a replayed proposal_id can never append a second terminal decision. Seam revalidation is also proposal-atomic. Round 2 first achieved this with a per-proposal cache (ensure_proposal_seam_revalidated); an independent review then found that mechanism began caching too late -- at the first leg's OWN arrival at decide_order, after that leg was already being released -- so round 3 replaced it entirely with the release epoch below. ensure_proposal_seam_revalidated no longer exists in this engine; the current guarantee is the release-epoch description that follows, not the superseded mechanism this sentence used to (incorrectly, as of round 3) still describe in present tense. Round 3 adds the release-decision half: authorize_proposal_release records at most ONE ProposalReleaseRiskDecision per proposal (AUTHORIZED or REJECTED, asserted via RiskAuditLog::proposal_release_decision_count), taken while zero constituents have been released; a rejected release yields zero executable constituents, and an authorized one may be consumed only by its exact staged constituents, each at most once. Round 4 (M5 closure repair, R3/R5): abort_proposal_release adds a fourth, deliberate way for a release decision to reach a terminal state (kAborted) without rolling back any leg that already consumed its authorization; and canonical strategy_id attribution is immutable once established -- a staging call naming a disagreeing strategy_id binds none of its own identities and permanently fails the release, so a proposal_id collision can never rewrite who the audit trail says actually committed a proposal. Round 5 (M5 closure repair, N1): Round 3's phrase 'at most ONE ProposalReleaseRiskDecision per proposal' and Round 4's 'still recording at most one release decision per proposal' were both corrected -- an independent review found kAborted missing from authorize_proposal_release's own terminal-state check, so calling authorize AFTER a deliberate abort fell through and recorded a THIRD event that overwrote the abort with a spurious kUnexpectedOrder rejection (reproducibly, via the ordinary authorize-abort-authorize sequence, no attack needed). Fixed, and the claim corrected to what is actually true: a committed proposal has AT MOST ONE authorize-or-reject transition, and MAY separately have exactly one later abort transition if it was authorized and then deliberately abandoned -- authorize-then-abort is two real, truthfully audited lifecycle events, not a violation. What genuinely never exceeds one is proposal_decision_count (ProposalRiskDecision, this requirement's own invariant); proposal_release_decision_count counts release-lifecycle TRANSITIONS and is a separate, distinct count. Every one of authorize_proposal_release, abort_proposal_release now also requires its own strategy_id argument to match the proposal's canonical committed strategy_id (staging already did; authorizing and aborting did not), and neither can create persistent state -- let alone attribution -- for a proposal_id commit_proposal_decision has not genuinely committed yet, closing a pre-commit ownership race the previous round's 'set once, never overwritten' language did not actually guarantee.",
   "deterministic_config": {
     "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
     "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
@@ -233,7 +281,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "dad73b18ee8dbe2b9f9b48c5485af765013c9a95",
+  "repository_commit": "76fbaefb59894ef95ce6064b92ac9af8ca428042",
   "requirements": [
     "AEGIS-137"
   ],

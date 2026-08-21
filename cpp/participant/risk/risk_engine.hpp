@@ -192,30 +192,51 @@ class RiskEngine {
   /// constituent, or incrementally; either way authorization requires the
   /// staged set to cover every committed leg exactly.
   ///
-  /// CANONICAL ATTRIBUTION IS IMMUTABLE (M5 closure repair, R5): the
-  /// proposal's `strategy_id` is fixed the first time either this or
-  /// `commit_proposal_decision` observes it, and this call NEVER overwrites
-  /// an already-established one. A call naming a disagreeing `strategy_id`
-  /// binds none of its identities and marks the release for rejection --
-  /// it can poison nothing, including the audit trail's attribution of who
-  /// actually committed this proposal.
+  /// A `proposal_id` that `commit_proposal_decision` has not genuinely
+  /// committed yet is a NO-OP (M5 closure repair, N5): no map entry is
+  /// created, so a pre-commit staging call can never establish canonical
+  /// ownership of a `proposal_id`, nor leave any state a later legitimate
+  /// commit would have to overwrite or could be poisoned by.
+  ///
+  /// CANONICAL ATTRIBUTION IS IMMUTABLE (M5 closure repair, R5): once a
+  /// proposal is committed, its `strategy_id` is fixed by
+  /// `commit_proposal_decision` alone, and this call NEVER overwrites it. A
+  /// call naming a disagreeing `strategy_id` binds none of its identities
+  /// and marks the release for rejection -- it can poison nothing,
+  /// including the audit trail's attribution of who actually committed this
+  /// proposal.
   void stage_proposal_release(const std::string& strategy_id, const std::string& proposal_id,
                               const std::vector<StagedOrderIdentity>& staged);
 
   /// THE PROPOSAL RELEASE EPOCH: one fresh, whole-proposal risk
   /// authorization performed while ZERO of the proposal's constituents have
-  /// been released. Verifies that every committed leg has a staged
-  /// constituent whose economics match it, then revalidates every leg
-  /// against CURRENT mutable state (halts, connectivity, market
-  /// staleness/collar, and every cumulative control over the final combined
+  /// been released. Requires `strategy_id` to match the proposal's
+  /// canonical committed strategy identity (M5 closure repair, R4/N4) --
+  /// a caller cannot authorize (or even read the release decision for) a
+  /// proposal it did not commit merely by knowing its `proposal_id`.
+  /// Verifies that every committed leg has a staged constituent whose
+  /// economics match it, then revalidates every leg against CURRENT mutable
+  /// state (halts, connectivity, market staleness/collar, the volatility
+  /// hard-reject gate, and every cumulative control over the final combined
   /// overlay, each leg's own reservation counted exactly once). Either ALL
   /// constituents become authorized, or NONE do and every reservation the
   /// proposal held is released.
   ///
-  /// Idempotent and terminal: the first call decides, and every later call
-  /// returns that same decision, so a proposal has at most one release
-  /// outcome. After `kAuthorizedForRelease`, `decide_order` performs NO
-  /// further proposal-level safety evaluation -- see the class docs for why
+  /// Idempotent and terminal (M5 closure repair, N1): once the proposal's
+  /// release lifecycle reaches `kAuthorizedForRelease`, `kRejectedAtRelease`,
+  /// `kAborted` or `kCompleted`, every later call returns that same decision
+  /// and records no new audit event -- `kAborted` was the terminal state
+  /// missing here before this repair, letting a call AFTER a deliberate
+  /// `abort_proposal_release` fall through and overwrite the abort with a
+  /// spurious rejection. See `docs/BUILD_STATE.md`/ADR-0027 for why "at most
+  /// one terminal decision" is tracked PER LIFECYCLE TRANSITION KIND
+  /// (authorize / reject-at-release / abort), not as a single global
+  /// "never more than one release record ever" count -- an authorize
+  /// followed by a genuine later abort is two real, distinct, truthfully
+  /// audited events, and AEGIS-137's actual "exactly one" invariant belongs
+  /// to `ProposalRiskDecision`/`proposal_decision_count`, never to this.
+  /// After `kAuthorizedForRelease`, `decide_order` performs NO further
+  /// proposal-level safety evaluation -- see the class docs for why
   /// re-checking per leg would recreate the naked-leg hazard this exists to
   /// prevent.
   ProposalReleaseDecision authorize_proposal_release(const std::string& strategy_id,
@@ -236,11 +257,23 @@ class RiskEngine {
   /// state. Does NOT touch a leg that already consumed its authorization --
   /// that leg is live (or terminal) through the ordinary OMS/fill lifecycle,
   /// and aborting the proposal never rolls back an order already submitted.
-  /// Idempotent and terminal like `authorize_proposal_release`: a call
-  /// against a proposal that is already `kAborted`, `kRejectedAtRelease` or
+  ///
+  /// Requires `strategy_id` to match the proposal's canonical committed
+  /// strategy identity (M5 closure repair, N6): a caller cannot abort a
+  /// DIFFERENT strategy's proposal merely by knowing its `proposal_id` --
+  /// a mismatch is a pure no-op, mutating nothing and auditing nothing. A
+  /// `proposal_id` `commit_proposal_decision` has not genuinely committed
+  /// yet is also a no-op that creates no persistent state, so a pre-emptive
+  /// abort can never poison a later legitimate commit of that id.
+  ///
+  /// Idempotent and terminal (M5 closure repair, N1): a call against a
+  /// proposal that is already `kAborted`, `kRejectedAtRelease` or
   /// `kCompleted` is a no-op that returns the existing decision unchanged
-  /// and records no second audit entry.
-  ProposalReleaseDecision abort_proposal_release(const std::string& proposal_id, std::string reason,
+  /// and records no second audit entry. See `authorize_proposal_release`'s
+  /// own doc for why "at most one release record" is tracked per lifecycle
+  /// transition kind, not as a single count across authorize+abort.
+  ProposalReleaseDecision abort_proposal_release(const std::string& strategy_id,
+                                                 const std::string& proposal_id, std::string reason,
                                                  common::Nanos now_nanos);
 
   /// AEGIS-128's cancel half. `bypass_safety = true` (a kill-switch or
@@ -333,6 +366,14 @@ class RiskEngine {
       const OrderRequest& request, const EvaluationOverlay& overlay) const;
   [[nodiscard]] std::optional<LegDecision> resolve_effective_quantity(
       const OrderRequest& request, std::int64_t& effective_quantity, bool& resized) const;
+  /// Defense-in-depth postcondition (M5 closure repair, N2): rejects
+  /// `kInvalidLimitConfiguration` if `effective_quantity` is not a positive
+  /// magnitude -- the symptom of a malformed configured limit, since
+  /// `check_quantity_validity` already guarantees the REQUEST itself was
+  /// positive. Called after every `resolve_effective_quantity`, before the
+  /// quantity is used for reservation or returned as an executable verdict.
+  [[nodiscard]] static std::optional<LegDecision> check_approved_quantity_postcondition(
+      std::int64_t effective_quantity);
   [[nodiscard]] std::optional<LegDecision> check_position_and_notional(
       const OrderRequest& request, const EvaluationOverlay& overlay,
       std::int64_t effective_quantity, EvaluationOverlay& portfolio_overlay_out,
@@ -428,23 +469,34 @@ class RiskEngine {
     ReasonCode reason_code{ReasonCode::kNone};
     std::string reason;
     /// The proposal's ONE canonical strategy identity (M5 closure repair,
-    /// R5): set exactly once, by whichever of `commit_proposal_decision` or
-    /// `stage_proposal_release` observes it first, and never overwritten
-    /// after that -- including by a LATER `stage_proposal_release` call
-    /// naming a different `strategy_id` for the same `proposal_id`. Every
-    /// audit record this proposal ever produces (`ProposalRiskDecision`,
-    /// `ProposalReleaseRiskDecision`) attributes to this value, so letting
-    /// it be rewritten would let a caller (malicious or buggy) rewrite
-    /// historical attribution for a proposal it never actually committed.
+    /// R5/N5): set EXACTLY ONCE, by `commit_proposal_decision`, and by
+    /// nothing else. `stage_proposal_release`/`authorize_proposal_release`/
+    /// `abort_proposal_release` all require `committed == true` before they
+    /// touch a record at all (below), so none of them can ever be the FIRST
+    /// call to establish this value -- a pre-commit call on an unknown
+    /// `proposal_id` creates no map entry and therefore cannot "win the
+    /// race" to own it. Every audit record this proposal ever produces
+    /// (`ProposalRiskDecision`, `ProposalReleaseRiskDecision`) attributes to
+    /// this value.
     std::string strategy_id;
+    /// True only once `commit_proposal_decision` has genuinely committed
+    /// this `proposal_id` (approved or resized, with real `pending_legs_`
+    /// entries) -- never set by `stage_proposal_release`,
+    /// `authorize_proposal_release` or `abort_proposal_release` (M5 closure
+    /// repair, N5/N6). This is what lets those three calls tell "a proposal
+    /// that was genuinely committed" apart from "a `proposal_id` nobody has
+    /// committed yet, whose map entry (if any) is a stray, unauthoritative
+    /// artifact" -- so none of them can establish persistent ownership or
+    /// poison a `proposal_id` before its real commit happens.
+    bool committed{false};
     /// leg_index -> the constituent order staged for it.
     std::unordered_map<std::uint32_t, StagedOrderIdentity> staged_by_leg_index;
     /// How many authorized constituents have not yet consumed the
     /// authorization; reaching zero moves the proposal to `kCompleted`.
     std::size_t outstanding_authorized_legs{0};
     /// Set by `stage_proposal_release` when a caller supplies a
-    /// `strategy_id` that disagrees with the already-canonical one above
-    /// (M5 closure repair, R5). The mismatched call's identities are never
+    /// `strategy_id` that disagrees with the canonical one above (M5
+    /// closure repair, R5). The mismatched call's identities are never
     /// bound; `authorize_proposal_release` rejects the whole proposal
     /// `kIdentityMismatch` the first time it observes this flag, so a
     /// poisoning attempt fails the release rather than silently succeeding

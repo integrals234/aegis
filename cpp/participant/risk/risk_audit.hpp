@@ -32,12 +32,27 @@ struct ProposalRiskDecision {
   std::vector<LegDecision> legs;
 };
 
-/// The single terminal outcome of a committed proposal's RELEASE
-/// authorization (M5 closure repair, ADR-0027 "Correction 3"). Distinct from
+/// One event in a committed proposal's RELEASE LIFECYCLE (M5 closure
+/// repair, ADR-0027 "Correction 3"/"Correction 4"). Distinct from
 /// `ProposalRiskDecision`, which records whether the proposal was admissible
-/// when it was committed: this records whether, at the later moment just
-/// before ANY of its constituent orders was released, the whole proposal was
-/// still safe. A committed proposal has at most one of these.
+/// when it was committed: this records a TRANSITION of what happens to that
+/// proposal's release -- authorize, reject-at-release, or a later
+/// deliberate abort (`RiskEngine::abort_proposal_release`). `authorized`
+/// distinguishes "this transition made the proposal executable" (`true`, at
+/// most one such event per proposal) from "this transition did not"
+/// (`false` -- covers BOTH `kRejectedAtRelease` and `kAborted`, told apart
+/// by `reason_code`: `kProposalAborted` marks a deliberate abort; any other
+/// non-`kNone` code marks a genuine risk rejection).
+///
+/// A committed proposal has AT MOST ONE authorize-or-reject transition
+/// (whichever happens first is terminal for that pair). It MAY ALSO have a
+/// separate, later abort transition, if it was authorized and then
+/// deliberately abandoned -- authorize-then-abort is two real, truthfully
+/// audited events, not a violation of any invariant. What genuinely never
+/// exceeds one, for any `proposal_id`, is
+/// `RiskAuditLog::proposal_decision_count` (`ProposalRiskDecision`,
+/// AEGIS-137's own "exactly one" requirement) -- NOT this type's count,
+/// which `proposal_release_decision_count` reports separately below.
 struct ProposalReleaseRiskDecision {
   std::uint64_t sequence{0};
   common::Nanos decided_at_nanos{0};
@@ -91,7 +106,16 @@ class RiskAuditLog {
   [[nodiscard]] const std::vector<ProposalReleaseRiskDecision>& proposal_release_decisions() const {
     return proposal_release_decisions_;
   }
-  /// AEGIS-137's release invariant asserts this is never above 1.
+  /// How many release-lifecycle TRANSITIONS (`ProposalReleaseRiskDecision`)
+  /// exist for `proposal_id` -- NOT the AEGIS-137 "exactly one" invariant,
+  /// which belongs to `proposal_decision_count` alone (M5 closure repair,
+  /// N1 correction: an earlier comment here claimed this count is "never
+  /// above 1", which is false -- an authorized proposal later deliberately
+  /// aborted legitimately shows 2: one authorize event, one abort event).
+  /// `RiskEngine::authorize_proposal_release`/`abort_proposal_release`
+  /// guarantee at most one NEW event per lifecycle transition KIND: once a
+  /// proposal reaches a terminal release state, every later call against it
+  /// returns the cached decision and records nothing new.
   [[nodiscard]] std::size_t proposal_release_decision_count(const std::string& proposal_id) const;
 
   /// Test/report helper: how many terminal proposal decisions exist for

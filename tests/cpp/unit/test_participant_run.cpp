@@ -1,3 +1,7 @@
+#include <filesystem>
+#include <fstream>
+#include <string>
+
 #include <gtest/gtest.h>
 
 #include "cpp/participant/app/participant_run.hpp"
@@ -10,8 +14,17 @@
 /// (ADR-0020).
 namespace {
 
+using aegis::participant::app::load_risk_limits_config;
 using aegis::participant::app::run_builtin_scenario;
 using aegis::participant::oms::OrderState;
+
+std::filesystem::path write_temp_risk_config(const std::string& name, const std::string& content) {
+  const auto path = std::filesystem::temp_directory_path() / name;
+  std::ofstream file(path);
+  file << content;
+  file.close();
+  return path;
+}
 
 TEST(ParticipantRun, BuiltinScenarioComposesEveryM3Layer) {
   const auto summary = run_builtin_scenario();
@@ -52,6 +65,53 @@ TEST(ParticipantRun, BuiltinScenarioIsDeterministic) {
   EXPECT_EQ(first.trade_price_rolling_mean, second.trade_price_rolling_mean);
   EXPECT_EQ(first.final_order_state, second.final_order_state);
   EXPECT_EQ(first.realized_pnl_units, second.realized_pnl_units);
+}
+
+// ---------------------------------------------------------------------------
+// M5 closure repair, N2: load_risk_limits_config rejects a non-positive
+// configured order-quantity limit at the narrowest canonical boundary,
+// rather than letting RiskEngine discover the hazard at decision time.
+// ---------------------------------------------------------------------------
+
+TEST(LoadRiskLimitsConfig, RejectsANegativeConfiguredOrderQuantityLimit) {
+  const auto path =
+      write_temp_risk_config("risk_limits_negative_cap.json",
+                             R"({"order_quantity_limits":{"1":{"max_order_quantity_units":-100,)"
+                             R"("resize_on_breach":true}}})");
+  EXPECT_THROW({ static_cast<void>(load_risk_limits_config(path.string())); }, std::runtime_error);
+}
+
+TEST(LoadRiskLimitsConfig, RejectsAZeroConfiguredOrderQuantityLimit) {
+  const auto path = write_temp_risk_config(
+      "risk_limits_zero_cap.json", R"({"order_quantity_limits":{"1":{"max_order_quantity_units":0,)"
+                                   R"("resize_on_breach":true}}})");
+  EXPECT_THROW({ static_cast<void>(load_risk_limits_config(path.string())); }, std::runtime_error);
+}
+
+TEST(LoadRiskLimitsConfig, RejectsANegativeCapEvenWithResizeDisabled) {
+  // The hazard is specific to resize_on_breach == true, but the config
+  // itself is still nonsensical (a cap that can never be satisfied by any
+  // positive quantity) with resize disabled, so it is rejected either way.
+  const auto path =
+      write_temp_risk_config("risk_limits_negative_cap_no_resize.json",
+                             R"({"order_quantity_limits":{"1":{"max_order_quantity_units":-1,)"
+                             R"("resize_on_breach":false}}})");
+  EXPECT_THROW({ static_cast<void>(load_risk_limits_config(path.string())); }, std::runtime_error);
+}
+
+TEST(LoadRiskLimitsConfig, AcceptsAPositiveConfiguredOrderQuantityLimit) {
+  const auto path =
+      write_temp_risk_config("risk_limits_valid_cap.json",
+                             R"({"order_quantity_limits":{"1":{"max_order_quantity_units":100,)"
+                             R"("resize_on_breach":true}}})");
+  const auto config = load_risk_limits_config(path.string());
+  ASSERT_TRUE(config.order_quantity_limits.contains(1));
+  EXPECT_EQ(config.order_quantity_limits.at(1).max_order_quantity_units, 100);
+}
+
+TEST(LoadRiskLimitsConfig, AcceptsAConfigWithNoOrderQuantityLimitsAtAll) {
+  const auto path = write_temp_risk_config("risk_limits_empty.json", R"({})");
+  EXPECT_NO_THROW({ static_cast<void>(load_risk_limits_config(path.string())); });
 }
 
 }  // namespace

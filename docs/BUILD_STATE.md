@@ -285,13 +285,16 @@ naked single leg either way, reachable whenever `max_concentration_share`
 (or, for the seam half, any cumulative control) was actually enabled below
 its disabling default. Fixed by making `evaluate_proposal` build ONE final
 combined overlay from every leg's own resolved quantity before any leg's
-cumulative controls are judged (Phase A/B), and by making `decide_order`
-revalidate an ENTIRE proposal's still-pending legs together, once, cached
-per `proposal_id` (`ensure_proposal_seam_revalidated`) -- risk now approves
-the whole proposal or rejects the whole proposal, never a mix. Detailed in
-ADR-0027's "Correction 2" section; retracts that section's original
-description of the preflight overlay as "folds in each already-evaluated
-sibling leg" (a prefix, not the final projection).
+cumulative controls are judged (Phase A/B) -- this part of the fix stands
+today. At this correction, `decide_order` was ALSO made to revalidate an
+ENTIRE proposal's still-pending legs together, once, cached per
+`proposal_id` (`ensure_proposal_seam_revalidated`). That caching mechanism
+was itself superseded by "Follow-up correction 3" below (M5 closure
+repair, N8: `ensure_proposal_seam_revalidated` does not exist in the
+engine as of that correction) and must not be read as describing current
+behavior. Detailed in ADR-0027's "Correction 2" section; retracts that
+section's original description of the preflight overlay as "folds in each
+already-evaluated sibling leg" (a prefix, not the final projection).
 
 **Follow-up correction 3 (M5 closure repair): the proposal release epoch.**
 A review of correction 2 found its seam cache began at the wrong moment --
@@ -355,6 +358,75 @@ only idempotency) survives a process restart (R9), and
 `AlwaysApproveRiskGate` remains reachable via `aegis_participant_run
 --fixture`, pre-existing from M3 and not reachable from the calendar-spread
 path (R8) -- both flagged rather than silently folded into this turn.
+
+**Follow-up correction 5 (M5 closure repair): terminal audit state and
+risk boundary validation.** An independent re-review of correction 4
+found the release-epoch architecture itself still sound (15/15 sampled
+attack categories passed, unchanged), but found a new blocker and five
+narrower residuals, all confined to this same input-integrity/reservation-
+lifecycle surface.
+
+**N1 (BLOCKER, fixed):** `authorize_proposal_release`'s terminal-state
+check omitted `kAborted`. Calling authorize AFTER a deliberate
+`abort_proposal_release` fell through, found no committed legs (they were
+already released by the abort), and recorded a THIRD release event that
+overwrote the abort with a spurious `kUnexpectedOrder` rejection --
+reproducible with the plain authorize-abort-authorize sequence, no attack
+needed. `kAborted` is now terminal there too. This also forced a truthful
+correction to the audit model: `proposal_release_decision_count` was
+documented as "never above 1" (AEGIS-137), which was already false before
+this fix for the legitimate authorize-then-abort sequence (two real
+lifecycle transitions) and is now documented as such -- AEGIS-137's actual
+"exactly one" invariant belongs to `proposal_decision_count`
+(`ProposalRiskDecision`) alone, never to the release-lifecycle count.
+
+**N2 (fixed):** a malformed configured `max_order_quantity_units` (`<= 0`
+with `resize_on_breach`) could make `RiskEngine` itself manufacture a
+non-positive approved/resized quantity -- the same hazard R1 closed for a
+malformed REQUEST, from the configuration side instead. Closed in two
+layers: `app::load_risk_limits_config` rejects a non-positive configured
+limit at load time, and `RiskEngine::check_approved_quantity_postcondition`
+(`kInvalidLimitConfiguration`) is a defense-in-depth backstop that no
+quantity ever leaves `RiskEngine` as an executable `<= 0` magnitude,
+regardless of how the config was constructed.
+
+**N3 (fixed):** `RiskEngine::on_fill` accepted an unvalidated fill
+quantity; a negative fill silently moved confirmed position in the wrong
+direction, poisoning every cumulative control that reads it. `on_fill` now
+requires a positive fill magnitude, exactly like R1's request-quantity and
+N2's approved-quantity invariants -- an invalid fill mutates nothing.
+
+**N4/N5/N6 (fixed):** the release lifecycle's identity boundary was
+inconsistent -- `stage_proposal_release` was already fail-closed on a
+strategy mismatch (R5), but `authorize_proposal_release` silently accepted
+ANY caller's `strategy_id` (N4), `commit_proposal_decision`'s own
+unconditional `strategy_id` assignment contradicted the documented "set
+once, never overwritten" claim for a `proposal_id` staged before it was
+ever committed (N5), and `abort_proposal_release` took no `strategy_id` at
+all, letting any in-process caller abort another strategy's proposal or
+poison an uncommitted `proposal_id` (N6). Fixed together: canonical
+attribution now originates ONLY inside `commit_proposal_decision` (a new
+`ProposalReleaseRecord::committed` flag), and `stage_proposal_release`/
+`authorize_proposal_release`/`abort_proposal_release` all refuse to touch
+-- let alone persist state for -- a `proposal_id` that is not yet
+genuinely `committed`; `authorize_proposal_release` and
+`abort_proposal_release` both now require their own `strategy_id` argument
+to match the canonical one.
+
+**N7 (documentation only):** `check_volatility_hard_reject`'s doc claimed
+a fresh release-time check "can never disagree" with commit-time sizing.
+False for a misconfigured `hard_reject_multiple < 1.0` (no frozen
+requirement constrains this value, so it is not validated at load time).
+Corrected; `VolatilityReductionConfig`'s own doc now states the intended
+domain (`hard_reject_multiple >= 1.0`).
+
+**N8 (documentation only):** two historical "Correction 2"/"Follow-up
+correction 2" passages (this file, above, and ADR-0027) described the
+retired `ensure_proposal_seam_revalidated` caching mechanism in the
+present tense, which could be misread as describing current behavior.
+Reworded to past tense with an explicit note that the mechanism does not
+exist in the engine as of Correction 3, without rewriting the historical
+narrative itself.
 
 Not yet done (Batch 2): AEGIS-139..155's remaining validation modules,
 AEGIS-238's observability integration, evidence generation, and the

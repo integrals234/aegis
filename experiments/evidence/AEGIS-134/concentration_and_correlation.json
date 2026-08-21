@@ -54,7 +54,7 @@
         "test": "ProposalAtomicSeamRevalidation.N6ExposureReductionRejectsAtomicallyAtCommit"
       },
       {
-        "line": 578,
+        "line": 736,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineConcentration.RejectsCorrelatedGroupExposureBreach"
@@ -100,7 +100,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "dad73b18ee8dbe2b9f9b48c5485af765013c9a95",
+  "repository_commit": "76fbaefb59894ef95ce6064b92ac9af8ca428042",
   "requirements": [
     "AEGIS-134"
   ],

@@ -267,12 +267,44 @@ std::optional<LegDecision> RiskEngine::resolve_effective_quantity(const OrderReq
   return std::nullopt;
 }
 
+/// Defense-in-depth postcondition (M5 closure repair, N2): whatever
+/// `resolve_effective_quantity` computed, the quantity `RiskEngine` is about
+/// to reserve and approve MUST be a positive magnitude. `check_quantity_validity`
+/// already guarantees the REQUESTED quantity is positive, but a malformed
+/// configured limit (a non-positive `max_order_quantity_units` with
+/// `resize_on_breach == true`) can still make `resolve_effective_quantity`
+/// itself manufacture a non-positive `effective_quantity` -- `RiskEngine`
+/// must never reserve or approve that, regardless of how the config got
+/// that way (`app::load_risk_limits_config` also rejects it at load time,
+/// but this check does not rely on that being the only construction path).
+std::optional<LegDecision> RiskEngine::check_approved_quantity_postcondition(
+    std::int64_t effective_quantity) {
+  if (effective_quantity <= 0) {
+    return LegDecision{.verdict = RiskVerdict::kReject,
+                       .reason_code = ReasonCode::kInvalidLimitConfiguration,
+                       .reason =
+                           "computed approved quantity is not a positive magnitude; "
+                           "check configured order-quantity/volatility limits"};
+  }
+  return std::nullopt;
+}
+
 /// The volatility HARD-REJECT safety gate only (M5 closure repair, R6) --
 /// deliberately excludes the RESIZE branch above, which stays frozen once a
-/// proposal is committed. Shares the exact hard-reject condition
-/// `resolve_effective_quantity` already uses, so a fresh check at the
-/// release epoch can never disagree with the one taken at commit for the
-/// same volatility reading.
+/// proposal is committed. Shares the exact hard-reject THRESHOLD
+/// `resolve_effective_quantity` uses, so for the same volatility reading the
+/// two agree on WHETHER the threshold is breached.
+///
+/// Correction (M5 closure repair, N7): this does NOT mean a fresh check at
+/// release can never disagree with commit-time sizing. `resolve_effective_quantity`
+/// only evaluates its hard-reject branch inside `realized > target_volatility`
+/// (`RiskEngine::resolve_effective_quantity`), so with a misconfigured
+/// `hard_reject_multiple < 1.0` the hard-reject threshold sits BELOW the
+/// resize threshold and commit-time sizing can approve a quantity this
+/// function immediately rejects at release, with volatility UNCHANGED in
+/// between. See `VolatilityReductionConfig`'s own doc for the intended
+/// config domain (`hard_reject_multiple >= 1.0`), which is not validated at
+/// load time because no frozen requirement constrains it.
 std::optional<LegDecision> RiskEngine::check_volatility_hard_reject(
     std::uint32_t instrument_id) const {
   if (config_.volatility.target_volatility > 0.0) {
@@ -541,6 +573,9 @@ LegDecision RiskEngine::evaluate_leg(const OrderRequest& request,
   if (auto rejected = resolve_effective_quantity(request, effective_quantity, resized)) {
     return *rejected;
   }
+  if (auto rejected = check_approved_quantity_postcondition(effective_quantity)) {
+    return *rejected;
+  }
 
   if (auto rejected = check_cumulative_controls(request, effective_quantity, overlay)) {
     return *rejected;
@@ -628,6 +663,9 @@ ProposalDecisionResult RiskEngine::evaluate_proposal(const std::string& strategy
     if (auto rejected = resolve_effective_quantity(leg, effective_quantity, resized)) {
       return all_legs_rejected(legs.size(), *rejected);
     }
+    if (auto rejected = check_approved_quantity_postcondition(effective_quantity)) {
+      return all_legs_rejected(legs.size(), *rejected);
+    }
 
     const std::int64_t signed_quantity =
         leg.side == Side::kBuy ? effective_quantity : -effective_quantity;
@@ -709,7 +747,14 @@ const ProposalRiskDecision& RiskEngine::commit_proposal_decision(
           .strategy_id = strategy_id, .proposal_id = proposal_id, .leg_index = leg.leg_index};
       state_.reserve_leg(key, leg.instrument_id, leg.side, decision.approved_quantity_units,
                          strategy_id);
-      proposal_release_by_id_[proposal_id].strategy_id = strategy_id;
+      // Canonical attribution originates HERE and only here (M5 closure
+      // repair, N5): this is the one place `committed` becomes true, and
+      // every one of stage/authorize/abort refuses to touch a record whose
+      // `committed` is still false, so none of them can ever race to
+      // establish ownership before a real commit.
+      ProposalReleaseRecord& release_record = proposal_release_by_id_[proposal_id];
+      release_record.strategy_id = strategy_id;
+      release_record.committed = true;
       pending_legs_[key] = PendingLeg{
           .strategy_id = strategy_id,
           .proposal_id = proposal_id,
@@ -733,28 +778,34 @@ const ProposalRiskDecision& RiskEngine::commit_proposal_decision(
 void RiskEngine::stage_proposal_release(const std::string& strategy_id,
                                         const std::string& proposal_id,
                                         const std::vector<StagedOrderIdentity>& staged) {
-  ProposalReleaseRecord& record = proposal_release_by_id_[proposal_id];
+  // M5 closure repair, N5: a proposal_id commit_proposal_decision has not
+  // genuinely committed yet is UNKNOWN. Look up with find(), never
+  // operator[] -- an unknown proposal gets no map entry at all, so a
+  // pre-commit staging call can neither establish canonical ownership nor
+  // leave any state a later legitimate commit would have to reckon with.
+  const auto found = proposal_release_by_id_.find(proposal_id);
+  if (found == proposal_release_by_id_.end() || !found->second.committed) {
+    return;
+  }
+  ProposalReleaseRecord& record = found->second;
   if (record.state != ProposalReleaseState::kCommitted &&
       record.state != ProposalReleaseState::kStaging) {
-    return;  // Already authorized, rejected or completed: staging is over.
+    return;  // Already authorized, rejected, aborted or completed: staging is over.
   }
-  // Canonical attribution is IMMUTABLE (M5 closure repair, R5): once
-  // record.strategy_id is established (normally by commit_proposal_decision,
-  // before staging ever runs), a later call naming a DIFFERENT strategy_id
-  // for the same proposal_id must never overwrite it -- that would rewrite
-  // the audit trail's attribution of who actually committed this proposal,
-  // and a look-alike proposal_id collision could otherwise poison it. Mark
-  // the mismatch and bind none of this call's identities; authorize_
-  // proposal_release rejects the whole proposal the first time it sees the
-  // flag, so a poisoning attempt fails the release rather than silently
-  // succeeding under a rewritten identity.
-  if (!record.strategy_id.empty() && record.strategy_id != strategy_id) {
+  // Canonical attribution is IMMUTABLE (M5 closure repair, R5): record.strategy_id
+  // was established once, by commit_proposal_decision, before staging could
+  // ever run (committed == true implies it is already set). A call naming a
+  // DIFFERENT strategy_id must never overwrite it -- that would rewrite the
+  // audit trail's attribution of who actually committed this proposal, and a
+  // look-alike proposal_id collision could otherwise poison it. Mark the
+  // mismatch and bind none of this call's identities; authorize_proposal_release
+  // rejects the whole proposal the first time it sees the flag, so a
+  // poisoning attempt fails the release rather than silently succeeding
+  // under a rewritten identity.
+  if (record.strategy_id != strategy_id) {
     record.attribution_mismatch = true;
     record.state = ProposalReleaseState::kStaging;
     return;
-  }
-  if (record.strategy_id.empty()) {
-    record.strategy_id = strategy_id;
   }
   record.state = ProposalReleaseState::kStaging;
   for (const StagedOrderIdentity& identity : staged) {
@@ -849,18 +900,46 @@ ProposalReleaseDecision RiskEngine::reject_proposal_release(const std::string& p
 ProposalReleaseDecision RiskEngine::authorize_proposal_release(const std::string& strategy_id,
                                                                const std::string& proposal_id,
                                                                common::Nanos now_nanos) {
-  ProposalReleaseRecord& record = proposal_release_by_id_[proposal_id];
-  if (record.strategy_id.empty()) {
-    record.strategy_id = strategy_id;
+  // M5 closure repair, N5: an unknown/uncommitted proposal_id is looked up
+  // with find(), never operator[] -- nothing is persisted for it, so a
+  // pre-commit authorize call can neither establish ownership nor poison a
+  // later legitimate commit of this id.
+  const auto found = proposal_release_by_id_.find(proposal_id);
+  if (found == proposal_release_by_id_.end() || !found->second.committed) {
+    return ProposalReleaseDecision{.state = ProposalReleaseState::kRejectedAtRelease,
+                                   .reason_code = ReasonCode::kUnexpectedOrder,
+                                   .reason = "no committed proposal to authorize for release"};
   }
-  // Terminal and idempotent: a proposal gets at most ONE release decision,
-  // so a second call can never upgrade a rejection or re-open an
-  // authorization (AEGIS-137's release half).
+  ProposalReleaseRecord& record = found->second;
+
+  // Terminal and idempotent (M5 closure repair, N1): once the release
+  // lifecycle reaches any of these four states, a later call never mutates
+  // it or records a new audit event -- kAborted was the state missing here
+  // before this repair, which let a call AFTER a deliberate
+  // abort_proposal_release fall through below and overwrite the abort with
+  // a spurious kUnexpectedOrder rejection. See authorize_proposal_release's
+  // own header doc for why "at most one" is tracked per TRANSITION KIND
+  // (authorize / reject / abort), not as a single release-record count.
   if (record.state == ProposalReleaseState::kAuthorizedForRelease ||
       record.state == ProposalReleaseState::kRejectedAtRelease ||
-      record.state == ProposalReleaseState::kCompleted) {
+      record.state == ProposalReleaseState::kCompleted ||
+      record.state == ProposalReleaseState::kAborted) {
     return ProposalReleaseDecision{
         .state = record.state, .reason_code = record.reason_code, .reason = record.reason};
+  }
+
+  // M5 closure repair, R4/N4: the caller's own strategy_id must match this
+  // proposal's canonical committed strategy_id -- otherwise a caller could
+  // authorize (or read the release decision for) a proposal it never
+  // committed simply by knowing its proposal_id. Canonical attribution
+  // itself is never mutated by this: the audit trail still attributes to
+  // record.strategy_id, never to the caller's mismatched argument.
+  if (record.strategy_id != strategy_id) {
+    return reject_proposal_release(
+        proposal_id, record, ReasonCode::kIdentityMismatch,
+        "authorize_proposal_release called with a strategy_id that disagrees with this "
+        "proposal's canonical strategy_id",
+        now_nanos);
   }
 
   // M5 closure repair, R5: a staging call named a strategy_id that
@@ -941,10 +1020,31 @@ ProposalReleaseState RiskEngine::proposal_release_state(const std::string& propo
                                                 : found->second.state;
 }
 
-ProposalReleaseDecision RiskEngine::abort_proposal_release(const std::string& proposal_id,
+ProposalReleaseDecision RiskEngine::abort_proposal_release(const std::string& strategy_id,
+                                                           const std::string& proposal_id,
                                                            std::string reason,
                                                            common::Nanos now_nanos) {
-  ProposalReleaseRecord& record = proposal_release_by_id_[proposal_id];
+  // M5 closure repair, N6: an unknown/uncommitted proposal_id is looked up
+  // with find(), never operator[] -- nothing is persisted for it, so a
+  // pre-emptive abort can never poison a later legitimate commit of this id.
+  const auto found = proposal_release_by_id_.find(proposal_id);
+  if (found == proposal_release_by_id_.end() || !found->second.committed) {
+    return ProposalReleaseDecision{.state = ProposalReleaseState::kRejectedAtRelease,
+                                   .reason_code = ReasonCode::kUnexpectedOrder,
+                                   .reason = "no committed proposal to abort"};
+  }
+  ProposalReleaseRecord& record = found->second;
+
+  // M5 closure repair, N6: only the proposal's own canonical strategy may
+  // abort it -- a caller cannot abort a DIFFERENT strategy's proposal
+  // merely by knowing its proposal_id. A wrong-strategy call is a pure
+  // no-op: it returns the CURRENT (unaffected) decision, mutates nothing,
+  // and is never audited as an attempt against this proposal.
+  if (record.strategy_id != strategy_id) {
+    return ProposalReleaseDecision{
+        .state = record.state, .reason_code = record.reason_code, .reason = record.reason};
+  }
+
   // Idempotent and terminal, matching authorize_proposal_release's own
   // contract: a proposal that is already kAborted, kRejectedAtRelease or
   // kCompleted returns its existing decision unchanged and records no
@@ -1102,6 +1202,17 @@ bool RiskEngine::allow_cancel(common::Nanos now_nanos, bool bypass_safety) {
 
 void RiskEngine::on_fill(std::uint64_t client_order_id, std::uint32_t instrument_id, Side side,
                          std::int64_t fill_quantity_units) {
+  // M5 closure repair, N3: a fill quantity is a positive magnitude, exactly
+  // like a request/approved quantity (R1/N2) -- `side` alone carries
+  // direction. A non-positive value is malformed input from whatever
+  // upstream event source reported it, never a legitimate zero-size or
+  // opposite-direction fill; applying it would silently poison confirmed
+  // position (`RiskState::apply_fill`) and every cumulative control that
+  // reads it. Ignored with no state mutation, exactly as a caller reporting
+  // no fill at all would be.
+  if (fill_quantity_units <= 0) {
+    return;
+  }
   state_.apply_fill(instrument_id, side, fill_quantity_units);
   state_.reduce_reservation(client_order_id, fill_quantity_units);
 }
