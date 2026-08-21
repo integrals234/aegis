@@ -183,9 +183,29 @@ the following is a production risk system:
   estimates correlation from observed data, deliberately (ADR-0028) --
   online estimation would make a risk decision depend on a statistic
   computed from the same stream the decision is about.
-- **Idempotency/duplicate-request protection is in-memory only.** It does
-  not survive a process restart; AEGIS-127's frozen acceptance does not
-  require that it does, and no cross-process persistence is claimed.
+- **No risk state survives a process restart (R9).** Idempotency/
+  duplicate-request protection is in-memory only, and so is everything else
+  `RiskEngine` tracks: tripped kill switches, the daily-loss/drawdown
+  latches, every leg/order reservation, the dedupe-key set, the drawdown
+  high-water mark, and every `ProposalReleaseRecord` (staged/authorized/
+  aborted/rejected/completed state). `ParticipantSnapshot` covers OMS and
+  portfolio state only -- a fresh `RiskEngine` after a restart has no memory
+  of any of the above. AEGIS-127's frozen acceptance does not require
+  cross-process persistence, and no such persistence is claimed for any
+  control, not idempotency alone. The `--fixture`/`--restore-from` recovery
+  path (`docs/LIMITATIONS.md`'s next bullet) is the only place state is
+  restored across a process boundary today, and it restores OMS/portfolio
+  state through a test/fixture risk double, not a real `RiskEngine`.
+- **`AlwaysApproveRiskGate` is reachable in the shipped binary via
+  `aegis_participant_run --fixture` (R8).** Pre-existing from M3
+  (ADR-0023's test/fixture double, `cpp/participant/app/participant_run.cpp`),
+  driven by a `RecordedResponseAdapter` with no real exchange, and NOT
+  reachable from the calendar-spread `--calendar-spread` path this file's
+  M5 sections otherwise document -- but it is a risk-free order-submission
+  path that exists in a shipped binary. Not fixed by M5's risk-engine work:
+  closing it means replacing the fixture path's own composition (outside
+  `cpp/participant/risk/**`'s surface), a decision left to a future,
+  explicitly scoped turn rather than folded silently into this one.
 - **A failed adapter submission releases its reservation through a
   composition-root decorator, not through the OMS itself.**
   `OrderManager::submit_new_order` (`cpp/participant/oms`, unmodified by M5)
@@ -214,16 +234,33 @@ the following is a production risk system:
   documented constant**, not a claim about how much capital a real deployment
   would carry.
 - **Risk-decision atomicity is guaranteed at the release epoch;
-  exchange-execution atomicity is not.** Before ANY constituent order of a
-  committed proposal is released, `RiskEngine::authorize_proposal_release`
-  performs one whole-proposal authorization against current state
-  (ADR-0027's "Correction 3"). That authorization is all-or-none: either
-  every constituent becomes executable or none does, and afterwards AEGIS
-  never produces a contradictory per-leg risk verdict for that proposal.
-  After release, this system has no basket/atomic multi-leg execution
-  primitive: a transport or exchange failure on one leg can still leave
-  the other filled alone. That residual leg-execution risk is not
-  eliminated by this repair and is not claimed to be.
+  exchange-execution atomicity is not (corrected, M5 closure repair R4).**
+  Before ANY constituent order of a committed proposal is released,
+  `RiskEngine::authorize_proposal_release` performs one whole-proposal
+  authorization against current state (ADR-0027's "Correction 3"). That
+  authorization is all-or-none: either every constituent becomes executable
+  or none does, and afterwards `decide_order` computes no further
+  proposal-level safety verdict. One integrity backstop remains: an order
+  whose submitted instrument/side/quantity disagree with the exact
+  economics staged and authorized is rejected `kIdentityMismatch` on its
+  own, while its siblings are unaffected -- a per-leg outcome that CAN
+  differ from a sibling's, even though it is not a new risk judgment (it
+  consults no mutable safety state). Verified against the real composition
+  root: staged and submitted economics are read from the same fields, so
+  this backstop does not fire on that path today. After release, this
+  system also has no basket/atomic multi-leg execution primitive: a
+  transport or exchange failure on one leg can still leave the other filled
+  alone. Neither residual is eliminated by this repair and neither is
+  claimed to be.
+- **`RiskEngine::abort_proposal_release` (M5 closure repair, R3) has no
+  current call site in the calendar-spread demo.** It exists so a caller
+  that authorizes a proposal and then, for a reason outside `RiskEngine`'s
+  own visibility, does not submit one or more legs, can reclaim that
+  capacity instead of stranding it forever. `participant_run.cpp`'s
+  `execute_leg` has no failure mode that leaves a sibling leg's
+  authorization stranded today, so this method is exercised directly by
+  `tests/cpp/unit/test_risk_proposal_release_epoch.cpp`'s `ProposalAbort`
+  suite, not by the demo's own composition.
 - **A kill switch tripping after release authorization does not retract
   that authorization.** It blocks every SUBSEQUENT proposal, and live
   orders are handled by the existing emergency-cancel path -- but a

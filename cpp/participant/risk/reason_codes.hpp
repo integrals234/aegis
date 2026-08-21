@@ -55,6 +55,19 @@ enum class ReasonCode : std::uint8_t {
   /// leg the proposal never committed): the proposal cannot be authorized
   /// as a unit, so it is rejected as a unit.
   kIncompleteProposalStaging = 31,
+  /// `quantity_units <= 0` (M5 closure repair, R1). Quantity is a positive
+  /// MAGNITUDE; `Side` alone carries direction. A negative quantity is
+  /// malformed input, never a same-magnitude order on the opposite side --
+  /// rejected before any reservation, dedupe key, rate-limit token or armed
+  /// leg is created.
+  kInvalidQuantity = 32,
+  /// A caller explicitly abandoned an authorized-but-not-yet-consumed
+  /// proposal via `RiskEngine::abort_proposal_release` (M5 closure repair,
+  /// R3) rather than the proposal failing a risk check. Distinct from
+  /// `kRejectedAtRelease`: the proposal WAS safe when authorized; this
+  /// records that its remaining unconsumed reservations were deliberately
+  /// released instead of left stranded.
+  kProposalAborted = 33,
 };
 
 [[nodiscard]] std::string_view describe(ReasonCode reason);

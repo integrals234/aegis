@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <deque>
 #include <string>
@@ -100,13 +101,26 @@ class RiskState {
   /// caller applies the fill via `apply_fill` separately); this only shrinks
   /// the outstanding reserved amount so the same exposure is never counted
   /// twice.
+  ///
+  /// M5 closure repair (R2): a fill larger than what remains reserved (an
+  /// over-fill, or a caller reporting the same fill twice) used to drive
+  /// `signed_quantity_units` and `reserved_by_instrument_` PAST zero and
+  /// out the other side -- a negative "long" reservation that then
+  /// SUBTRACTED from every cumulative control's projected exposure, letting
+  /// a later order borrow capacity that was never real. The reduction is
+  /// therefore capped at this reservation's own remaining magnitude: it can
+  /// shrink a reservation to exactly zero, never past it. Reservation state
+  /// must never become negative.
   void reduce_reservation(std::uint64_t client_order_id, std::int64_t fill_quantity_units) {
     const auto found = reservations_.find(client_order_id);
     if (found == reservations_.end()) {
       return;
     }
     const std::int64_t sign = found->second.signed_quantity_units >= 0 ? 1 : -1;
-    const std::int64_t delta = sign * fill_quantity_units;
+    const std::int64_t remaining_magnitude = sign * found->second.signed_quantity_units;
+    const std::int64_t capped_fill_quantity =
+        std::clamp<std::int64_t>(fill_quantity_units, 0, remaining_magnitude);
+    const std::int64_t delta = sign * capped_fill_quantity;
     found->second.signed_quantity_units -= delta;
     reserved_by_instrument_[found->second.instrument_id] -= delta;
   }

@@ -764,4 +764,68 @@ TEST(ProposalAtomicSeamRevalidation, FlatBookConcentrationBelowOneRejectsTheFirs
   EXPECT_EQ(decision.reason_code, ReasonCode::kConcentration);
 }
 
+// =================================================================
+// R2: a fill larger than what remains reserved must saturate the
+// reservation at zero, never drive it (or reserved_by_instrument_) negative.
+// =================================================================
+
+TEST(ReservationOverfill, OverfillCapsTheReservationAtZeroRatherThanGoingNegative) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision(
+                    "strat", "p1", {make_request(kNear, Side::kBuy, 100, 100, "strat", "p1")}, 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  const auto decision = decide_registered_order(engine, "strat", "p1", 0, kNear, Side::kBuy, 100,
+                                                /*client_order_id=*/1, 0);
+  ASSERT_EQ(decision.verdict, RiskVerdict::kApprove);
+  ASSERT_EQ(engine.state().reserved_units(kNear), 100);
+
+  // A fill larger than what remains reserved (an over-report, or the same
+  // fill delivered twice) must never drive the reservation past zero.
+  engine.on_fill(/*client_order_id=*/1, kNear, Side::kBuy, 120);
+  EXPECT_EQ(engine.state().reserved_units(kNear), 0);
+}
+
+TEST(ReservationOverfill, AnExactFillClampsAtZeroNotBelow) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision(
+                    "strat", "p1", {make_request(kNear, Side::kBuy, 100, 100, "strat", "p1")}, 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  const auto decision = decide_registered_order(engine, "strat", "p1", 0, kNear, Side::kBuy, 100,
+                                                /*client_order_id=*/1, 0);
+  ASSERT_EQ(decision.verdict, RiskVerdict::kApprove);
+
+  engine.on_fill(/*client_order_id=*/1, kNear, Side::kBuy, 100);
+  EXPECT_EQ(engine.state().reserved_units(kNear), 0);
+}
+
+TEST(ReservationOverfill, RepeatedOverfillReportsNeverDriveReservationNegative) {
+  // A caller reporting the same fill twice (or two overlapping partial-fill
+  // reports that together exceed the reservation) must not compound into a
+  // negative reservation across repeated on_fill calls.
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision(
+                    "strat", "p1", {make_request(kNear, Side::kBuy, 100, 100, "strat", "p1")}, 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  const auto decision = decide_registered_order(engine, "strat", "p1", 0, kNear, Side::kBuy, 100,
+                                                /*client_order_id=*/1, 0);
+  ASSERT_EQ(decision.verdict, RiskVerdict::kApprove);
+
+  engine.on_fill(/*client_order_id=*/1, kNear, Side::kBuy, 80);
+  EXPECT_EQ(engine.state().reserved_units(kNear), 20);
+  engine.on_fill(/*client_order_id=*/1, kNear, Side::kBuy, 80);  // Over-reports by 60.
+  EXPECT_EQ(engine.state().reserved_units(kNear), 0);
+}
+
 }  // namespace

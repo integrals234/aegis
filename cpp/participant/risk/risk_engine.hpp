@@ -117,8 +117,25 @@
 /// # What this does and does not guarantee
 ///
 /// RISK-DECISION atomicity: before any constituent of a proposal is
-/// released, AEGIS makes one all-or-none authorization; afterwards it never
-/// produces a contradictory per-leg risk verdict for that proposal.
+/// released, AEGIS makes one all-or-none authorization, and afterwards
+/// `decide_order` computes no further proposal-level safety verdict --
+/// no halt, connectivity, staleness or cumulative-control question is asked
+/// a second time (M5 closure repair, R4: this is the corrected, narrower
+/// statement of the claim; the previous "never produces a contradictory
+/// per-leg risk verdict" wording was an overclaim). One integrity backstop
+/// remains: if an order actually submitted to `decide_order` disagrees on
+/// instrument/side/quantity with the exact economics that constituent was
+/// staged and authorized under, THAT ONE ORDER is rejected
+/// `kIdentityMismatch` while its siblings are unaffected. This is not a
+/// second risk judgment -- it consults no mutable safety state, so it
+/// cannot recreate the naked-leg hazard the release epoch exists to
+/// prevent -- it only refuses to execute something other than what was
+/// actually authorized. In the real composition root
+/// (`cpp/participant/app/participant_run.cpp`), the staged and submitted
+/// economics are read from the same `StrategyLeg` fields, so this backstop
+/// is verified NOT to fire on that path today; it exists for any caller
+/// that drives this seam directly and could otherwise submit something
+/// other than what it staged.
 ///
 /// NOT exchange/broker execution atomicity: after authorization, the
 /// transport or the exchange can still accept one leg and fail another --
@@ -174,6 +191,14 @@ class RiskEngine {
   /// make any constituent executable. May be called once with every
   /// constituent, or incrementally; either way authorization requires the
   /// staged set to cover every committed leg exactly.
+  ///
+  /// CANONICAL ATTRIBUTION IS IMMUTABLE (M5 closure repair, R5): the
+  /// proposal's `strategy_id` is fixed the first time either this or
+  /// `commit_proposal_decision` observes it, and this call NEVER overwrites
+  /// an already-established one. A call naming a disagreeing `strategy_id`
+  /// binds none of its identities and marks the release for rejection --
+  /// it can poison nothing, including the audit trail's attribution of who
+  /// actually committed this proposal.
   void stage_proposal_release(const std::string& strategy_id, const std::string& proposal_id,
                               const std::vector<StagedOrderIdentity>& staged);
 
@@ -199,6 +224,24 @@ class RiskEngine {
 
   /// The proposal's current release state (`kCommitted` if it has none).
   [[nodiscard]] ProposalReleaseState proposal_release_state(const std::string& proposal_id) const;
+
+  /// Deliberately abandons an authorized proposal's still-unconsumed
+  /// constituents (M5 closure repair, R3): a caller that authorized a
+  /// proposal and then decides -- for a reason outside RiskEngine's own
+  /// visibility -- not to submit some or all of its legs would otherwise
+  /// strand their reservations forever, since nothing else ever calls
+  /// `decide_order` for them. Releases the reservation of every leg of
+  /// `proposal_id` still present in the pending set (i.e. not yet consumed
+  /// by `decide_order`) and moves the proposal to the terminal `kAborted`
+  /// state. Does NOT touch a leg that already consumed its authorization --
+  /// that leg is live (or terminal) through the ordinary OMS/fill lifecycle,
+  /// and aborting the proposal never rolls back an order already submitted.
+  /// Idempotent and terminal like `authorize_proposal_release`: a call
+  /// against a proposal that is already `kAborted`, `kRejectedAtRelease` or
+  /// `kCompleted` is a no-op that returns the existing decision unchanged
+  /// and records no second audit entry.
+  ProposalReleaseDecision abort_proposal_release(const std::string& proposal_id, std::string reason,
+                                                 common::Nanos now_nanos);
 
   /// AEGIS-128's cancel half. `bypass_safety = true` (a kill-switch or
   /// connectivity-loss cancel) is never subject to the rate limit and never
@@ -273,6 +316,15 @@ class RiskEngine {
   // fixed documented order. Each returns an engaged optional to mean "this
   // group rejected", disengaged to mean "nothing here objected". Split out
   // so no single function carries every control's branching at once.
+  //
+  // Control group 0 (M5 closure repair, R1): quantity is a positive
+  // MAGNITUDE, `Side` alone carries direction. Checked first, before any
+  // other control reads `request.quantity_units` at all -- a malformed
+  // non-positive quantity must never reach a sign-sensitive computation
+  // (position projection, notional, reservation) as if it were legitimate
+  // input.
+  [[nodiscard]] static std::optional<LegDecision> check_quantity_validity(
+      const OrderRequest& request);
   [[nodiscard]] std::optional<LegDecision> check_halts_and_connectivity(
       const OrderRequest& request) const;
   [[nodiscard]] std::optional<LegDecision> check_market_state(const OrderRequest& request,
@@ -310,6 +362,19 @@ class RiskEngine {
   [[nodiscard]] std::optional<LegDecision> check_cumulative_controls(
       const OrderRequest& request, std::int64_t effective_quantity,
       const EvaluationOverlay& context_overlay) const;
+  /// The volatility HARD-REJECT safety gate only (M5 closure repair, R6) --
+  /// realized volatility at or beyond `hard_reject_multiple * target_volatility`
+  /// for `instrument_id`. Deliberately excludes the RESIZE branch of
+  /// `resolve_effective_quantity`: sizing is decided once, at commit, and
+  /// stays immutable through release (re-opening it would mean the quantity
+  /// a proposal was staged and authorized under could silently change).
+  /// The hard-reject branch is different in kind -- it is a safety gate, not
+  /// a sizing decision -- so `revalidate_at_seam` re-runs THIS check fresh
+  /// against current volatility, exactly like every other hard safety
+  /// control. A hard volatility safety breach discovered here rejects the
+  /// WHOLE proposal at release, before anything is sent.
+  [[nodiscard]] std::optional<LegDecision> check_volatility_hard_reject(
+      std::uint32_t instrument_id) const;
   [[nodiscard]] std::int64_t notional_units_base_currency(std::uint32_t instrument_id,
                                                           std::int64_t quantity_units,
                                                           std::int64_t price_units,
@@ -334,18 +399,24 @@ class RiskEngine {
   };
 
   /// Re-checks the mutable safety state a proposal must not trust forever
-  /// (halts, connectivity, market staleness/collar, and every cumulative
-  /// exposure/margin/leverage control) against CURRENT `state_`, excluding
-  /// `pending`'s own already-reserved contribution so it is counted exactly
-  /// once, not twice. Deliberately does NOT re-run order-quantity-cap/
-  /// volatility-resize (sizing is immutable once approved) or idempotency/
-  /// rate-limit admission (already consumed at commit time; re-running
-  /// either would reject every order, since the dedupe key is already
-  /// marked seen and the rate-limit event already recorded). Called ONLY
-  /// from `authorize_proposal_release`, over every leg of one proposal, at
-  /// a moment when none of them has been released -- never against a single
-  /// leg of a multi-leg proposal in isolation, and never after a sibling is
-  /// already executable.
+  /// (halts, connectivity, market staleness/collar, the volatility
+  /// HARD-REJECT gate, and every cumulative exposure/margin/leverage
+  /// control) against CURRENT `state_`, excluding `pending`'s own
+  /// already-reserved contribution so it is counted exactly once, not
+  /// twice. Deliberately does NOT re-run the order-quantity-cap or the
+  /// volatility-RESIZE branch (sizing is immutable once approved) or
+  /// idempotency/rate-limit admission (already consumed at commit time;
+  /// re-running either would reject every order, since the dedupe key is
+  /// already marked seen and the rate-limit event already recorded). It DOES
+  /// re-run the volatility HARD-REJECT branch (M5 closure repair, R6): that
+  /// branch is a safety gate, not a sizing choice, and every other hard
+  /// safety gate here is already re-checked fresh -- a proposal safely sized
+  /// while volatility was calm but whose reference instrument has since
+  /// spiked past the hard-reject multiple must not be released just because
+  /// sizing itself stays frozen. Called ONLY from `authorize_proposal_release`,
+  /// over every leg of one proposal, at a moment when none of them has been
+  /// released -- never against a single leg of a multi-leg proposal in
+  /// isolation, and never after a sibling is already executable.
   [[nodiscard]] std::optional<LegDecision> revalidate_at_seam(const PendingLeg& pending,
                                                               common::Nanos now_nanos) const;
 
@@ -356,12 +427,29 @@ class RiskEngine {
     ProposalReleaseState state{ProposalReleaseState::kCommitted};
     ReasonCode reason_code{ReasonCode::kNone};
     std::string reason;
+    /// The proposal's ONE canonical strategy identity (M5 closure repair,
+    /// R5): set exactly once, by whichever of `commit_proposal_decision` or
+    /// `stage_proposal_release` observes it first, and never overwritten
+    /// after that -- including by a LATER `stage_proposal_release` call
+    /// naming a different `strategy_id` for the same `proposal_id`. Every
+    /// audit record this proposal ever produces (`ProposalRiskDecision`,
+    /// `ProposalReleaseRiskDecision`) attributes to this value, so letting
+    /// it be rewritten would let a caller (malicious or buggy) rewrite
+    /// historical attribution for a proposal it never actually committed.
     std::string strategy_id;
     /// leg_index -> the constituent order staged for it.
     std::unordered_map<std::uint32_t, StagedOrderIdentity> staged_by_leg_index;
     /// How many authorized constituents have not yet consumed the
     /// authorization; reaching zero moves the proposal to `kCompleted`.
     std::size_t outstanding_authorized_legs{0};
+    /// Set by `stage_proposal_release` when a caller supplies a
+    /// `strategy_id` that disagrees with the already-canonical one above
+    /// (M5 closure repair, R5). The mismatched call's identities are never
+    /// bound; `authorize_proposal_release` rejects the whole proposal
+    /// `kIdentityMismatch` the first time it observes this flag, so a
+    /// poisoning attempt fails the release rather than silently succeeding
+    /// under a rewritten identity.
+    bool attribution_mismatch{false};
   };
 
   /// Rejects `record`'s whole proposal: releases every leg reservation it

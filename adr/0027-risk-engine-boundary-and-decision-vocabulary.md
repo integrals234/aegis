@@ -337,10 +337,25 @@ pinned by
 `ProposalReleaseEpoch.AKillSwitchAfterAuthorizationDoesNotSplitTheProposalsVerdict`
 so a future refactor cannot silently restore the per-leg conflict.
 
-**What is and is not claimed.** RISK-DECISION atomicity: before any
-constituent of a proposal is released, AEGIS makes one all-or-none
-authorization, and afterwards never produces a contradictory per-leg risk
-verdict for that proposal. NOT exchange/broker execution atomicity: after
+**What is and is not claimed (M5 closure repair, R4: corrected, narrower
+statement).** RISK-DECISION atomicity: before any constituent of a proposal
+is released, AEGIS makes one all-or-none authorization, and afterwards
+`decide_order` computes no further proposal-level safety verdict -- no
+halt, connectivity, staleness or cumulative-control question is asked a
+second time. One integrity backstop remains: if an order actually submitted
+disagrees on instrument/side/quantity with the exact economics that
+constituent was staged and authorized under, THAT ONE ORDER is rejected
+`kIdentityMismatch` while its siblings are unaffected. This is not a second
+risk judgment -- it consults no mutable safety state, so it cannot recreate
+the naked-leg hazard the release epoch prevents -- it only refuses to
+execute something other than what was actually authorized. The previous
+wording here ("never produces a contradictory per-leg risk verdict for that
+proposal") was an overclaim: this backstop IS a per-leg outcome that can
+differ from a sibling's. Verified against the real composition root
+(`cpp/participant/app/participant_run.cpp`): the staged and submitted
+economics are read from the same `StrategyLeg` fields, so the backstop is
+confirmed NOT to fire on that path today; it exists for any caller that
+drives this seam directly. NOT exchange/broker execution atomicity: after
 authorization the transport or exchange can still accept one leg and fail
 another, because AEGIS has no basket/atomic multi-leg execution primitive.
 That residual is execution risk, not a contradictory risk verdict
@@ -356,6 +371,105 @@ reducing leg is sent, true instantaneous gross exposure can exceed what
 risk authorized. This follows from evaluating a multi-leg proposal as one
 intended portfolio transition, and M5 does not claim worst-path or basket
 execution-risk protection. Documented in `docs/LIMITATIONS.md`.
+
+## Correction 4 (M5 closure repair): input integrity and reservation lifecycle
+
+An independent risk-safety review of Correction 3's release epoch confirmed
+Blockers A and B closed and the epoch itself sound against 18 attack
+categories, but found one new blocker and several residuals in the layer
+below it: the epoch's safety only means something if the QUANTITIES it
+reserves and revalidates are themselves honest, and if a proposal that was
+safely authorized cannot be poisoned, stranded, or silently outlived by
+stale sizing.
+
+**R1 (BLOCKER) -- `quantity_units <= 0` was accepted as legitimate input.**
+`Side` already carries direction (`kBuy`/`kSell`); a negative quantity is
+not a valid same-magnitude order on the opposite side, it is malformed
+input. Left unvalidated, a negative quantity drove a NEGATIVE reservation
+that then SUBTRACTED from every cumulative control's projected exposure --
+reproduced exactly as the reviewer described: a 100-lot position cap, a
+committed leg of `-100`, then a legitimate 150-lot order that the cap
+should reject sails through because the projection reads `0 + (-100) + 150
+= 50`. **Fix:** a new control group 0, `check_quantity_validity`, runs
+FIRST in `evaluate_leg` and in every leg of `evaluate_proposal`'s Phase A --
+before any other control reads `quantity_units` at all -- rejecting
+`kInvalidQuantity` before any reservation, dedupe key, rate-limit token or
+armed leg is created. Multi-leg proposals reject atomically: one invalid
+leg rejects the whole proposal, arming and reserving nothing for any leg.
+
+**R2 (CONCERN) -- an over-fill (or a duplicate fill report) could drive a
+reservation negative.** `RiskState::reduce_reservation` subtracted the
+reported fill unconditionally; a fill larger than what remained reserved
+crossed zero and kept going, producing the same negative-reservation
+under-counting hazard as R1 from a different direction. **Fix:** the
+reduction is capped at the reservation's own remaining magnitude -- it can
+shrink to exactly zero, never past it. No new anomaly-tracking framework;
+the existing per-reservation state is simply clamped.
+
+**R3 (CONCERN) -- an authorized-but-never-consumed proposal leg had no
+recovery path.** Nothing but `decide_order` ever released a leg-keyed
+reservation created by `commit_proposal_decision`+`authorize_proposal_release`;
+a caller that authorized a proposal and then, for a reason outside
+`RiskEngine`'s own visibility, never submitted one or more legs would
+strand that capacity forever. **Fix:** `abort_proposal_release(proposal_id,
+reason, now_nanos)` releases every still-unconsumed leg reservation of a
+proposal and moves it to a new terminal `kAborted` state, idempotent and
+terminal like `authorize_proposal_release`, and never rolls back a leg that
+already consumed its authorization (that leg is live, or terminal, through
+the ordinary OMS/fill lifecycle). No current call site exists in the
+calendar-spread demo -- `execute_leg` never partially fails in a way that
+leaves a sibling leg's authorization stranded -- so this is a lifecycle
+primitive available to a caller that needs it, exercised directly by
+`ProposalAbort` in `tests/cpp/unit/test_risk_proposal_release_epoch.cpp`.
+
+**R5 (CONCERN) -- `stage_proposal_release` overwrote the canonical
+`strategy_id` unconditionally.** A staging call naming a DIFFERENT
+`strategy_id` for a `proposal_id` that already had a canonical one (set at
+`commit_proposal_decision`) silently rewrote `ProposalReleaseRecord::strategy_id`
+-- corrupting the AEGIS-137 audit trail's attribution of who actually
+committed the proposal. **Fix:** canonical attribution is immutable. A
+disagreeing staging call binds none of its own identities and marks the
+record `attribution_mismatch`; `authorize_proposal_release` rejects the
+whole proposal `kIdentityMismatch` the first time it observes the flag.
+Deliberately fail-closed and permanent: once a mismatch has touched a
+`proposal_id`, even a subsequent, correctly-attributed re-stage from the
+legitimate strategy does not un-poison it, because the engine cannot tell
+after the fact which call was the bogus one.
+
+**R6 (CONCERN) -- the volatility HARD-REJECT safety gate was not
+re-evaluated at release, unlike every other hard safety control.**
+`revalidate_at_seam` deliberately does not re-run order sizing (the
+quantity a proposal was authorized under must stay frozen), but the
+hard-reject branch of `resolve_effective_quantity` is a SAFETY GATE, not a
+sizing choice, and had been swept into the same "do not re-run" bucket by
+mistake. **Fix:** `check_volatility_hard_reject` -- the hard-reject
+condition alone, never the resize branch -- is re-run fresh inside
+`revalidate_at_seam`, so a proposal safely sized while volatility was calm
+but whose reference instrument has since spiked past the hard-reject
+multiple is rejected at release, exactly like a kill switch or a
+disconnect.
+
+**R4 (CLAIM CORRECTION, no code change) -- "never a mix" was an
+overclaim.** See the corrected "What is and is not claimed" paragraph
+above: the R4 finding is that the identity-mismatch defensive backstop in
+`decide_order` (Correction 3, step 4) IS a per-leg outcome that can differ
+from a sibling's, even though it consults no mutable safety state and is
+verified not to fire on the real composition root's own path today. The
+claim is corrected, not the backstop weakened.
+
+**Disposition of R8 and R9 (not fixed in this correction).** R8
+(`AlwaysApproveRiskGate` reachable via `aegis_participant_run --fixture`,
+pre-existing from M3, not reachable in the calendar-spread flow) and R9
+(risk state -- kill switches, latches, reservations, proposal-release
+records -- does not survive a process restart, and `docs/LIMITATIONS.md`
+previously disclosed this only for idempotency) are both outside this
+correction's declared surface (input integrity and reservation lifecycle
+for the release epoch). R9 is closed as a documentation gap: the existing
+idempotency-only disclosure is extended to name every kind of risk state
+that does not survive a restart. R8 is deliberately NOT fixed here -- it
+touches the `--fixture` CLI path's own composition, not the calendar-spread
+release epoch -- and remains flagged as a known, disclosed gap for a future
+turn to decide, rather than silently broadening this one.
 
 ## Alternatives considered
 

@@ -12,7 +12,7 @@
         "test": "CalendarSpreadRiskExchangeIntegration.RejectedProposalNeverReachesTheExchangeOrThePortfolio"
       },
       {
-        "line": 522,
+        "line": 625,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineAuditInvariant.RejectedProposalReportsEveryLegRejectedAndArmsNoOrder"
@@ -30,7 +30,7 @@
   "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Architecture test rejects bypass dependencies.",
-  "generated_on": "2026-08-20",
+  "generated_on": "2026-08-21",
   "implementation": [
     "configs/architecture_rules.yaml",
     "tools/check_architecture.py",
@@ -61,7 +61,7 @@
   ],
   "positive_architecture_check_passed": true,
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "d6bbf133084938e6b067f23a64583ada4b6f1fc9",
+  "repository_commit": "dad73b18ee8dbe2b9f9b48c5485af765013c9a95",
   "requirements": [
     "AEGIS-120"
   ],

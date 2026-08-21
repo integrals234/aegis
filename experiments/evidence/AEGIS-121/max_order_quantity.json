@@ -6,6 +6,12 @@
     ],
     "cases": [
       {
+        "line": 366,
+        "passed": true,
+        "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
+        "test": "CalendarSpreadRiskExchangeIntegration.NonPositiveStrategyConfigQuantityIsRejectedAndNeverReachesTheExchangeOrThePortfolio"
+      },
+      {
         "line": 64,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
@@ -16,16 +22,60 @@
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineOrderQuantity.ResizesDownToTheLimitWhenResizeEnabled"
+      },
+      {
+        "line": 174,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.MultiLegProposalWithOneInvalidLegRejectsTheWholeProposalAtomically"
+      },
+      {
+        "line": 138,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.NegativeQuantityCommitCreatesNoReservationAndCannotBypassThePositionCap"
+      },
+      {
+        "line": 99,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.NegativeQuantityIsRejectedAsInvalid"
+      },
+      {
+        "line": 115,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.OnePositiveUnitProceedsPastTheQuantityCheck"
+      },
+      {
+        "line": 122,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.PositiveBoundaryAtAndAboveMaxOrderQuantityIsUnaffected"
+      },
+      {
+        "line": 162,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.UnboundedNegativeQuantityIsRejectedEvenWithNoConfiguredPositionLimit"
+      },
+      {
+        "line": 107,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.ZeroQuantityIsRejectedAsInvalid"
       }
     ],
     "failure_count": 0,
     "filters": [
-      "RiskEngineOrderQuantity.*"
+      "RiskEngineOrderQuantity.*",
+      "RiskEngineQuantityValidity.*",
+      "CalendarSpreadRiskExchangeIntegration.NonPositiveStrategyConfigQuantityIsRejectedAndNeverReachesTheExchangeOrThePortfolio"
     ],
-    "test_count": 2
+    "test_count": 10
   },
   "artifact": "AEGIS-121/max_order_quantity",
-  "claim": "Per-instrument quantity caps enforced at, below and above the limit, in both configured modes (reject, and resize-to-cap).",
+  "claim": "Per-instrument quantity caps enforced at, below and above the limit, in both configured modes (reject, and resize-to-cap). M5 closure repair, R1: quantity_units is enforced as a strictly positive MAGNITUDE before any other control reads it -- Side alone carries direction, so a negative quantity is rejected (kInvalidQuantity) as malformed input, never treated as a same-magnitude order on the opposite side. Reproduces and closes the exact reviewer attack: a negative-quantity leg used to create a negative reservation that then SUBTRACTED from a later order's projected exposure, letting it bypass a configured position cap; both the direct RiskEngine path and a genuine PUBLIC strategy config (CalendarSpreadConfig::quantity_units, through the real production composition -- strategies emit proposals only and perform no validation of their own) are proven independently rejected, atomically across every leg of a multi-leg proposal, with zero OMS/exchange submission.",
   "deterministic_config": {
     "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
     "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
@@ -33,7 +83,7 @@
   "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Boundary tests pass.",
-  "generated_on": "2026-08-19",
+  "generated_on": "2026-08-21",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -53,7 +103,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "335bf2bc7cac159217d2e8666356bc4b60075616",
+  "repository_commit": "dad73b18ee8dbe2b9f9b48c5485af765013c9a95",
   "requirements": [
     "AEGIS-121"
   ],

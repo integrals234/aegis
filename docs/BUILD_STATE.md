@@ -323,6 +323,39 @@ fix is proven by `tests/cpp/unit/test_risk_engine_reservation_repair.cpp`'s
 a real-composition-root test in
 `tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp`.
 
+**Follow-up correction 4 (M5 closure repair): input integrity and
+reservation lifecycle.** A review of correction 3 confirmed the release
+epoch itself sound (both prior blockers closed, 18 attack categories
+passed), but found a new blocker beneath it: `quantity_units <= 0` was
+accepted as legitimate input, letting a negative quantity drive a negative
+reservation that SUBTRACTED from a later order's projected exposure and
+bypassed a configured position cap (R1). Fixed with a new control group 0,
+`check_quantity_validity` (`kInvalidQuantity`), run first in both the
+single-order and every leg of the multi-leg path, before any reservation,
+dedupe key or rate-limit token is created; a multi-leg proposal with one
+invalid leg rejects atomically. Four narrower residuals in the same
+reservation-lifecycle surface were also closed: an over-fill could still
+drive a reservation negative from the other direction (R2, now clamped to
+saturate at zero); an authorized-but-never-consumed proposal leg had no
+recovery path (R3, new `abort_proposal_release`, idempotent, never rolls
+back a leg already consumed); `stage_proposal_release` could overwrite a
+proposal's canonical `strategy_id`, corrupting AEGIS-137 attribution (R5,
+now immutable and fail-closed once a mismatch is observed); and the
+volatility HARD-REJECT safety gate was not re-checked at release, unlike
+every other hard safety control (R6, now re-run fresh in
+`revalidate_at_seam`, resize/sizing itself still frozen). ADR-0027's "never
+produces a contradictory per-leg risk verdict" claim was also corrected
+(R4): the identity-mismatch defensive backstop in `decide_order` IS a
+per-leg outcome that can differ from a sibling's, though it consults no
+mutable safety state and is verified not to fire on the real composition
+root's own path today. `docs/LIMITATIONS.md` gained explicit disclosures
+for two residuals outside this repair's declared surface: no risk state
+(kill switches, latches, reservations, proposal-release records -- not
+only idempotency) survives a process restart (R9), and
+`AlwaysApproveRiskGate` remains reachable via `aegis_participant_run
+--fixture`, pre-existing from M3 and not reachable from the calendar-spread
+path (R8) -- both flagged rather than silently folded into this turn.
+
 Not yet done (Batch 2): AEGIS-139..155's remaining validation modules,
 AEGIS-238's observability integration, evidence generation, and the
 independent audit. `requirements/implementation_status.json` is untouched by

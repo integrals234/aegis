@@ -150,6 +150,12 @@ enum class ProposalReleaseState : std::uint8_t {
   kRejectedAtRelease = 3,
   /// Every authorized constituent has consumed its authorization.
   kCompleted = 4,
+  /// An authorized proposal's still-unconsumed constituents were
+  /// deliberately released via `RiskEngine::abort_proposal_release` (M5
+  /// closure repair, R3) rather than executed or rejected by a risk check.
+  /// Legs that already consumed their authorization before the abort are
+  /// untouched -- this only reclaims what was never sent.
+  kAborted = 5,
 };
 
 /// The single terminal outcome of a proposal's release authorization

@@ -6,7 +6,7 @@
     ],
     "cases": [
       {
-        "line": 375,
+        "line": 478,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineMarginAndLeverage.RejectsExcessiveLeverage"
@@ -27,7 +27,7 @@
   "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Boundary tests pass.",
-  "generated_on": "2026-08-19",
+  "generated_on": "2026-08-21",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -47,7 +47,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "335bf2bc7cac159217d2e8666356bc4b60075616",
+  "repository_commit": "dad73b18ee8dbe2b9f9b48c5485af765013c9a95",
   "requirements": [
     "AEGIS-130"
   ],

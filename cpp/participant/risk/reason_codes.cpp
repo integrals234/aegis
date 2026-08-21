@@ -68,6 +68,10 @@ std::string_view describe(ReasonCode reason) {
       return "proposal_not_authorized";
     case ReasonCode::kIncompleteProposalStaging:
       return "incomplete_proposal_staging";
+    case ReasonCode::kInvalidQuantity:
+      return "invalid_quantity";
+    case ReasonCode::kProposalAborted:
+      return "proposal_aborted";
   }
   return "unknown";
 }

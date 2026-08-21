@@ -65,9 +65,25 @@ SPECS: dict[str, dict[str, Any]] = {
         "artifact": "max_order_quantity",
         "title": "Maximum order quantity",
         "acceptance": "Boundary tests pass.",
-        "filters": ["RiskEngineOrderQuantity.*"],
+        "filters": [
+            "RiskEngineOrderQuantity.*",
+            "RiskEngineQuantityValidity.*",
+            "CalendarSpreadRiskExchangeIntegration."
+            "NonPositiveStrategyConfigQuantityIsRejectedAndNeverReachesTheExchangeOrThePortfolio",
+        ],
         "claim": "Per-instrument quantity caps enforced at, below and above the limit, in both "
-                 "configured modes (reject, and resize-to-cap).",
+                 "configured modes (reject, and resize-to-cap). M5 closure repair, R1: "
+                 "quantity_units is enforced as a strictly positive MAGNITUDE before any other "
+                 "control reads it -- Side alone carries direction, so a negative quantity is "
+                 "rejected (kInvalidQuantity) as malformed input, never treated as a same-magnitude "
+                 "order on the opposite side. Reproduces and closes the exact reviewer attack: a "
+                 "negative-quantity leg used to create a negative reservation that then SUBTRACTED "
+                 "from a later order's projected exposure, letting it bypass a configured position "
+                 "cap; both the direct RiskEngine path and a genuine PUBLIC strategy config "
+                 "(CalendarSpreadConfig::quantity_units, through the real production composition -- "
+                 "strategies emit proposals only and perform no validation of their own) are "
+                 "proven independently rejected, atomically across every leg of a multi-leg "
+                 "proposal, with zero OMS/exchange submission.",
     },
     "AEGIS-122": {
         "artifact": "max_position_and_reservations",
@@ -83,6 +99,7 @@ SPECS: dict[str, dict[str, Any]] = {
             "ReservationRepairSeamRevalidation.*",
             "ReservationRepairAtomicity.*",
             "ProposalAtomicSeamRevalidation.*",
+            "ReservationOverfill.*",
         ],
         "claim": "Long and short caps enforced against the PROJECTED position (confirmed position "
                  "+ every outstanding reservation + the candidate), so two orders that each pass "
@@ -98,7 +115,11 @@ SPECS: dict[str, dict[str, Any]] = {
                  "and revalidated for the WHOLE proposal at once (M5 closure repair, round 2): an "
                  "out-of-band change making only ONE leg's position unsafe rejects the entire "
                  "proposal, even when the unaffected sibling leg's order is submitted first, so "
-                 "risk can never approve one leg while rejecting the other.",
+                 "risk can never approve one leg while rejecting the other. M5 closure repair, R2: "
+                 "a fill larger than what remains reserved (an over-report, or the same fill "
+                 "delivered twice) is capped at the reservation's own remaining magnitude -- it "
+                 "shrinks to exactly zero and never crosses it, so an over-fill can no longer drive "
+                 "reserved_by_instrument_ negative and grant phantom capacity to a later order.",
         "implementation": SEAM_IMPL,
     },
     "AEGIS-123": {
@@ -228,11 +249,18 @@ SPECS: dict[str, dict[str, Any]] = {
         "filters": [
             "RiskEngineVolatilityReduction.*",
             "MarketStressRisk.VolatilitySpikeResizesOrRejects",
+            "ProposalReleaseEpoch.VolatilitySpikeBeforeReleaseRejectsTheWholeProposal",
+            "ProposalReleaseEpoch.CalmVolatilityThroughReleaseStillAuthorizesNormally",
         ],
         "claim": "Approved quantity scales down deterministically as realized volatility "
                  "(stats::RollingRealizedVolatility) rises above target, floored at 1 unit, and "
                  "rejects outright at or beyond hard_reject_multiple rather than resizing to a "
-                 "token size.",
+                 "token size. M5 closure repair, R6: the hard-reject branch alone (never the "
+                 "resize/sizing branch, which stays frozen once a proposal is authorized) is "
+                 "re-evaluated fresh at authorize_proposal_release, exactly like every other hard "
+                 "safety control -- a proposal safely sized while volatility was calm but whose "
+                 "reference instrument has since spiked past the hard-reject multiple is rejected "
+                 "at release, before anything is sent.",
     },
     "AEGIS-134": {
         "artifact": "concentration_and_correlation",
@@ -323,6 +351,8 @@ SPECS: dict[str, dict[str, Any]] = {
             "ReservationRepairExactIdentity.StagedIdentityWithDisagreeingEconomicsIsRejected",
             "ProposalAtomicSeamRevalidation.*",
             "ProposalReleaseEpoch.*",
+            "ProposalAbort.*",
+            "ProposalAttribution.*",
         ],
         "claim": "Exactly ONE terminal ProposalRiskDecision per proposal_id (asserted via "
                  "RiskAuditLog::proposal_decision_count), with subordinate per-order "
@@ -334,18 +364,27 @@ SPECS: dict[str, dict[str, Any]] = {
                  "its precise strategy/proposal/leg identity before submission, so an order can "
                  "never be mis-attributed to a different, economically-identical proposal, and a "
                  "replayed proposal_id can never append a second terminal decision. Seam "
-                 "revalidation is also proposal-atomic (M5 closure repair, round 2): "
-                 "ensure_proposal_seam_revalidated computes AT MOST ONE outcome per proposal_id, "
-                 "cached and consulted by every subsequent leg of that proposal, so an order that "
-                 "reaches decide_order can approve only if it resolves to its exact "
-                 "already-prevalidated PendingLegKey AND the whole proposal was found safe -- never "
-                 "a mix of one sibling approved and another rejected within the same proposal. "
-                 "Round 3 adds the release-decision half: authorize_proposal_release records at most "
-                 "ONE ProposalReleaseRiskDecision per proposal (AUTHORIZED or REJECTED, asserted via "
+                 "revalidation is also proposal-atomic. Round 2 first achieved this with a "
+                 "per-proposal cache (ensure_proposal_seam_revalidated); an independent review then "
+                 "found that mechanism began caching too late -- at the first leg's OWN arrival at "
+                 "decide_order, after that leg was already being released -- so round 3 replaced it "
+                 "entirely with the release epoch below. ensure_proposal_seam_revalidated no longer "
+                 "exists in this engine; the current guarantee is the release-epoch description that "
+                 "follows, not the superseded mechanism this sentence used to (incorrectly, as of "
+                 "round 3) still describe in present tense. Round 3 adds the release-decision half: "
+                 "authorize_proposal_release records at most ONE ProposalReleaseRiskDecision per "
+                 "proposal (AUTHORIZED or REJECTED, asserted via "
                  "RiskAuditLog::proposal_release_decision_count), taken while zero constituents have "
                  "been released; a rejected release yields zero executable constituents, and an "
                  "authorized one may be consumed only by its exact staged constituents, each at most "
-                 "once.",
+                 "once. Round 4 (M5 closure repair, R3/R5): abort_proposal_release adds a fourth, "
+                 "deliberate way for a release decision to reach a terminal state (kAborted) without "
+                 "rolling back any leg that already consumed its authorization, still recording at "
+                 "most one release decision per proposal; and canonical strategy_id attribution is "
+                 "immutable once established -- a staging call naming a disagreeing strategy_id "
+                 "binds none of its own identities and permanently fails the release, so a "
+                 "proposal_id collision can never rewrite who the audit trail says actually "
+                 "committed a proposal.",
     },
     "AEGIS-138": {
         "artifact": "portfolio_risk_analytics",

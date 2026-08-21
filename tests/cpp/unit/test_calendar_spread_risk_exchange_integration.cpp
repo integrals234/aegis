@@ -353,6 +353,73 @@ TEST(CalendarSpreadRiskExchangeIntegration, RejectedProposalNeverReachesTheExcha
   EXPECT_EQ(portfolio.cash_units(), 0);
 }
 
+// M5 closure repair, R1: CalendarSpreadStrategy copies config_.quantity_units
+// straight into every leg it emits (cpp/participant/strategy/
+// calendar_spread_strategy.cpp) with no validation of its own -- strategies
+// emit proposals only, per CLAUDE.md's architecture laws, so a malformed
+// PUBLIC strategy config (not a hand-built risk::OrderRequest, unlike the
+// tests above) must be caught by RiskEngine independently, through the same
+// production composition (CalendarSpreadStrategy -> RiskEngine -> OrderManager
+// -> a real exchange) participant_run.cpp actually wires -- not only by a
+// direct RiskEngine unit test.
+TEST(CalendarSpreadRiskExchangeIntegration,
+     NonPositiveStrategyConfigQuantityIsRejectedAndNeverReachesTheExchangeOrThePortfolio) {
+  Harness harness;
+  seed_counterparty_liquidity(harness);
+
+  BookBuilder near_book(kNearInstrumentId);
+  BookBuilder far_book(kFarInstrumentId);
+  const CalendarSpreadConfig config{
+      .near_instrument_id = kNearInstrumentId,
+      .far_instrument_id = kFarInstrumentId,
+      .zscore_window = 20,
+      .entry_threshold = 2.0,
+      .exit_threshold = 0.5,
+      .quantity_units = 0};  // Malformed: never a strategy's job to catch.
+  CalendarSpreadStrategy strategy(config);
+  const StrategyProposal proposal = build_short_spread_proposal(near_book, far_book, strategy);
+  ASSERT_TRUE(proposal.has_action);
+  ASSERT_EQ(proposal.near.quantity_units,
+            0);  // The strategy passed the bad config straight through.
+
+  RiskEngine risk_engine(permissive_config());
+  risk_engine.on_market_data(kNearInstrumentId, 100'000, 0, true);
+  risk_engine.on_market_data(kFarInstrumentId, 100'060, 0, true);
+  RiskEngineGate risk_gate(risk_engine, harness.clock);
+  TransportExecutionAdapter adapter(harness.transport, harness.clock, /*stream_id=*/1);
+  OrderManager manager(adapter, risk_gate);
+  Portfolio portfolio;
+
+  const auto& decision = risk_engine.commit_proposal_decision(
+      "calendar_spread", "invalid-qty-1",
+      {aegis::participant::risk::OrderRequest{.strategy_id = "calendar_spread",
+                                              .proposal_id = "invalid-qty-1",
+                                              .leg_index = 0,
+                                              .instrument_id = kNearInstrumentId,
+                                              .side = proposal.near.side,
+                                              .price_units = 100'000,
+                                              .quantity_units = proposal.near.quantity_units},
+       aegis::participant::risk::OrderRequest{.strategy_id = "calendar_spread",
+                                              .proposal_id = "invalid-qty-1",
+                                              .leg_index = 1,
+                                              .instrument_id = kFarInstrumentId,
+                                              .side = proposal.far.side,
+                                              .price_units = 100'060,
+                                              .quantity_units = proposal.far.quantity_units}},
+      0);
+  ASSERT_EQ(decision.verdict, aegis::participant::risk::RiskVerdict::kReject);
+  EXPECT_EQ(decision.reason_code, aegis::participant::risk::ReasonCode::kInvalidQuantity);
+
+  // Same "critical property" every reject scenario in this file proves:
+  // zero adapter submit, zero exchange order, zero portfolio change.
+  const std::uint64_t next_order_id_before = harness.node.next_order_id();
+  EXPECT_EQ(harness.node.next_order_id(), next_order_id_before);
+  EXPECT_TRUE(manager.all_tracked_orders().empty());
+  EXPECT_EQ(portfolio.position(kNearInstrumentId).quantity_units, 0);
+  EXPECT_EQ(portfolio.position(kFarInstrumentId).quantity_units, 0);
+  EXPECT_EQ(portfolio.cash_units(), 0);
+}
+
 TEST(CalendarSpreadRiskExchangeIntegration, ResizedProposalSubmitsExactlyTheApprovedQuantity) {
   Harness harness;
   seed_counterparty_liquidity(harness);

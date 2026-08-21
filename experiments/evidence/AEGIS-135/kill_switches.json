@@ -6,37 +6,37 @@
     ],
     "cases": [
       {
-        "line": 430,
+        "line": 497,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.GlobalKillSwitchCancelsLiveOrdersAndBlocksNewSubmissions"
       },
       {
-        "line": 685,
+        "line": 752,
         "passed": true,
         "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
         "test": "CalendarSpreadRiskExchangeIntegration.LateKillSwitchBeforeReleaseAuthorizationStopsBothLegsInTheRealSeam"
       },
       {
-        "line": 347,
+        "line": 348,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
         "test": "ProposalReleaseEpoch.AKillSwitchAfterAuthorizationDoesNotSplitTheProposalsVerdict"
       },
       {
-        "line": 137,
+        "line": 138,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
         "test": "ProposalReleaseEpoch.ExchangeDisconnectBeforeReleaseRejectsTheWholeProposal"
       },
       {
-        "line": 108,
+        "line": 109,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
         "test": "ProposalReleaseEpoch.GlobalKillSwitchBeforeReleaseRejectsTheWholeProposal"
       },
       {
-        "line": 159,
+        "line": 160,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
         "test": "ProposalReleaseEpoch.StaleMarketBeforeReleaseRejectsTheWholeProposal"
@@ -54,7 +54,7 @@
         "test": "ReservationRepairSeamRevalidation.KillSwitchTrippedAfterCommitStopsTheOrderAtTheSeam"
       },
       {
-        "line": 552,
+        "line": 655,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineKillSwitch.StrategyAndGlobalTripsAreIdempotentAndScopedCorrectly"
@@ -83,7 +83,7 @@
   "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Kill-switch tests cancel/disable safely and prevent new orders.",
-  "generated_on": "2026-08-20",
+  "generated_on": "2026-08-21",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -105,7 +105,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "d6bbf133084938e6b067f23a64583ada4b6f1fc9",
+  "repository_commit": "dad73b18ee8dbe2b9f9b48c5485af765013c9a95",
   "requirements": [
     "AEGIS-135"
   ],

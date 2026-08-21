@@ -12,7 +12,7 @@
         "test": "ReservationRepairConcurrentProposals.MarketExposureSeesAnEarlierProposalsReservation"
       },
       {
-        "line": 235,
+        "line": 338,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_engine.cpp",
         "test": "RiskEngineExposure.RejectsAboveMarketAndSectorLimits"
@@ -34,7 +34,7 @@
   "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Portfolio fixtures pass.",
-  "generated_on": "2026-08-20",
+  "generated_on": "2026-08-21",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -54,7 +54,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "1b88c8e0554b1bb270607d39050823746f1c73b5",
+  "repository_commit": "dad73b18ee8dbe2b9f9b48c5485af765013c9a95",
   "requirements": [
     "AEGIS-124"
   ],

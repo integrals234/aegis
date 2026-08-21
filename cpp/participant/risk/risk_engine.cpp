@@ -97,6 +97,25 @@ double RiskEngine::realized_volatility(std::uint32_t instrument_id) const {
   return found->second.realized_volatility();
 }
 
+/// Control group 0 (M5 closure repair, R1): quantity is a positive
+/// MAGNITUDE; `Side` alone carries direction. A negative or zero quantity is
+/// malformed input -- never a valid same-magnitude order on the opposite
+/// side -- so it is rejected here, before any other control reads
+/// `request.quantity_units` at all (a sign-sensitive position/notional
+/// projection, or a reservation, treating a negative magnitude as
+/// legitimate is exactly how an attacker manufactures a negative reserved
+/// quantity that then SUBTRACTS from every cumulative control's projected
+/// exposure).
+std::optional<LegDecision> RiskEngine::check_quantity_validity(const OrderRequest& request) {
+  if (request.quantity_units <= 0) {
+    return LegDecision{
+        .verdict = RiskVerdict::kReject,
+        .reason_code = ReasonCode::kInvalidQuantity,
+        .reason = "quantity_units must be a positive magnitude; side carries direction"};
+  }
+  return std::nullopt;
+}
+
 /// Control group 1-2 (ADR-0028): kill switches, latched daily-loss/drawdown,
 /// and the three connectivity signals. An engaged optional is a rejection;
 /// a disengaged one means "nothing here objected, keep going". Split out of
@@ -243,6 +262,27 @@ std::optional<LegDecision> RiskEngine::resolve_effective_quantity(const OrderReq
         effective_quantity = scaled;
         resized = true;
       }
+    }
+  }
+  return std::nullopt;
+}
+
+/// The volatility HARD-REJECT safety gate only (M5 closure repair, R6) --
+/// deliberately excludes the RESIZE branch above, which stays frozen once a
+/// proposal is committed. Shares the exact hard-reject condition
+/// `resolve_effective_quantity` already uses, so a fresh check at the
+/// release epoch can never disagree with the one taken at commit for the
+/// same volatility reading.
+std::optional<LegDecision> RiskEngine::check_volatility_hard_reject(
+    std::uint32_t instrument_id) const {
+  if (config_.volatility.target_volatility > 0.0) {
+    const double realized = realized_volatility(instrument_id);
+    if (realized >=
+        config_.volatility.target_volatility * config_.volatility.hard_reject_multiple) {
+      return LegDecision{
+          .verdict = RiskVerdict::kReject,
+          .reason_code = ReasonCode::kVolatilityReduction,
+          .reason = "realized volatility beyond hard-reject multiple of target at release"};
     }
   }
   return std::nullopt;
@@ -476,10 +516,15 @@ std::optional<LegDecision> RiskEngine::check_cumulative_controls(
 
 LegDecision RiskEngine::evaluate_leg(const OrderRequest& request,
                                      const EvaluationOverlay& overlay) const {
-  // The control groups run in a fixed, documented order (ADR-0028): halts and
-  // connectivity first (nothing else matters once trading is stopped), then
-  // market state, then admission, then sizing, then the exposure-based
-  // limits that depend on the approved size.
+  // The control groups run in a fixed, documented order (ADR-0028): quantity
+  // validity first (a malformed request is not legitimate input to ANY
+  // later control, M5 closure repair R1), then halts and connectivity
+  // (nothing else matters once trading is stopped), then market state, then
+  // admission, then sizing, then the exposure-based limits that depend on
+  // the approved size.
+  if (auto rejected = check_quantity_validity(request)) {
+    return *rejected;
+  }
   if (auto rejected = check_halts_and_connectivity(request)) {
     return *rejected;
   }
@@ -559,6 +604,13 @@ ProposalDecisionResult RiskEngine::evaluate_proposal(const std::string& strategy
     leg.strategy_id = strategy_id;
     leg.proposal_id = proposal_id;
 
+    // M5 closure repair, R1: an invalid quantity on ANY leg rejects the
+    // WHOLE proposal atomically, exactly like any other Phase A admission
+    // failure -- never a partial commit where a malformed sibling is
+    // silently dropped and the rest proceed.
+    if (auto rejected = check_quantity_validity(leg)) {
+      return all_legs_rejected(legs.size(), *rejected);
+    }
     if (auto rejected = check_halts_and_connectivity(leg)) {
       return all_legs_rejected(legs.size(), *rejected);
     }
@@ -686,7 +738,24 @@ void RiskEngine::stage_proposal_release(const std::string& strategy_id,
       record.state != ProposalReleaseState::kStaging) {
     return;  // Already authorized, rejected or completed: staging is over.
   }
-  record.strategy_id = strategy_id;
+  // Canonical attribution is IMMUTABLE (M5 closure repair, R5): once
+  // record.strategy_id is established (normally by commit_proposal_decision,
+  // before staging ever runs), a later call naming a DIFFERENT strategy_id
+  // for the same proposal_id must never overwrite it -- that would rewrite
+  // the audit trail's attribution of who actually committed this proposal,
+  // and a look-alike proposal_id collision could otherwise poison it. Mark
+  // the mismatch and bind none of this call's identities; authorize_
+  // proposal_release rejects the whole proposal the first time it sees the
+  // flag, so a poisoning attempt fails the release rather than silently
+  // succeeding under a rewritten identity.
+  if (!record.strategy_id.empty() && record.strategy_id != strategy_id) {
+    record.attribution_mismatch = true;
+    record.state = ProposalReleaseState::kStaging;
+    return;
+  }
+  if (record.strategy_id.empty()) {
+    record.strategy_id = strategy_id;
+  }
   record.state = ProposalReleaseState::kStaging;
   for (const StagedOrderIdentity& identity : staged) {
     record.staged_by_leg_index[identity.leg_index] = identity;
@@ -726,6 +795,14 @@ std::optional<LegDecision> RiskEngine::revalidate_at_seam(const PendingLeg& pend
   }
   const MarketQuote* quote = nullptr;
   if (auto rejected = check_market_state(as_request, quote)) {
+    return rejected;
+  }
+
+  // Volatility HARD-REJECT only (M5 closure repair, R6): a safety gate, not
+  // a sizing decision, so unlike the resize branch it is re-checked fresh
+  // here -- see check_volatility_hard_reject's own doc for why sizing stays
+  // frozen while this does not.
+  if (auto rejected = check_volatility_hard_reject(pending.instrument_id)) {
     return rejected;
   }
 
@@ -784,6 +861,19 @@ ProposalReleaseDecision RiskEngine::authorize_proposal_release(const std::string
       record.state == ProposalReleaseState::kCompleted) {
     return ProposalReleaseDecision{
         .state = record.state, .reason_code = record.reason_code, .reason = record.reason};
+  }
+
+  // M5 closure repair, R5: a staging call named a strategy_id that
+  // disagreed with this proposal's already-canonical one. Canonical
+  // attribution is immutable, so the whole proposal is rejected here rather
+  // than silently authorized under whichever identity happened to stage
+  // last.
+  if (record.attribution_mismatch) {
+    return reject_proposal_release(
+        proposal_id, record, ReasonCode::kIdentityMismatch,
+        "a staged strategy_id disagreed with this proposal's canonical strategy_id; "
+        "attribution is immutable",
+        now_nanos);
   }
 
   // Every leg this proposal actually committed.
@@ -851,6 +941,47 @@ ProposalReleaseState RiskEngine::proposal_release_state(const std::string& propo
                                                 : found->second.state;
 }
 
+ProposalReleaseDecision RiskEngine::abort_proposal_release(const std::string& proposal_id,
+                                                           std::string reason,
+                                                           common::Nanos now_nanos) {
+  ProposalReleaseRecord& record = proposal_release_by_id_[proposal_id];
+  // Idempotent and terminal, matching authorize_proposal_release's own
+  // contract: a proposal that is already kAborted, kRejectedAtRelease or
+  // kCompleted returns its existing decision unchanged and records no
+  // second audit entry. Aborting a proposal that was never authorized
+  // (kCommitted/kStaging) is also honoured -- it simply releases whatever
+  // reservations exist yet.
+  if (record.state == ProposalReleaseState::kAborted ||
+      record.state == ProposalReleaseState::kRejectedAtRelease ||
+      record.state == ProposalReleaseState::kCompleted) {
+    return ProposalReleaseDecision{
+        .state = record.state, .reason_code = record.reason_code, .reason = record.reason};
+  }
+
+  // Release only what is still unconsumed. A leg that already consumed its
+  // authorization through decide_order is no longer in pending_legs_ (it
+  // erases its own entry there and transitions to an order-keyed
+  // reservation) -- this walk therefore never touches a live or terminal
+  // order, exactly like reject_proposal_release's own walk.
+  for (auto it = pending_legs_.begin(); it != pending_legs_.end();) {
+    if (it->first.proposal_id == proposal_id) {
+      state_.release_leg_reservation(it->first);
+      it = pending_legs_.erase(it);
+    } else {
+      ++it;
+    }
+  }
+
+  record.state = ProposalReleaseState::kAborted;
+  record.reason_code = ReasonCode::kProposalAborted;
+  record.reason = std::move(reason);
+  record.outstanding_authorized_legs = 0;
+  audit_log_.record_proposal_release(record.strategy_id, proposal_id, /*authorized=*/false,
+                                     record.reason_code, record.reason, now_nanos);
+  return ProposalReleaseDecision{
+      .state = record.state, .reason_code = record.reason_code, .reason = record.reason};
+}
+
 OmsDecision RiskEngine::decide_order(std::uint32_t instrument_id, Side side,
                                      std::int64_t quantity_units, std::uint64_t client_order_id,
                                      common::Nanos now_nanos) {
@@ -885,7 +1016,8 @@ OmsDecision RiskEngine::decide_order(std::uint32_t instrument_id, Side side,
     // says why rather than merely that.
     ReasonCode reason_code = ReasonCode::kProposalNotAuthorized;
     std::string reason = "proposal has no release authorization";
-    if (release_state == ProposalReleaseState::kRejectedAtRelease) {
+    if (release_state == ProposalReleaseState::kRejectedAtRelease ||
+        release_state == ProposalReleaseState::kAborted) {
       reason_code = release_found->second.reason_code;
       reason = release_found->second.reason;
     }

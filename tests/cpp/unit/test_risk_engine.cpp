@@ -89,6 +89,109 @@ TEST(RiskEngineOrderQuantity, ResizesDownToTheLimitWhenResizeEnabled) {
   EXPECT_EQ(decision.approved_quantity_units, 10);
 }
 
+// ------------------------------------------------------- AEGIS-121/122 (R1)
+//
+// M5 closure repair: quantity_units is a positive MAGNITUDE; Side alone
+// carries direction. A negative or zero quantity used to be treated as
+// legitimate input all the way into a reservation, which could go negative
+// and then SUBTRACT from every cumulative control's projected exposure.
+
+TEST(RiskEngineQuantityValidity, NegativeQuantityIsRejectedAsInvalid) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100, 0);
+  const LegDecision decision = engine.evaluate(make_request(kNear, Side::kBuy, 100, -1, 0));
+  EXPECT_EQ(decision.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(decision.reason_code, ReasonCode::kInvalidQuantity);
+}
+
+TEST(RiskEngineQuantityValidity, ZeroQuantityIsRejectedAsInvalid) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100, 0);
+  const LegDecision decision = engine.evaluate(make_request(kNear, Side::kBuy, 100, 0, 0));
+  EXPECT_EQ(decision.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(decision.reason_code, ReasonCode::kInvalidQuantity);
+}
+
+TEST(RiskEngineQuantityValidity, OnePositiveUnitProceedsPastTheQuantityCheck) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100, 0);
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 1, 0)).verdict,
+            RiskVerdict::kApprove);
+}
+
+TEST(RiskEngineQuantityValidity, PositiveBoundaryAtAndAboveMaxOrderQuantityIsUnaffected) {
+  RiskLimitsConfig config = base_config();
+  config.order_quantity_limits[kNear] =
+      OrderQuantityLimit{.max_order_quantity_units = 100, .resize_on_breach = false};
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100, 0);
+
+  EXPECT_EQ(engine.evaluate(make_request(kNear, Side::kBuy, 100, 100, 0)).verdict,
+            RiskVerdict::kApprove);
+  const LegDecision over = engine.evaluate(make_request(kNear, Side::kBuy, 100, 101, 0));
+  EXPECT_EQ(over.verdict, RiskVerdict::kReject);
+  // Over-cap is still kMaxOrderQuantity, never reinterpreted as kInvalidQuantity.
+  EXPECT_EQ(over.reason_code, ReasonCode::kMaxOrderQuantity);
+}
+
+TEST(RiskEngineQuantityValidity,
+     NegativeQuantityCommitCreatesNoReservationAndCannotBypassThePositionCap) {
+  // The reviewer's exact R1 attack: a 100-lot position cap, a
+  // negative-quantity leg committed first (which, before this fix, drove a
+  // negative reserved total that then SUBTRACTED from later projections),
+  // followed by a legitimate 150-lot order that must still be rejected by
+  // the same cap.
+  RiskLimitsConfig config = base_config();
+  config.position_limits[kNear] = PositionLimit{.max_long_units = 100, .max_short_units = 100};
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100, 0);
+
+  const std::vector<OrderRequest> negative_leg{
+      make_request(kNear, Side::kBuy, 100, -100, 0, "attacker", "p-negative", 0)};
+  const auto& decision = engine.commit_proposal_decision("attacker", "p-negative", negative_leg, 0);
+  EXPECT_EQ(decision.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(decision.reason_code, ReasonCode::kInvalidQuantity);
+  EXPECT_EQ(engine.state().reserved_units(kNear), 0);  // No reservation of any sign was created.
+
+  const LegDecision legitimate = engine.evaluate(make_request(kNear, Side::kBuy, 100, 150, 0));
+  EXPECT_EQ(legitimate.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(legitimate.reason_code, ReasonCode::kMaxPositionLong);
+}
+
+TEST(RiskEngineQuantityValidity,
+     UnboundedNegativeQuantityIsRejectedEvenWithNoConfiguredPositionLimit) {
+  // No position_limits entry at all for kNear: the old bug let an
+  // arbitrarily large negative reservation through with nothing configured
+  // to catch it.
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100, 0);
+  const LegDecision decision = engine.evaluate(make_request(kNear, Side::kBuy, 100, -1'000'000, 0));
+  EXPECT_EQ(decision.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(decision.reason_code, ReasonCode::kInvalidQuantity);
+}
+
+TEST(RiskEngineQuantityValidity,
+     MultiLegProposalWithOneInvalidLegRejectsTheWholeProposalAtomically) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100, 0);
+  seed_valid_quote(engine, kFar, 100, 0);
+
+  const std::string proposal_id = "spread-invalid";
+  const std::vector<OrderRequest> legs{
+      make_request(kNear, Side::kSell, 100, 5, 0, "spread_strategy", proposal_id, 0),
+      make_request(kFar, Side::kBuy, 100, 0, 0, "spread_strategy", proposal_id, 1),  // invalid
+  };
+  const auto& decision = engine.commit_proposal_decision("spread_strategy", proposal_id, legs, 0);
+  EXPECT_EQ(decision.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(decision.reason_code, ReasonCode::kInvalidQuantity);
+  ASSERT_EQ(decision.legs.size(), 2U);
+  for (const auto& leg : decision.legs) {
+    EXPECT_EQ(leg.verdict, RiskVerdict::kReject);
+  }
+  EXPECT_EQ(engine.state().reserved_units(kNear), 0);  // Neither leg reserved anything.
+  EXPECT_EQ(engine.state().reserved_units(kFar), 0);
+}
+
 // ---------------------------------------------------------------- AEGIS-122
 
 TEST(RiskEnginePositionLimits, RejectsBeyondLongAndShortBoundaries) {

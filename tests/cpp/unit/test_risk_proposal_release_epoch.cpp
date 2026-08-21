@@ -43,6 +43,7 @@ using aegis::participant::risk::RiskLimitsConfig;
 using aegis::participant::risk::RiskVerdict;
 using aegis::participant::risk::Side;
 using aegis::participant::risk::StagedOrderIdentity;
+using aegis::participant::risk::VolatilityReductionConfig;
 
 constexpr std::uint32_t kNear = 4001;
 constexpr std::uint32_t kFar = 4002;
@@ -385,6 +386,266 @@ TEST(ProposalReleaseEpoch, AKillSwitchAfterAuthorizationDoesNotSplitTheProposals
                                                         two_leg_proposal("strat", "after-kill"), 0);
   EXPECT_EQ(blocked.verdict, RiskVerdict::kReject);
   EXPECT_EQ(blocked.reason_code, ReasonCode::kKillSwitchGlobal);
+}
+
+// =================================================================
+// R3: abort_proposal_release reclaims an authorized proposal's still-
+// unconsumed reservations without rolling back anything already consumed.
+// =================================================================
+
+TEST(ProposalAbort, AuthorizedProposalWithNothingConsumedReleasesBothLegsOnAbort) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision("strat", "abort-zero",
+                                          two_leg_proposal("strat", "abort-zero"), 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  engine.stage_proposal_release("strat", "abort-zero", stage_two_legs(1, 2));
+  ASSERT_EQ(engine.authorize_proposal_release("strat", "abort-zero", 0).state,
+            ProposalReleaseState::kAuthorizedForRelease);
+  ASSERT_EQ(engine.state().leg_reservation_count(), 2U);
+
+  const auto abort = engine.abort_proposal_release("abort-zero", "never submitted", 0);
+  EXPECT_EQ(abort.state, ProposalReleaseState::kAborted);
+  EXPECT_EQ(abort.reason_code, ReasonCode::kProposalAborted);
+  EXPECT_EQ(engine.state().leg_reservation_count(), 0U);  // Both legs' reservations reclaimed.
+
+  EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kReject);
+  EXPECT_EQ(engine.decide_order(kFar, Side::kBuy, 50, 2, 0).verdict, RiskVerdict::kReject);
+}
+
+TEST(ProposalAbort, ConsumedLegSurvivesAbortAndOnlyTheRemainingLegIsReleased) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  ASSERT_EQ(
+      engine
+          .commit_proposal_decision("strat", "abort-one", two_leg_proposal("strat", "abort-one"), 0)
+          .verdict,
+      RiskVerdict::kApprove);
+  engine.stage_proposal_release("strat", "abort-one", stage_two_legs(1, 2));
+  ASSERT_EQ(engine.authorize_proposal_release("strat", "abort-one", 0).state,
+            ProposalReleaseState::kAuthorizedForRelease);
+
+  // Leg 0 actually consumes its authorization (an order-keyed reservation,
+  // no longer leg-keyed).
+  ASSERT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kApprove);
+  ASSERT_EQ(engine.state().reservation_count(), 1U);
+  ASSERT_EQ(engine.state().leg_reservation_count(), 1U);  // Leg 1 still unconsumed.
+
+  const auto abort = engine.abort_proposal_release("abort-one", "far leg abandoned", 0);
+  EXPECT_EQ(abort.state, ProposalReleaseState::kAborted);
+
+  // Leg 0's already-live reservation is untouched; only leg 1's was released.
+  EXPECT_EQ(engine.state().reservation_count(), 1U);
+  EXPECT_EQ(engine.state().leg_reservation_count(), 0U);
+  EXPECT_EQ(engine.decide_order(kFar, Side::kBuy, 50, 2, 0).verdict, RiskVerdict::kReject);
+}
+
+TEST(ProposalAbort, DoubleAbortIsIdempotentAndRecordsNoSecondAuditEntry) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision("strat", "abort-twice",
+                                          two_leg_proposal("strat", "abort-twice"), 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  engine.stage_proposal_release("strat", "abort-twice", stage_two_legs(1, 2));
+  ASSERT_EQ(engine.authorize_proposal_release("strat", "abort-twice", 0).state,
+            ProposalReleaseState::kAuthorizedForRelease);
+
+  const auto first = engine.abort_proposal_release("abort-twice", "first", 0);
+  const auto second = engine.abort_proposal_release("abort-twice", "second", 0);
+  EXPECT_EQ(first.state, ProposalReleaseState::kAborted);
+  EXPECT_EQ(second.state, ProposalReleaseState::kAborted);
+  // The SECOND call's reason text is discarded, not recorded -- abort is
+  // terminal after the FIRST call, exactly like authorize_proposal_release.
+  EXPECT_EQ(second.reason, "first");
+  EXPECT_EQ(engine.audit_log().proposal_release_decision_count("abort-twice"), 2U);
+}
+
+TEST(ProposalAbort, AbortingAProposalAlreadyRejectedAtReleaseIsANoOp) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision("strat", "abort-rejected",
+                                          two_leg_proposal("strat", "abort-rejected"), 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  engine.stage_proposal_release("strat", "abort-rejected", stage_two_legs(1, 2));
+  ASSERT_TRUE(engine.trip_global());
+  const auto release = engine.authorize_proposal_release("strat", "abort-rejected", 0);
+  ASSERT_EQ(release.state, ProposalReleaseState::kRejectedAtRelease);
+
+  const auto abort = engine.abort_proposal_release("abort-rejected", "irrelevant", 0);
+  EXPECT_EQ(abort.state, ProposalReleaseState::kRejectedAtRelease);  // Unchanged.
+  EXPECT_EQ(abort.reason_code, release.reason_code);
+  EXPECT_EQ(engine.audit_log().proposal_release_decision_count("abort-rejected"), 1U);
+}
+
+TEST(ProposalAbort, AbortingAProposalAlreadyCompletedIsANoOp) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision("strat", "abort-completed",
+                                          two_leg_proposal("strat", "abort-completed"), 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  engine.stage_proposal_release("strat", "abort-completed", stage_two_legs(1, 2));
+  ASSERT_EQ(engine.authorize_proposal_release("strat", "abort-completed", 0).state,
+            ProposalReleaseState::kAuthorizedForRelease);
+  ASSERT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kApprove);
+  ASSERT_EQ(engine.decide_order(kFar, Side::kBuy, 50, 2, 0).verdict, RiskVerdict::kApprove);
+  ASSERT_EQ(engine.proposal_release_state("abort-completed"), ProposalReleaseState::kCompleted);
+
+  const auto abort = engine.abort_proposal_release("abort-completed", "too late", 0);
+  EXPECT_EQ(abort.state, ProposalReleaseState::kCompleted);  // Unchanged; nothing to reclaim.
+  EXPECT_EQ(engine.state().reservation_count(), 2U);  // Both live orders' reservations intact.
+  EXPECT_EQ(engine.audit_log().proposal_release_decision_count("abort-completed"), 1U);
+}
+
+// =================================================================
+// R5: canonical proposal/strategy attribution is immutable.
+// =================================================================
+
+TEST(ProposalAttribution, StagingWithADisagreeingStrategyIdCannotOverwriteCanonicalAttribution) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision("strat-a", "attrib-1",
+                                          two_leg_proposal("strat-a", "attrib-1"), 0)
+                .verdict,
+            RiskVerdict::kApprove);
+
+  // An attacker (or a colliding proposal_id from a different strategy) tries
+  // to stage the SAME proposal_id under a different strategy_id.
+  engine.stage_proposal_release("strat-b", "attrib-1", stage_two_legs(1, 2));
+
+  const auto release = engine.authorize_proposal_release("strat-a", "attrib-1", 0);
+  EXPECT_EQ(release.state, ProposalReleaseState::kRejectedAtRelease);
+  EXPECT_EQ(release.reason_code, ReasonCode::kIdentityMismatch);
+
+  // The audit trail attributes the rejection to the CANONICAL committing
+  // strategy, never to the attacker's identity -- and this remains the
+  // proposal's ONE terminal release decision.
+  ASSERT_FALSE(engine.audit_log().proposal_release_decisions().empty());
+  EXPECT_EQ(engine.audit_log().proposal_release_decisions().back().strategy_id, "strat-a");
+  EXPECT_EQ(engine.audit_log().proposal_decisions().back().strategy_id, "strat-a");
+  EXPECT_EQ(engine.audit_log().proposal_release_decision_count("attrib-1"), 1U);
+  EXPECT_EQ(engine.audit_log().proposal_decision_count("attrib-1"), 1U);
+}
+
+TEST(ProposalAttribution, ALegitimateRestageAfterAPoisoningAttemptIsStillRejectedFailClosed) {
+  // Once a mismatched strategy_id has touched a proposal_id, that proposal
+  // can never be trusted again -- even a subsequent, correctly-attributed
+  // stage call from the legitimate strategy does not un-poison it.
+  // Deliberately fail-closed: RiskEngine cannot tell "the attacker's call was
+  // bogus" from "the LEGITIMATE call was bogus" after the fact, so it never
+  // lets EITHER execute.
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision("strat-a", "attrib-2",
+                                          two_leg_proposal("strat-a", "attrib-2"), 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  engine.stage_proposal_release("strat-b", "attrib-2", stage_two_legs(9, 10));
+  engine.stage_proposal_release("strat-a", "attrib-2", stage_two_legs(1, 2));  // Legitimate, after.
+
+  const auto release = engine.authorize_proposal_release("strat-a", "attrib-2", 0);
+  EXPECT_EQ(release.state, ProposalReleaseState::kRejectedAtRelease);
+  EXPECT_EQ(release.reason_code, ReasonCode::kIdentityMismatch);
+  EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kReject);
+}
+
+TEST(ProposalAttribution, MismatchedStageCallBindsNoneOfItsOwnIdentities) {
+  // The attacker's own client_order_ids must never resolve to anything --
+  // not even to a rejected identity -- so a caller cannot fish for
+  // information about a proposal it does not own.
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision("strat-a", "attrib-3",
+                                          two_leg_proposal("strat-a", "attrib-3"), 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  engine.stage_proposal_release("strat-b", "attrib-3", stage_two_legs(9, 10));
+
+  const auto attacker_order = engine.decide_order(kNear, Side::kBuy, 50, 9, 0);
+  EXPECT_EQ(attacker_order.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(attacker_order.reason_code, ReasonCode::kUnexpectedOrder);
+}
+
+// =================================================================
+// R6: the volatility HARD-REJECT safety gate is re-checked fresh at
+// release, unlike the immutable resize/sizing decision (which is not).
+// =================================================================
+
+TEST(ProposalReleaseEpoch, VolatilitySpikeBeforeReleaseRejectsTheWholeProposal) {
+  RiskLimitsConfig config = base_config();
+  config.volatility = VolatilityReductionConfig{
+      .window = 5, .target_volatility = 0.01, .hard_reject_multiple = 3.0};
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  // Calm at commit: no return series fed yet, so realized_volatility() is
+  // 0.0 and neither resize nor hard-reject fires.
+  ASSERT_EQ(
+      engine
+          .commit_proposal_decision("strat", "vol-spike", two_leg_proposal("strat", "vol-spike"), 0)
+          .verdict,
+      RiskVerdict::kApprove);
+  engine.stage_proposal_release("strat", "vol-spike", stage_two_legs(1, 2));
+
+  // A large, sustained move between commit and release pushes realized
+  // volatility on kNear's own reference series past hard_reject_multiple *
+  // target_volatility.
+  std::int64_t price = 100;
+  for (int i = 0; i < 6; ++i) {
+    price = (i % 2 == 0) ? price * 2 : price / 2;  // +-100%/-50% swings.
+    engine.on_market_data(kNear, price, i + 1, true);
+  }
+
+  const auto release = engine.authorize_proposal_release("strat", "vol-spike", 10);
+  EXPECT_EQ(release.state, ProposalReleaseState::kRejectedAtRelease);
+  EXPECT_EQ(release.reason_code, ReasonCode::kVolatilityReduction);
+  EXPECT_EQ(engine.state().leg_reservation_count(),
+            0U);  // Whole proposal released, not just kNear.
+}
+
+TEST(ProposalReleaseEpoch, CalmVolatilityThroughReleaseStillAuthorizesNormally) {
+  RiskLimitsConfig config = base_config();
+  config.volatility = VolatilityReductionConfig{
+      .window = 5, .target_volatility = 0.01, .hard_reject_multiple = 3.0};
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  ASSERT_EQ(
+      engine.commit_proposal_decision("strat", "vol-calm", two_leg_proposal("strat", "vol-calm"), 0)
+          .verdict,
+      RiskVerdict::kApprove);
+  engine.stage_proposal_release("strat", "vol-calm", stage_two_legs(1, 2));
+
+  const auto release = engine.authorize_proposal_release("strat", "vol-calm", 0);
+  EXPECT_EQ(release.state, ProposalReleaseState::kAuthorizedForRelease);
 }
 
 }  // namespace
