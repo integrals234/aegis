@@ -1,9 +1,9 @@
 {
   "break_even_index": 0,
   "claim": "AEGIS-143: real cost sweep over fee/half-spread/slippage; break-even reported honestly (null if never crossed).",
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
-  "generated_on": "2026-08-19",
+  "generated_on": "2026-08-22",
   "points": [
     {
       "fee_per_unit": "0",
@@ -41,7 +41,7 @@
       "total_pnl": "-509.2305"
     }
   ],
-  "repository_commit": "f3fbfa147d2f07cf53cc7e417c7a24c0df5b210b",
+  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
   "requirements": [
     "AEGIS-143"
   ]

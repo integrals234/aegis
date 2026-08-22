@@ -3,7 +3,7 @@
   "claim": "AEGIS-238: health, queue depth, dropped/backpressured events, latency and risk status are all non-vacuous in this run. health.state=degraded, queue.dropped_total=1, execution.latency_ns.count=6, risk.status=2.0.",
   "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
-  "generated_on": "2026-08-18",
+  "generated_on": "2026-08-22",
   "health": {
     "checks": {
       "participant": {
@@ -38,7 +38,7 @@
     "schema_version": 1
   },
   "queue_depth_and_dropped_events_disclosure": "queue.depth and queue.dropped_total are produced by the M5 integration harness's bounded outbound execution buffer (python/validation/observability_harness.py's BoundedExecutionBuffer). THIS IS the harness's own bounded buffer. THIS IS NOT the M8 lock-free queue implementation (cpp/queues, empty and M8-dated) -- docs/BUILD_STATE.md's AEGIS-238 owner authorization requires this disclosure explicitly, and the fallback re-deferral of this residual portion to M8 is a closure-time decision this generator does not make.",
-  "repository_commit": "b8f03391e8d6edb4ba135424912c0030f0b63694",
+  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
   "requirements": [
     "AEGIS-238"
   ],

@@ -1,9 +1,9 @@
 {
   "claim": "AEGIS-150: seeded shuffled-signal baseline over the identical partition/costs; stored regardless of outcome.",
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
-  "generated_on": "2026-08-19",
-  "repository_commit": "f3fbfa147d2f07cf53cc7e417c7a24c0df5b210b",
+  "generated_on": "2026-08-22",
+  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
   "requirements": [
     "AEGIS-150"
   ],

@@ -24,10 +24,10 @@
     "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
     "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
   },
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Loss-path scenario triggers exactly once.",
-  "generated_on": "2026-08-21",
+  "generated_on": "2026-08-22",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -47,7 +47,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "76fbaefb59894ef95ce6064b92ac9af8ca428042",
+  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
   "requirements": [
     "AEGIS-131"
   ],

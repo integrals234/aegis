@@ -44,10 +44,10 @@
   },
   "artifact": "AEGIS-062/market_stress_risk_response",
   "claim": "The M5 residual is paid: every market-stress fault kind M2 delivers (kSpreadWidening, kVolatilitySpike, kLiquidityVanish) now produces a REAL risk::RiskEngine response through run_market_stress_risk_scenario -- a genuine evaluate() call, not a report generated afterward -- and two independently constructed engines fed the identical rule set produce identical verdicts and reason codes. No fault kind was added and replay::DeterministicFaultInjector is consumed unmodified.",
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Scenario results and risk responses are reproducible.",
-  "generated_on": "2026-08-19",
+  "generated_on": "2026-08-22",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -69,7 +69,7 @@
     "any claim that these are the only faults that could occur -- they are the fault kinds M2 deterministically injects, not an exhaustive taxonomy"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "335bf2bc7cac159217d2e8666356bc4b60075616",
+  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
   "requirements": [
     "AEGIS-062"
   ],

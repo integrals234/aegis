@@ -9,13 +9,13 @@
     "monte_carlo_num_paths": "2000"
   },
   "criteria_config_source": "configs/validation/rejection_criteria.yaml",
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
-  "generated_on": "2026-08-19",
+  "generated_on": "2026-08-22",
   "not_evidence_for": [
     "any claim that a shuffled-signal or randomly-selected strategy is guaranteed to be rejected -- random_shuffled_signal_baseline's own verdict above is ACCEPT on this dataset/seed, reported honestly rather than hidden or tuned away"
   ],
-  "repository_commit": "6ceeefe29e3e1901c9a343a9c26da4ece703d9bc",
+  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
   "requirements": [
     "AEGIS-155"
   ],

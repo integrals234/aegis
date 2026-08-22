@@ -1,8 +1,8 @@
 {
   "claim": "AEGIS-148: identical methodology run across all 3 configured product families (verified from configs/futures/products.yaml, not hardcoded); every market recorded.",
-  "dirty": true,
+  "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
-  "generated_on": "2026-08-19",
+  "generated_on": "2026-08-22",
   "markets": [
     {
       "entry_count": 7,
@@ -31,7 +31,7 @@
     "CLX",
     "SRX"
   ],
-  "repository_commit": "f3fbfa147d2f07cf53cc7e417c7a24c0df5b210b",
+  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
   "requirements": [
     "AEGIS-148"
   ]
