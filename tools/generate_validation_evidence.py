@@ -35,7 +35,14 @@ from validation.leakage import (
     run_seeded_leaky_estimator_for_falsifiability_check,
 )
 from validation.markets import configured_product_roots, run_multi_market_validation
-from validation.partitions import DatasetPartitions, PartitionName, RunPurpose, guard_test_set_access
+from validation.partitions import (
+    LockedTestPartitionError,
+    PartitionName,
+    RunPurpose,
+    load_partition_boundaries,
+    partition,
+    select_non_test_for_tuning,
+)
 from validation.regimes import load_regime_definitions, run_regime_evaluation
 from validation.rejection import evaluate_strategy_for_rejection, load_rejection_criteria
 from validation.resampling import bootstrap_round_trip_pnl, monte_carlo_trade_resampling
@@ -89,20 +96,47 @@ def main() -> int:
     observations = make_synthetic_spread_series("EQX", seed=SEED)
     dates = [o.as_of for o in observations]
 
-    # AEGIS-139: partitions and the test-set lock.
-    split = len(dates) * 2 // 3
-    partitions = DatasetPartitions(train=tuple(dates[:split]), validation=(), test=tuple(dates[split:]))
+    # AEGIS-139: partitions loaded from the committed config (never a
+    # hardcoded split) and the test-set lock enforced at the REAL tuning
+    # data-access point, not demonstrated in isolation. The M5 closure quant
+    # review found the previous version of this section hardcoded
+    # `len(dates) * 2 // 3` (80/0/40, contradicting the committed 70/20/30
+    # config) and called the lock only inside a try/except that discarded
+    # its result -- the actual tuning computation below (AEGIS-142's
+    # parameter-stability search) still received the full series, test
+    # partition included. Fixed: the test split is excluded by the data
+    # flow itself (validation.partitions.select_non_test_for_tuning), not by
+    # a separate check run afterward.
+    train_end, validation_end = load_partition_boundaries(ROOT)
+    partitions = partition(dates, train_end, validation_end)
     lock_error = None
     try:
-        guard_test_set_access(RunPurpose.TUNING, PartitionName.TEST)
-    except Exception as error:
+        partitions.get(PartitionName.TEST, purpose=RunPurpose.TUNING)
+    except LockedTestPartitionError as error:
         lock_error = str(error)
+    tuning_observations = tuple(
+        select_non_test_for_tuning(observations, date_of=lambda o: o.as_of, partitions=partitions)
+    )
     _write("AEGIS-139", "partition_manifest", {
-        "train_count": len(partitions.train), "test_count": len(partitions.test),
-        "tuning_access_to_test_partition_raised": lock_error is not None, "lock_error": lock_error,
+        "configured_train_end": train_end,
+        "configured_validation_end": validation_end,
+        "train_count": len(partitions.train),
+        "validation_count": len(partitions.validation),
+        "test_count": len(partitions.test),
+        "tuning_observation_count": len(tuning_observations),
+        "tuning_access_to_test_partition_raised": lock_error is not None,
+        "lock_error": lock_error,
         "claim": (
-            "AEGIS-139: real DatasetPartitions built and the test-set lock genuinely "
-            "raised for a tuning-purpose access."
+            "AEGIS-139: partitions loaded from the committed configs/validation/partitions.yaml "
+            "via validation.partitions.load_partition_boundaries (never a hardcoded fraction of "
+            "the series), sliced by validation.partitions.partition into train/validation/test. "
+            "AEGIS-142's parameter-stability tuning computation below is fed EXCLUSIVELY the "
+            "train+validation observations returned by validation.partitions.select_non_test_for_tuning, "
+            "which itself calls DatasetPartitions.get(..., purpose=TUNING) for train and validation "
+            "only -- the test partition is excluded by the data flow itself, never merely reported "
+            "as excluded afterward. A direct tuning-purpose request for the test partition through "
+            "the same DatasetPartitions.get abstraction is independently confirmed to raise "
+            "LockedTestPartitionError."
         ),
     })
 
@@ -121,15 +155,23 @@ def main() -> int:
         "claim": "AEGIS-141: real expanding_window folds; train_start constant, train_end grows.",
     })
 
-    # AEGIS-142: stability surface.
+    # AEGIS-142: stability surface. M5 closure quant review (AEGIS-139): the
+    # parameter search is TUNING, so it must never see the test partition --
+    # tuning_observations (train+validation only) is what select_non_test_for_tuning
+    # returned above, not the full 120-day observations list.
     stability = compute_parameter_stability_surface(
-        observations, Decimal(1), zscore_windows=(10, 20, 30), entry_thresholds=(1.5, 2.0, 2.5),
+        tuning_observations, Decimal(1), zscore_windows=(10, 20, 30), entry_thresholds=(1.5, 2.0, 2.5),
         exit_thresholds=(0.5,),
     )
     _write("AEGIS-142", "stability_surface", {
         "point_count": len(stability.points), "points": stability.as_records(),
         "best": asdict(stability.best), "metric_mean": stability.metric_mean, "metric_stdev": stability.metric_stdev,
-        "claim": "AEGIS-142: every evaluated grid point persisted, not only the optimum.",
+        "tuning_observation_count": len(tuning_observations),
+        "claim": (
+            "AEGIS-142: every evaluated grid point persisted, not only the optimum. Evaluated over "
+            "tuning_observation_count observations (train+validation only, AEGIS-139) -- the test "
+            "partition never enters this search."
+        ),
     })
 
     # AEGIS-143: transaction cost sensitivity.
@@ -277,7 +319,9 @@ def main() -> int:
             "demonstrates temporal/software correctness of the estimator and detector, not trading results",
         ],
     })
-    partition_audit = audit_partition_boundary_consistency(honest_records, train_end_index=split)
+    partition_audit = audit_partition_boundary_consistency(
+        honest_records, train_end_index=len(partitions.train) - 1
+    )
     _write("AEGIS-153", "leakage_audit", {
         "record_count": partition_audit.record_count, "violations": partition_audit.as_records(),
         "passed": partition_audit.passed,

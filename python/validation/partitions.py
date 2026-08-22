@@ -13,7 +13,7 @@ observation is assigned to exactly one of the three splits.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
@@ -29,6 +29,7 @@ __all__ = [
     "guard_test_set_access",
     "load_partition_boundaries",
     "partition",
+    "select_non_test_for_tuning",
 ]
 
 
@@ -120,6 +121,26 @@ def partition(
         validation = tuple(d for d in dates if train_end < d <= validation_end)
         test = tuple(d for d in dates if d > validation_end)
     return DatasetPartitions(train=train, validation=validation, test=test)
+
+
+def select_non_test_for_tuning[T](
+    items: Sequence[T], *, date_of: Callable[[T], date], partitions: DatasetPartitions
+) -> list[T]:
+    """The items from ``items`` whose date falls in TRAIN or VALIDATION --
+    the only two partitions a ``TUNING``-purpose computation (a parameter
+    search, AEGIS-142) may read (AEGIS-139). This is the real data-access
+    point a tuning computation must be built on, not a report written
+    after the fact: both partitions are obtained through
+    :meth:`DatasetPartitions.get`, the SAME guarded accessor
+    :func:`guard_test_set_access` protects, so if a future edit ever added
+    ``PartitionName.TEST`` to the two lines below, :class:`LockedTestPartitionError`
+    would raise before this function could return anything -- the test
+    split is excluded by the data flow itself, not by a separate check run
+    on the result.
+    """
+    allowed_dates: set[date] = set(partitions.get(PartitionName.TRAIN, purpose=RunPurpose.TUNING))
+    allowed_dates.update(partitions.get(PartitionName.VALIDATION, purpose=RunPurpose.TUNING))
+    return [item for item in items if date_of(item) in allowed_dates]
 
 
 def load_partition_boundaries(repo_root: Path) -> tuple[date, date | None]:

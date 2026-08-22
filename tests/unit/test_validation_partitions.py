@@ -4,15 +4,19 @@ test-set access lock."""
 from __future__ import annotations
 
 from datetime import date, timedelta
+from pathlib import Path
 
 import pytest
+import yaml
 from validation.partitions import (
     DatasetPartitions,
     LockedTestPartitionError,
     PartitionName,
     RunPurpose,
     guard_test_set_access,
+    load_partition_boundaries,
     partition,
+    select_non_test_for_tuning,
 )
 
 pytestmark = pytest.mark.unit
@@ -83,3 +87,99 @@ def test_dataset_partitions_get_enforces_the_lock() -> None:
     # access point, which is why it is documented as a separate, directly
     # callable function rather than folded silently into __post_init__.
     assert result.test  # The unguarded attribute is still directly reachable.
+
+
+def test_load_partition_boundaries_is_load_bearing_not_decorative(tmp_path: Path) -> None:
+    # AEGIS-139 M5 repair: configs/validation/partitions.yaml must be the sole
+    # runtime source of the split, not a committed file no code reads. A
+    # deliberately unusual config (a fraction load_partition_boundaries()
+    # cannot reach without genuinely reading the YAML) proves it here: 20
+    # dates, train_end at index 2 (15%), validation_end at index 4 (25%) --
+    # nothing close to the old hardcoded `len(dates) * 2 // 3` (which would
+    # put train_end at index 13, 65%).
+    dates = _dates(20)
+    config_dir = tmp_path / "configs" / "validation"
+    config_dir.mkdir(parents=True)
+    (config_dir / "partitions.yaml").write_text(
+        yaml.safe_dump({"schema_version": 1, "train_end": dates[2], "validation_end": dates[4]}),
+        encoding="utf-8",
+    )
+
+    train_end, validation_end = load_partition_boundaries(tmp_path)
+    assert train_end == dates[2]
+    assert validation_end == dates[4]
+
+    result = partition(dates, train_end, validation_end)
+    assert result.train == tuple(dates[0:3])
+    assert result.validation == tuple(dates[3:5])
+    assert result.test == tuple(dates[5:20])
+
+    # The regression this guards against: if load_partition_boundaries() were
+    # bypassed and the generator reverted to `len(dates) * 2 // 3`, train
+    # would be 13 dates wide, not 3 -- this assertion fails under that defect.
+    hardcoded_split = len(dates) * 2 // 3
+    assert len(result.train) != hardcoded_split
+    assert result.train != tuple(dates[0:hardcoded_split])
+
+
+def test_tuning_evidence_run_never_passes_test_observations_to_stability_search(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # AEGIS-139 M5 repair, the decisive reproducer: spy on the REAL argument
+    # compute_parameter_stability_surface receives when the actual evidence
+    # generator runs, not on an isolated call we construct ourselves and not
+    # on counts written to an artifact afterward. _write is monkeypatched to
+    # a no-op so this test has no filesystem side effect on committed
+    # evidence; every other line of generate_validation_evidence.main() -- the
+    # real load_partition_boundaries(), the real partition(), the real
+    # select_non_test_for_tuning() -- runs unmodified.
+    import generate_validation_evidence as gen
+
+    captured: dict[str, object] = {}
+    original_stability_call = gen.compute_parameter_stability_surface
+
+    def spy(observations, *args, **kwargs):  # type: ignore[no-untyped-def]
+        captured["observations"] = observations
+        return original_stability_call(observations, *args, **kwargs)
+
+    real_partitions = partition(
+        [o.as_of for o in gen.make_synthetic_spread_series("EQX", seed=gen.SEED)],
+        *load_partition_boundaries(gen.ROOT),
+    )
+
+    monkeypatch.setattr(gen, "compute_parameter_stability_surface", spy)
+    monkeypatch.setattr(gen, "_write", lambda *a, **kw: None)
+    exit_code = gen.main()
+
+    assert exit_code == 0
+    assert "observations" in captured
+    tuning_observations = captured["observations"]
+    assert len(tuning_observations) > 0
+
+    allowed_dates = set(real_partitions.train) | set(real_partitions.validation)
+    test_dates = set(real_partitions.test)
+    observed_dates = {o.as_of for o in tuning_observations}
+
+    assert observed_dates <= allowed_dates
+    assert observed_dates.isdisjoint(test_dates)
+    assert max(observed_dates) < min(test_dates)
+
+
+def test_tuning_purpose_cannot_reach_the_committed_test_partition(repo_root: Path) -> None:
+    # AEGIS-139 M5 repair: through the SAME real partition-access abstraction
+    # the generator uses (DatasetPartitions.get), against the real committed
+    # configs/validation/partitions.yaml boundaries -- not a synthetic
+    # fixture -- a TUNING-purpose request for TEST must raise, and it must
+    # raise before any observation is returned.
+    dates = _dates(120)
+    train_end, validation_end = load_partition_boundaries(repo_root)
+    real_partitions = partition(dates, train_end, validation_end)
+
+    with pytest.raises(LockedTestPartitionError, match="AEGIS-139"):
+        real_partitions.get(PartitionName.TEST, purpose=RunPurpose.TUNING)
+
+    # select_non_test_for_tuning must never surface a test-partition date
+    # even though it is handed every date in the series.
+    tuning_dates = select_non_test_for_tuning(dates, date_of=lambda d: d, partitions=real_partitions)
+    assert set(tuning_dates).isdisjoint(real_partitions.test)
+    assert set(tuning_dates) == set(real_partitions.train) | set(real_partitions.validation)
