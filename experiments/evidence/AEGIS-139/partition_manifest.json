@@ -1,14 +1,18 @@
 {
-  "claim": "AEGIS-139: real DatasetPartitions built and the test-set lock genuinely raised for a tuning-purpose access.",
+  "claim": "AEGIS-139: partitions loaded from the committed configs/validation/partitions.yaml via validation.partitions.load_partition_boundaries (never a hardcoded fraction of the series), sliced by validation.partitions.partition into train/validation/test. AEGIS-142's parameter-stability tuning computation below is fed EXCLUSIVELY the train+validation observations returned by validation.partitions.select_non_test_for_tuning, which itself calls DatasetPartitions.get(..., purpose=TUNING) for train and validation only -- the test partition is excluded by the data flow itself, never merely reported as excluded afterward. A direct tuning-purpose request for the test partition through the same DatasetPartitions.get abstraction is independently confirmed to raise LockedTestPartitionError.",
+  "configured_train_end": "2026-03-11",
+  "configured_validation_end": "2026-03-31",
   "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-22",
   "lock_error": "a tuning-purpose run attempted to read the test partition; the test set is locked until purpose=final_evaluation (AEGIS-139)",
-  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
+  "repository_commit": "aa4086f836913022cf23d592047a75669fb5874a",
   "requirements": [
     "AEGIS-139"
   ],
-  "test_count": 40,
-  "train_count": 80,
-  "tuning_access_to_test_partition_raised": true
+  "test_count": 30,
+  "train_count": 70,
+  "tuning_access_to_test_partition_raised": true,
+  "tuning_observation_count": 90,
+  "validation_count": 20
 }

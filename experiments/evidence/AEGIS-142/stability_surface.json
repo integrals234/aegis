@@ -2,56 +2,56 @@
   "best": {
     "entry_threshold": 2.5,
     "exit_threshold": 0.5,
-    "round_trip_count": 4,
-    "total_pnl": "-61.5090",
-    "zscore_window": 30
+    "round_trip_count": 5,
+    "total_pnl": "-57.1906",
+    "zscore_window": 10
   },
-  "claim": "AEGIS-142: every evaluated grid point persisted, not only the optimum.",
+  "claim": "AEGIS-142: every evaluated grid point persisted, not only the optimum. Evaluated over tuning_observation_count observations (train+validation only, AEGIS-139) -- the test partition never enters this search.",
   "dirty": false,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "generated_on": "2026-08-22",
-  "metric_mean": -94.15366666666667,
-  "metric_stdev": 24.42234369488545,
+  "metric_mean": -80.74666666666667,
+  "metric_stdev": 17.619405800738885,
   "point_count": 9,
   "points": [
     {
       "entry_threshold": 1.5,
       "exit_threshold": 0.5,
       "is_best": false,
-      "round_trip_count": 14,
-      "total_pnl": "-88.4471",
+      "round_trip_count": 11,
+      "total_pnl": "-76.6554",
       "zscore_window": 10
     },
     {
       "entry_threshold": 2.0,
       "exit_threshold": 0.5,
       "is_best": false,
-      "round_trip_count": 10,
-      "total_pnl": "-93.2295",
+      "round_trip_count": 8,
+      "total_pnl": "-86.1934",
       "zscore_window": 10
     },
     {
       "entry_threshold": 2.5,
       "exit_threshold": 0.5,
-      "is_best": false,
-      "round_trip_count": 6,
-      "total_pnl": "-67.4826",
+      "is_best": true,
+      "round_trip_count": 5,
+      "total_pnl": "-57.1906",
       "zscore_window": 10
     },
     {
       "entry_threshold": 1.5,
       "exit_threshold": 0.5,
       "is_best": false,
-      "round_trip_count": 11,
-      "total_pnl": "-119.7010",
+      "round_trip_count": 9,
+      "total_pnl": "-95.0317",
       "zscore_window": 20
     },
     {
       "entry_threshold": 2.0,
       "exit_threshold": 0.5,
       "is_best": false,
-      "round_trip_count": 7,
-      "total_pnl": "-89.2305",
+      "round_trip_count": 6,
+      "total_pnl": "-66.9392",
       "zscore_window": 20
     },
     {
@@ -66,29 +66,30 @@
       "entry_threshold": 1.5,
       "exit_threshold": 0.5,
       "is_best": false,
-      "round_trip_count": 9,
-      "total_pnl": "-135.6037",
+      "round_trip_count": 8,
+      "total_pnl": "-113.3124",
       "zscore_window": 30
     },
     {
       "entry_threshold": 2.0,
       "exit_threshold": 0.5,
       "is_best": false,
-      "round_trip_count": 7,
-      "total_pnl": "-120.1222",
+      "round_trip_count": 6,
+      "total_pnl": "-97.8309",
       "zscore_window": 30
     },
     {
       "entry_threshold": 2.5,
       "exit_threshold": 0.5,
-      "is_best": true,
+      "is_best": false,
       "round_trip_count": 4,
       "total_pnl": "-61.5090",
       "zscore_window": 30
     }
   ],
-  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
+  "repository_commit": "aa4086f836913022cf23d592047a75669fb5874a",
   "requirements": [
     "AEGIS-142"
-  ]
+  ],
+  "tuning_observation_count": 90
 }
