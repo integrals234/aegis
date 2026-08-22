@@ -629,22 +629,40 @@ without any attack construction beyond the ordinary API:
 rejection of the proposal it names. It must never mutate that proposal's
 state, and it must never disclose that proposal's real decision.
 
-**Fix.** The identity check moved to run FIRST -- immediately after
+**Fix.** For a proposal already known to be genuinely committed (the
+unknown/uncommitted case is a separate, earlier check -- see "Not claimed"
+below), the identity check moved to run FIRST -- immediately after
 resolving the record and before any inspection of `record.state`, before
 the terminal-state lookup, and before anything is mutated. On a mismatch,
 `authorize_proposal_release` returns a single synthetic
 `ProposalReleaseDecision{kRejectedAtRelease, kIdentityMismatch, <generic
 reason text>}` constructed inline -- it never touches `record`, never
 calls `reject_proposal_release`, never appends a
-`ProposalReleaseRiskDecision`, and is IDENTICAL regardless of whether the
-named proposal is unknown, staged, authorized, rejected, aborted or
-completed. It carries no information beyond what the caller itself
-supplied. The canonical owner's own subsequent call is completely
-unaffected -- proven by test, not merely asserted: capturing release
-state, reservation totals, leg-reservation count and release-audit count
-before an attacker's call, and asserting all four are bit-for-bit
-unchanged afterward, then confirming the canonical owner still authorizes
-normally.
+`ProposalReleaseRiskDecision`, and is IDENTICAL regardless of whether that
+EXISTING named proposal is staged, authorized, rejected, aborted or
+completed. It never reveals that proposal's real stored decision. The
+canonical owner's own subsequent call is completely unaffected -- proven
+by test, not merely asserted: capturing release state, reservation
+totals, leg-reservation count and release-audit count before an
+attacker's call, and asserting all four are bit-for-bit unchanged
+afterward, then confirming the canonical owner still authorizes normally.
+
+**Not claimed (M5 closure repair, NB-1 correction).** An UNKNOWN
+`proposal_id` -- one `commit_proposal_decision` has never genuinely
+committed -- is handled by a separate, earlier check and returns
+`kUnexpectedOrder`, not the generic `kIdentityMismatch` denial described
+above. A caller CAN therefore distinguish "this proposal_id was never
+committed" from "this proposal_id belongs to a different strategy" by
+reason code alone. An earlier version of this section claimed the denial
+was "identical regardless of whether the named proposal is unknown,
+staged, ..." and "carries no information beyond what the caller itself
+supplied" -- both false as written, since "unknown" was never actually
+covered by the identical-denial guarantee. AEGIS does not claim
+proposal-id confidentiality, and this is not an OS- or process-level
+security isolation boundary between arbitrary in-process callers. The
+actual guarantee is narrower and precise: a wrong-strategy caller can
+never MUTATE another strategy's proposal, nor read its REAL stored
+lifecycle decision -- but existence of a `proposal_id` is not hidden.
 
 This restores exact symmetry with `abort_proposal_release` (N6, same
 correction as R5): both mutating entry points now treat a wrong-strategy
@@ -663,6 +681,68 @@ strategy's proposal, not that identities are cryptographically
 authenticated. `docs/LIMITATIONS.md` is unchanged by this correction; no
 new limitation is introduced, and none of R2/R4/R6/R8/R9/R11/N1/N2/N3/N5/
 N6/N7/N8 is touched.
+
+## Correction 7 (M5 closure repair): proposal staging isolation and claim correction
+
+Two findings from the independent re-review of Correction 6, both narrow.
+
+**NB-1 -- Correction 6's own "identical regardless of ... unknown" claim was
+false, not just imprecise.** Corrected above, in Correction 6's "Not
+claimed" paragraph and in `authorize_proposal_release`'s header doc: an
+UNKNOWN `proposal_id` is handled by a separate, earlier check
+(`kUnexpectedOrder`), so it is distinguishable from a wrong-strategy query
+of an EXISTING proposal (`kIdentityMismatch`) by reason code. This is not
+a code change -- `authorize_proposal_release`'s behavior for an unknown
+proposal was already exactly this before Correction 6 (see the
+`committed`-flag check, N5); only the CLAIM about it was wrong. AEGIS does
+not claim proposal-id confidentiality or OS/process security isolation.
+
+**NB-2 -- `stage_proposal_release` was the one mutating entry point
+Correction 6 did not fix, and it remained fully exploitable.** A
+wrong-strategy `stage_proposal_release` call against an existing committed
+proposal latched a persistent `attribution_mismatch` flag and moved the
+record to `kStaging` -- both are mutations of the victim's proposal.
+Reproducible with the plain API, no attack construction beyond what N4 and
+N6 already assumed a caller could do:
+
+1. B calls `stage_proposal_release("B", "A's proposal_id", ...)` -- even
+   with an EMPTY staging vector. `attribution_mismatch` latches; no audit
+   event yet, so the sabotage is invisible until it detonates.
+2. A runs its own normal lifecycle: `authorize_proposal_release("A", ...)`
+   discovers the flag and rejects the WHOLE proposal, releasing every
+   reservation and erasing every armed leg -- freeing capacity B's own
+   next proposal could then consume, exactly the risk-budget-theft shape
+   N4 closed for `authorize_proposal_release` itself.
+3. The single audit record this produces is attributed to `strategy_id =
+   "A"` with `reason_code = kIdentityMismatch` -- **the trail blames the
+   victim for an identity mismatch the victim never caused, and B appears
+   nowhere in it.**
+
+**The governing principle, restated for a third entry point:** a
+wrong-strategy `stage_proposal_release` call is UNAUTHORIZED API MISUSE,
+not evidence that the named proposal itself is risky or malformed, and it
+must not mutate that proposal in any way.
+
+**Fix.** The identity check in `stage_proposal_release` moved to run
+immediately after resolving the record (itself gated on `committed`, N5)
+and BEFORE any inspection of `record.state` or mutation of anything. On a
+mismatch it returns immediately -- no `attribution_mismatch` latch (the
+field and its sole reader, a dead branch in `authorize_proposal_release`,
+are removed entirely, since nothing sets it anymore), no state
+transition, no staged-identity binding. This restores exact symmetry
+across all THREE mutating entry points -- `stage_proposal_release`,
+`authorize_proposal_release` (N4), `abort_proposal_release` (N6) -- every
+one of which now treats a wrong-strategy caller as inert. Legitimate
+SAME-owner staging validation (missing/unexpected constituents, leg
+identity, economics mismatches) is untouched: only the CROSS-STRATEGY
+path changed. A legitimate re-stage by the canonical owner after a
+wrong-strategy attempt now succeeds completely normally -- there is
+nothing left to "un-poison", because the attempt never touched anything
+to begin with.
+
+**Scope.** No other finding is touched by this correction. The release
+epoch itself, R1-R11, N1-N3, N5-N8 and N4's own fix are unaffected;
+`docs/LIMITATIONS.md` gains no new entry.
 
 ## Alternatives considered
 

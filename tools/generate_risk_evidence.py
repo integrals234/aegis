@@ -433,14 +433,22 @@ SPECS: dict[str, dict[str, Any]] = {
                  "already-terminal proposal received that proposal's REAL stored decision "
                  "(state, reason code and reason string), not a denial. A WRONG-STRATEGY AUTHORIZE "
                  "CALL IS AN UNAUTHORIZED QUERY, NOT A RISK REJECTION OF THE PROPOSAL IT NAMES, and "
-                 "it must not change that proposal's state -- the identity check now runs FIRST, "
-                 "before any terminal-state inspection, mutation or disclosure, and a mismatch "
-                 "returns a single generic kIdentityMismatch denial identical regardless of the "
-                 "proposal's real state (unknown, staged, authorized, rejected, aborted or "
-                 "completed), never reject_proposal_release. The canonical owner's own subsequent "
-                 "call is completely unaffected -- the attacker's call leaves no trace to overwrite. "
-                 "This is an API-level identity boundary matching abort_proposal_release's own, not "
-                 "a claim of process- or memory-level security isolation.",
+                 "it must not change that proposal's state -- for a proposal already known to be "
+                 "genuinely committed, the identity check now runs BEFORE any terminal-state "
+                 "inspection, mutation or disclosure, and a mismatch returns a single generic "
+                 "kIdentityMismatch denial identical regardless of that EXISTING proposal's real "
+                 "lifecycle state (staged, authorized, rejected, aborted or completed), never "
+                 "reject_proposal_release, and never revealing the real stored decision. The "
+                 "canonical owner's own subsequent call is completely unaffected -- the attacker's "
+                 "call leaves no trace to overwrite. NOT CLAIMED (corrected): an UNKNOWN "
+                 "proposal_id is handled by a separate, earlier check and returns kUnexpectedOrder, "
+                 "not the generic kIdentityMismatch denial -- a caller CAN distinguish 'never "
+                 "committed' from 'exists, wrong strategy' by reason code. AEGIS claims no "
+                 "proposal-id confidentiality and no OS/process security isolation between "
+                 "arbitrary in-process callers; the guarantee is narrower and precise -- a "
+                 "wrong-strategy caller can never mutate another strategy's proposal, nor read its "
+                 "real stored decision, but existence of a proposal_id is not hidden. This is an "
+                 "API-level identity boundary matching abort_proposal_release's own.",
     },
     "AEGIS-138": {
         "artifact": "portfolio_risk_analytics",

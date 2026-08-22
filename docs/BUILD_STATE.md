@@ -452,6 +452,35 @@ itself supplied. This restores exact symmetry with `abort_proposal_release`
 inert. Canonical ownership (N5) is unaffected -- still established exactly
 once, only by `commit_proposal_decision`.
 
+**Follow-up correction 7 (M5 closure repair): proposal staging isolation
+and claim correction.** Two narrow findings from re-review of correction
+6. **NB-1:** correction 6's claim that the identity-mismatch denial is
+"identical regardless of whether the proposal is unknown, staged,
+authorized, ..." was false -- an UNKNOWN `proposal_id` returns
+`kUnexpectedOrder` via a separate, earlier check, distinguishable by
+reason code from an EXISTING proposal owned by another strategy
+(`kIdentityMismatch`). Corrected in `risk_engine.hpp`, the corresponding
+`risk_engine.cpp` comment, and the AEGIS-137 evidence claim: the truthful
+contract is that for an EXISTING proposal, the denial is identical
+regardless of lifecycle state and never reveals the real decision;
+existence of a `proposal_id` itself is not hidden, and AEGIS claims no
+proposal-id confidentiality or OS/process security isolation. No code
+behavior changed for NB-1. **NB-2:** `stage_proposal_release` was the one
+mutating entry point correction 6 left unfixed -- a wrong-strategy call
+against an existing committed proposal still latched a persistent
+`attribution_mismatch` flag and moved the record to `kStaging`, so the
+VICTIM's own later `authorize_proposal_release` call discovered the flag
+and rejected its own whole proposal, releasing every reservation (freeing
+capacity for the attacker's next proposal, the same risk-budget-theft
+shape N4 closed) and misattributing the rejection to the victim's own
+`strategy_id` in the audit trail. Fixed: the identity check now runs
+first in `stage_proposal_release` too, before any mutation; a mismatch
+returns immediately, and the (now unused) `attribution_mismatch` field
+and its dead reader in `authorize_proposal_release` are removed. All
+THREE mutating entry points -- stage, authorize, abort -- now treat a
+wrong-strategy caller as inert. Legitimate same-owner staging validation
+(missing/unexpected constituents, economics mismatches) is unaffected.
+
 Not yet done (Batch 2): AEGIS-139..155's remaining validation modules,
 AEGIS-238's observability integration, evidence generation, and the
 independent audit. `requirements/implementation_status.json` is untouched by

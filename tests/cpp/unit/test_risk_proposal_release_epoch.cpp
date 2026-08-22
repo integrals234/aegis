@@ -1,3 +1,5 @@
+#include <tuple>
+
 #include <gtest/gtest.h>
 
 #include "cpp/participant/risk/risk_engine.hpp"
@@ -518,7 +520,14 @@ TEST(ProposalAbort, AbortingAProposalAlreadyCompletedIsANoOp) {
 // R5: canonical proposal/strategy attribution is immutable.
 // =================================================================
 
-TEST(ProposalAttribution, StagingWithADisagreeingStrategyIdCannotOverwriteCanonicalAttribution) {
+TEST(
+    ProposalAttribution,
+    StagingWithADisagreeingStrategyIdIsUnauthorizedApiMisuseThatLeavesTheVictimCompletelyUnchanged) {
+  // THE REQUIRED NB-2 REGRESSION (M5 closure repair, NB-2 corrected): a
+  // wrong-strategy stage_proposal_release call is UNAUTHORIZED API MISUSE,
+  // not evidence that the named proposal itself is risky or malformed. It
+  // must not mutate the victim's proposal in any way, and the victim must
+  // be able to stage/authorize/execute completely normally afterward.
   RiskEngine engine(base_config());
   seed_valid_quote(engine, kNear, 100);
   seed_valid_quote(engine, kFar, 100);
@@ -529,31 +538,56 @@ TEST(ProposalAttribution, StagingWithADisagreeingStrategyIdCannotOverwriteCanoni
                 .verdict,
             RiskVerdict::kApprove);
 
+  // Capture every observable piece of victim state before the attack.
+  const auto state_before = engine.proposal_release_state("attrib-1");
+  const auto reserved_near_before = engine.state().reserved_units(kNear);
+  const auto reserved_far_before = engine.state().reserved_units(kFar);
+  const auto leg_reservation_count_before = engine.state().leg_reservation_count();
+  const auto release_decision_count_before =
+      engine.audit_log().proposal_release_decision_count("attrib-1");
+  const auto proposal_decision_count_before =
+      engine.audit_log().proposal_decision_count("attrib-1");
+  ASSERT_EQ(state_before, ProposalReleaseState::kCommitted);
+  ASSERT_EQ(reserved_near_before, 50);
+  ASSERT_EQ(reserved_far_before, 50);
+  ASSERT_EQ(leg_reservation_count_before, 2U);
+  ASSERT_EQ(release_decision_count_before, 0U);
+  ASSERT_EQ(proposal_decision_count_before, 1U);
+
   // An attacker (or a colliding proposal_id from a different strategy) tries
-  // to stage the SAME proposal_id under a different strategy_id.
+  // to stage the SAME proposal_id under a different strategy_id, with a
+  // fully-formed, economically-plausible staging vector -- not just an
+  // empty one.
   engine.stage_proposal_release("strat-b", "attrib-1", stage_two_legs(1, 2));
 
-  const auto release = engine.authorize_proposal_release("strat-a", "attrib-1", 0);
-  EXPECT_EQ(release.state, ProposalReleaseState::kRejectedAtRelease);
-  EXPECT_EQ(release.reason_code, ReasonCode::kIdentityMismatch);
+  // Every piece of victim state is BIT-FOR-BIT unchanged.
+  EXPECT_EQ(engine.proposal_release_state("attrib-1"), state_before);
+  EXPECT_EQ(engine.state().reserved_units(kNear), reserved_near_before);
+  EXPECT_EQ(engine.state().reserved_units(kFar), reserved_far_before);
+  EXPECT_EQ(engine.state().leg_reservation_count(), leg_reservation_count_before);
+  EXPECT_EQ(engine.audit_log().proposal_release_decision_count("attrib-1"),
+            release_decision_count_before);
+  EXPECT_EQ(engine.audit_log().proposal_decision_count("attrib-1"), proposal_decision_count_before);
 
-  // The audit trail attributes the rejection to the CANONICAL committing
-  // strategy, never to the attacker's identity -- and this remains the
-  // proposal's ONE terminal release decision.
-  ASSERT_FALSE(engine.audit_log().proposal_release_decisions().empty());
+  // The attacker's own staged identities resolve to nothing.
+  EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).reason_code,
+            ReasonCode::kUnexpectedOrder);
+
+  // The canonical owner now stages, authorizes and executes completely
+  // normally -- the attacker's call left no trace to overwrite.
+  engine.stage_proposal_release("strat-a", "attrib-1", stage_two_legs(2, 3));
+  const auto release = engine.authorize_proposal_release("strat-a", "attrib-1", 0);
+  EXPECT_EQ(release.state, ProposalReleaseState::kAuthorizedForRelease);
   EXPECT_EQ(engine.audit_log().proposal_release_decisions().back().strategy_id, "strat-a");
-  EXPECT_EQ(engine.audit_log().proposal_decisions().back().strategy_id, "strat-a");
-  EXPECT_EQ(engine.audit_log().proposal_release_decision_count("attrib-1"), 1U);
-  EXPECT_EQ(engine.audit_log().proposal_decision_count("attrib-1"), 1U);
+  EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 2, 0).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.decide_order(kFar, Side::kBuy, 50, 3, 0).verdict, RiskVerdict::kApprove);
 }
 
-TEST(ProposalAttribution, ALegitimateRestageAfterAPoisoningAttemptIsStillRejectedFailClosed) {
-  // Once a mismatched strategy_id has touched a proposal_id, that proposal
-  // can never be trusted again -- even a subsequent, correctly-attributed
-  // stage call from the legitimate strategy does not un-poison it.
-  // Deliberately fail-closed: RiskEngine cannot tell "the attacker's call was
-  // bogus" from "the LEGITIMATE call was bogus" after the fact, so it never
-  // lets EITHER execute.
+TEST(ProposalAttribution, ALegitimateRestageAfterAWrongStrategyAttemptWorksCompletelyNormally) {
+  // Superseded (M5 closure repair, NB-2): a wrong-strategy stage call no
+  // longer touches the victim's record at all, so there is nothing left to
+  // "un-poison" -- the legitimate strategy's OWN staging, authorization and
+  // execution proceed exactly as if the attacker's call had never happened.
   RiskEngine engine(base_config());
   seed_valid_quote(engine, kNear, 100);
   seed_valid_quote(engine, kFar, 100);
@@ -567,9 +601,9 @@ TEST(ProposalAttribution, ALegitimateRestageAfterAPoisoningAttemptIsStillRejecte
   engine.stage_proposal_release("strat-a", "attrib-2", stage_two_legs(1, 2));  // Legitimate, after.
 
   const auto release = engine.authorize_proposal_release("strat-a", "attrib-2", 0);
-  EXPECT_EQ(release.state, ProposalReleaseState::kRejectedAtRelease);
-  EXPECT_EQ(release.reason_code, ReasonCode::kIdentityMismatch);
-  EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kReject);
+  EXPECT_EQ(release.state, ProposalReleaseState::kAuthorizedForRelease);
+  EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.decide_order(kFar, Side::kBuy, 50, 2, 0).verdict, RiskVerdict::kApprove);
 }
 
 TEST(ProposalAttribution, MismatchedStageCallBindsNoneOfItsOwnIdentities) {
@@ -694,6 +728,98 @@ TEST(ProposalAttribution, RiskBudgetTheftAttackRemainsBlockedAfterAWrongStrategy
   // The victim can still legitimately authorize and execute its own
   // proposal afterward -- nothing about its lifecycle was disturbed.
   ASSERT_EQ(engine.authorize_proposal_release("victim", "budget-1", 0).state,
+            ProposalReleaseState::kAuthorizedForRelease);
+  EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.decide_order(kFar, Side::kBuy, 50, 2, 0).verdict, RiskVerdict::kApprove);
+}
+
+TEST(ProposalAttribution, RiskBudgetTheftViaWrongStrategyStagingRemainsBlocked) {
+  // The NB-2-specific shape of the same attack: this time the attacker's
+  // tool is stage_proposal_release, not authorize_proposal_release. Before
+  // the fix, an empty-or-malicious wrong-strategy STAGE call alone would
+  // silently poison the victim's record, so that the VICTIM's own later
+  // authorize call would discover the poison and reject itself, freeing
+  // the reservation for the attacker.
+  RiskLimitsConfig config = base_config();
+  config.position_limits[kNear] = PositionLimit{.max_long_units = 50, .max_short_units = 50};
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  ASSERT_EQ(
+      engine
+          .commit_proposal_decision("victim", "budget-3", two_leg_proposal("victim", "budget-3"), 0)
+          .verdict,
+      RiskVerdict::kApprove);
+  ASSERT_EQ(engine.state().reserved_units(kNear), 50);
+
+  // Attacker stages the victim's proposal_id under its own identity --
+  // even an EMPTY staging vector is enough to have poisoned the record
+  // before this fix.
+  engine.stage_proposal_release("attacker", "budget-3", {});
+  ASSERT_EQ(engine.state().reserved_units(kNear), 50);  // Still fully reserved.
+  ASSERT_EQ(engine.proposal_release_state("budget-3"), ProposalReleaseState::kCommitted);
+
+  // The attacker's OWN proposal on the same instrument must still be
+  // rejected -- the victim's reservation was never actually released.
+  const auto attacker_own_proposal = engine.commit_proposal_decision(
+      "attacker", "budget-4", {make_request(kNear, Side::kBuy, 100, 50, "attacker", "budget-4", 0)},
+      0);
+  EXPECT_EQ(attacker_own_proposal.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(attacker_own_proposal.reason_code, ReasonCode::kMaxPositionLong);
+
+  // The victim's own staging and authorization proceed completely normally.
+  engine.stage_proposal_release("victim", "budget-3", stage_two_legs(1, 2));
+  const auto release = engine.authorize_proposal_release("victim", "budget-3", 0);
+  ASSERT_EQ(release.state, ProposalReleaseState::kAuthorizedForRelease);
+  EXPECT_EQ(release.reason_code,
+            ReasonCode::kNone);  // Not falsely rejected as an identity mismatch.
+  EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.decide_order(kFar, Side::kBuy, 50, 2, 0).verdict, RiskVerdict::kApprove);
+}
+
+TEST(ProposalAttribution,
+     StageAuthorizeAndAbortAreAllInertAgainstAWrongStrategyCallerOnOneProposal) {
+  // Symmetry (M5 closure repair, N4/N6/NB-2): for ONE committed proposal,
+  // a wrong-strategy stage, a wrong-strategy authorize, and a
+  // wrong-strategy abort must EACH leave the victim's proposal completely
+  // unaffected -- their RETURNED values may differ (each operation has its
+  // own contract), but none may mutate another strategy's proposal. This
+  // is an API-level identity boundary, not a claim of OS-level isolation.
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  ASSERT_EQ(
+      engine.commit_proposal_decision("A", "symmetry-1", two_leg_proposal("A", "symmetry-1"), 0)
+          .verdict,
+      RiskVerdict::kApprove);
+  engine.stage_proposal_release("A", "symmetry-1", stage_two_legs(1, 2));
+
+  auto snapshot = [&] {
+    return std::tuple{
+        engine.proposal_release_state("symmetry-1"),
+        engine.state().reserved_units(kNear),
+        engine.state().reserved_units(kFar),
+        engine.state().leg_reservation_count(),
+        engine.audit_log().proposal_release_decision_count("symmetry-1"),
+    };
+  };
+
+  const auto before_stage = snapshot();
+  engine.stage_proposal_release("B", "symmetry-1", stage_two_legs(9, 10));
+  EXPECT_EQ(snapshot(), before_stage);
+
+  const auto before_authorize = snapshot();
+  static_cast<void>(engine.authorize_proposal_release("B", "symmetry-1", 0));
+  EXPECT_EQ(snapshot(), before_authorize);
+
+  const auto before_abort = snapshot();
+  static_cast<void>(engine.abort_proposal_release("B", "symmetry-1", "not B's to abort", 0));
+  EXPECT_EQ(snapshot(), before_abort);
+
+  // A's proposal is completely intact and authorizes/executes normally.
+  ASSERT_EQ(engine.authorize_proposal_release("A", "symmetry-1", 0).state,
             ProposalReleaseState::kAuthorizedForRelease);
   EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kApprove);
   EXPECT_EQ(engine.decide_order(kFar, Side::kBuy, 50, 2, 0).verdict, RiskVerdict::kApprove);

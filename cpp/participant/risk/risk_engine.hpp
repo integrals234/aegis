@@ -198,13 +198,20 @@ class RiskEngine {
   /// ownership of a `proposal_id`, nor leave any state a later legitimate
   /// commit would have to overwrite or could be poisoned by.
   ///
-  /// CANONICAL ATTRIBUTION IS IMMUTABLE (M5 closure repair, R5): once a
-  /// proposal is committed, its `strategy_id` is fixed by
-  /// `commit_proposal_decision` alone, and this call NEVER overwrites it. A
-  /// call naming a disagreeing `strategy_id` binds none of its identities
-  /// and marks the release for rejection -- it can poison nothing,
-  /// including the audit trail's attribution of who actually committed this
-  /// proposal.
+  /// CANONICAL ATTRIBUTION IS IMMUTABLE (M5 closure repair, R5/NB-2
+  /// corrected): once a proposal is committed, its `strategy_id` is fixed
+  /// by `commit_proposal_decision` alone, and this call NEVER overwrites
+  /// it. A call naming a disagreeing `strategy_id` against an EXISTING
+  /// committed proposal is UNAUTHORIZED API MISUSE, not evidence that the
+  /// named proposal itself is risky or malformed -- it is fully inert: it
+  /// returns immediately, before touching `record.state` or anything else,
+  /// exactly like `authorize_proposal_release` (N4) and
+  /// `abort_proposal_release` (N6). (An earlier version of this check
+  /// latched a persistent `attribution_mismatch` flag on a mismatch and
+  /// moved the record to `kStaging` -- silently sabotaging the canonical
+  /// owner's OWN future `authorize_proposal_release` call, which discovered
+  /// the flag and rejected the whole proposal, misattributing that
+  /// rejection to the victim's own `strategy_id` in the audit trail. Fixed.)
   void stage_proposal_release(const std::string& strategy_id, const std::string& proposal_id,
                               const std::vector<StagedOrderIdentity>& staged);
 
@@ -219,26 +226,39 @@ class RiskEngine {
   /// authorized, or NONE do and every reservation the proposal held is
   /// released.
   ///
-  /// IDENTITY IS CHECKED BEFORE ANYTHING ELSE (M5 closure repair, R4/N4,
-  /// corrected): `strategy_id` must equal the proposal's canonical
-  /// committed strategy identity, and this is verified before this call
-  /// inspects, mutates or discloses ANYTHING about the proposal's actual
-  /// state. A wrong-strategy call is an UNAUTHORIZED QUERY, not a risk
-  /// rejection of the proposal it names, and it is fully inert: it never
-  /// mutates release state, reservations, pending legs, staged identities
-  /// or the audit trail, and it never appends a release-lifecycle event --
-  /// it returns a single generic `kIdentityMismatch` denial, identical
-  /// regardless of whether the named proposal is unknown, staged,
-  /// authorized, rejected, aborted or completed, carrying no information
-  /// beyond what the caller itself supplied. (An earlier version of this
-  /// check ran AFTER the terminal-state lookup and routed a mismatch
-  /// through `reject_proposal_release` -- a caller with no relationship to
-  /// a proposal could destroy it and reclaim its reserved risk budget, and
-  /// a wrong-strategy query of an already-terminal proposal received that
-  /// proposal's REAL stored decision. Both were the exact hazard this
-  /// repair closes.) This is an API-level identity boundary matching
-  /// `abort_proposal_release`'s own (below) -- not a claim of process- or
-  /// memory-level security isolation.
+  /// IDENTITY IS CHECKED BEFORE ANY LIFECYCLE-STATE DISCLOSURE (M5 closure
+  /// repair, R4/N4, corrected): once a `proposal_id` is known to be
+  /// genuinely committed, `strategy_id` must equal its canonical committed
+  /// strategy identity, and this is verified before this call inspects,
+  /// mutates or discloses ANYTHING about that proposal's actual lifecycle
+  /// state. A wrong-strategy call against an EXISTING committed proposal is
+  /// an UNAUTHORIZED QUERY, not a risk rejection of the proposal it names,
+  /// and it is fully inert: it never mutates release state, reservations,
+  /// pending legs, staged identities or the audit trail, and it never
+  /// appends a release-lifecycle event -- it returns a single generic
+  /// `kIdentityMismatch` denial, identical regardless of whether that
+  /// EXISTING proposal is staged, authorized, rejected, aborted or
+  /// completed, and never reveals the real stored lifecycle decision.
+  /// (An earlier version of this check ran AFTER the terminal-state lookup
+  /// and routed a mismatch through `reject_proposal_release` -- a caller
+  /// with no relationship to a proposal could destroy it and reclaim its
+  /// reserved risk budget, and a wrong-strategy query of an already-terminal
+  /// proposal received that proposal's REAL stored decision. Both were the
+  /// exact hazard this repair closes.)
+  ///
+  /// NOT CLAIMED (M5 closure repair, NB-1 correction): an UNKNOWN
+  /// `proposal_id` (one `commit_proposal_decision` never genuinely
+  /// committed) is handled by a SEPARATE, EARLIER check and returns
+  /// `kUnexpectedOrder`, not the generic `kIdentityMismatch` denial -- so a
+  /// caller CAN distinguish "this proposal_id was never committed" from
+  /// "this proposal_id belongs to a different strategy" by reason code
+  /// alone. AEGIS does not claim proposal-ID confidentiality, and this is
+  /// not an OS- or process-level security isolation boundary between
+  /// arbitrary in-process callers: it is an API-level identity boundary
+  /// matching `abort_proposal_release`'s own (below), whose guarantee is
+  /// narrower and precise -- a wrong-strategy caller can never MUTATE
+  /// another strategy's proposal, nor read its REAL stored lifecycle
+  /// decision, but existence of a `proposal_id` is not hidden.
   ///
   /// Idempotent and terminal for the CANONICAL owner (M5 closure repair,
   /// N1): once the proposal's release lifecycle reaches
@@ -513,14 +533,6 @@ class RiskEngine {
     /// How many authorized constituents have not yet consumed the
     /// authorization; reaching zero moves the proposal to `kCompleted`.
     std::size_t outstanding_authorized_legs{0};
-    /// Set by `stage_proposal_release` when a caller supplies a
-    /// `strategy_id` that disagrees with the canonical one above (M5
-    /// closure repair, R5). The mismatched call's identities are never
-    /// bound; `authorize_proposal_release` rejects the whole proposal
-    /// `kIdentityMismatch` the first time it observes this flag, so a
-    /// poisoning attempt fails the release rather than silently succeeding
-    /// under a rewritten identity.
-    bool attribution_mismatch{false};
   };
 
   /// Rejects `record`'s whole proposal: releases every leg reservation it
