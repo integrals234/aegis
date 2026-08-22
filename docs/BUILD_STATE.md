@@ -157,26 +157,89 @@
   run 31295058007, whose `reproducibility` job executed
   `docs/ENVIRONMENT.md`'s canonical procedure verbatim on a clean
   `ubuntu-24.04` runner.
-- Deferred verification obligations: **7 open** after M3, listed in
-  `docs/DEFERRED_VERIFICATION.md`; due M4=2 (AEGIS-004, AEGIS-024), M5=3
-  (AEGIS-062, AEGIS-063, AEGIS-238), M8=1 (AEGIS-107) and M9=1 (AEGIS-059).
-  M3 discharged the three that were due at it — AEGIS-060, AEGIS-061 and
-  AEGIS-237 — so `--check-deferred M3` passes, and registered exactly one new
-  obligation, AEGIS-107→M8. Earlier milestones discharged AEGIS-229 and
-  AEGIS-230 at M2, and AEGIS-005, AEGIS-227, AEGIS-233, AEGIS-234 and
-  AEGIS-009 at M1. **Two obligations fall due at M4** and are that milestone's
-  first-class closure work.
+- Deferred verification obligations: **2 open** after M5, listed in
+  `docs/DEFERRED_VERIFICATION.md` — AEGIS-107→M8 (latency/memory half) and
+  AEGIS-059→M9 (multi-feed contract tests). M5 discharged all three that were
+  due at it — AEGIS-062, AEGIS-063 and AEGIS-238 — so `--check-deferred M5`
+  passes, and registered **no new obligation**; the pre-authorised AEGIS-238
+  M8 fallback was not used. M4 discharged AEGIS-004 and AEGIS-024; M3
+  discharged AEGIS-060, AEGIS-061 and AEGIS-237 and registered AEGIS-107→M8;
+  M2 discharged AEGIS-229 and AEGIS-230; M1 discharged AEGIS-005, AEGIS-227,
+  AEGIS-233, AEGIS-234 and AEGIS-009. **Nothing falls due at M6 or M7.**
 
 ## M5 state
 
-**IN PROGRESS** — PR #13 (the M5 activation policy) was approved and merged.
-Batch 1 is underway on `milestone/m5-risk-validation`: the mirror above is
-now `M5`, `cpp/participant/risk` carries a real `RiskEngine` and
-`python/validation` carries the partition/walk-forward foundation. **Not yet
-closed, and no requirement below is `verified` yet** — verification is
-Batch-2-and-closure work, per `docs/BUILD_STATE.md`'s own promotion
-discipline. This section will be replaced at closure with the final M5
-state (`experiments/plans/M5.md`, `experiments/milestone-reports/M5.md`).
+**CLOSURE PROPOSED** — implementation is complete and every M5 requirement is
+`verified`. The closure pull request is open and **not yet merged**; this
+section becomes `CLOSED` only when the owner merges it.
+
+- Final source commit: `0b8b54c58efe3615195b6d54eaba4aded93b6857`
+- Final evidence commit: `a3a0160e87b9b5925925e6c757495aedfa8ddc0d`
+- Plan of record: `experiments/plans/M5.md`
+- Report: `experiments/milestone-reports/M5.md`
+
+**Frozen-spec certification: 39 / 39.** Stated as it actually happened: a full
+independent `aegis-spec-auditor` audit of all 39 rows at `f86afd0` returned
+**38 PASS / 1 FAIL**. The single failure was **AEGIS-139** — the experiment
+manifest did not actually prevent test-set tuning: `configs/validation/partitions.yaml`
+was never read, the evidence generator hardcoded `len(dates) * 2 // 3` (an
+80/0/40 split contradicting the committed 70/20/30), and the parameter-stability
+search received the full series including the test partition while the lock was
+only demonstrated in a discarded `try/except`. Repaired at `aa4086f` (source)
+and `e7f7627` (evidence): `partitions.yaml` is now the sole runtime source via
+`load_partition_boundaries()`, the split is a real 70/20/30, and tuning is fed
+the 90 train+validation observations `select_non_test_for_tuning()` returns
+through the same guarded `DatasetPartitions.get(purpose=TUNING)` accessor — the
+test split is excluded by the data flow itself, not reported as excluded
+afterward. A **targeted** re-audit at `e7f7627` covered AEGIS-139 plus every row
+the repair could have touched (AEGIS-142, AEGIS-153, AEGIS-155) and returned
+PASS on all four, including a mutation check confirming the new test genuinely
+fails under the reverted behaviour. All 39 rows were **not** re-audited from
+scratch after `aa4086f`; the effective result is 38 previously-certified rows
+plus targeted certification of every row the repair affected.
+
+**Final local certification matrix: 23 of 23 stages green** at the final commit.
+C++ Debug, Release and ASAN/UBSAN each 566/566 (557 unit + 9 property) with no
+sanitizer finding; clang-format and full-tree clang-tidy over 212 files (16
+parallel jobs, no changed-files-only shortcut); ruff and mypy (121 files) clean;
+Python unit/integration/property/replay/research 917/68/59/43/18 all passing;
+determinism, negative gates and clean-environment all green.
+
+The matrix caught one real regression in committed code that the review rounds
+had not: `configs/risk/limits_reject_demo.json` tightened `order_quantity_limits`
+to `0`, which the later M5 input-integrity repair had correctly made a load-time
+error, so `aegis_participant_run` exited `2` on it and the AEGIS-120 and
+AEGIS-238 artifacts recorded runs their own cited commit could no longer
+reproduce. Fixed config-only at `0b8b54c`: because the demo proposes exactly one
+unit and the cap is compared strictly, no valid positive quantity cap can reject
+a one-unit order, so the demo now tightens `max_order_notional_units` instead.
+The enforcement shape is unchanged (6 output lines, 2 risk decisions,
+`final_order_count == 0`); only the reason code moved to `kMaxOrderNotional`.
+AEGIS-121's own boundary evidence is untouched.
+
+**AEGIS-238 is `verified` in full at M5 and the pre-authorised M8 fallback was
+NOT used.** Health, queue depth, dropped/backpressured events, execution latency
+and risk status are all non-vacuous in one integration run, with risk status
+decoded from the real `risk::RiskEngine` through the production binary. The
+artifact carries the disclosure the authorization below requires: queue depth and
+dropped events come from the M5 harness's bounded outbound buffer, **not** from
+M8's lock-free queues.
+
+Catalogue after M5: **132 `verified` / 7 `implemented` / 99 `not_started` / 238
+total**. `--check-deferred M5` passes. M5 registered **no new deferral**, leaving
+exactly two carried obligations: **AEGIS-107 → M8** (latency/memory half) and
+**AEGIS-059 → M9** (multi-feed contract tests). There is no AEGIS-238 residual.
+
+Every M5 price is synthetic and the venue `SYNX` does not exist; the matching
+engine is real, the market data is not. The margin model is a documented
+simplification, not SPAN. Risk authorization atomicity is not atomic multi-leg
+exchange execution. M5 makes no live-profitability and no production-risk-adequacy
+claim — the calendar-spread strategy's own validation verdict is REJECT, reported
+truthfully rather than tuned away, which is the anti-overfitting framework working
+rather than failing.
+
+The historical Batch-1/Batch-2 detail below is retained as the implementation
+record.
 
 M5 is *Independent risk and validation*: 36 primary requirements
 (AEGIS-120..138 risk and portfolio controls, AEGIS-139..155 anti-overfitting

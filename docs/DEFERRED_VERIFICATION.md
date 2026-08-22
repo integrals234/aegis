@@ -17,41 +17,12 @@ append-only ledger below; the audit requires the live `verification_blocked_unti
 to equal the head of that ledger, so moving a debt is itself a recorded act.
 
 
-**5 outstanding obligation(s).**
-
-1 of them has been re-dated at least once since first registered; each move is listed under its requirement below.
+**2 outstanding obligation(s).**
 
 | ID | Requirement | Status | Unblocks at | Times re-dated | What is still missing |
 |---|---|---|---|---|---|
 | AEGIS-059 | Unified strategy interface | implemented | M9 | 0 | Contract tests running one strategy against multiple feed implementations (live, paper, historical) require a strategy (M4) and live/paper feed adapters (M9), neither of which exists yet. M2 delivers the Feed protocol and HistoricalReplayFeed only. |
-| AEGIS-062 | Fault injection: market stress | implemented | M5 | 0 | The frozen acceptance names scenario results AND risk responses being reproducible. M2 delivers reproducible scenario results (kSpreadWidening/kVolatilitySpike/kLiquidityVanish injected deterministically from committed rule data); a RISK response needs the risk engine, which configs/architecture_rules.yaml dates cpp-participant-risk to M5. |
-| AEGIS-063 | Fault injection: execution stress | implemented | M5 | 0 | The frozen acceptance names OMS/risk INTEGRATION tests covering each fault. M2 delivers the execution-stress injection kinds (kRejection, kLatencySpike, kPartialFill, kBackpressure) deterministically; there is no OMS or risk layer to integrate with, and configs/architecture_rules.yaml dates cpp-participant-oms and cpp-participant-risk to M3 and M5 respectively. |
 | AEGIS-107 | Numerical/performance validation | implemented | M8 | 0 | Latency and memory comparison between the C++ estimators and the Python reference, under docs/BENCHMARK_POLICY.md's disclosure methodology. The numerical output/error comparison is complete and evidenced at M3 (experiments/evidence/AEGIS-107/cross_language_validation.json). |
-| AEGIS-238 | Observability | implemented | M5 | 1 | queue depth and dropped/backpressured events arrive with M1's bounded queues and execution latency with M3's execution path, but risk status has no producer until the risk engine, which configs/architecture_rules.yaml dates M5. Full metric coverage cannot be shown before M5. |
-
-## Due at M5
-
-### AEGIS-062 — Fault injection: market stress
-
-- **Frozen acceptance criterion:** Scenario results and risk responses are reproducible.
-- **Residual:** The frozen acceptance names scenario results AND risk responses being reproducible. M2 delivers reproducible scenario results (kSpreadWidening/kVolatilitySpike/kLiquidityVanish injected deterministically from committed rule data); a RISK response needs the risk engine, which configs/architecture_rules.yaml dates cpp-participant-risk to M5.
-- **Deferral ledger:**
-  - 2026-08-10 — dated **M5** while closing M2: Registered while closing M2: market-stress injection is implemented, deterministic and tested, but reproducible risk responses require the M5 risk engine. Owner-approved residual 062 -> M5 in experiments/plans/M2.md rev. 4.
-
-### AEGIS-063 — Fault injection: execution stress
-
-- **Frozen acceptance criterion:** OMS/risk integration tests cover each fault.
-- **Residual:** The frozen acceptance names OMS/risk INTEGRATION tests covering each fault. M2 delivers the execution-stress injection kinds (kRejection, kLatencySpike, kPartialFill, kBackpressure) deterministically; there is no OMS or risk layer to integrate with, and configs/architecture_rules.yaml dates cpp-participant-oms and cpp-participant-risk to M3 and M5 respectively.
-- **Deferral ledger:**
-  - 2026-08-10 — dated **M5** while closing M2: Registered while closing M2: execution-stress injection is implemented, deterministic and tested, but OMS/risk integration tests require those layers, the last of which architecture rules date to M5. Owner-approved residual 063 -> M5 in experiments/plans/M2.md rev. 4.
-
-### AEGIS-238 — Observability
-
-- **Frozen acceptance criterion:** Integration fixture verifies metrics.
-- **Residual:** queue depth and dropped/backpressured events arrive with M1's bounded queues and execution latency with M3's execution path, but risk status has no producer until the risk engine, which configs/architecture_rules.yaml dates M5. Full metric coverage cannot be shown before M5.
-- **Deferral ledger:**
-  - 2026-08-06 — dated **M1** while closing M0: Registered while closing M0: queue depth, dropped/backpressured events, execution latency and risk status have no producers.
-  - 2026-08-06 — dated **M5** while closing M0: The independent M0 audit found the obligation dated M1 while risk status has no producer until the risk engine, which configs/architecture_rules.yaml dates M5. Re-dated to the milestone that can actually discharge it.
 
 ## Due at M8
 
