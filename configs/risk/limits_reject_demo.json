@@ -1,0 +1,75 @@
+{
+  "_comment": "M5 REJECT demo variant: byte-identical to limits.json except max_order_notional_units, tightened to 1000000 so the SAME calendar-spread stream that is APPROVED under limits.json is REJECTED here on per-order notional (AEGIS-123, reason_code kMaxOrderNotional) with zero adapter submission and zero exchange order, proving AEGIS-120's mandatory risk path end to end from the production CLI. It previously tightened order_quantity_limits to 0 instead; the M5 input-integrity repair (cpp/participant/risk/risk_limits.hpp, N2) correctly made a non-positive max_order_quantity_units a load-time error, and because the demo strategy proposes exactly 1 unit and the cap is compared strictly (quantity > cap), no VALID positive quantity cap can reject a 1-unit order. Notional is the narrowest real control that still rejects this stream without weakening that invariant or changing the strategy. AEGIS-121's own reject-or-resize boundary evidence is unaffected: it comes from the C++ boundary tests recorded in experiments/evidence/AEGIS-121/max_order_quantity.json, not from this demo.",
+  "base_currency": "USD",
+  "order_quantity_limits": {
+    "2001": {
+      "max_order_quantity_units": 50,
+      "resize_on_breach": true
+    },
+    "2002": {
+      "max_order_quantity_units": 50,
+      "resize_on_breach": true
+    }
+  },
+  "position_limits": {
+    "2001": {
+      "max_long_units": 200,
+      "max_short_units": 200
+    },
+    "2002": {
+      "max_long_units": 200,
+      "max_short_units": 200
+    }
+  },
+  "max_order_notional_units": 1000000,
+  "max_portfolio_notional_units": 200000000,
+  "instruments": {
+    "2001": {
+      "multiplier_units": 50,
+      "currency": "USD",
+      "market": "EQX",
+      "sector": "index"
+    },
+    "2002": {
+      "multiplier_units": 50,
+      "currency": "USD",
+      "market": "EQX",
+      "sector": "index"
+    }
+  },
+  "market_exposure_limit_units": {
+    "EQX": 150000000
+  },
+  "sector_exposure_limit_units": {
+    "index": 150000000
+  },
+  "price_collar_bps": 500,
+  "max_quote_age_nanos": 5000000000,
+  "rate_limit_window_nanos": 1000000000,
+  "max_orders_per_window": 10,
+  "max_cancels_per_window": 10,
+  "margin_per_contract_units": {
+    "2001": 500000,
+    "2002": 500000
+  },
+  "max_leverage": 10.0,
+  "daily_loss_limit_units": 100000000,
+  "max_drawdown_units": 150000000,
+  "volatility": {
+    "window": 20,
+    "target_volatility": 0.02,
+    "hard_reject_multiple": 3.0
+  },
+  "concentration": {
+    "max_concentration_share": 1.0,
+    "correlated_groups": {
+      "calendar_spread_pair": [
+        2001,
+        2002
+      ]
+    },
+    "group_exposure_limit_units": {
+      "calendar_spread_pair": 180000000
+    }
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 68,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_market_stress.cpp",
+        "test": "MarketStressRisk.VolatilitySpikeResizesOrRejects"
+      },
+      {
+        "line": 1164,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.CalmVolatilityThroughReleaseStillAuthorizesNormally"
+      },
+      {
+        "line": 1131,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.VolatilitySpikeBeforeReleaseRejectsTheWholeProposal"
+      },
+      {
+        "line": 714,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineVolatilityReduction.ResizesDownAsVolatilityRisesAndRejectsBeyondHardMultiple"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "RiskEngineVolatilityReduction.*",
+      "MarketStressRisk.VolatilitySpikeResizesOrRejects",
+      "ProposalReleaseEpoch.VolatilitySpikeBeforeReleaseRejectsTheWholeProposal",
+      "ProposalReleaseEpoch.CalmVolatilityThroughReleaseStillAuthorizesNormally"
+    ],
+    "test_count": 4
+  },
+  "artifact": "AEGIS-133/volatility_triggered_reduction",
+  "claim": "Approved quantity scales down deterministically as realized volatility (stats::RollingRealizedVolatility) rises above target, floored at 1 unit, and rejects outright at or beyond hard_reject_multiple rather than resizing to a token size. M5 closure repair, R6: the hard-reject branch alone (never the resize/sizing branch, which stays frozen once a proposal is authorized) is re-evaluated fresh at authorize_proposal_release, exactly like every other hard safety control -- a proposal safely sized while volatility was calm but whose reference instrument has since spiked past the hard-reject multiple is rejected at release, before anything is sent.",
+  "deterministic_config": {
+    "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
+    "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
+  },
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Deterministic sizing fixtures pass.",
+  "generated_on": "2026-08-22",
+  "implementation": [
+    "cpp/participant/risk/risk_engine.cpp",
+    "cpp/participant/risk/risk_engine.hpp",
+    "cpp/participant/risk/risk_state.hpp",
+    "cpp/participant/risk/risk_limits.hpp",
+    "cpp/participant/risk/reason_codes.cpp"
+  ],
+  "inputs": [
+    "configs/risk/limits.json"
+  ],
+  "limitations": [
+    "All market data driving these tests is synthetic and in-repo: venue SYNX does not exist, quotes are constructed from committed daily bar/fixture data rather than observed tick data (ADR-0025), and no conclusion about any real market may be drawn.",
+    "These are software risk controls exercised under simulation. Passing here is not evidence of production risk adequacy, live execution realism, or profitability."
+  ],
+  "not_evidence_for": [
+    "production risk adequacy -- thresholds here are small documented demo values",
+    "any real-market behaviour -- every input is synthetic (ADR-0025)"
+  ],
+  "producer": "tools/generate_risk_evidence.py",
+  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
+  "requirements": [
+    "AEGIS-133"
+  ],
+  "title": "Volatility-triggered reduction"
+}

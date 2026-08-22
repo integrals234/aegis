@@ -1,0 +1,12 @@
+{
+  "claim": "AEGIS-151: raw-spread-threshold baseline (no rolling window) over the identical partition/costs.",
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-22",
+  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
+  "requirements": [
+    "AEGIS-151"
+  ],
+  "round_trip_count": 4,
+  "total_pnl": "-92.8305"
+}

@@ -1,0 +1,8 @@
+{
+  "_comment": "AEGIS-138 scripted stress scenarios: deterministic parallel price shocks applied to every mark, never a statistical simulation. Loaded by the same nlohmann::json path as configs/risk/limits.json.",
+  "scenarios": [
+    {"name": "parallel_down_10pct", "price_shock_pct": -0.10, "volatility_multiple": 1.0, "liquidity_factor": 1.0},
+    {"name": "parallel_up_10pct", "price_shock_pct": 0.10, "volatility_multiple": 1.0, "liquidity_factor": 1.0},
+    {"name": "vol_spike_2x_liquidity_half", "price_shock_pct": -0.05, "volatility_multiple": 2.0, "liquidity_factor": 0.5}
+  ]
+}

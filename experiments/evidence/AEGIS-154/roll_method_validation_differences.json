@@ -1,0 +1,18 @@
+{
+  "claim": "AEGIS-154: reuses research.roll_method_sensitivity (M4) unmodified; differences reported honestly, including any true zero.",
+  "differences": [
+    {
+      "policy_a": "fixed_100_days",
+      "policy_b": "volume_crossover",
+      "total_pnl_difference": "114"
+    }
+  ],
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-22",
+  "policy_count": 2,
+  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
+  "requirements": [
+    "AEGIS-154"
+  ]
+}

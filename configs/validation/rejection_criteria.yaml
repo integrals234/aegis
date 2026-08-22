@@ -1,0 +1,11 @@
+# M5 formal strategy-rejection thresholds (AEGIS-155). Deliberately small,
+# documented, deterministic constants -- not tuned against any particular
+# strategy's result (that would defeat the milestone's own anti-overfitting
+# purpose).
+schema_version: 1
+min_round_trip_count: 5
+instability_coefficient_of_variation_threshold: 2.0
+bootstrap_confidence_level: 0.90
+bootstrap_num_draws: 2000
+monte_carlo_num_paths: 2000
+max_drawdown_threshold: "500"   # Decimal string, same convention as configs/futures/products.yaml.

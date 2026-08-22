@@ -1,0 +1,77 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 87,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_market_stress.cpp",
+        "test": "MarketStressRisk.LiquidityVanishTripsStaleness"
+      },
+      {
+        "line": 103,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_market_stress.cpp",
+        "test": "MarketStressRisk.ResponsesAreReproducibleAcrossIndependentEngines"
+      },
+      {
+        "line": 39,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_market_stress.cpp",
+        "test": "MarketStressRisk.SpreadWideningTripsThePriceCollar"
+      },
+      {
+        "line": 55,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_market_stress.cpp",
+        "test": "MarketStressRisk.SpreadWideningWithinCollarStillApproves"
+      },
+      {
+        "line": 68,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_fault_market_stress.cpp",
+        "test": "MarketStressRisk.VolatilitySpikeResizesOrRejects"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "MarketStressRisk.*"
+    ],
+    "test_count": 5
+  },
+  "artifact": "AEGIS-062/market_stress_risk_response",
+  "claim": "The M5 residual is paid: every market-stress fault kind M2 delivers (kSpreadWidening, kVolatilitySpike, kLiquidityVanish) now produces a REAL risk::RiskEngine response through run_market_stress_risk_scenario -- a genuine evaluate() call, not a report generated afterward -- and two independently constructed engines fed the identical rule set produce identical verdicts and reason codes. No fault kind was added and replay::DeterministicFaultInjector is consumed unmodified.",
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Scenario results and risk responses are reproducible.",
+  "generated_on": "2026-08-22",
+  "implementation": [
+    "cpp/participant/risk/risk_engine.cpp",
+    "cpp/participant/risk/risk_engine.hpp",
+    "cpp/participant/risk/risk_state.hpp",
+    "cpp/participant/risk/risk_limits.hpp",
+    "cpp/participant/risk/reason_codes.cpp",
+    "cpp/participant/app/fault_scenario.cpp",
+    "cpp/participant/app/fault_scenario.hpp"
+  ],
+  "inputs": [
+    "cpp/replay/fault_injection.hpp"
+  ],
+  "limitations": [
+    "All market data driving these tests is synthetic and in-repo: venue SYNX does not exist, quotes are constructed from committed daily bar/fixture data rather than observed tick data (ADR-0025), and no conclusion about any real market may be drawn.",
+    "These are software risk controls exercised under simulation. Passing here is not evidence of production risk adequacy, live execution realism, or profitability."
+  ],
+  "m2_half_of_this_obligation": "experiments/evidence/AEGIS-062/replay_fault_injection.json",
+  "not_evidence_for": [
+    "any claim that these are the only faults that could occur -- they are the fault kinds M2 deterministically injects, not an exhaustive taxonomy"
+  ],
+  "producer": "tools/generate_risk_evidence.py",
+  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
+  "requirements": [
+    "AEGIS-062"
+  ],
+  "title": "Fault injection: market stress"
+}

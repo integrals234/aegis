@@ -1,0 +1,113 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 497,
+        "passed": true,
+        "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
+        "test": "CalendarSpreadRiskExchangeIntegration.GlobalKillSwitchCancelsLiveOrdersAndBlocksNewSubmissions"
+      },
+      {
+        "line": 752,
+        "passed": true,
+        "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
+        "test": "CalendarSpreadRiskExchangeIntegration.LateKillSwitchBeforeReleaseAuthorizationStopsBothLegsInTheRealSeam"
+      },
+      {
+        "line": 350,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.AKillSwitchAfterAuthorizationDoesNotSplitTheProposalsVerdict"
+      },
+      {
+        "line": 140,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.ExchangeDisconnectBeforeReleaseRejectsTheWholeProposal"
+      },
+      {
+        "line": 111,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.GlobalKillSwitchBeforeReleaseRejectsTheWholeProposal"
+      },
+      {
+        "line": 162,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.StaleMarketBeforeReleaseRejectsTheWholeProposal"
+      },
+      {
+        "line": 175,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ReservationRepairExactIdentity.LookAlikeLegFromAnotherStrategyCannotBorrowItsRiskState"
+      },
+      {
+        "line": 273,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ReservationRepairSeamRevalidation.KillSwitchTrippedAfterCommitStopsTheOrderAtTheSeam"
+      },
+      {
+        "line": 813,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineKillSwitch.StrategyAndGlobalTripsAreIdempotentAndScopedCorrectly"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "RiskEngineKillSwitch.*",
+      "CalendarSpreadRiskExchangeIntegration.GlobalKillSwitchCancelsLiveOrdersAndBlocksNewSubmissions",
+      "ReservationRepairExactIdentity.LookAlikeLegFromAnotherStrategyCannotBorrowItsRiskState",
+      "ReservationRepairSeamRevalidation.KillSwitchTrippedAfterCommitStopsTheOrderAtTheSeam",
+      "ProposalReleaseEpoch.GlobalKillSwitchBeforeReleaseRejectsTheWholeProposal",
+      "ProposalReleaseEpoch.ExchangeDisconnectBeforeReleaseRejectsTheWholeProposal",
+      "ProposalReleaseEpoch.StaleMarketBeforeReleaseRejectsTheWholeProposal",
+      "ProposalReleaseEpoch.AKillSwitchAfterAuthorizationDoesNotSplitTheProposalsVerdict",
+      "CalendarSpreadRiskExchangeIntegration.LateKillSwitchBeforeReleaseAuthorizationStopsBothLegsInTheRealSeam"
+    ],
+    "test_count": 9
+  },
+  "artifact": "AEGIS-135/kill_switches",
+  "claim": "Strategy-level and global kill switches are idempotent (a second trip is a no-op returning false), strategy-scoped tripping leaves other strategies unaffected, live orders receive safety cancels that bypass the ordinary cancel throttle, and every subsequent proposal is rejected. Proven end to end against a real unmodified M1 ExchangeNode: the exchange order count does not move after the trip. An order resolves to its EXACT registered proposal/leg identity, never to a look-alike armed leg from another strategy sharing the same economics (M5 closure repair) -- a tripped strategy cannot be bypassed by an order that happens to match a DIFFERENT, non-halted strategy's leg by coincidence. Release-epoch semantics (M5 closure repair, round 3): a kill switch, disconnect or stale quote arriving BEFORE a committed proposal's release authorization rejects the WHOLE proposal and releases every reservation, so no constituent reaches execution. A kill switch arriving AFTER authorization does not retroactively split that already-granted authorization -- it blocks every SUBSEQUENT proposal (asserted) and the emergency-cancel path handles live orders. Both halves are pinned by test so neither can be silently changed.",
+  "deterministic_config": {
+    "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
+    "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
+  },
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Kill-switch tests cancel/disable safely and prevent new orders.",
+  "generated_on": "2026-08-22",
+  "implementation": [
+    "cpp/participant/risk/risk_engine.cpp",
+    "cpp/participant/risk/risk_engine.hpp",
+    "cpp/participant/risk/risk_state.hpp",
+    "cpp/participant/risk/risk_limits.hpp",
+    "cpp/participant/risk/reason_codes.cpp",
+    "cpp/participant/app/risk_engine_gate.hpp",
+    "cpp/participant/app/risk_engine_gate.cpp"
+  ],
+  "inputs": [
+    "configs/risk/limits.json"
+  ],
+  "limitations": [
+    "All market data driving these tests is synthetic and in-repo: venue SYNX does not exist, quotes are constructed from committed daily bar/fixture data rather than observed tick data (ADR-0025), and no conclusion about any real market may be drawn.",
+    "These are software risk controls exercised under simulation. Passing here is not evidence of production risk adequacy, live execution realism, or profitability."
+  ],
+  "not_evidence_for": [
+    "production risk adequacy -- thresholds here are small documented demo values",
+    "any real-market behaviour -- every input is synthetic (ADR-0025)"
+  ],
+  "producer": "tools/generate_risk_evidence.py",
+  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
+  "requirements": [
+    "AEGIS-135"
+  ],
+  "title": "Strategy and portfolio kill switches"
+}

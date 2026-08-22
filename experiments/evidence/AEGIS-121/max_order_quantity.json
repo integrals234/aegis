@@ -1,0 +1,190 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 366,
+        "passed": true,
+        "source": "tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp",
+        "test": "CalendarSpreadRiskExchangeIntegration.NonPositiveStrategyConfigQuantityIsRejectedAndNeverReachesTheExchangeOrThePortfolio"
+      },
+      {
+        "line": 112,
+        "passed": true,
+        "source": "tests/cpp/unit/test_participant_run.cpp",
+        "test": "LoadRiskLimitsConfig.AcceptsAConfigWithNoOrderQuantityLimitsAtAll"
+      },
+      {
+        "line": 102,
+        "passed": true,
+        "source": "tests/cpp/unit/test_participant_run.cpp",
+        "test": "LoadRiskLimitsConfig.AcceptsAPositiveConfiguredOrderQuantityLimit"
+      },
+      {
+        "line": 91,
+        "passed": true,
+        "source": "tests/cpp/unit/test_participant_run.cpp",
+        "test": "LoadRiskLimitsConfig.RejectsANegativeCapEvenWithResizeDisabled"
+      },
+      {
+        "line": 76,
+        "passed": true,
+        "source": "tests/cpp/unit/test_participant_run.cpp",
+        "test": "LoadRiskLimitsConfig.RejectsANegativeConfiguredOrderQuantityLimit"
+      },
+      {
+        "line": 84,
+        "passed": true,
+        "source": "tests/cpp/unit/test_participant_run.cpp",
+        "test": "LoadRiskLimitsConfig.RejectsAZeroConfiguredOrderQuantityLimit"
+      },
+      {
+        "line": 64,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineOrderQuantity.RejectsAboveLimitWhenResizeDisabled"
+      },
+      {
+        "line": 80,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineOrderQuantity.ResizesDownToTheLimitWhenResizeEnabled"
+      },
+      {
+        "line": 229,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.AWellFormedResizeIsUnaffectedByThePostcondition"
+      },
+      {
+        "line": 204,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.MalformedNegativeConfiguredCapNeverProducesANonPositiveApproval"
+      },
+      {
+        "line": 217,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.MalformedZeroConfiguredCapNeverProducesANonPositiveApproval"
+      },
+      {
+        "line": 244,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.MultiLegProposalWithAMalformedConfiguredCapRejectsTheWholeProposalAtomically"
+      },
+      {
+        "line": 174,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.MultiLegProposalWithOneInvalidLegRejectsTheWholeProposalAtomically"
+      },
+      {
+        "line": 269,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.NegativeFillMutatesNeitherPositionNorReservation"
+      },
+      {
+        "line": 138,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.NegativeQuantityCommitCreatesNoReservationAndCannotBypassThePositionCap"
+      },
+      {
+        "line": 99,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.NegativeQuantityIsRejectedAsInvalid"
+      },
+      {
+        "line": 115,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.OnePositiveUnitProceedsPastTheQuantityCheck"
+      },
+      {
+        "line": 122,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.PositiveBoundaryAtAndAboveMaxOrderQuantityIsUnaffected"
+      },
+      {
+        "line": 311,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.PositiveFillBehavesExactlyAsBefore"
+      },
+      {
+        "line": 331,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.PositiveOverfillStillSaturatesReservationAtZeroPerR2"
+      },
+      {
+        "line": 162,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.UnboundedNegativeQuantityIsRejectedEvenWithNoConfiguredPositionLimit"
+      },
+      {
+        "line": 291,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.ZeroFillMutatesNeitherPositionNorReservation"
+      },
+      {
+        "line": 107,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineQuantityValidity.ZeroQuantityIsRejectedAsInvalid"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "RiskEngineOrderQuantity.*",
+      "RiskEngineQuantityValidity.*",
+      "CalendarSpreadRiskExchangeIntegration.NonPositiveStrategyConfigQuantityIsRejectedAndNeverReachesTheExchangeOrThePortfolio",
+      "LoadRiskLimitsConfig.*"
+    ],
+    "test_count": 23
+  },
+  "artifact": "AEGIS-121/max_order_quantity",
+  "claim": "Per-instrument quantity caps enforced at, below and above the limit, in both configured modes (reject, and resize-to-cap). M5 closure repair, R1: quantity_units is enforced as a strictly positive MAGNITUDE before any other control reads it -- Side alone carries direction, so a negative quantity is rejected (kInvalidQuantity) as malformed input, never treated as a same-magnitude order on the opposite side. Reproduces and closes the exact reviewer attack: a negative-quantity leg used to create a negative reservation that then SUBTRACTED from a later order's projected exposure, letting it bypass a configured position cap; both the direct RiskEngine path and a genuine PUBLIC strategy config (CalendarSpreadConfig::quantity_units, through the real production composition -- strategies emit proposals only and perform no validation of their own) are proven independently rejected, atomically across every leg of a multi-leg proposal, with zero OMS/exchange submission. M5 closure repair, N2: the configuration boundary is also closed. load_risk_limits_config rejects a non-positive configured max_order_quantity_units at load time, and RiskEngine itself enforces a defense-in-depth postcondition (kInvalidLimitConfiguration) so that no quantity RiskEngine approves or resizes to is ever <= 0 even for a programmatically constructed RiskLimitsConfig that bypasses the loader entirely -- closing the residual the reviewer found: a malformed negative/zero configured cap with resize_on_breach could make RiskEngine itself manufacture the same hazard R1 closed for a malformed REQUEST quantity.",
+  "deterministic_config": {
+    "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
+    "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
+  },
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Boundary tests pass.",
+  "generated_on": "2026-08-22",
+  "implementation": [
+    "cpp/participant/risk/risk_engine.cpp",
+    "cpp/participant/risk/risk_engine.hpp",
+    "cpp/participant/risk/risk_state.hpp",
+    "cpp/participant/risk/risk_limits.hpp",
+    "cpp/participant/risk/reason_codes.cpp"
+  ],
+  "inputs": [
+    "configs/risk/limits.json"
+  ],
+  "limitations": [
+    "All market data driving these tests is synthetic and in-repo: venue SYNX does not exist, quotes are constructed from committed daily bar/fixture data rather than observed tick data (ADR-0025), and no conclusion about any real market may be drawn.",
+    "These are software risk controls exercised under simulation. Passing here is not evidence of production risk adequacy, live execution realism, or profitability."
+  ],
+  "not_evidence_for": [
+    "production risk adequacy -- thresholds here are small documented demo values",
+    "any real-market behaviour -- every input is synthetic (ADR-0025)"
+  ],
+  "producer": "tools/generate_risk_evidence.py",
+  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
+  "requirements": [
+    "AEGIS-121"
+  ],
+  "title": "Maximum order quantity"
+}

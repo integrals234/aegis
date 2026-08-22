@@ -1,0 +1,21 @@
+# M5 validation regimes (AEGIS-149) -- simple, deterministic date-range
+# regimes over the synthetic 120-day series python/validation/_fixtures.py
+# generates (days 0..119 from 2026-01-01). "quiet"/"volatile" are illustrative
+# labels for date ranges, not a claim of detecting a real market regime.
+schema_version: 1
+regimes:
+  - name: early_quiet
+    start: 2026-01-01
+    end: 2026-02-09    # Days 0-39.
+  - name: mid_period
+    start: 2026-02-10
+    end: 2026-03-21    # Days 40-79.
+  - name: late_period
+    start: 2026-03-22
+    end: 2026-04-30     # Days 80-119.
+  - name: outside_series
+    # Deliberately outside the 120-day generated series -- proves a regime
+    # with zero observations still appears in the report rather than being
+    # silently omitted (AEGIS-149's frozen acceptance).
+    start: 2027-01-01
+    end: 2027-01-31

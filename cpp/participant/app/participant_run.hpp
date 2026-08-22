@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "cpp/participant/risk/risk_limits.hpp"
+
 /// The participant composition root (ADR-0020).
 ///
 /// `cpp-participant-app` is the only participant layer permitted to see feed
@@ -106,6 +108,14 @@ struct CalendarSpreadRunConfig {
   double entry_threshold{2.0};
   double exit_threshold{0.5};
   std::int64_t quantity_units{1};
+  /// AEGIS-129/130 (ADR-0028): the equity RiskEngine margin/leverage checks
+  /// are evaluated against. This demo carries no separate capital-injection
+  /// event -- equity == starting_capital + cash + unrealized P&L -- so a
+  /// zero here (the previous, pre-M5 implicit default) makes every leveraged
+  /// order reject by construction (AEGIS-130's documented zero-equity
+  /// behaviour), which is why the M5 default is a nonzero, deliberately
+  /// small demo capital.
+  std::int64_t starting_capital_units{10'000'000};
 };
 
 struct CalendarSpreadRunResult {
@@ -133,6 +143,15 @@ struct CalendarSpreadRunResult {
 /// Throws `std::runtime_error` for a missing/unreadable stream file, mirroring
 /// `run_participant_fixture`.
 [[nodiscard]] CalendarSpreadRunResult run_calendar_spread_scenario(
-    const std::string& stream_path, const CalendarSpreadRunConfig& config);
+    const std::string& stream_path, const CalendarSpreadRunConfig& config,
+    const risk::RiskLimitsConfig& risk_config);
+
+/// Parses a configs/risk/limits.json-shaped document into a
+/// risk::RiskLimitsConfig. JSON, not YAML: this composition root already
+/// links nlohmann_json for every other fixture/config it reads, and adding a
+/// C++ YAML dependency would mean editing cpp/CMakeLists.txt or the root
+/// CMakeLists.txt, neither of which M5's approved scope covers. Throws
+/// std::runtime_error for a missing/unreadable/malformed file.
+[[nodiscard]] risk::RiskLimitsConfig load_risk_limits_config(const std::string& path);
 
 }  // namespace aegis::participant::app

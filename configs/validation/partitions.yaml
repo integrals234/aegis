@@ -1,0 +1,8 @@
+# M5 train/validation/test partition boundaries (AEGIS-139), for the
+# 120-day synthetic series python/validation/_fixtures.py generates
+# (days 0..119 from 2026-01-01). Chronological, non-overlapping by
+# construction (python/validation/partitions.py enforces both boundaries
+# strictly).
+schema_version: 1
+train_end: 2026-03-11      # Day 69 -- ~58% train.
+validation_end: 2026-03-31 # Days 70-89 validation (~17%); days 90-119 test (~25%).

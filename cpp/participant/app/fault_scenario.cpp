@@ -112,4 +112,90 @@ FaultScenarioOutcome run_fault_scenario(const BookSnapshotEvent& initial_snapsho
   return outcome;
 }
 
+namespace {
+
+using risk::OrderRequest;
+using risk::RiskEngine;
+
+/// One fixed proposal identity per call, so a repeated call within the same
+/// engine (a fresh RiskEngine per test, per the header's own documented
+/// convention) never collides with AEGIS-127's dedupe check for an
+/// unrelated reason.
+[[nodiscard]] risk::LegDecision evaluate_test_order(RiskEngine& engine, std::uint32_t instrument_id,
+                                                    std::int64_t price_units,
+                                                    std::int64_t quantity_units,
+                                                    common::Nanos now_nanos) {
+  return engine.evaluate(OrderRequest{.strategy_id = "market_stress_probe",
+                                      .proposal_id = "probe",
+                                      .leg_index = 0,
+                                      .instrument_id = instrument_id,
+                                      .side = events::exchange::Side::kBuy,
+                                      .price_units = price_units,
+                                      .quantity_units = quantity_units,
+                                      .request_time_nanos = now_nanos});
+}
+
+}  // namespace
+
+std::vector<MarketStressRiskResponse> run_market_stress_risk_scenario(
+    RiskEngine& engine, std::uint32_t instrument_id, std::int64_t base_price_units,
+    std::int64_t order_quantity_units, const std::vector<replay::FaultRule>& rules,
+    common::Nanos now_nanos) {
+  std::vector<MarketStressRiskResponse> responses;
+  for (const replay::FaultRule& rule : rules) {
+    if (rule.kind != FaultKind::kSpreadWidening && rule.kind != FaultKind::kVolatilitySpike &&
+        rule.kind != FaultKind::kLiquidityVanish) {
+      continue;
+    }
+
+    risk::LegDecision decision;
+    switch (rule.kind) {
+      case FaultKind::kSpreadWidening: {
+        engine.on_market_data(instrument_id, base_price_units, now_nanos, /*valid=*/true);
+        const std::int64_t widened_price_units =
+            base_price_units +
+            ((base_price_units * static_cast<std::int64_t>(rule.magnitude)) / 10'000);
+        decision = evaluate_test_order(engine, instrument_id, widened_price_units,
+                                       order_quantity_units, now_nanos);
+        break;
+      }
+      case FaultKind::kVolatilitySpike: {
+        std::int64_t price = base_price_units;
+        const std::int64_t shock =
+            (base_price_units * static_cast<std::int64_t>(rule.magnitude)) / 10'000;
+        for (int step = 0; step < 6; ++step) {
+          price += (step % 2 == 0) ? shock : -shock;
+          engine.on_market_data(instrument_id, price, now_nanos + step, /*valid=*/true);
+        }
+        decision =
+            evaluate_test_order(engine, instrument_id, price, order_quantity_units, now_nanos + 6);
+        break;
+      }
+      case FaultKind::kLiquidityVanish: {
+        // Liquidity vanishing is modelled as time passing with no fresh
+        // quote at all -- `magnitude` nanoseconds of outage -- rather than
+        // an invalid update: no update, valid or not, is what "vanished"
+        // actually means, and it is the staleness control (AEGIS-126) that
+        // is meant to catch it. Requires the caller's config to set
+        // max_quote_age, exactly as kSpreadWidening requires price_collar_bps
+        // and kVolatilitySpike requires target_volatility -- each response is
+        // real only because the relevant control is genuinely configured,
+        // never fabricated by this function.
+        engine.on_market_data(instrument_id, base_price_units, now_nanos, /*valid=*/true);
+        const common::Nanos outage_end = now_nanos + static_cast<common::Nanos>(rule.magnitude);
+        decision = evaluate_test_order(engine, instrument_id, base_price_units,
+                                       order_quantity_units, outage_end);
+        break;
+      }
+      default:
+        break;  // Unreachable: filtered above.
+    }
+    responses.push_back(MarketStressRiskResponse{.kind = rule.kind,
+                                                 .magnitude = rule.magnitude,
+                                                 .verdict = decision.verdict,
+                                                 .reason_code = decision.reason_code});
+  }
+  return responses;
+}
+
 }  // namespace aegis::participant::app

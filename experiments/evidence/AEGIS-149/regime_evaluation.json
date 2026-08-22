@@ -1,0 +1,37 @@
+{
+  "claim": "AEGIS-149: every configured regime appears, including a zero-observation regime, per configs/validation/regimes.yaml.",
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "generated_on": "2026-08-22",
+  "regime_count": 4,
+  "regimes": [
+    {
+      "observation_count": 40,
+      "regime": "early_quiet",
+      "round_trip_count": 3,
+      "total_pnl": "-16.4090"
+    },
+    {
+      "observation_count": 40,
+      "regime": "mid_period",
+      "round_trip_count": 3,
+      "total_pnl": "-29.1663"
+    },
+    {
+      "observation_count": 40,
+      "regime": "late_period",
+      "round_trip_count": 2,
+      "total_pnl": "-6.2292"
+    },
+    {
+      "observation_count": 0,
+      "regime": "outside_series",
+      "round_trip_count": 0,
+      "total_pnl": "0"
+    }
+  ],
+  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
+  "requirements": [
+    "AEGIS-149"
+  ]
+}

@@ -1,6 +1,6 @@
 # Build State
 
-- Active milestone: M4
+- Active milestone: M5
 - M0 status: **CLOSED** 2026-08-06 (owner-approved fast-track closure)
 - M1 status: **CLOSED** 2026-08-09. All 15 M1 requirements (AEGIS-027..041) are
   `verified` on an independent `/audit-milestone M1` against the final tree
@@ -81,39 +81,28 @@
   3. This branch, `milestone/m4-calendar-spread`, carries the remainder: the
      three participant-app files, the `--calendar-spread` demo, and Batch 2's
      research, reports and evidence.
-- Active branch: `chore/m5-activation-policy`, the M5 activation pull request
-  (**PR #13**). It changes exactly two files — `configs/governance/policy.yaml` (the M4→M5
-  `active_milestone` flip plus the five M5 approvals) and this file (M4
-  post-merge bookkeeping). It carries **no M5 implementation**:
-  `configs/architecture_rules.yaml`, CI, CMake and every source tree are
-  untouched, and `milestone/m5-risk-validation` does not exist yet.
-  `milestone/m4-calendar-spread` was merged by PR #12 and is no longer active.
-- **This pull request deliberately leaves `- Active milestone:` at `M4`.** The
-  authoritative gate reads `configs/governance/policy.yaml` from the *base*
-  branch and requires this mirror to match it, so a single pull request
-  flipping both would fail its own gate — exactly as at the M3 (PR #7) and M4
-  (PR #10) transitions. The mirror flips to `M5` in M5 Batch 1, on
-  `milestone/m5-risk-validation`, once this pull request is merged and `main`
-  itself says `M5`. That flip must land in the same commit as the first real
-  sources in `cpp/participant/risk` **and** `python/validation`:
-  `tools/check_architecture.py`'s `check_layer_population` makes emptiness a
-  checked fact in both directions, and both layers are dated M5.
-- Owner-approved scope changes: `configs/architecture_rules.yaml`, `cpp/participant/CMakeLists.txt`, `cpp/participant/app/CMakeLists.txt`, `.github/workflows/ci.yml`, `scripts/ci_local.sh`, `cpp/participant/app/participant_run.hpp`, `cpp/participant/app/participant_run.cpp`, `cpp/participant/app/participant_run_main.cpp`
+- Active branch: `milestone/m5-risk-validation`, holding M5 Batch 1. PR #13
+  (the M5 activation policy: `active_milestone: M4 -> M5`, five exact-path
+  approvals) was merged first; this branch carries the mirror flip in the
+  same commit as the first real sources in `cpp/participant/risk` **and**
+  `python/validation` — `tools/check_architecture.py`'s
+  `check_layer_population` makes emptiness a checked fact in both directions,
+  and both layers are dated M5, so flipping the mirror in a tree where either
+  was still empty would fail by construction.
+- Owner-approved scope changes: `configs/architecture_rules.yaml`, `cpp/participant/CMakeLists.txt`, `cpp/participant/app/CMakeLists.txt`, `cpp/participant/app/risk_engine_gate.hpp`, `cpp/participant/app/risk_engine_gate.cpp`, `cpp/participant/app/participant_run.hpp`, `cpp/participant/app/participant_run.cpp`, `cpp/participant/app/participant_run_main.cpp`, `.github/workflows/ci.yml`, `scripts/ci_local.sh`, `scripts/check_cpp_style.sh`, `cpp/participant/app/fault_scenario.hpp`, `cpp/participant/app/fault_scenario.cpp`
   — **a MIRROR, not the authority.** Since ADR-0014 (R8, PR #3) this line
   **grants nothing**: approvals live in `configs/governance/policy.yaml` on
   protected `main`, where an agent cannot put them, and
   `tools/governance/authoritative_check.py` runs from `main` under
-  `pull_request_target` reading this branch only as data. The eight paths
-  above are transcribed from the four **M4** approvals in that policy:
-  `m4-architecture-transition`, `m4-build-wiring` and `m4-milestone-gate`
-  (granted in PR #10), plus `m4-participant-app-integration` (granted in the
-  pull request this line is being edited on). The M2 paths this line
-  previously carried — `cpp/CMakeLists.txt`,
-  `requirements/python-requirements.in`, `requirements/requirements.lock`,
-  `pyproject.toml` — became inert the moment `active_milestone` left M2:
-  `approved_paths()` skips any approval whose milestone is not the active
-  one, so they are dropped here rather than left to imply a permission that
-  no longer exists.
+  `pull_request_target` reading this branch only as data. The thirteen paths
+  above are transcribed from the five **M5** approvals in that policy
+  (`m5-architecture-transition`, `m5-build-wiring`,
+  `m5-participant-app-integration`, `m5-milestone-gate`,
+  `m5-fault-scenario-risk-response`; all granted in PR #13). The eight M4
+  paths this line previously carried became inert the moment
+  `active_milestone` left M4: `approved_paths()` skips any approval whose
+  milestone is not the active one, so they are dropped here rather than left
+  to imply a permission that no longer exists.
   The mirror exists so `tools/check_scope.py` — retained as a fast advisory
   check, which still parses this line — agrees with the authoritative gate
   instead of contradicting it. If the two ever disagree, **the gate is right
@@ -168,31 +157,529 @@
   run 31295058007, whose `reproducibility` job executed
   `docs/ENVIRONMENT.md`'s canonical procedure verbatim on a clean
   `ubuntu-24.04` runner.
-- Deferred verification obligations: **7 open** after M3, listed in
-  `docs/DEFERRED_VERIFICATION.md`; due M4=2 (AEGIS-004, AEGIS-024), M5=3
-  (AEGIS-062, AEGIS-063, AEGIS-238), M8=1 (AEGIS-107) and M9=1 (AEGIS-059).
-  M3 discharged the three that were due at it — AEGIS-060, AEGIS-061 and
-  AEGIS-237 — so `--check-deferred M3` passes, and registered exactly one new
-  obligation, AEGIS-107→M8. Earlier milestones discharged AEGIS-229 and
-  AEGIS-230 at M2, and AEGIS-005, AEGIS-227, AEGIS-233, AEGIS-234 and
-  AEGIS-009 at M1. **Two obligations fall due at M4** and are that milestone's
-  first-class closure work.
+- Deferred verification obligations: **2 open** after M5, listed in
+  `docs/DEFERRED_VERIFICATION.md` — AEGIS-107→M8 (latency/memory half) and
+  AEGIS-059→M9 (multi-feed contract tests). M5 discharged all three that were
+  due at it — AEGIS-062, AEGIS-063 and AEGIS-238 — so `--check-deferred M5`
+  passes, and registered **no new obligation**; the pre-authorised AEGIS-238
+  M8 fallback was not used. M4 discharged AEGIS-004 and AEGIS-024; M3
+  discharged AEGIS-060, AEGIS-061 and AEGIS-237 and registered AEGIS-107→M8;
+  M2 discharged AEGIS-229 and AEGIS-230; M1 discharged AEGIS-005, AEGIS-227,
+  AEGIS-233, AEGIS-234 and AEGIS-009. **Nothing falls due at M6 or M7.**
 
 ## M5 state
 
-**ACTIVATION PROPOSED** — **PR #13** is the M5 activation, awaiting the
-owner's approving review. It flips `configs/governance/policy.yaml`'s
-`active_milestone` from `M4` to `M5` and adds the five M5 approvals below.
-Nothing else changes; **no M5 implementation exists yet**, and the M5 plan of
-record will be committed as `experiments/plans/M5.md` in Batch 1.
+**CLOSURE PROPOSED** — implementation is complete and every M5 requirement is
+`verified`. The closure pull request is open and **not yet merged**; this
+section becomes `CLOSED` only when the owner merges it.
+
+- Final source commit: `0b8b54c58efe3615195b6d54eaba4aded93b6857`
+- Final evidence commit: `a3a0160e87b9b5925925e6c757495aedfa8ddc0d`
+- Plan of record: `experiments/plans/M5.md`
+- Report: `experiments/milestone-reports/M5.md`
+
+**Frozen-spec certification: 39 / 39.** Stated as it actually happened: a full
+independent `aegis-spec-auditor` audit of all 39 rows at `f86afd0` returned
+**38 PASS / 1 FAIL**. The single failure was **AEGIS-139** — the experiment
+manifest did not actually prevent test-set tuning: `configs/validation/partitions.yaml`
+was never read, the evidence generator hardcoded `len(dates) * 2 // 3` (an
+80/0/40 split contradicting the committed 70/20/30), and the parameter-stability
+search received the full series including the test partition while the lock was
+only demonstrated in a discarded `try/except`. Repaired at `aa4086f` (source)
+and `e7f7627` (evidence): `partitions.yaml` is now the sole runtime source via
+`load_partition_boundaries()`, the split is a real 70/20/30, and tuning is fed
+the 90 train+validation observations `select_non_test_for_tuning()` returns
+through the same guarded `DatasetPartitions.get(purpose=TUNING)` accessor — the
+test split is excluded by the data flow itself, not reported as excluded
+afterward. A **targeted** re-audit at `e7f7627` covered AEGIS-139 plus every row
+the repair could have touched (AEGIS-142, AEGIS-153, AEGIS-155) and returned
+PASS on all four, including a mutation check confirming the new test genuinely
+fails under the reverted behaviour. All 39 rows were **not** re-audited from
+scratch after `aa4086f`; the effective result is 38 previously-certified rows
+plus targeted certification of every row the repair affected.
+
+**Final local certification matrix: 23 of 23 stages green** at the final commit.
+C++ Debug, Release and ASAN/UBSAN each 566/566 (557 unit + 9 property) with no
+sanitizer finding; clang-format and full-tree clang-tidy over 212 files (16
+parallel jobs, no changed-files-only shortcut); ruff and mypy (121 files) clean;
+Python unit/integration/property/replay/research 917/68/59/43/18 all passing;
+determinism, negative gates and clean-environment all green.
+
+The matrix caught one real regression in committed code that the review rounds
+had not: `configs/risk/limits_reject_demo.json` tightened `order_quantity_limits`
+to `0`, which the later M5 input-integrity repair had correctly made a load-time
+error, so `aegis_participant_run` exited `2` on it and the AEGIS-120 and
+AEGIS-238 artifacts recorded runs their own cited commit could no longer
+reproduce. Fixed config-only at `0b8b54c`: because the demo proposes exactly one
+unit and the cap is compared strictly, no valid positive quantity cap can reject
+a one-unit order, so the demo now tightens `max_order_notional_units` instead.
+The enforcement shape is unchanged (6 output lines, 2 risk decisions,
+`final_order_count == 0`); only the reason code moved to `kMaxOrderNotional`.
+AEGIS-121's own boundary evidence is untouched.
+
+**AEGIS-238 is `verified` in full at M5 and the pre-authorised M8 fallback was
+NOT used.** Health, queue depth, dropped/backpressured events, execution latency
+and risk status are all non-vacuous in one integration run, with risk status
+decoded from the real `risk::RiskEngine` through the production binary. The
+artifact carries the disclosure the authorization below requires: queue depth and
+dropped events come from the M5 harness's bounded outbound buffer, **not** from
+M8's lock-free queues.
+
+Catalogue after M5: **132 `verified` / 7 `implemented` / 99 `not_started` / 238
+total**. `--check-deferred M5` passes. M5 registered **no new deferral**, leaving
+exactly two carried obligations: **AEGIS-107 → M8** (latency/memory half) and
+**AEGIS-059 → M9** (multi-feed contract tests). There is no AEGIS-238 residual.
+
+Every M5 price is synthetic and the venue `SYNX` does not exist; the matching
+engine is real, the market data is not. The margin model is a documented
+simplification, not SPAN. Risk authorization atomicity is not atomic multi-leg
+exchange execution. M5 makes no live-profitability and no production-risk-adequacy
+claim — the calendar-spread strategy's own validation verdict is REJECT, reported
+truthfully rather than tuned away, which is the anti-overfitting framework working
+rather than failing.
+
+The historical Batch-1/Batch-2 detail below is retained as the implementation
+record.
 
 M5 is *Independent risk and validation*: 36 primary requirements
 (AEGIS-120..138 risk and portfolio controls, AEGIS-139..155 anti-overfitting
 validation) plus the three inherited obligations dated M5 in
 `docs/DEFERRED_VERIFICATION.md` — AEGIS-062, AEGIS-063 and AEGIS-238. It turns
-the mandatory risk seam into enforced policy: `cpp/participant/risk` is empty
-today and every risk verdict shipped so far is the `AlwaysApproveRiskGate`
-test double (ADR-0023).
+the mandatory risk seam into enforced policy. Before this batch,
+`cpp/participant/risk` was empty and every risk verdict shipped
+(`cpp/participant/app/participant_run.cpp`'s calendar-spread path,
+M3's fixture-driven path) was the `AlwaysApproveRiskGate` test double
+(ADR-0023). Batch 1 replaces that double in the calendar-spread demo path
+with a real `risk::RiskEngine`; the M3 fixture-driven path
+(`run_participant_fixture`) is unrelated to M5 and keeps its own double
+unchanged, as ADR-0023 always intended.
+
+### Batch 1 status (this commit)
+
+Real, tested, focused-test-verified (not yet `verified` in the requirement
+catalogue -- promotion is closure work):
+
+* `cpp/participant/risk/`: `RiskEngine` implementing every AEGIS-121..137
+  control (order quantity, position + reservation lifecycle, notional/FX,
+  market/sector exposure, price collars, staleness/validity, idempotency,
+  message-rate limits with a safety-cancel bypass, margin, leverage, daily
+  loss and drawdown latches, volatility-triggered resizing, concentration/
+  correlated-group limits, kill switches, connectivity loss, and the
+  proposal/order audit-decision invariant).
+* `cpp/participant/app/risk_engine_gate.{hpp,cpp}`: the `oms::RiskGate`
+  adapter (ADR-0027).
+* `cpp/participant/portfolio/portfolio_risk.{hpp,cpp}`: AEGIS-138 analytics
+  (gross/net exposure, margin used/available, market/sector exposure,
+  volatility/drawdown contribution, scripted stress scenarios).
+* `cpp/participant/app/participant_run.*`: the calendar-spread demo now
+  routes through the real engine; `aegis_participant_run --calendar-spread
+  --stream PATH --risk-config PATH` is the production CLI path (Demo A).
+* `cpp/participant/app/fault_scenario.*`: `run_market_stress_risk_scenario`
+  pays the AEGIS-062 residual (real risk responses to spread-widening/
+  volatility-spike/liquidity-vanish faults).
+* `tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp`: Demo
+  B, the same engine and seam against a real unmodified M1 `ExchangeNode` and
+  real FIFO matching -- allow, reject (zero submit/zero exchange order/zero
+  portfolio change), resize, and global-kill-switch scenarios.
+* `tests/cpp/unit/test_risk_fault_execution_stress.cpp`: pays the AEGIS-063
+  residual (OMS/risk integration for kRejection/kLatencySpike/kPartialFill/
+  kBackpressure).
+* `python/validation/{partitions,walk_forward}.py`: the AEGIS-139/140/141
+  foundation `check_layer_population` requires non-vacuously for
+  `python-validation`.
+* `configs/risk/limits.json` (+ `limits_reject_demo.json`, `stress.json`),
+  ADR-0027, ADR-0028.
+* Milestone gate retargeted M4→M5 in `.github/workflows/ci.yml` and
+  `scripts/ci_local.sh`; `scripts/check_cpp_style.sh` parallelises the same
+  full-tree clang-tidy file set (`AEGIS_TIDY_JOBS`, default `nproc`), proven
+  by `tests/unit/test_check_cpp_style_parallel.py` against a stub toolchain.
+
+**Correction (M5 closure repair).** An independent risk-safety review found
+the risk engine's original reservation/identity design unsafe: exposure was
+reserved only at `decide_order` (not at proposal commit), so two
+individually-safe proposals committed before either's order reached the
+seam could jointly breach a cumulative limit; and `decide_order` matched a
+pending leg by `(instrument_id, side, requested_quantity_units)`, so an
+order could resolve to a look-alike armed leg from a DIFFERENT
+strategy/proposal and inherit that other proposal's non-halted state. A
+related defect in the same area: a replayed `proposal_id` could append a
+second terminal `ProposalRiskDecision` (AEGIS-137), a path the existing
+test suite exercised without asserting the count.
+
+The fix (`RiskEngine::commit_proposal_decision` now reserves ALL of an
+approved proposal's legs immediately, keyed by `PendingLegKey{strategy_id,
+proposal_id, leg_index}`; the composition root registers each leg's future
+`client_order_id` against that exact key before submission via
+`register_pending_order_identity`; `decide_order` resolves identity through
+that registration only, verifies immutable economics agree, revalidates
+mutable safety state at the seam without double-counting the leg's own
+reservation, and transitions -- never re-creates -- the reservation; a
+replayed `proposal_id` returns the cached terminal decision instead of
+re-deciding) is detailed in ADR-0027's "Correction (M5 closure repair)"
+section and proven by `tests/cpp/unit/test_risk_engine_reservation_repair.cpp`
+plus the real `aegis_participant_run --calendar-spread` CLI path (both the
+allow and reject configs, byte-identical across runs). Neither
+AEGIS-139..155 (Batch 2) nor `python/validation/**` is touched by this
+repair.
+
+**Follow-up correction 1 (M5 closure repair): concentration overlay
+accounting.** The reservation/identity repair above was itself re-reviewed
+and confirmed sound, but the re-review found a NEW defect it introduced:
+`check_concentration`'s single-instrument numerator bypassed the shared
+`EvaluationOverlay` model, computing `state_.reserved_units + candidate`
+directly. Once commit-time reservation existed, this double-counted a
+leg's own already-committed reservation at the seam (spuriously rejecting
+one leg of a safe multi-leg proposal while its sibling still executed) and
+separately under-counted a same-instrument sibling leg staged earlier in
+the same proposal at preflight. Routed through the SAME
+`group_gross_notional_units`/`EvaluationOverlay` model the correlated-group
+and market/sector checks already used correctly (ADR-0028); no new
+accounting path added.
+
+**Follow-up correction 2 (M5 closure repair): proposal-atomic final-overlay
+evaluation and seam revalidation.** A further re-review of correction 1
+found a DEEPER, pre-existing defect in the same family: `evaluate_proposal`
+judged each leg against a growing PREFIX overlay, so a later leg's exposure
+REDUCTION was invisible to an earlier leg's own cumulative check, and
+`decide_order`/`revalidate_at_seam` judged each leg independently at the
+seam, so one sibling could fail a late revalidation while another passed.
+Both let a proposal's true combined risk go unassessed as a whole -- a
+naked single leg either way, reachable whenever `max_concentration_share`
+(or, for the seam half, any cumulative control) was actually enabled below
+its disabling default. Fixed by making `evaluate_proposal` build ONE final
+combined overlay from every leg's own resolved quantity before any leg's
+cumulative controls are judged (Phase A/B) -- this part of the fix stands
+today. At this correction, `decide_order` was ALSO made to revalidate an
+ENTIRE proposal's still-pending legs together, once, cached per
+`proposal_id` (`ensure_proposal_seam_revalidated`). That caching mechanism
+was itself superseded by "Follow-up correction 3" below (M5 closure
+repair, N8: `ensure_proposal_seam_revalidated` does not exist in the
+engine as of that correction) and must not be read as describing current
+behavior. Detailed in ADR-0027's "Correction 2" section; retracts that
+section's original description of the preflight overlay as "folds in each
+already-evaluated sibling leg" (a prefix, not the final projection).
+
+**Follow-up correction 3 (M5 closure repair): the proposal release epoch.**
+A review of correction 2 found its seam cache began at the wrong moment --
+when the FIRST constituent reached `decide_order`, i.e. once that leg was
+already being released. Caching the whole revalidation from there left
+every LATER leg unchecked against kill switches, connectivity and
+staleness (a global kill switch between two legs no longer stopped the
+second, contradicting AEGIS-135), and `kIdentityMismatch` still rejected
+one leg while a correctly-staged sibling stayed executable. The naive
+repair -- cache cumulative controls, re-run hard safety per leg -- was
+deliberately NOT taken, because it merely relocates the naked leg. Instead
+the epoch moved earlier: the composition root stages ALL constituent order
+identities (`stage_proposal_release`), then one fresh whole-proposal
+`authorize_proposal_release` runs while ZERO legs have been released,
+validating every constituent's economics and every leg's current safety;
+either all become executable or none do and all reservations are released.
+`decide_order` afterwards only CONSUMES that authorization. Risk-DECISION
+atomicity is guaranteed at that epoch; atomic EXCHANGE execution across
+legs is explicitly NOT claimed (`docs/LIMITATIONS.md`), a post-
+authorization kill switch does not retract an authorization already
+granted, and cumulative limits are enforced on the proposal's final net
+projected state rather than every intermediate state -- all three now
+stated rather than implied. Both shipped risk configs
+(`configs/risk/limits.json`, `limits_reject_demo.json`) leave
+`max_concentration_share` at its disabling default (`1.0`), so neither the
+original defect nor this fix changes the demo's own recorded output; the
+fix is proven by `tests/cpp/unit/test_risk_engine_reservation_repair.cpp`'s
+`ConcentrationOverlayAccounting`/`ProposalAtomicSeamRevalidation` suites and
+a real-composition-root test in
+`tests/cpp/unit/test_calendar_spread_risk_exchange_integration.cpp`.
+
+**Follow-up correction 4 (M5 closure repair): input integrity and
+reservation lifecycle.** A review of correction 3 confirmed the release
+epoch itself sound (both prior blockers closed, 18 attack categories
+passed), but found a new blocker beneath it: `quantity_units <= 0` was
+accepted as legitimate input, letting a negative quantity drive a negative
+reservation that SUBTRACTED from a later order's projected exposure and
+bypassed a configured position cap (R1). Fixed with a new control group 0,
+`check_quantity_validity` (`kInvalidQuantity`), run first in both the
+single-order and every leg of the multi-leg path, before any reservation,
+dedupe key or rate-limit token is created; a multi-leg proposal with one
+invalid leg rejects atomically. Four narrower residuals in the same
+reservation-lifecycle surface were also closed: an over-fill could still
+drive a reservation negative from the other direction (R2, now clamped to
+saturate at zero); an authorized-but-never-consumed proposal leg had no
+recovery path (R3, new `abort_proposal_release`, idempotent, never rolls
+back a leg already consumed); `stage_proposal_release` could overwrite a
+proposal's canonical `strategy_id`, corrupting AEGIS-137 attribution (R5,
+now immutable and fail-closed once a mismatch is observed); and the
+volatility HARD-REJECT safety gate was not re-checked at release, unlike
+every other hard safety control (R6, now re-run fresh in
+`revalidate_at_seam`, resize/sizing itself still frozen). ADR-0027's "never
+produces a contradictory per-leg risk verdict" claim was also corrected
+(R4): the identity-mismatch defensive backstop in `decide_order` IS a
+per-leg outcome that can differ from a sibling's, though it consults no
+mutable safety state and is verified not to fire on the real composition
+root's own path today. `docs/LIMITATIONS.md` gained explicit disclosures
+for two residuals outside this repair's declared surface: no risk state
+(kill switches, latches, reservations, proposal-release records -- not
+only idempotency) survives a process restart (R9), and
+`AlwaysApproveRiskGate` remains reachable via `aegis_participant_run
+--fixture`, pre-existing from M3 and not reachable from the calendar-spread
+path (R8) -- both flagged rather than silently folded into this turn.
+
+**Follow-up correction 5 (M5 closure repair): terminal audit state and
+risk boundary validation.** An independent re-review of correction 4
+found the release-epoch architecture itself still sound (15/15 sampled
+attack categories passed, unchanged), but found a new blocker and five
+narrower residuals, all confined to this same input-integrity/reservation-
+lifecycle surface.
+
+**N1 (BLOCKER, fixed):** `authorize_proposal_release`'s terminal-state
+check omitted `kAborted`. Calling authorize AFTER a deliberate
+`abort_proposal_release` fell through, found no committed legs (they were
+already released by the abort), and recorded a THIRD release event that
+overwrote the abort with a spurious `kUnexpectedOrder` rejection --
+reproducible with the plain authorize-abort-authorize sequence, no attack
+needed. `kAborted` is now terminal there too. This also forced a truthful
+correction to the audit model: `proposal_release_decision_count` was
+documented as "never above 1" (AEGIS-137), which was already false before
+this fix for the legitimate authorize-then-abort sequence (two real
+lifecycle transitions) and is now documented as such -- AEGIS-137's actual
+"exactly one" invariant belongs to `proposal_decision_count`
+(`ProposalRiskDecision`) alone, never to the release-lifecycle count.
+
+**N2 (fixed):** a malformed configured `max_order_quantity_units` (`<= 0`
+with `resize_on_breach`) could make `RiskEngine` itself manufacture a
+non-positive approved/resized quantity -- the same hazard R1 closed for a
+malformed REQUEST, from the configuration side instead. Closed in two
+layers: `app::load_risk_limits_config` rejects a non-positive configured
+limit at load time, and `RiskEngine::check_approved_quantity_postcondition`
+(`kInvalidLimitConfiguration`) is a defense-in-depth backstop that no
+quantity ever leaves `RiskEngine` as an executable `<= 0` magnitude,
+regardless of how the config was constructed.
+
+**N3 (fixed):** `RiskEngine::on_fill` accepted an unvalidated fill
+quantity; a negative fill silently moved confirmed position in the wrong
+direction, poisoning every cumulative control that reads it. `on_fill` now
+requires a positive fill magnitude, exactly like R1's request-quantity and
+N2's approved-quantity invariants -- an invalid fill mutates nothing.
+
+**N4/N5/N6 (fixed):** the release lifecycle's identity boundary was
+inconsistent -- `stage_proposal_release` was already fail-closed on a
+strategy mismatch (R5), but `authorize_proposal_release` silently accepted
+ANY caller's `strategy_id` (N4), `commit_proposal_decision`'s own
+unconditional `strategy_id` assignment contradicted the documented "set
+once, never overwritten" claim for a `proposal_id` staged before it was
+ever committed (N5), and `abort_proposal_release` took no `strategy_id` at
+all, letting any in-process caller abort another strategy's proposal or
+poison an uncommitted `proposal_id` (N6). Fixed together: canonical
+attribution now originates ONLY inside `commit_proposal_decision` (a new
+`ProposalReleaseRecord::committed` flag), and `stage_proposal_release`/
+`authorize_proposal_release`/`abort_proposal_release` all refuse to touch
+-- let alone persist state for -- a `proposal_id` that is not yet
+genuinely `committed`; `authorize_proposal_release` and
+`abort_proposal_release` both now require their own `strategy_id` argument
+to match the canonical one.
+
+**N7 (documentation only):** `check_volatility_hard_reject`'s doc claimed
+a fresh release-time check "can never disagree" with commit-time sizing.
+False for a misconfigured `hard_reject_multiple < 1.0` (no frozen
+requirement constrains this value, so it is not validated at load time).
+Corrected; `VolatilityReductionConfig`'s own doc now states the intended
+domain (`hard_reject_multiple >= 1.0`).
+
+**N8 (documentation only):** two historical "Correction 2"/"Follow-up
+correction 2" passages (this file, above, and ADR-0027) described the
+retired `ensure_proposal_seam_revalidated` caching mechanism in the
+present tense, which could be misread as describing current behavior.
+Reworded to past tense with an explicit note that the mechanism does not
+exist in the engine as of Correction 3, without rewriting the historical
+narrative itself.
+
+**Follow-up correction 6 (M5 closure repair): authorize proposal identity
+isolation.** An independent re-review of correction 5 found its own N4 fix
+incomplete: a caller `strategy_id` mismatch on `authorize_proposal_release`
+was described as failing "the whole proposal closed, same semantics as a
+staging mismatch" -- but that fail-closed path called
+`reject_proposal_release`, which releases every reservation and erases
+every armed leg PERMANENTLY. Reproducible with the plain API, no attack
+construction needed: (1) a caller with no relationship to a proposal could
+destroy it and free its reserved risk budget for the attacker's own next
+proposal to consume, and (2) because the terminal-state check ran before
+the identity check, a wrong-strategy query of an already-terminal proposal
+received that proposal's REAL stored decision, not a denial. The governing
+principle, now stated precisely: **a wrong-strategy authorize call is an
+UNAUTHORIZED QUERY, not a risk rejection of the proposal it names -- it
+must never change the victim's state.** Fixed by moving the identity check
+to run FIRST, before the terminal-state lookup and before any mutation; a
+mismatch now returns a synthetic, generic `kIdentityMismatch` denial
+constructed without touching the record at all -- identical no matter the
+proposal's real state, and disclosing nothing beyond what the caller
+itself supplied. This restores exact symmetry with `abort_proposal_release`
+(N6): both mutating entry points now treat a wrong-strategy caller as
+inert. Canonical ownership (N5) is unaffected -- still established exactly
+once, only by `commit_proposal_decision`.
+
+**Follow-up correction 7 (M5 closure repair): proposal staging isolation
+and claim correction.** Two narrow findings from re-review of correction
+6. **NB-1:** correction 6's claim that the identity-mismatch denial is
+"identical regardless of whether the proposal is unknown, staged,
+authorized, ..." was false -- an UNKNOWN `proposal_id` returns
+`kUnexpectedOrder` via a separate, earlier check, distinguishable by
+reason code from an EXISTING proposal owned by another strategy
+(`kIdentityMismatch`). Corrected in `risk_engine.hpp`, the corresponding
+`risk_engine.cpp` comment, and the AEGIS-137 evidence claim: the truthful
+contract is that for an EXISTING proposal, the denial is identical
+regardless of lifecycle state and never reveals the real decision;
+existence of a `proposal_id` itself is not hidden, and AEGIS claims no
+proposal-id confidentiality or OS/process security isolation. No code
+behavior changed for NB-1. **NB-2:** `stage_proposal_release` was the one
+mutating entry point correction 6 left unfixed -- a wrong-strategy call
+against an existing committed proposal still latched a persistent
+`attribution_mismatch` flag and moved the record to `kStaging`, so the
+VICTIM's own later `authorize_proposal_release` call discovered the flag
+and rejected its own whole proposal, releasing every reservation (freeing
+capacity for the attacker's next proposal, the same risk-budget-theft
+shape N4 closed) and misattributing the rejection to the victim's own
+`strategy_id` in the audit trail. Fixed: the identity check now runs
+first in `stage_proposal_release` too, before any mutation; a mismatch
+returns immediately, and the (now unused) `attribution_mismatch` field
+and its dead reader in `authorize_proposal_release` are removed. All
+THREE mutating entry points -- stage, authorize, abort -- now treat a
+wrong-strategy caller as inert. Legitimate same-owner staging validation
+(missing/unexpected constituents, economics mismatches) is unaffected.
+
+Not yet done (Batch 2): AEGIS-139..155's remaining validation modules,
+AEGIS-238's observability integration, evidence generation, and the
+independent audit. `requirements/implementation_status.json` is untouched by
+Batch 1 -- no status promoted, no obligation cleared.
+
+### Batch 2 status (this commit)
+
+Carries one small carry-in fix plus the full AEGIS-139..155 validation
+suite and a full AEGIS-238 attempt. Real, tested, focused-test-verified --
+not yet `verified` in the requirement catalogue; promotion is closure work.
+
+* **Carry-in fix**: `app::RiskReleasingExecutionAdapter`
+  (`cpp/participant/app/risk_engine_gate.hpp`) wraps the concrete execution
+  adapter and releases a reservation automatically when `submit` returns
+  `false` -- no manual `release_reservation` call needed for the ordinary
+  submission-failure path. `cpp/participant/oms/**` remains untouched; the
+  fix lives entirely in the composition root's own adapter choice.
+  `release_reservation` stays public for its own separate use (manual
+  reconciliation).
+* `research.strategy_replay.ExecutionAssumptions`: fee/half-spread/slippage
+  costs, decision/execution delay, and two fill assumptions (`TOUCH`,
+  `CROSS_OR_NEXT`) that genuinely change fill timing/eligibility on the
+  observation grid -- default value byte-identical to the pre-M5 signature.
+* `python/validation/`: `stability.py` (142), `sensitivity.py` (143/144/145),
+  `resampling.py` (146/147), `markets.py` (148), `regimes.py` (149),
+  `baselines.py` (150/151), `leakage.py` (152/153), `roll_sensitivity.py`
+  (154, reuses M4's module unmodified), `rejection.py` (155),
+  `observability_harness.py` (AEGIS-238).
+
+  **Correction (M5 closure).** An earlier version of this line claimed "the
+  shuffled baseline receives a genuine `REJECT`". That was false. The
+  independent M5 quant review found the AEGIS-155 evidence producer was
+  judging the baseline using the *strategy's* cost sweep and bootstrap, plus
+  a `min_round_trip_count` of 1,000,000 invented at the call site -- a
+  manufactured verdict, not an earned one. With each subject judged on its
+  own statistics and on `configs/validation/rejection_criteria.yaml`'s
+  thresholds, the honest result on this dataset is the reverse: the
+  **calendar-spread strategy is REJECTED** (unprofitable at the lowest swept
+  cost; bootstrap CI excludes a positive mean) and the **shuffled baseline is
+  ACCEPTED** (it happens to make +30.22 here). That result is preserved, not
+  tuned away, and it is still the recorded verdict after the follow-up fix
+  below.
+
+  **Follow-up (M5 closure repair).** AEGIS-155's frozen acceptance -- "at
+  least one *intentionally weak* strategy produces a rejection report" --
+  was not yet demonstrated at the point above: the criteria demonstrably
+  worked, but the only subject they rejected was the real strategy, not one
+  weak by construction. A third subject,
+  `intentionally_weak_concentrated_baseline`, was added: identical window,
+  exit threshold, quantity, partitions, costs and execution assumptions as
+  the real strategy's own config, differing only in `entry_threshold=3.0` --
+  a standard, dataset-independent 3-standard-deviation statistical
+  extremity, not a value searched against this series. Demanding that rare
+  a signal structurally produces too few round trips (2, against the
+  `min_round_trip_count=5` floor already in
+  `configs/validation/rejection_criteria.yaml`) for the pre-existing
+  `trade_concentration_too_few_round_trips` criterion in
+  `evaluate_strategy_for_rejection` to trigger honestly -- no new rejection
+  criterion or portfolio-concentration mechanism was added for this
+  subject. The recorded verdict is **REJECT**, with
+  `trade_concentration_too_few_round_trips` among the triggering criteria.
+  A falsifiability test (`test_the_concentration_verdict_is_computed_not_
+  hardcoded`) proves this is computed, not hard-coded: relaxing
+  `min_round_trip_count` to the subject's own round-trip count flips the
+  same result to ACCEPT. All three verdicts stand together, unaltered from
+  each other: calendar-spread strategy REJECT, shuffled baseline ACCEPT,
+  intentionally-weak-by-construction baseline REJECT.
+
+  **B2, attempt 1 (this repair's first pass, since corrected):** the
+  AEGIS-152/153 leakage detector was found to audit provenance
+  *reconstructed from the documented windowing convention*, never connected
+  to the real estimator's own execution. The first fix gave
+  `rolling_zscore_reference` an optional `timing_sink` observer, but only
+  `fitting_window_start_index` was read from live state --
+  `fitting_window_end_index = index - 1` remained a constant expression, true
+  for a correctly-behaving call but never actually checked. The claim written
+  here at the time -- "a future regression... would not have been caught" (as
+  now fixed) -- was **itself false**: the independent quant re-review proved
+  it by mutating `rolling_zscore_reference` so the current observation joined
+  the window before scoring (the canonical look-ahead bug) while leaving the
+  provenance block untouched; the numeric scores changed (a real leak) but
+  the detector still reported zero violations, because `end` never read the
+  window that actually produced the score. The seeded-leaky counterpart had
+  the mirrored defect: its "caught" result was driven by a hardcoded
+  `end_index = index` literal, not by its seeded structural bug -- an
+  ablation confirmed removing the bug while keeping that literal still
+  produced the same 50/50 violations.
+
+  **B2, attempt 2 (this fix).** `research.signal_reference` now tracks
+  `(index, value)` pairs in its sliding window (`_execute_rolling_zscore`'s
+  `consumed: deque[tuple[int, float]]`) instead of bare values, and BOTH
+  `fitting_window_start_index` and `fitting_window_end_index` are read
+  directly off that structure (`consumed[0][0]` / `consumed[-1][0]`) -- the
+  same structure the mean/variance are computed from, so score and
+  provenance cannot disagree. The honest path
+  (`rolling_zscore_reference`) and the negative-test path
+  (`rolling_zscore_reference_with_seeded_leak_for_falsifiability_check`)
+  share one execution engine, differing only in whether the current
+  observation joins the window before or after being scored -- so the
+  leak's effect on both the numeric output and the emitted provenance is a
+  consequence of shared arithmetic, not two independently hand-authored
+  loops. Re-running the reviewer's exact attack against this version:
+  numeric scores diverge under the leak exactly as before (confirming the
+  leak is real), the honest path's provenance still passes with zero
+  violations, and the leaky path's provenance is now caught in full (120/120
+  violations on the AEGIS-152/153 evidence dataset). A provenance-integrity
+  test (`test_provenance_reports_the_actual_consumed_window_not_a_feature_
+  index_formula`) checks emitted boundaries against a hand-worked ground
+  truth for a small fixture, independent of the production formula.
+* `python/reports/`: `validation_report.py`, `rejection_report.py`,
+  `portfolio_risk_report.py` (independently RECOMPUTES gross/net exposure
+  from position/price accounting values and reconciles against the C++
+  analytics' own report, rather than re-serializing it).
+* `python/reports/report_model.py`: the M4 `code_commit` `-dirty`-suffix
+  debt is fixed -- sibling `experiments/evidence/**` artifacts no longer
+  mark the commit dirty, mirroring `tools/evidence_provenance.py`'s
+  exclusion rule. M4 evidence is not regenerated; M4 stays closed.
+* `configs/validation/{partitions,regimes,rejection_criteria}.yaml`.
+* AEGIS-238: `tests/integration/test_participant_observability.py` drives
+  the real `aegis_participant_run` binary and the real `RiskEngine` through
+  a bounded outbound execution buffer this harness owns -- health, queue
+  depth, dropped/backpressured events, latency and risk status are all
+  non-vacuous in the recorded run. Evidence explicitly discloses this is
+  the harness's own bounded buffer, **not** the M8 lock-free queue
+  implementation, per the owner's activation-time authorization. The
+  fallback re-deferral is **not** used; no ledger entry created.
+* `tools/generate_validation_evidence.py` (17 artifacts, AEGIS-139..155),
+  `tools/generate_observability_evidence.py` (AEGIS-238) -- Batch-2
+  provisional evidence; closure regenerates all M5 evidence once, from a
+  clean tree, at the reviewed commit.
+* ADR-0029 (validation framework conventions).
+
+Not yet done: the M5 closure pass itself (full CI matrix, independent
+audit, promotion, milestone report). `requirements/implementation_status.json`
+is untouched by Batch 2 -- no status promoted, no obligation cleared, the
+AEGIS-238 fallback authorization is not exercised.
 
 The five M5 approvals, all exact-path and milestone-scoped, so all expire when
 M5 does:

@@ -163,6 +163,167 @@ work belongs on native Linux.
   toolchains that can build AEGIS and is its own decision
   ([adr/0005](../adr/0005-toolchain-and-language-boundary.md)).
 
+## M5 risk-model limitations
+
+M5 (`cpp/participant/risk`, ADR-0027, ADR-0028) turns the mandatory risk seam
+into real enforcement, but every control is deliberately simplified. None of
+the following is a production risk system:
+
+- **Margin is `margin_per_contract_units * abs(quantity)` (Model A), not
+  SPAN.** No exchange clearing model, no portfolio-margining offsets between
+  correlated legs, no intraday variation-margin call simulation.
+- **Only one base currency is exercised against real data.** Every in-repo
+  product (`configs/futures/products.yaml`) is `currency: USD`. The FX
+  normalization mechanism exists and is tested against a synthetic non-USD
+  fixture, but no real multi-currency market data validates it
+  (`docs/DATA_AND_RESEARCH_POLICY.md`).
+- **"Correlated exposure" is a config-supplied grouping, never an estimated
+  correlation matrix.** `RiskLimitsConfig::concentration.correlated_groups`
+  is set by whoever configures the engine; nothing in the decision path
+  estimates correlation from observed data, deliberately (ADR-0028) --
+  online estimation would make a risk decision depend on a statistic
+  computed from the same stream the decision is about.
+- **No risk state survives a process restart (R9).** Idempotency/
+  duplicate-request protection is in-memory only, and so is everything else
+  `RiskEngine` tracks: tripped kill switches, the daily-loss/drawdown
+  latches, every leg/order reservation, the dedupe-key set, the drawdown
+  high-water mark, and every `ProposalReleaseRecord` (staged/authorized/
+  aborted/rejected/completed state). `ParticipantSnapshot` covers OMS and
+  portfolio state only -- a fresh `RiskEngine` after a restart has no memory
+  of any of the above. AEGIS-127's frozen acceptance does not require
+  cross-process persistence, and no such persistence is claimed for any
+  control, not idempotency alone. The `--fixture`/`--restore-from` recovery
+  path (`docs/LIMITATIONS.md`'s next bullet) is the only place state is
+  restored across a process boundary today, and it restores OMS/portfolio
+  state through a test/fixture risk double, not a real `RiskEngine`.
+- **`AlwaysApproveRiskGate` is reachable in the shipped binary via
+  `aegis_participant_run --fixture` (R8).** Pre-existing from M3
+  (ADR-0023's test/fixture double, `cpp/participant/app/participant_run.cpp`),
+  driven by a `RecordedResponseAdapter` with no real exchange, and NOT
+  reachable from the calendar-spread `--calendar-spread` path this file's
+  M5 sections otherwise document -- but it is a risk-free order-submission
+  path that exists in a shipped binary. Not fixed by M5's risk-engine work:
+  closing it means replacing the fixture path's own composition (outside
+  `cpp/participant/risk/**`'s surface), a decision left to a future,
+  explicitly scoped turn rather than folded silently into this one.
+- **A failed adapter submission releases its reservation through a
+  composition-root decorator, not through the OMS itself.**
+  `OrderManager::submit_new_order` (`cpp/participant/oms`, unmodified by M5)
+  discards `ExecutionAdapter::submit`'s boolean return value, so the risk
+  engine has no seam-level signal from the OMS that a send failed.
+  `app::RiskReleasingExecutionAdapter` closes this without touching the OMS:
+  it wraps the concrete adapter and releases the reservation automatically
+  when `submit` returns `false`. A caller that constructs `OrderManager`
+  with a *different*, non-wrapping adapter does not get this behaviour for
+  free -- it is a property of the wrapper, not of `OrderManager` or
+  `RiskEngine` in isolation. Proven by `tests/cpp/unit/
+  test_risk_fault_execution_stress.cpp`'s
+  `BackpressureAutomaticallyReleasesTheReservationThroughTheNormalLifecycle`.
+- **`RiskEngine`'s own position bookkeeping duplicates `Portfolio`'s.**
+  `cpp-participant-risk` may not depend on `cpp-participant-portfolio`
+  (`configs/architecture_rules.yaml`), so the composition root must forward
+  every fill to both `RiskEngine::on_fill` and `Portfolio::apply_fill`
+  separately. Nothing detects a caller that forwards one and not the other.
+- **Portfolio stress scenarios are scripted parallel price shocks, not a
+  statistical simulation.** `portfolio::compute_portfolio_risk`'s
+  `StressScenario` applies one uniform percentage move to every position's
+  mark; `volatility_multiple`/`liquidity_factor` are reported as context,
+  not separately modelled as execution-quality effects.
+- **The demo's calendar-spread starting capital
+  (`CalendarSpreadRunConfig::starting_capital_units`) is an arbitrary,
+  documented constant**, not a claim about how much capital a real deployment
+  would carry.
+- **Risk-decision atomicity is guaranteed at the release epoch;
+  exchange-execution atomicity is not (corrected, M5 closure repair R4).**
+  Before ANY constituent order of a committed proposal is released,
+  `RiskEngine::authorize_proposal_release` performs one whole-proposal
+  authorization against current state (ADR-0027's "Correction 3"). That
+  authorization is all-or-none: either every constituent becomes executable
+  or none does, and afterwards `decide_order` computes no further
+  proposal-level safety verdict. One integrity backstop remains: an order
+  whose submitted instrument/side/quantity disagree with the exact
+  economics staged and authorized is rejected `kIdentityMismatch` on its
+  own, while its siblings are unaffected -- a per-leg outcome that CAN
+  differ from a sibling's, even though it is not a new risk judgment (it
+  consults no mutable safety state). Verified against the real composition
+  root: staged and submitted economics are read from the same fields, so
+  this backstop does not fire on that path today. After release, this
+  system also has no basket/atomic multi-leg execution primitive: a
+  transport or exchange failure on one leg can still leave the other filled
+  alone. Neither residual is eliminated by this repair and neither is
+  claimed to be.
+- **`RiskEngine::abort_proposal_release` (M5 closure repair, R3) has no
+  current call site in the calendar-spread demo.** It exists so a caller
+  that authorizes a proposal and then, for a reason outside `RiskEngine`'s
+  own visibility, does not submit one or more legs, can reclaim that
+  capacity instead of stranding it forever. `participant_run.cpp`'s
+  `execute_leg` has no failure mode that leaves a sibling leg's
+  authorization stranded today, so this method is exercised directly by
+  `tests/cpp/unit/test_risk_proposal_release_epoch.cpp`'s `ProposalAbort`
+  suite, not by the demo's own composition.
+- **A kill switch tripping after release authorization does not retract
+  that authorization.** It blocks every SUBSEQUENT proposal, and live
+  orders are handled by the existing emergency-cancel path -- but a
+  constituent of an already-authorized proposal is not retroactively
+  rejected, because rejecting it while a sibling was already sent is
+  exactly the mixed verdict (and resulting naked leg) the release epoch
+  exists to prevent. A kill switch tripping BEFORE the epoch rejects the
+  whole proposal and releases nothing.
+- **Cumulative limits are enforced on a proposal's FINAL NET PROJECTED
+  state, not on every intermediate state its legs pass through.** A
+  multi-leg proposal is judged as one intended portfolio transition: a
+  proposal that adds exposure on one leg and reduces it on another is
+  evaluated on the net result. Because execution is not atomic, if the
+  adding leg fills before the reducing leg is sent, true instantaneous
+  gross exposure can exceed what risk authorized. M5 does not claim
+  worst-path or basket execution-risk protection; this is a documented
+  semantic choice (ADR-0027 "Correction 3"), not an oversight.
+- **Concentration is a share of the WHOLE portfolio, so a lone first
+  position from a flat book is mathematically 100% concentrated.** A
+  configured `max_concentration_share` below `1.0` therefore honestly
+  rejects a strategy's very first position, unless other exposure already
+  exists to share the portfolio with. This is the correct reading of
+  "share of portfolio", not a bug or an under-tested edge case
+  (`tests/cpp/unit/test_risk_engine_reservation_repair.cpp`'s
+  `FlatBookConcentrationBelowOneRejectsTheFirstPositionHonestly` pins this
+  behavior); no exception is invented for it. Both shipped risk configs
+  (`configs/risk/limits.json`, `limits_reject_demo.json`) leave
+  `max_concentration_share` at its disabling default (`1.0`) precisely
+  because of this, so the demo's calendar-spread strategy never exercises
+  a live concentration limit.
+
+## M5 validation-framework limitations
+
+M5 (`python/validation`, ADR-0029) builds the anti-overfitting framework
+over synthetic data only. None of the following establishes a claim about
+real markets:
+
+- **Multi-market, regime and stability results are computed over
+  deterministic synthetic series** (`validation._fixtures`), a seeded
+  mean-reverting walk -- not observed prices for any of the three product
+  families.
+- **`ExecutionAssumptions`' fill assumptions (`TOUCH`, `CROSS_OR_NEXT`) are
+  validation models of eligibility, not observed fills** -- there is no bid
+  size, depth, or real order-book state behind either.
+- **The bootstrap is i.i.d., not block**, over round trips: it assumes
+  round trips are exchangeable, which a systematic drift across the sample
+  window would violate (`validation.resampling`'s own `limitations` field,
+  carried into every report).
+- **AEGIS-155's "concentration" criterion is trade-count concentration
+  (too few round trips), not AEGIS-134's portfolio instrument
+  concentration.** The two are deliberately not conflated; validation does
+  not recompute a risk-layer control.
+- **Regime evaluation resets the rolling z-score window at each regime
+  boundary** (ADR-0029): a regime's own reported outcome never benefits
+  from data outside it, at the cost of discarding the window's warm-up
+  history at every boundary.
+- **AEGIS-238's queue depth and dropped/backpressured events come from the
+  M5 integration harness's own bounded buffer
+  (`python/validation/observability_harness.py`), not the M8 lock-free
+  queue implementation** (`cpp/queues`, empty and M8-dated) -- disclosed in
+  every AEGIS-238 evidence artifact per the owner's activation-time
+  authorization (`docs/BUILD_STATE.md`).
+
 ## Data limitations
 
 The only committed sample is synthetic, generated by `tools/make_sample_data.py`.

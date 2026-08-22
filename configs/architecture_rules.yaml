@@ -187,9 +187,14 @@ layers:
     paths: [cpp/participant/app]
     language: cpp
     namespaces: [aegis::participant::app]
+    # cpp-participant-risk added M5 (m5-architecture-transition, PR #13): the
+    # composition root is where the real RiskEngine is wired to the existing
+    # oms::RiskGate seam via the RiskEngineGate adapter -- cpp-participant-oms
+    # already depends on cpp-participant-risk, so the reverse edge would
+    # cycle, and the risk layer implements no OMS interface itself.
     may_depend_on: [cpp-common, cpp-events, cpp-replay, cpp-participant-feed-handler,
                     cpp-participant-book-builder, cpp-statistics, cpp-participant-strategy,
-                    cpp-participant-oms, cpp-participant-portfolio]
+                    cpp-participant-risk, cpp-participant-oms, cpp-participant-portfolio]
     expect_sources_from_milestone: M3
 
   # ------------------------------------------------- performance work (M8 only)

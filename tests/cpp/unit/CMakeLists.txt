@@ -4,6 +4,7 @@ aegis_add_test(aegis_unit_tests unit
   test_book_builder.cpp
   test_book_invariants.cpp
   test_calendar_spread_exchange_integration.cpp
+  test_calendar_spread_risk_exchange_integration.cpp
   test_calendar_spread_strategy.cpp
   test_client_order_id_scope.cpp
   test_config.cpp
@@ -37,6 +38,7 @@ aegis_add_test(aegis_unit_tests unit
   test_participant_run.cpp
   test_participant_snapshot.cpp
   test_portfolio.cpp
+  test_portfolio_risk_analytics.cpp
   test_queue_position_estimator.cpp
   test_recorded_response_adapter.cpp
   test_reject_matrix.cpp
@@ -45,6 +47,11 @@ aegis_add_test(aegis_unit_tests unit
   test_replay_full_stack_integration.cpp
   test_replay_manifest.cpp
   test_replay_stream.cpp
+  test_risk_engine.cpp
+  test_risk_engine_reservation_repair.cpp
+  test_risk_proposal_release_epoch.cpp
+  test_risk_fault_execution_stress.cpp
+  test_risk_fault_market_stress.cpp
   test_drawdown_tracker.cpp
   test_exponential_stats.cpp
   test_realized_volatility.cpp
@@ -67,7 +74,7 @@ target_link_libraries(aegis_unit_tests PRIVATE
   aegis_exchange_state aegis_exchange_market_data aegis_exchange_app
   aegis_replay
   aegis_participant_feed_handler aegis_participant_book_builder
-  aegis_statistics aegis_participant_strategy aegis_participant_oms
+  aegis_statistics aegis_participant_strategy aegis_participant_risk aegis_participant_oms
   aegis_participant_portfolio aegis_participant_app)
 
 # The config tests read the schema and corpus from the source tree at runtime;

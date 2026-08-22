@@ -1,0 +1,331 @@
+{
+  "acceptance_tests": {
+    "all_passed": true,
+    "binaries": [
+      "build/debug/tests/cpp/unit/aegis_unit_tests"
+    ],
+    "cases": [
+      {
+        "line": 496,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAbort.AbortingAProposalAlreadyCompletedIsANoOp"
+      },
+      {
+        "line": 475,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAbort.AbortingAProposalAlreadyRejectedAtReleaseIsANoOp"
+      },
+      {
+        "line": 1083,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAbort.AuthorizeAfterAbortRecordsNoNewEventAndDecideOrderReportsAborted"
+      },
+      {
+        "line": 398,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAbort.AuthorizedProposalWithNothingConsumedReleasesBothLegsOnAbort"
+      },
+      {
+        "line": 422,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAbort.ConsumedLegSurvivesAbortAndOnlyTheRemainingLegIsReleased"
+      },
+      {
+        "line": 451,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAbort.DoubleAbortIsIdempotentAndRecordsNoSecondAuditEntry"
+      },
+      {
+        "line": 611,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ProposalAtomicSeamRevalidation.ALateStateChangeMakingOnlyOneLegUnsafeRejectsTheWholeProposalAtRelease"
+      },
+      {
+        "line": 681,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ProposalAtomicSeamRevalidation.ALookAlikeProposalCannotBorrowAnotherProposalsAuthorization"
+      },
+      {
+        "line": 746,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ProposalAtomicSeamRevalidation.FlatBookConcentrationBelowOneRejectsTheFirstPositionHonestly"
+      },
+      {
+        "line": 561,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ProposalAtomicSeamRevalidation.N6ExposureReductionRejectsAtomicallyAtCommit"
+      },
+      {
+        "line": 714,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ProposalAtomicSeamRevalidation.PortfolioNotionalFinalOverlayApprovesAGenuinelySafeReducingProposal"
+      },
+      {
+        "line": 653,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ProposalAtomicSeamRevalidation.SafeTwoLegProposalWithNoLateChangeStillApprovesBothLegs"
+      },
+      {
+        "line": 586,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.ALegitimateRestageAfterAWrongStrategyAttemptWorksCompletelyNormally"
+      },
+      {
+        "line": 983,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.APreCommitAuthorizeCallCreatesNoPersistentState"
+      },
+      {
+        "line": 956,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.APreCommitStageCallCannotEstablishCanonicalOwnership"
+      },
+      {
+        "line": 1030,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.AbortByAWrongStrategyLeavesTheCanonicalProposalUnaffected"
+      },
+      {
+        "line": 1056,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.AbortByTheCanonicalStrategyStillWorksNormally"
+      },
+      {
+        "line": 1008,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.AbortOfAnUnknownProposalCreatesNoStateThatPoisonsALaterCommit"
+      },
+      {
+        "line": 636,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.AuthorizeWithAWrongStrategyIdIsAnUnauthorizedQueryThatLeavesTheVictimCompletelyUnchanged"
+      },
+      {
+        "line": 931,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.AuthorizeWithTheCorrectStrategyIdStillWorksNormally"
+      },
+      {
+        "line": 609,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.MismatchedStageCallBindsNoneOfItsOwnIdentities"
+      },
+      {
+        "line": 692,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.RiskBudgetTheftAttackRemainsBlockedAfterAWrongStrategyAuthorizeAttempt"
+      },
+      {
+        "line": 736,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.RiskBudgetTheftViaWrongStrategyStagingRemainsBlocked"
+      },
+      {
+        "line": 782,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.StageAuthorizeAndAbortAreAllInertAgainstAWrongStrategyCallerOnOneProposal"
+      },
+      {
+        "line": 525,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.StagingWithADisagreeingStrategyIdIsUnauthorizedApiMisuseThatLeavesTheVictimCompletelyUnchanged"
+      },
+      {
+        "line": 905,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.WrongStrategyQueryOfACompletedProposalNeverDisclosesTheRealDecision"
+      },
+      {
+        "line": 856,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.WrongStrategyQueryOfARejectedProposalNeverDisclosesTheRealDecision"
+      },
+      {
+        "line": 880,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.WrongStrategyQueryOfAnAbortedProposalNeverDisclosesTheRealDecision"
+      },
+      {
+        "line": 828,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalAttribution.WrongStrategyQueryOfAnAuthorizedProposalNeverDisclosesTheRealDecision"
+      },
+      {
+        "line": 291,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.AFullyValidProposalAuthorizesOnceAndBothLegsConsumeIt"
+      },
+      {
+        "line": 350,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.AKillSwitchAfterAuthorizationDoesNotSplitTheProposalsVerdict"
+      },
+      {
+        "line": 315,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.ALookAlikeProposalCannotConsumeAnothersAuthorization"
+      },
+      {
+        "line": 251,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.AnIncompletelyStagedProposalIsNeverAuthorized"
+      },
+      {
+        "line": 273,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.AnUnauthorizedProposalsLegCannotReachExecution"
+      },
+      {
+        "line": 1164,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.CalmVolatilityThroughReleaseStillAuthorizesNormally"
+      },
+      {
+        "line": 140,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.ExchangeDisconnectBeforeReleaseRejectsTheWholeProposal"
+      },
+      {
+        "line": 186,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.ExposureChangeBeforeReleaseRejectsTheWholeProposal"
+      },
+      {
+        "line": 111,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.GlobalKillSwitchBeforeReleaseRejectsTheWholeProposal"
+      },
+      {
+        "line": 217,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.IdentityMismatchAtStagingRejectsTheWholeProposalAndStrandsNoSibling"
+      },
+      {
+        "line": 162,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.StaleMarketBeforeReleaseRejectsTheWholeProposal"
+      },
+      {
+        "line": 1131,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
+        "test": "ProposalReleaseEpoch.VolatilitySpikeBeforeReleaseRejectsTheWholeProposal"
+      },
+      {
+        "line": 215,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ReservationRepairAuditIntegrity.MisattributionCannotCrossProposalIdentities"
+      },
+      {
+        "line": 251,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ReservationRepairAuditIntegrity.ReplayingAProposalIdNeverAppendsASecondTerminalDecision"
+      },
+      {
+        "line": 390,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine_reservation_repair.cpp",
+        "test": "ReservationRepairExactIdentity.StagedIdentityWithDisagreeingEconomicsIsRejected"
+      },
+      {
+        "line": 752,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineAuditInvariant.ExactlyOneProposalDecisionAndOneOrderDecisionPerLeg"
+      },
+      {
+        "line": 783,
+        "passed": true,
+        "source": "tests/cpp/unit/test_risk_engine.cpp",
+        "test": "RiskEngineAuditInvariant.RejectedProposalReportsEveryLegRejectedAndArmsNoOrder"
+      }
+    ],
+    "failure_count": 0,
+    "filters": [
+      "RiskEngineAuditInvariant.*",
+      "ReservationRepairAuditIntegrity.*",
+      "ReservationRepairExactIdentity.StagedIdentityWithDisagreeingEconomicsIsRejected",
+      "ProposalAtomicSeamRevalidation.*",
+      "ProposalReleaseEpoch.*",
+      "ProposalAbort.*",
+      "ProposalAttribution.*"
+    ],
+    "test_count": 46
+  },
+  "artifact": "AEGIS-137/risk_decision_audit",
+  "claim": "Exactly ONE terminal ProposalRiskDecision per proposal_id (asserted via RiskAuditLog::proposal_decision_count), with subordinate per-order OrderRiskDecision records that each carry the proposal_id/leg_index that authorised them. A two-leg spread therefore never produces two objects both claiming to be the proposal decision. A rejected proposal arms no pending leg, and an order reaching the seam anyway is rejected kUnexpectedOrder. Identity resolution is exact (M5 closure repair): a client_order_id is registered against its precise strategy/proposal/leg identity before submission, so an order can never be mis-attributed to a different, economically-identical proposal, and a replayed proposal_id can never append a second terminal decision. Seam revalidation is also proposal-atomic. Round 2 first achieved this with a per-proposal cache (ensure_proposal_seam_revalidated); an independent review then found that mechanism began caching too late -- at the first leg's OWN arrival at decide_order, after that leg was already being released -- so round 3 replaced it entirely with the release epoch below. ensure_proposal_seam_revalidated no longer exists in this engine; the current guarantee is the release-epoch description that follows, not the superseded mechanism this sentence used to (incorrectly, as of round 3) still describe in present tense. Round 3 adds the release-decision half: authorize_proposal_release records at most ONE ProposalReleaseRiskDecision per proposal (AUTHORIZED or REJECTED, asserted via RiskAuditLog::proposal_release_decision_count), taken while zero constituents have been released; a rejected release yields zero executable constituents, and an authorized one may be consumed only by its exact staged constituents, each at most once. Round 4 (M5 closure repair, R3/R5): abort_proposal_release adds a fourth, deliberate way for a release decision to reach a terminal state (kAborted) without rolling back any leg that already consumed its authorization; and canonical strategy_id attribution is immutable once established -- a staging call naming a disagreeing strategy_id binds none of its own identities and permanently fails the release, so a proposal_id collision can never rewrite who the audit trail says actually committed a proposal. Round 5 (M5 closure repair, N1): Round 3's phrase 'at most ONE ProposalReleaseRiskDecision per proposal' and Round 4's 'still recording at most one release decision per proposal' were both corrected -- an independent review found kAborted missing from authorize_proposal_release's own terminal-state check, so calling authorize AFTER a deliberate abort fell through and recorded a THIRD event that overwrote the abort with a spurious kUnexpectedOrder rejection (reproducibly, via the ordinary authorize-abort-authorize sequence, no attack needed). Fixed, and the claim corrected to what is actually true: a committed proposal has AT MOST ONE authorize-or-reject transition, and MAY separately have exactly one later abort transition if it was authorized and then deliberately abandoned -- authorize-then-abort is two real, truthfully audited lifecycle events, not a violation. What genuinely never exceeds one is proposal_decision_count (ProposalRiskDecision, this requirement's own invariant); proposal_release_decision_count counts release-lifecycle TRANSITIONS and is a separate, distinct count. Every one of authorize_proposal_release, abort_proposal_release now also requires its own strategy_id argument to match the proposal's canonical committed strategy_id (staging already did; authorizing and aborting did not), and neither can create persistent state -- let alone attribution -- for a proposal_id commit_proposal_decision has not genuinely committed yet, closing a pre-commit ownership race the previous round's 'set once, never overwritten' language did not actually guarantee. Round 6 (M5 closure repair, N4 corrected): Round 5's authorize_proposal_release strategy check ran AFTER the terminal-state lookup and, on mismatch, called reject_proposal_release -- so a caller with no relationship to a proposal could permanently destroy it (release every reservation, erase every armed leg) and reclaim its reserved risk budget, and a wrong-strategy query of an already-terminal proposal received that proposal's REAL stored decision (state, reason code and reason string), not a denial. A WRONG-STRATEGY AUTHORIZE CALL IS AN UNAUTHORIZED QUERY, NOT A RISK REJECTION OF THE PROPOSAL IT NAMES, and it must not change that proposal's state -- for a proposal already known to be genuinely committed, the identity check now runs BEFORE any terminal-state inspection, mutation or disclosure, and a mismatch returns a single generic kIdentityMismatch denial identical regardless of that EXISTING proposal's real lifecycle state (staged, authorized, rejected, aborted or completed), never reject_proposal_release, and never revealing the real stored decision. The canonical owner's own subsequent call is completely unaffected -- the attacker's call leaves no trace to overwrite. NOT CLAIMED (corrected): an UNKNOWN proposal_id is handled by a separate, earlier check and returns kUnexpectedOrder, not the generic kIdentityMismatch denial -- a caller CAN distinguish 'never committed' from 'exists, wrong strategy' by reason code. AEGIS claims no proposal-id confidentiality and no OS/process security isolation between arbitrary in-process callers; the guarantee is narrower and precise -- a wrong-strategy caller can never mutate another strategy's proposal, nor read its real stored decision, but existence of a proposal_id is not hidden. This is an API-level identity boundary matching abort_proposal_release's own.",
+  "deterministic_config": {
+    "clock": "injected (common::ManualClock / explicit nanos) -- never the system clock",
+    "risk_config": "configs/risk/limits.json and per-test in-code RiskLimitsConfig"
+  },
+  "dirty": false,
+  "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
+  "frozen_acceptance": "Every proposal has exactly one auditable risk decision.",
+  "generated_on": "2026-08-22",
+  "implementation": [
+    "cpp/participant/risk/risk_engine.cpp",
+    "cpp/participant/risk/risk_engine.hpp",
+    "cpp/participant/risk/risk_state.hpp",
+    "cpp/participant/risk/risk_limits.hpp",
+    "cpp/participant/risk/reason_codes.cpp"
+  ],
+  "inputs": [
+    "configs/risk/limits.json"
+  ],
+  "limitations": [
+    "All market data driving these tests is synthetic and in-repo: venue SYNX does not exist, quotes are constructed from committed daily bar/fixture data rather than observed tick data (ADR-0025), and no conclusion about any real market may be drawn.",
+    "These are software risk controls exercised under simulation. Passing here is not evidence of production risk adequacy, live execution realism, or profitability."
+  ],
+  "not_evidence_for": [
+    "production risk adequacy -- thresholds here are small documented demo values",
+    "any real-market behaviour -- every input is synthetic (ADR-0025)"
+  ],
+  "producer": "tools/generate_risk_evidence.py",
+  "repository_commit": "ab41cd9d454bc5d0e11651ed6ead2976a1a6b46c",
+  "requirements": [
+    "AEGIS-137"
+  ],
+  "title": "Risk decision audit"
+}
