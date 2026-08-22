@@ -428,6 +428,30 @@ Reworded to past tense with an explicit note that the mechanism does not
 exist in the engine as of Correction 3, without rewriting the historical
 narrative itself.
 
+**Follow-up correction 6 (M5 closure repair): authorize proposal identity
+isolation.** An independent re-review of correction 5 found its own N4 fix
+incomplete: a caller `strategy_id` mismatch on `authorize_proposal_release`
+was described as failing "the whole proposal closed, same semantics as a
+staging mismatch" -- but that fail-closed path called
+`reject_proposal_release`, which releases every reservation and erases
+every armed leg PERMANENTLY. Reproducible with the plain API, no attack
+construction needed: (1) a caller with no relationship to a proposal could
+destroy it and free its reserved risk budget for the attacker's own next
+proposal to consume, and (2) because the terminal-state check ran before
+the identity check, a wrong-strategy query of an already-terminal proposal
+received that proposal's REAL stored decision, not a denial. The governing
+principle, now stated precisely: **a wrong-strategy authorize call is an
+UNAUTHORIZED QUERY, not a risk rejection of the proposal it names -- it
+must never change the victim's state.** Fixed by moving the identity check
+to run FIRST, before the terminal-state lookup and before any mutation; a
+mismatch now returns a synthetic, generic `kIdentityMismatch` denial
+constructed without touching the record at all -- identical no matter the
+proposal's real state, and disclosing nothing beyond what the caller
+itself supplied. This restores exact symmetry with `abort_proposal_release`
+(N6): both mutating entry points now treat a wrong-strategy caller as
+inert. Canonical ownership (N5) is unaffected -- still established exactly
+once, only by `commit_proposal_decision`.
+
 Not yet done (Batch 2): AEGIS-139..155's remaining validation modules,
 AEGIS-238's observability integration, evidence generation, and the
 independent audit. `requirements/implementation_status.json` is untouched by

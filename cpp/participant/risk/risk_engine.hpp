@@ -210,35 +210,54 @@ class RiskEngine {
 
   /// THE PROPOSAL RELEASE EPOCH: one fresh, whole-proposal risk
   /// authorization performed while ZERO of the proposal's constituents have
-  /// been released. Requires `strategy_id` to match the proposal's
-  /// canonical committed strategy identity (M5 closure repair, R4/N4) --
-  /// a caller cannot authorize (or even read the release decision for) a
-  /// proposal it did not commit merely by knowing its `proposal_id`.
-  /// Verifies that every committed leg has a staged constituent whose
-  /// economics match it, then revalidates every leg against CURRENT mutable
-  /// state (halts, connectivity, market staleness/collar, the volatility
-  /// hard-reject gate, and every cumulative control over the final combined
-  /// overlay, each leg's own reservation counted exactly once). Either ALL
-  /// constituents become authorized, or NONE do and every reservation the
-  /// proposal held is released.
+  /// been released. Verifies that every committed leg has a staged
+  /// constituent whose economics match it, then revalidates every leg
+  /// against CURRENT mutable state (halts, connectivity, market
+  /// staleness/collar, the volatility hard-reject gate, and every
+  /// cumulative control over the final combined overlay, each leg's own
+  /// reservation counted exactly once). Either ALL constituents become
+  /// authorized, or NONE do and every reservation the proposal held is
+  /// released.
   ///
-  /// Idempotent and terminal (M5 closure repair, N1): once the proposal's
-  /// release lifecycle reaches `kAuthorizedForRelease`, `kRejectedAtRelease`,
-  /// `kAborted` or `kCompleted`, every later call returns that same decision
-  /// and records no new audit event -- `kAborted` was the terminal state
-  /// missing here before this repair, letting a call AFTER a deliberate
-  /// `abort_proposal_release` fall through and overwrite the abort with a
-  /// spurious rejection. See `docs/BUILD_STATE.md`/ADR-0027 for why "at most
-  /// one terminal decision" is tracked PER LIFECYCLE TRANSITION KIND
-  /// (authorize / reject-at-release / abort), not as a single global
-  /// "never more than one release record ever" count -- an authorize
-  /// followed by a genuine later abort is two real, distinct, truthfully
-  /// audited events, and AEGIS-137's actual "exactly one" invariant belongs
-  /// to `ProposalRiskDecision`/`proposal_decision_count`, never to this.
-  /// After `kAuthorizedForRelease`, `decide_order` performs NO further
-  /// proposal-level safety evaluation -- see the class docs for why
-  /// re-checking per leg would recreate the naked-leg hazard this exists to
-  /// prevent.
+  /// IDENTITY IS CHECKED BEFORE ANYTHING ELSE (M5 closure repair, R4/N4,
+  /// corrected): `strategy_id` must equal the proposal's canonical
+  /// committed strategy identity, and this is verified before this call
+  /// inspects, mutates or discloses ANYTHING about the proposal's actual
+  /// state. A wrong-strategy call is an UNAUTHORIZED QUERY, not a risk
+  /// rejection of the proposal it names, and it is fully inert: it never
+  /// mutates release state, reservations, pending legs, staged identities
+  /// or the audit trail, and it never appends a release-lifecycle event --
+  /// it returns a single generic `kIdentityMismatch` denial, identical
+  /// regardless of whether the named proposal is unknown, staged,
+  /// authorized, rejected, aborted or completed, carrying no information
+  /// beyond what the caller itself supplied. (An earlier version of this
+  /// check ran AFTER the terminal-state lookup and routed a mismatch
+  /// through `reject_proposal_release` -- a caller with no relationship to
+  /// a proposal could destroy it and reclaim its reserved risk budget, and
+  /// a wrong-strategy query of an already-terminal proposal received that
+  /// proposal's REAL stored decision. Both were the exact hazard this
+  /// repair closes.) This is an API-level identity boundary matching
+  /// `abort_proposal_release`'s own (below) -- not a claim of process- or
+  /// memory-level security isolation.
+  ///
+  /// Idempotent and terminal for the CANONICAL owner (M5 closure repair,
+  /// N1): once the proposal's release lifecycle reaches
+  /// `kAuthorizedForRelease`, `kRejectedAtRelease`, `kAborted` or
+  /// `kCompleted`, every later call FROM THE OWNING STRATEGY returns that
+  /// same decision and records no new audit event -- `kAborted` was the
+  /// terminal state missing here before this repair, letting a call AFTER
+  /// a deliberate `abort_proposal_release` fall through and overwrite the
+  /// abort with a spurious rejection. See `docs/BUILD_STATE.md`/ADR-0027
+  /// for why "at most one terminal decision" is tracked PER LIFECYCLE
+  /// TRANSITION KIND (authorize / reject-at-release / abort), not as a
+  /// single global "never more than one release record ever" count -- an
+  /// authorize followed by a genuine later abort is two real, distinct,
+  /// truthfully audited events, and AEGIS-137's actual "exactly one"
+  /// invariant belongs to `ProposalRiskDecision`/`proposal_decision_count`,
+  /// never to this. After `kAuthorizedForRelease`, `decide_order` performs
+  /// NO further proposal-level safety evaluation -- see the class docs for
+  /// why re-checking per leg would recreate the naked-leg hazard this
+  /// exists to prevent.
   ProposalReleaseDecision authorize_proposal_release(const std::string& strategy_id,
                                                      const std::string& proposal_id,
                                                      common::Nanos now_nanos);

@@ -424,7 +424,23 @@ SPECS: dict[str, dict[str, Any]] = {
                  "and aborting did not), and neither can create persistent state -- let alone "
                  "attribution -- for a proposal_id commit_proposal_decision has not genuinely "
                  "committed yet, closing a pre-commit ownership race the previous round's "
-                 "'set once, never overwritten' language did not actually guarantee.",
+                 "'set once, never overwritten' language did not actually guarantee. Round 6 "
+                 "(M5 closure repair, N4 corrected): Round 5's authorize_proposal_release strategy "
+                 "check ran AFTER the terminal-state lookup and, on mismatch, called "
+                 "reject_proposal_release -- so a caller with no relationship to a proposal could "
+                 "permanently destroy it (release every reservation, erase every armed leg) and "
+                 "reclaim its reserved risk budget, and a wrong-strategy query of an "
+                 "already-terminal proposal received that proposal's REAL stored decision "
+                 "(state, reason code and reason string), not a denial. A WRONG-STRATEGY AUTHORIZE "
+                 "CALL IS AN UNAUTHORIZED QUERY, NOT A RISK REJECTION OF THE PROPOSAL IT NAMES, and "
+                 "it must not change that proposal's state -- the identity check now runs FIRST, "
+                 "before any terminal-state inspection, mutation or disclosure, and a mismatch "
+                 "returns a single generic kIdentityMismatch denial identical regardless of the "
+                 "proposal's real state (unknown, staged, authorized, rejected, aborted or "
+                 "completed), never reject_proposal_release. The canonical owner's own subsequent "
+                 "call is completely unaffected -- the attacker's call leaves no trace to overwrite. "
+                 "This is an API-level identity boundary matching abort_proposal_release's own, not "
+                 "a claim of process- or memory-level security isolation.",
     },
     "AEGIS-138": {
         "artifact": "portfolio_risk_analytics",

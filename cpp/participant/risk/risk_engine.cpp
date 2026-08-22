@@ -912,9 +912,35 @@ ProposalReleaseDecision RiskEngine::authorize_proposal_release(const std::string
   }
   ProposalReleaseRecord& record = found->second;
 
+  // M5 closure repair, N4 (corrected): identity is verified BEFORE
+  // anything about this proposal's actual state is inspected, mutated or
+  // disclosed. A WRONG-STRATEGY AUTHORIZE CALL IS AN UNAUTHORIZED QUERY --
+  // it is NOT a risk rejection of the proposal it names, and it must not
+  // change the proposal's state. Previously this check ran AFTER the
+  // terminal-state lookup below and, on mismatch, called
+  // reject_proposal_release -- so a caller with no relationship to this
+  // proposal could permanently destroy it and reclaim its reserved risk
+  // budget, and a wrong-strategy query of an already-terminal proposal
+  // received that proposal's REAL stored decision. Neither reads nor
+  // mutates `record` beyond this one comparison: no state change, no
+  // reservation release, no pending-leg erasure, no audit event. The
+  // denial is fully generic and identical no matter what the proposal's
+  // real state is (unknown, staged, authorized, rejected, aborted or
+  // completed) -- it carries no information beyond what the caller itself
+  // supplied.
+  if (record.strategy_id != strategy_id) {
+    return ProposalReleaseDecision{
+        .state = ProposalReleaseState::kRejectedAtRelease,
+        .reason_code = ReasonCode::kIdentityMismatch,
+        .reason =
+            "authorize_proposal_release called with a strategy_id that disagrees with "
+            "this proposal's canonical strategy_id"};
+  }
+
   // Terminal and idempotent (M5 closure repair, N1): once the release
-  // lifecycle reaches any of these four states, a later call never mutates
-  // it or records a new audit event -- kAborted was the state missing here
+  // lifecycle reaches any of these four states, a later call from the
+  // OWNING strategy (identity already verified above) never mutates it or
+  // records a new audit event -- kAborted was the state missing here
   // before this repair, which let a call AFTER a deliberate
   // abort_proposal_release fall through below and overwrite the abort with
   // a spurious kUnexpectedOrder rejection. See authorize_proposal_release's
@@ -926,20 +952,6 @@ ProposalReleaseDecision RiskEngine::authorize_proposal_release(const std::string
       record.state == ProposalReleaseState::kAborted) {
     return ProposalReleaseDecision{
         .state = record.state, .reason_code = record.reason_code, .reason = record.reason};
-  }
-
-  // M5 closure repair, R4/N4: the caller's own strategy_id must match this
-  // proposal's canonical committed strategy_id -- otherwise a caller could
-  // authorize (or read the release decision for) a proposal it never
-  // committed simply by knowing its proposal_id. Canonical attribution
-  // itself is never mutated by this: the audit trail still attributes to
-  // record.strategy_id, never to the caller's mismatched argument.
-  if (record.strategy_id != strategy_id) {
-    return reject_proposal_release(
-        proposal_id, record, ReasonCode::kIdentityMismatch,
-        "authorize_proposal_release called with a strategy_id that disagrees with this "
-        "proposal's canonical strategy_id",
-        now_nanos);
   }
 
   // M5 closure repair, R5: a staging call named a strategy_id that

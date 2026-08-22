@@ -600,6 +600,70 @@ present tense. **Fix:** reworded to past tense with an explicit note that
 the mechanism does not exist in the engine as of Correction 3, in both
 files -- the historical narrative itself is not rewritten, only its tense.
 
+## Correction 6 (M5 closure repair): authorize proposal identity isolation
+
+**Superseded: the N4 fix description above.** Correction 5's own N4/N5/N6
+paragraph, two sections up, said a caller `strategy_id` mismatch on
+`authorize_proposal_release` "fails the whole proposal closed
+(`kIdentityMismatch`, same semantics as a staging mismatch)". An
+independent review found this description was itself the bug: it fails
+the whole proposal closed by calling `reject_proposal_release`, which
+releases every reservation, erases every armed leg, and latches
+`kRejectedAtRelease` -- permanently. Two consequences, both reproduced
+without any attack construction beyond the ordinary API:
+
+1. **Availability/risk-budget theft.** A caller with NO relationship to a
+   proposal could call `authorize_proposal_release(attacker_id, victim_
+   proposal_id, ...)`, and while the attacker gained no execution (the
+   proposal never reached `kAuthorizedForRelease` under its identity), the
+   victim's proposal was destroyed and its reserved risk budget freed --
+   available for the attacker's OWN next proposal to consume.
+2. **Terminal-decision disclosure.** The terminal-state check ran BEFORE
+   the identity check, so a wrong-strategy call against an
+   already-`kAuthorizedForRelease`/`kRejectedAtRelease`/`kAborted`/
+   `kCompleted` proposal received that proposal's REAL stored decision --
+   state, reason code and reason string -- not a denial.
+
+**The governing principle, stated precisely this time:** a wrong-strategy
+`authorize_proposal_release` call is an UNAUTHORIZED QUERY, not a risk
+rejection of the proposal it names. It must never mutate that proposal's
+state, and it must never disclose that proposal's real decision.
+
+**Fix.** The identity check moved to run FIRST -- immediately after
+resolving the record and before any inspection of `record.state`, before
+the terminal-state lookup, and before anything is mutated. On a mismatch,
+`authorize_proposal_release` returns a single synthetic
+`ProposalReleaseDecision{kRejectedAtRelease, kIdentityMismatch, <generic
+reason text>}` constructed inline -- it never touches `record`, never
+calls `reject_proposal_release`, never appends a
+`ProposalReleaseRiskDecision`, and is IDENTICAL regardless of whether the
+named proposal is unknown, staged, authorized, rejected, aborted or
+completed. It carries no information beyond what the caller itself
+supplied. The canonical owner's own subsequent call is completely
+unaffected -- proven by test, not merely asserted: capturing release
+state, reservation totals, leg-reservation count and release-audit count
+before an attacker's call, and asserting all four are bit-for-bit
+unchanged afterward, then confirming the canonical owner still authorizes
+normally.
+
+This restores exact symmetry with `abort_proposal_release` (N6, same
+correction as R5): both mutating entry points now treat a wrong-strategy
+caller as inert, never as a risk event against the proposal it names.
+Canonical ownership itself is unaffected by this correction -- it is still
+established exactly once, only by `commit_proposal_decision` (N5), and
+this fix only changes what `authorize_proposal_release` does once it
+reads that ownership and finds it does not match the caller.
+
+**Scope, stated explicitly.** This is an API-level identity boundary, not
+a claim of process- or memory-level security isolation: any code linked
+into the same binary that can call `RiskEngine`'s public API at all can
+call it with any `strategy_id` string it likes -- the guarantee is that
+doing so under the WRONG one can never mutate or disclose another
+strategy's proposal, not that identities are cryptographically
+authenticated. `docs/LIMITATIONS.md` is unchanged by this correction; no
+new limitation is introduced, and none of R2/R4/R6/R8/R9/R11/N1/N2/N3/N5/
+N6/N7/N8 is touched.
+
 ## Alternatives considered
 
 - **Risk implements `oms::RiskGate` directly.** Rejected: creates the

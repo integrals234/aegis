@@ -12,13 +12,13 @@
         "test": "MarketStressRisk.VolatilitySpikeResizesOrRejects"
       },
       {
-        "line": 861,
+        "line": 1038,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
         "test": "ProposalReleaseEpoch.CalmVolatilityThroughReleaseStillAuthorizesNormally"
       },
       {
-        "line": 828,
+        "line": 1005,
         "passed": true,
         "source": "tests/cpp/unit/test_risk_proposal_release_epoch.cpp",
         "test": "ProposalReleaseEpoch.VolatilitySpikeBeforeReleaseRejectsTheWholeProposal"
@@ -48,7 +48,7 @@
   "dirty": true,
   "dirty_means": "code outside experiments/evidence/ was uncommitted when this artifact was generated; sibling evidence written in the same batch is excluded (tools/evidence_provenance.py)",
   "frozen_acceptance": "Deterministic sizing fixtures pass.",
-  "generated_on": "2026-08-21",
+  "generated_on": "2026-08-22",
   "implementation": [
     "cpp/participant/risk/risk_engine.cpp",
     "cpp/participant/risk/risk_engine.hpp",
@@ -68,7 +68,7 @@
     "any real-market behaviour -- every input is synthetic (ADR-0025)"
   ],
   "producer": "tools/generate_risk_evidence.py",
-  "repository_commit": "76fbaefb59894ef95ce6064b92ac9af8ca428042",
+  "repository_commit": "df5a943bfbb890daa8036fcf706d227082c41558",
   "requirements": [
     "AEGIS-133"
   ],

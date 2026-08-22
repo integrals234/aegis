@@ -598,7 +598,13 @@ TEST(ProposalAttribution, MismatchedStageCallBindsNoneOfItsOwnIdentities) {
 // already fail-closed on a mismatch (R5); authorizing was not.
 // =================================================================
 
-TEST(ProposalAttribution, AuthorizeWithAWrongStrategyIdFailsClosedAndLeavesAttributionCanonical) {
+TEST(ProposalAttribution,
+     AuthorizeWithAWrongStrategyIdIsAnUnauthorizedQueryThatLeavesTheVictimCompletelyUnchanged) {
+  // THE MOST IMPORTANT N4 REGRESSION (M5 closure repair, N4 corrected): a
+  // wrong-strategy authorize call is an UNAUTHORIZED QUERY, not a risk
+  // rejection of the proposal it names. It must not mutate the victim's
+  // proposal in any way, and the victim must be able to authorize normally
+  // afterward -- exactly as if the attacker's call had never happened.
   RiskEngine engine(base_config());
   seed_valid_quote(engine, kNear, 100);
   seed_valid_quote(engine, kFar, 100);
@@ -610,19 +616,190 @@ TEST(ProposalAttribution, AuthorizeWithAWrongStrategyIdFailsClosedAndLeavesAttri
             RiskVerdict::kApprove);
   engine.stage_proposal_release("strat-a", "attrib-4", stage_two_legs(1, 2));
 
+  // Capture every observable piece of victim state before the attack.
+  const auto state_before = engine.proposal_release_state("attrib-4");
+  const auto reserved_near_before = engine.state().reserved_units(kNear);
+  const auto reserved_far_before = engine.state().reserved_units(kFar);
+  const auto leg_reservation_count_before = engine.state().leg_reservation_count();
+  const auto release_decision_count_before =
+      engine.audit_log().proposal_release_decision_count("attrib-4");
+
+  ASSERT_EQ(state_before, ProposalReleaseState::kStaging);
+  ASSERT_EQ(reserved_near_before, 50);
+  ASSERT_EQ(reserved_far_before, 50);
+  ASSERT_EQ(leg_reservation_count_before, 2U);
+  ASSERT_EQ(release_decision_count_before, 0U);
+
   // The attacker never staged anything under its own name -- it simply
   // calls authorize with a strategy_id that disagrees with the canonical
-  // committer, hoping to either authorize A's proposal under its own
-  // identity or extract the release decision.
+  // committer.
   const auto attacker_release = engine.authorize_proposal_release("strat-attacker", "attrib-4", 0);
   EXPECT_NE(attacker_release.state, ProposalReleaseState::kAuthorizedForRelease);
   EXPECT_EQ(attacker_release.reason_code, ReasonCode::kIdentityMismatch);
 
-  // The proposal is now rejected-at-release (whole-proposal fail-closed,
-  // same as any other authorize failure) -- but attribution stays canonical.
-  ASSERT_FALSE(engine.audit_log().proposal_release_decisions().empty());
+  // Every piece of victim state is BIT-FOR-BIT unchanged -- no mutation, no
+  // reservation release, no pending-leg erasure, no new audit event.
+  EXPECT_EQ(engine.proposal_release_state("attrib-4"), state_before);
+  EXPECT_EQ(engine.state().reserved_units(kNear), reserved_near_before);
+  EXPECT_EQ(engine.state().reserved_units(kFar), reserved_far_before);
+  EXPECT_EQ(engine.state().leg_reservation_count(), leg_reservation_count_before);
+  EXPECT_EQ(engine.audit_log().proposal_release_decision_count("attrib-4"),
+            release_decision_count_before);
+
+  // The canonical owner can now authorize completely normally -- the
+  // attacker's call left no trace.
+  const auto real_release = engine.authorize_proposal_release("strat-a", "attrib-4", 0);
+  EXPECT_EQ(real_release.state, ProposalReleaseState::kAuthorizedForRelease);
   EXPECT_EQ(engine.audit_log().proposal_release_decisions().back().strategy_id, "strat-a");
-  EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kReject);
+  EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.decide_order(kFar, Side::kBuy, 50, 2, 0).verdict, RiskVerdict::kApprove);
+}
+
+TEST(ProposalAttribution, RiskBudgetTheftAttackRemainsBlockedAfterAWrongStrategyAuthorizeAttempt) {
+  // The reviewer's specific observation: the OLD bug freed the victim's
+  // reserved risk budget, letting the attacker's own later proposal fit
+  // into capacity that should still have been claimed by the victim.
+  RiskLimitsConfig config = base_config();
+  config.position_limits[kNear] = PositionLimit{.max_long_units = 50, .max_short_units = 50};
+  RiskEngine engine(config);
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  // Victim commits and stages a proposal that consumes the ENTIRE kNear
+  // position capacity (50 of 50).
+  ASSERT_EQ(
+      engine
+          .commit_proposal_decision("victim", "budget-1", two_leg_proposal("victim", "budget-1"), 0)
+          .verdict,
+      RiskVerdict::kApprove);
+  engine.stage_proposal_release("victim", "budget-1", stage_two_legs(1, 2));
+  ASSERT_EQ(engine.state().reserved_units(kNear), 50);
+
+  // Attacker attempts to authorize the victim's proposal under its own
+  // identity -- denied, and (per the test above) the victim's reservation
+  // must survive this attempt untouched.
+  const auto attacker_release = engine.authorize_proposal_release("attacker", "budget-1", 0);
+  EXPECT_NE(attacker_release.state, ProposalReleaseState::kAuthorizedForRelease);
+  ASSERT_EQ(engine.state().reserved_units(kNear), 50);  // Still fully reserved.
+
+  // The attacker's OWN proposal on the same instrument would only fit if
+  // the victim's 50-unit reservation had actually been released -- it must
+  // still be rejected by the position cap.
+  const auto attacker_own_proposal = engine.commit_proposal_decision(
+      "attacker", "budget-2", {make_request(kNear, Side::kBuy, 100, 50, "attacker", "budget-2", 0)},
+      0);
+  EXPECT_EQ(attacker_own_proposal.verdict, RiskVerdict::kReject);
+  EXPECT_EQ(attacker_own_proposal.reason_code, ReasonCode::kMaxPositionLong);
+
+  // The victim can still legitimately authorize and execute its own
+  // proposal afterward -- nothing about its lifecycle was disturbed.
+  ASSERT_EQ(engine.authorize_proposal_release("victim", "budget-1", 0).state,
+            ProposalReleaseState::kAuthorizedForRelease);
+  EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kApprove);
+  EXPECT_EQ(engine.decide_order(kFar, Side::kBuy, 50, 2, 0).verdict, RiskVerdict::kApprove);
+}
+
+TEST(ProposalAttribution, WrongStrategyQueryOfAnAuthorizedProposalNeverDisclosesTheRealDecision) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision("strat-a", "term-auth",
+                                          two_leg_proposal("strat-a", "term-auth"), 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  engine.stage_proposal_release("strat-a", "term-auth", stage_two_legs(1, 2));
+  ASSERT_EQ(engine.authorize_proposal_release("strat-a", "term-auth", 0).state,
+            ProposalReleaseState::kAuthorizedForRelease);
+  const auto count_before = engine.audit_log().proposal_release_decision_count("term-auth");
+
+  // The proposal is now genuinely kAuthorizedForRelease. A wrong-strategy
+  // query must NOT receive that real state -- only the generic denial.
+  const auto attacker_query = engine.authorize_proposal_release("attacker", "term-auth", 0);
+  EXPECT_NE(attacker_query.state, ProposalReleaseState::kAuthorizedForRelease);
+  EXPECT_EQ(attacker_query.reason_code, ReasonCode::kIdentityMismatch);
+  EXPECT_EQ(engine.proposal_release_state("term-auth"),
+            ProposalReleaseState::kAuthorizedForRelease);
+  EXPECT_EQ(engine.audit_log().proposal_release_decision_count("term-auth"), count_before);
+
+  // The canonical owner's own legs are still fully executable.
+  EXPECT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kApprove);
+}
+
+TEST(ProposalAttribution, WrongStrategyQueryOfARejectedProposalNeverDisclosesTheRealDecision) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision("strat-a", "term-reject",
+                                          two_leg_proposal("strat-a", "term-reject"), 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  engine.stage_proposal_release("strat-a", "term-reject", stage_two_legs(1, 2));
+  ASSERT_TRUE(engine.trip_global());
+  const auto real_release = engine.authorize_proposal_release("strat-a", "term-reject", 0);
+  ASSERT_EQ(real_release.state, ProposalReleaseState::kRejectedAtRelease);
+  ASSERT_EQ(real_release.reason_code, ReasonCode::kKillSwitchGlobal);
+  const auto count_before = engine.audit_log().proposal_release_decision_count("term-reject");
+
+  const auto attacker_query = engine.authorize_proposal_release("attacker", "term-reject", 0);
+  EXPECT_EQ(attacker_query.reason_code, ReasonCode::kIdentityMismatch);
+  // The attacker never sees the REAL rejection reason (kKillSwitchGlobal).
+  EXPECT_NE(attacker_query.reason_code, ReasonCode::kKillSwitchGlobal);
+  EXPECT_EQ(engine.audit_log().proposal_release_decision_count("term-reject"), count_before);
+}
+
+TEST(ProposalAttribution, WrongStrategyQueryOfAnAbortedProposalNeverDisclosesTheRealDecision) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision("strat-a", "term-abort",
+                                          two_leg_proposal("strat-a", "term-abort"), 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  engine.stage_proposal_release("strat-a", "term-abort", stage_two_legs(1, 2));
+  ASSERT_EQ(engine.authorize_proposal_release("strat-a", "term-abort", 0).state,
+            ProposalReleaseState::kAuthorizedForRelease);
+  ASSERT_EQ(engine.abort_proposal_release("strat-a", "term-abort", "victim's own choice", 0).state,
+            ProposalReleaseState::kAborted);
+  const auto count_before = engine.audit_log().proposal_release_decision_count("term-abort");
+
+  const auto attacker_query = engine.authorize_proposal_release("attacker", "term-abort", 0);
+  EXPECT_EQ(attacker_query.reason_code, ReasonCode::kIdentityMismatch);
+  EXPECT_NE(attacker_query.reason_code, ReasonCode::kProposalAborted);
+  EXPECT_NE(attacker_query.reason, "victim's own choice");
+  EXPECT_EQ(engine.proposal_release_state("term-abort"), ProposalReleaseState::kAborted);
+  EXPECT_EQ(engine.audit_log().proposal_release_decision_count("term-abort"), count_before);
+}
+
+TEST(ProposalAttribution, WrongStrategyQueryOfACompletedProposalNeverDisclosesTheRealDecision) {
+  RiskEngine engine(base_config());
+  seed_valid_quote(engine, kNear, 100);
+  seed_valid_quote(engine, kFar, 100);
+
+  ASSERT_EQ(engine
+                .commit_proposal_decision("strat-a", "term-complete",
+                                          two_leg_proposal("strat-a", "term-complete"), 0)
+                .verdict,
+            RiskVerdict::kApprove);
+  engine.stage_proposal_release("strat-a", "term-complete", stage_two_legs(1, 2));
+  ASSERT_EQ(engine.authorize_proposal_release("strat-a", "term-complete", 0).state,
+            ProposalReleaseState::kAuthorizedForRelease);
+  ASSERT_EQ(engine.decide_order(kNear, Side::kBuy, 50, 1, 0).verdict, RiskVerdict::kApprove);
+  ASSERT_EQ(engine.decide_order(kFar, Side::kBuy, 50, 2, 0).verdict, RiskVerdict::kApprove);
+  ASSERT_EQ(engine.proposal_release_state("term-complete"), ProposalReleaseState::kCompleted);
+
+  // A completed proposal is no longer executable regardless, but a
+  // wrong-strategy caller must still receive only the generic denial, not
+  // an implicit confirmation that the proposal reached kCompleted.
+  const auto attacker_query = engine.authorize_proposal_release("attacker", "term-complete", 0);
+  EXPECT_NE(attacker_query.state, ProposalReleaseState::kCompleted);
+  EXPECT_EQ(attacker_query.reason_code, ReasonCode::kIdentityMismatch);
+  EXPECT_EQ(engine.proposal_release_state("term-complete"), ProposalReleaseState::kCompleted);
 }
 
 TEST(ProposalAttribution, AuthorizeWithTheCorrectStrategyIdStillWorksNormally) {
